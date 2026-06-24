@@ -93,12 +93,24 @@ workflows:
           agvtool new-version -all "$CM_BUILD_NUMBER"
 
       - name: Build iOS IPA
+        # Running xcodebuild directly (not through the xcode-project build-ipa wrapper) so
+        # nothing gets filtered — the wrapper's --verbose only showed its own command-tracing,
+        # not xcodebuild's actual stdout/stderr, which is where the real failure reason lives.
+        # `tee` prints everything live AND saves it to a file the artifacts section can pick up.
         script: |
           cd apps/mobile
-          xcode-project build-ipa \
-            --workspace "ios/SetAsideTracker.xcworkspace" \
-            --scheme "SetAsideTracker" \
-            --verbose
+          set -o pipefail
+          xcodebuild \
+            -workspace "ios/SetAsideTracker.xcworkspace" \
+            -scheme "SetAsideTracker" \
+            -archivePath "build/ios/xcarchive/SetAsideTracker.xcarchive" \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            DEVELOPMENT_TEAM=CVCY985YCD \
+            'CODE_SIGN_IDENTITY=Apple Distribution' \
+            CODE_SIGN_STYLE=Manual \
+            archive 2>&1 | tee xcodebuild-archive.log
+          echo "----- error/failed lines -----"
+          grep -iE "error:|failed|code ?sign" xcodebuild-archive.log || true
 
       - name: List build outputs
         script: |
