@@ -97,7 +97,8 @@ workflows:
           cd apps/mobile
           xcode-project build-ipa \
             --workspace "ios/SetAsideTracker.xcworkspace" \
-            --scheme "SetAsideTracker"
+            --scheme "SetAsideTracker" \
+            --verbose
 
       - name: List build outputs
         script: |
@@ -107,6 +108,8 @@ workflows:
       - apps/mobile/build/ios/ipa/*.ipa
       - apps/mobile/ios/build/ios/ipa/*.ipa
       - apps/mobile/xcodebuild-archive.log
+      - apps/mobile/**/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Logs/Build/*.xcactivitylog
 
     publishing:
       app_store_connect:
