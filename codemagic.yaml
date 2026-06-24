@@ -13,7 +13,7 @@ workflows:
 
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: SetAside - com.gigtaxtracker.app
+        bundle_identifier: com.gigtaxtracker.app
 
     triggering:
       events:
