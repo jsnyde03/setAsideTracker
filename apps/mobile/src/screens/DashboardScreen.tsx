@@ -12,6 +12,7 @@ interface DashboardScreenProps {
   taxProfile: TaxProfile;
   onAddEntry: () => void;
   onEditEntry: (entry: Entry) => void;
+  onOpenSettings: () => void;
 }
 
 const PLATFORM_LABELS: Record<Entry["platform"], string> = {
@@ -40,7 +41,13 @@ function totalEntryExpenses(entry: Entry): number {
   return entry.expenses.parking + entry.expenses.tolls + entry.expenses.supplies + entry.expenses.phone;
 }
 
-export function DashboardScreen({ entries, taxProfile, onAddEntry, onEditEntry }: DashboardScreenProps) {
+export function DashboardScreen({
+  entries,
+  taxProfile,
+  onAddEntry,
+  onEditEntry,
+  onOpenSettings,
+}: DashboardScreenProps) {
   const taxEstimate = computeTaxEstimate(entries, taxProfile);
   const { estimate, year, usedFallbackConfig } = taxEstimate;
 
@@ -62,10 +69,20 @@ export function DashboardScreen({ entries, taxProfile, onAddEntry, onEditEntry }
         ListHeaderComponent={
           <View>
             <View style={styles.greetingRow}>
-              <Text style={styles.greeting}>Your earnings</Text>
-              <View style={styles.yearBadge}>
-                <Text style={styles.yearBadgeText}>{year}</Text>
+              <View style={styles.greetingTitleRow}>
+                <Text style={styles.greeting}>Your earnings</Text>
+                <View style={styles.yearBadge}>
+                  <Text style={styles.yearBadgeText}>{year}</Text>
+                </View>
               </View>
+              <Pressable
+                onPress={onOpenSettings}
+                hitSlop={8}
+                accessibilityLabel="Settings"
+                accessibilityRole="button"
+              >
+                <Ionicons name="settings-outline" size={22} color={colors.inkSubtle} />
+              </Pressable>
             </View>
             {usedFallbackConfig && (
               <View style={[styles.warningBox, styles.warningBoxLight]}>
@@ -210,7 +227,13 @@ export function DashboardScreen({ entries, taxProfile, onAddEntry, onEditEntry }
 
 const styles = StyleSheet.create({
   listContent: { padding: spacing.xl, paddingBottom: spacing.xxxl },
-  greetingRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginBottom: spacing.lg },
+  greetingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: spacing.lg,
+  },
+  greetingTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   greeting: { ...type.display, color: colors.ink },
   yearBadge: {
     backgroundColor: colors.surfaceAlt,

@@ -1,12 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { Entry, LocalUserProfile, TaxProfile } from "../types";
+import type { AppSettings, Entry, LocalUserProfile, TaxProfile } from "../types";
 import { decryptText, encryptText, getOrCreateEncryptionKey } from "./encryption";
 
 const KEYS = {
   localUserProfile: "gigTaxTracker:localUserProfile",
   taxProfile: "gigTaxTracker:taxProfile",
   entries: "gigTaxTracker:entries",
+  appSettings: "gigTaxTracker:appSettings",
 } as const;
+
+const DEFAULT_APP_SETTINGS: AppSettings = { appLockEnabled: false };
 
 // Cached across calls so every read/write doesn't hit SecureStore — initialized lazily and
 // shared via a single in-flight promise so concurrent calls can't race into generating two keys.
@@ -86,6 +89,15 @@ export async function updateEntry(updatedEntry: Entry): Promise<Entry[]> {
   const updated = existing.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry));
   await writeJson(KEYS.entries, updated);
   return updated;
+}
+
+export async function getAppSettings(): Promise<AppSettings> {
+  const settings = await readJson<AppSettings>(KEYS.appSettings);
+  return settings ?? DEFAULT_APP_SETTINGS;
+}
+
+export async function saveAppSettings(settings: AppSettings): Promise<void> {
+  await writeJson(KEYS.appSettings, settings);
 }
 
 /** Clears all locally stored data. Used for sign-out / reset in this local-only alpha. */

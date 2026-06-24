@@ -6,9 +6,11 @@ import type { Entry, LocalUserProfile, TaxProfile } from "./src/types";
 import {
   addEntry,
   deleteEntry,
+  getAppSettings,
   getEntries,
   getLocalUserProfile,
   getTaxProfile,
+  saveAppSettings,
   saveLocalUserProfile,
   saveTaxProfile,
   updateEntry,
@@ -17,11 +19,12 @@ import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { AddEntryScreen } from "./src/screens/AddEntryScreen";
 import { LockScreen } from "./src/screens/LockScreen";
+import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { isAppLockAvailable, unlockWithDeviceAuth } from "./src/security/appLock";
 import { scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
 import { colors } from "./src/theme";
 
-type Screen = "loading" | "onboarding" | "dashboard" | "addEntry";
+type Screen = "loading" | "onboarding" | "dashboard" | "addEntry" | "settings";
 
 export default function App() {
   return (
@@ -41,21 +44,26 @@ function AppContent() {
 
   // null = still checking whether a lock can be enforced on this device.
   const [lockAvailable, setLockAvailable] = useState<boolean | null>(null);
+  // Whether the user has opted into app lock — defaults to off, even on devices that support it.
+  const [appLockEnabled, setAppLockEnabled] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [showRetryHint, setShowRetryHint] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const [storedProfile, storedTaxProfile, storedEntries, lockIsAvailable] = await Promise.all([
-        getLocalUserProfile(),
-        getTaxProfile(),
-        getEntries(),
-        isAppLockAvailable(),
-      ]);
+      const [storedProfile, storedTaxProfile, storedEntries, lockIsAvailable, storedAppSettings] =
+        await Promise.all([
+          getLocalUserProfile(),
+          getTaxProfile(),
+          getEntries(),
+          isAppLockAvailable(),
+          getAppSettings(),
+        ]);
 
       setEntries(storedEntries);
       setLockAvailable(lockIsAvailable);
-      setIsLocked(lockIsAvailable);
+      setAppLockEnabled(storedAppSettings.appLockEnabled);
+      setIsLocked(lockIsAvailable && storedAppSettings.appLockEnabled);
 
       if (storedProfile && storedTaxProfile) {
         setLocalUserProfile(storedProfile);
@@ -72,7 +80,7 @@ function AppContent() {
   // always requires unlocking again (not just on cold start).
   const appState = useRef(AppState.currentState);
   useEffect(() => {
-    if (!lockAvailable) return;
+    if (!lockAvailable || !appLockEnabled) return;
 
     const subscription = AppState.addEventListener("change", (nextState) => {
       // Only "background" means the user actually left the app. "inactive" is a noisy,
@@ -87,7 +95,7 @@ function AppContent() {
     });
 
     return () => subscription.remove();
-  }, [lockAvailable]);
+  }, [lockAvailable, appLockEnabled]);
 
   async function handleUnlock() {
     const success = await unlockWithDeviceAuth();
@@ -132,6 +140,14 @@ function AppContent() {
     setScreen("dashboard");
   }
 
+  async function handleToggleAppLock(enabled: boolean) {
+    // Persists immediately, but deliberately doesn't lock the app right now even if turned on —
+    // that would lock the user out of the Settings screen they're sitting in. It takes effect
+    // next time the app backgrounds/returns or cold-starts, same as any other security setting.
+    setAppLockEnabled(enabled);
+    await saveAppSettings({ appLockEnabled: enabled });
+  }
+
   if (screen === "loading" || lockAvailable === null) {
     return (
       <View style={styles.loadingContainer}>
@@ -173,6 +189,19 @@ function AppContent() {
     );
   }
 
+  if (screen === "settings") {
+    return (
+      <View style={styles.container}>
+        <SettingsScreen
+          appLockEnabled={appLockEnabled}
+          onToggleAppLock={handleToggleAppLock}
+          onClose={() => setScreen("dashboard")}
+        />
+        <StatusBar style="dark" />
+      </View>
+    );
+  }
+
   // screen === "dashboard" — taxProfile is guaranteed set by this point
   return (
     <View style={styles.container}>
@@ -181,6 +210,7 @@ function AppContent() {
         taxProfile={taxProfile as TaxProfile}
         onAddEntry={() => setScreen("addEntry")}
         onEditEntry={handleEditEntry}
+        onOpenSettings={() => setScreen("settings")}
       />
       <StatusBar style="dark" />
     </View>

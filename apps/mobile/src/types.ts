@@ -44,3 +44,8 @@ export interface Entry {
   expenses: EntryExpenses;
   createdAt: string;
 }
+
+export interface AppSettings {
+  /** Defaults to false — app lock is opt-in, not on by default, even on devices that support it. */
+  appLockEnabled: boolean;
+}
