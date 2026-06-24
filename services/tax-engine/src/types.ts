@@ -155,6 +155,19 @@ export interface ChildTaxCreditResult {
   totalCredit: number;
 }
 
+/**
+ * Estimates what a W2 employer's payroll withholding is likely targeting across the full year,
+ * by computing federal + state tax on the W2 income as if it were the only income — this mirrors
+ * how IRS withholding tables are calibrated for a single-job employee. This is the full-year
+ * figure; callers that need a year-to-date amount (e.g. the mobile app, which knows the current
+ * date and whether the job has an end date) prorate it themselves.
+ */
+export interface W2WithholdingEstimate {
+  annualFederalEstimate: number;
+  annualStateEstimate: number;
+  annualTotalEstimate: number;
+}
+
 export interface TaxEstimateResult {
   taxYear: number;
   netProfitAfterMileage: number;
@@ -163,6 +176,7 @@ export interface TaxEstimateResult {
   federalIncomeTax: FederalIncomeTaxResult;
   childTaxCredit: ChildTaxCreditResult;
   stateTax: StateTaxResult;
+  w2WithholdingEstimate: W2WithholdingEstimate;
   totalEstimatedTax: number;
   /** Suggested amount to set aside per dollar of net SE profit, for quick "set aside this week" UI. */
   effectiveSetAsideRate: number;

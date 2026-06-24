@@ -8,6 +8,7 @@ export { calculateFederalIncomeTax } from "./federalIncomeTax";
 export { calculateChildTaxCredit } from "./childTaxCredit";
 export { calculateMileageDeduction } from "./mileageDeduction";
 export { calculateStateTax } from "./stateTax";
+export { estimateW2Withholding } from "./w2Withholding";
 export { estimateTax } from "./estimate";
 export { taxYear2025 } from "./taxYears/2025";
 export { taxYear2026 } from "./taxYears/2026";

@@ -3,6 +3,7 @@ import { calculateFederalIncomeTax } from "./federalIncomeTax";
 import { calculateChildTaxCredit } from "./childTaxCredit";
 import { calculateMileageDeduction } from "./mileageDeduction";
 import { calculateStateTax } from "./stateTax";
+import { estimateW2Withholding } from "./w2Withholding";
 import type { TaxEstimateInput, TaxEstimateResult, TaxYearConfig } from "./types";
 
 export function estimateTax(input: TaxEstimateInput, config: TaxYearConfig): TaxEstimateResult {
@@ -42,6 +43,16 @@ export function estimateTax(input: TaxEstimateInput, config: TaxYearConfig): Tax
     input.county
   );
 
+  // input.otherTaxableIncome is treated as the full-year W2 income figure here, consistent with
+  // how it's already used above for bracket-pushing — see TaxEstimateInput's doc comment.
+  const w2WithholdingEstimate = estimateW2Withholding(
+    input.otherTaxableIncome,
+    input.filingStatus,
+    input.stateCode,
+    config,
+    input.county
+  );
+
   // federalIncomeTax.incomeTax is left as the pre-credit gross amount so the UI can show it
   // alongside a separate "Child Tax Credit" line; the credit is only netted out here, in the
   // total. nonrefundableCredit is already capped at incomeTax, so this never goes negative.
@@ -70,6 +81,7 @@ export function estimateTax(input: TaxEstimateInput, config: TaxYearConfig): Tax
     federalIncomeTax,
     childTaxCredit,
     stateTax,
+    w2WithholdingEstimate,
     totalEstimatedTax,
     effectiveSetAsideRate,
   };
