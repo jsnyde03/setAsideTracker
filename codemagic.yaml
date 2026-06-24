@@ -24,7 +24,16 @@ workflows:
 
     scripts:
       - name: Install root workspace dependencies
-        script: npm ci
+        # Plain `npm ci` can hit a known npm bug (npm/cli#4828) where a platform-specific
+        # optional dependency (here, @rollup/rollup-darwin-arm64 — a transitive dep of
+        # vite/vitest) is correctly listed in package-lock.json but doesn't actually get
+        # installed on this machine's architecture. Removing any stale node_modules and using
+        # `npm install` instead of `npm ci` makes npm re-resolve and fetch the right native
+        # binary for whatever machine is actually running the build, rather than trusting a
+        # potentially-incomplete prior install.
+        script: |
+          rm -rf node_modules
+          npm install
 
       - name: Build the tax-engine package
         # apps/mobile depends on @gig-tax-tracker/tax-engine as a workspace package — it's
