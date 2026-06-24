@@ -1,0 +1,8 @@
+{
+  "name": "gig-tax-tracker",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*"
+  ]
+}
