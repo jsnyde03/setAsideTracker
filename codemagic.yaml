@@ -1,27 +1,27 @@
 workflows:
   ios-testflight:
     name: SetAside — iOS TestFlight
-    max_build_duration: 60
-    instance_type: mac_mini_m2
-    integrations:
-      # TODO: replace with the exact name of your App Store Connect integration as it appears
-      # under Codemagic → Teams → Integrations → App Store Connect (the one already set up for
-      # your other app). Same Apple Developer account/Team ID can be reused across apps.
-      app_store_connect: REPLACE_WITH_APP_STORE_CONNECT_INTEGRATION_NAME
+
     environment:
+      node: 22
+
+      # Reusing the same "AppleConnect" group from your other app on purpose — App Store Connect
+      # API key credentials are account/Team-level, not per-app, so the same key works here too.
+      # TODO: confirm this is the exact group name in your Codemagic team; rename below if not.
+      groups:
+        - AppleConnect
+
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.gigtaxtracker.app
-      vars:
-        XCODE_WORKSPACE: "SetAside.xcworkspace"
-        XCODE_SCHEME: "SetAside"
-      node: 20.19.0
+
     triggering:
       events:
         - push
       branch_patterns:
         - pattern: master
           include: true
+
     scripts:
       - name: Install root workspace dependencies
         script: npm ci
@@ -48,7 +48,8 @@ workflows:
       - name: Generate the native iOS project (expo prebuild)
         # Continuous Native Generation: ios/ is gitignored and regenerated fresh on every build
         # from app.json + config plugins, so app.json's name/bundleIdentifier/icon settings are
-        # the actual source of truth, not anything checked into ios/.
+        # the actual source of truth, not anything checked into ios/. expo prebuild runs `pod
+        # install` itself on macOS, but the explicit step below is kept as a harmless safety net.
         script: |
           cd apps/mobile
           npx expo prebuild --platform ios
@@ -58,26 +59,44 @@ workflows:
           cd apps/mobile/ios
           pod install
 
-      - name: Set up iOS code signing
-        # Uses the ios_signing config above + the App Store Connect integration to fetch/create
-        # the right provisioning profile and certificate automatically — no manually-managed
-        # .p12/.mobileprovision files checked in anywhere.
+      - name: Initialize keychain
+        script: keychain initialize
+
+      - name: Add signing certificates to keychain
+        script: keychain add-certificates
+
+      - name: Apply iOS signing profiles
         script: xcode-project use-profiles
 
-      - name: Build the .ipa
+      - name: Increment iOS build number
+        # $CM_BUILD_NUMBER is a Codemagic built-in that auto-increments every build — no custom
+        # variable to set up. App Store Connect requires a strictly increasing build number per
+        # version, so this needs to run on every build, not just once.
+        script: |
+          cd apps/mobile/ios
+          agvtool new-version -all "$CM_BUILD_NUMBER"
+
+      - name: Build iOS IPA
         script: |
           cd apps/mobile
           xcode-project build-ipa \
-            --workspace "ios/$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+            --workspace "ios/SetAside.xcworkspace" \
+            --scheme "SetAside"
+
+      - name: List build outputs
+        script: |
+          find apps/mobile -iname "*.ipa" || true
 
     artifacts:
       - apps/mobile/build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
+      - apps/mobile/ios/build/ios/ipa/*.ipa
+      - apps/mobile/xcodebuild-archive.log
 
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
       email:
         recipients:
