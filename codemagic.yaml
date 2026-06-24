@@ -84,14 +84,6 @@ workflows:
       - name: Apply iOS signing profiles
         script: xcode-project use-profiles
 
-      - name: Increment iOS build number
-        # $CM_BUILD_NUMBER is a Codemagic built-in that auto-increments every build — no custom
-        # variable to set up. App Store Connect requires a strictly increasing build number per
-        # version, so this needs to run on every build, not just once.
-        script: |
-          cd apps/mobile/ios
-          agvtool new-version -all "$CM_BUILD_NUMBER"
-
       - name: Build iOS IPA
         # Back to the xcode-project build-ipa wrapper now that the real signing issue (missing
         # Push Notifications capability on the provisioning profile) is fixed — it handles both
