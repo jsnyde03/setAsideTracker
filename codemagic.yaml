@@ -71,19 +71,12 @@ workflows:
       - name: Initialize keychain
         script: keychain initialize
 
-      - name: Fetch signing files
-        # The actual fix for "no matching profiles" was creating the App Store profile for
-        # com.gigtaxtracker.app manually in Apple Developer Portal (it never existed at all,
-        # unlike the other app's bundle ID) and re-fetching it into Codemagic's profile list —
-        # not this script. Left in place as a safety net for future profile expiry/rotation:
-        # --create only creates something if it's still missing, so this is a no-op once a valid
-        # profile already exists.
-        script: |
-          app-store-connect fetch-signing-files \
-            "com.gigtaxtracker.app" \
-            --platform IOS \
-            --type IOS_APP_STORE \
-            --create
+      # No fetch-signing-files step needed here: the actual fix for "no matching profiles" was
+      # creating the App Store profile for com.gigtaxtracker.app manually in Apple Developer
+      # Portal (it never existed at all, unlike the other app's bundle ID) and re-fetching it
+      # into Codemagic's profile list from there. That profile now exists, so the steps below
+      # find it directly — a redundant fetch-signing-files call here was failing on a missing
+      # APP_STORE_CONNECT_ISSUER_ID env var and isn't needed for anything it was already solved.
 
       - name: Add signing certificates to keychain
         script: keychain add-certificates
