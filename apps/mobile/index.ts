@@ -1,3 +1,8 @@
+// Must be the very first import — polyfills crypto.getRandomValues, which Hermes/React Native
+// doesn't provide natively. Needed before anything else (including App.tsx's encryption setup)
+// has a chance to run.
+import 'react-native-get-random-values';
+
 import { registerRootComponent } from 'expo';
 
 import App from './App';
