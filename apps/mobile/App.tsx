@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { StatusBar } from "expo-status-bar";
-import { ActivityIndicator, AppState, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, AppState, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import type { Entry, LocalUserProfile, TaxProfile } from "./src/types";
 import {
@@ -51,27 +51,38 @@ function AppContent() {
 
   useEffect(() => {
     (async () => {
-      const [storedProfile, storedTaxProfile, storedEntries, lockIsAvailable, storedAppSettings] =
-        await Promise.all([
-          getLocalUserProfile(),
-          getTaxProfile(),
-          getEntries(),
-          isAppLockAvailable(),
-          getAppSettings(),
-        ]);
+      try {
+        const [storedProfile, storedTaxProfile, storedEntries, lockIsAvailable, storedAppSettings] =
+          await Promise.all([
+            getLocalUserProfile(),
+            getTaxProfile(),
+            getEntries(),
+            isAppLockAvailable(),
+            getAppSettings(),
+          ]);
 
-      setEntries(storedEntries);
-      setLockAvailable(lockIsAvailable);
-      setAppLockEnabled(storedAppSettings.appLockEnabled);
-      setIsLocked(lockIsAvailable && storedAppSettings.appLockEnabled);
+        setEntries(storedEntries);
+        setLockAvailable(lockIsAvailable);
+        setAppLockEnabled(storedAppSettings.appLockEnabled);
+        setIsLocked(lockIsAvailable && storedAppSettings.appLockEnabled);
 
-      if (storedProfile && storedTaxProfile) {
-        setLocalUserProfile(storedProfile);
-        setTaxProfile(storedTaxProfile);
-        setScreen("dashboard");
-        scheduleQuarterlyReminders();
-      } else {
+        if (storedProfile && storedTaxProfile) {
+          setLocalUserProfile(storedProfile);
+          setTaxProfile(storedTaxProfile);
+          setScreen("dashboard");
+          scheduleQuarterlyReminders();
+        } else {
+          setScreen("onboarding");
+        }
+      } catch (error) {
+        // Without this, a failed load here leaves the app stuck on the loading spinner forever
+        // with no feedback at all. Fall back to a safe, unlocked state so the user isn't stuck.
+        setLockAvailable(false);
         setScreen("onboarding");
+        Alert.alert(
+          "Couldn't load your data",
+          error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+        );
       }
     })();
   }, []);
@@ -108,19 +119,35 @@ function AppContent() {
   }
 
   async function handleOnboardingComplete(profile: LocalUserProfile, newTaxProfile: TaxProfile) {
-    await saveLocalUserProfile(profile);
-    await saveTaxProfile(newTaxProfile);
-    setLocalUserProfile(profile);
-    setTaxProfile(newTaxProfile);
-    setScreen("dashboard");
-    scheduleQuarterlyReminders();
+    try {
+      await saveLocalUserProfile(profile);
+      await saveTaxProfile(newTaxProfile);
+      setLocalUserProfile(profile);
+      setTaxProfile(newTaxProfile);
+      setScreen("dashboard");
+      scheduleQuarterlyReminders();
+    } catch (error) {
+      // Without this, a failed save here silently leaves the user stuck on the onboarding
+      // screen with no feedback at all — "Continue does nothing" with no error in sight.
+      Alert.alert(
+        "Couldn't save your info",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
   }
 
   async function handleSaveEntry(entry: Entry) {
-    const updated = editingEntry ? await updateEntry(entry) : await addEntry(entry);
-    setEntries(updated);
-    setEditingEntry(null);
-    setScreen("dashboard");
+    try {
+      const updated = editingEntry ? await updateEntry(entry) : await addEntry(entry);
+      setEntries(updated);
+      setEditingEntry(null);
+      setScreen("dashboard");
+    } catch (error) {
+      Alert.alert(
+        "Couldn't save this entry",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
   }
 
   function handleEditEntry(entry: Entry) {
@@ -129,10 +156,17 @@ function AppContent() {
   }
 
   async function handleDeleteEntry(entryId: string) {
-    const updated = await deleteEntry(entryId);
-    setEntries(updated);
-    setEditingEntry(null);
-    setScreen("dashboard");
+    try {
+      const updated = await deleteEntry(entryId);
+      setEntries(updated);
+      setEditingEntry(null);
+      setScreen("dashboard");
+    } catch (error) {
+      Alert.alert(
+        "Couldn't delete this entry",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
   }
 
   function handleCancelEntry() {
@@ -145,7 +179,14 @@ function AppContent() {
     // that would lock the user out of the Settings screen they're sitting in. It takes effect
     // next time the app backgrounds/returns or cold-starts, same as any other security setting.
     setAppLockEnabled(enabled);
-    await saveAppSettings({ appLockEnabled: enabled });
+    try {
+      await saveAppSettings({ appLockEnabled: enabled });
+    } catch (error) {
+      Alert.alert(
+        "Couldn't save this setting",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
   }
 
   if (screen === "loading" || lockAvailable === null) {
