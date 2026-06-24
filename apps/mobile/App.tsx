@@ -75,7 +75,11 @@ function AppContent() {
     if (!lockAvailable) return;
 
     const subscription = AppState.addEventListener("change", (nextState) => {
-      if (appState.current.match(/inactive|background/) && nextState === "active") {
+      // Only "background" means the user actually left the app. "inactive" is a noisy,
+      // momentary state that also fires for things like the Face ID prompt itself or any
+      // Alert.alert being shown — treating it the same as background caused the app to
+      // immediately re-lock right after a successful unlock.
+      if (appState.current === "background" && nextState === "active") {
         setIsLocked(true);
         setShowRetryHint(false);
       }
