@@ -62,6 +62,19 @@ workflows:
       - name: Initialize keychain
         script: keychain initialize
 
+      - name: Fetch signing files
+        # com.gigtaxtracker.app has never been built before, so there's no existing provisioning
+        # profile to find — unlike the other app's bundle ID, which already had one from earlier
+        # manual setup. --create makes this create the missing profile via the App Store Connect
+        # API key (reusing the existing distribution certificate already on this Apple Developer
+        # account/Team — it won't generate a redundant new certificate if one is already there).
+        script: |
+          app-store-connect fetch-signing-files \
+            "com.gigtaxtracker.app" \
+            --platform IOS \
+            --type IOS_APP_STORE \
+            --create
+
       - name: Add signing certificates to keychain
         script: keychain add-certificates
 
