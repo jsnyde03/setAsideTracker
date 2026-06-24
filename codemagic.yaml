@@ -1,6 +1,6 @@
 workflows:
   ios-testflight:
-    name: SetAside — iOS TestFlight
+    name: SetAsideTracker — iOS TestFlight
 
     environment:
       node: 22
@@ -80,8 +80,8 @@ workflows:
         script: |
           cd apps/mobile
           xcode-project build-ipa \
-            --workspace "ios/SetAside.xcworkspace" \
-            --scheme "SetAside"
+            --workspace "ios/SetAsideTracker.xcworkspace" \
+            --scheme "SetAsideTracker"
 
       - name: List build outputs
         script: |
