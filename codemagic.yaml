@@ -1,0 +1,92 @@
+workflows:
+  ios-testflight:
+    name: SetAside — iOS TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      # TODO: replace with the exact name of your App Store Connect integration as it appears
+      # under Codemagic → Teams → Integrations → App Store Connect (the one already set up for
+      # your other app). Same Apple Developer account/Team ID can be reused across apps.
+      app_store_connect: REPLACE_WITH_APP_STORE_CONNECT_INTEGRATION_NAME
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.gigtaxtracker.app
+      vars:
+        XCODE_WORKSPACE: "SetAside.xcworkspace"
+        XCODE_SCHEME: "SetAside"
+      node: 20.19.0
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: master
+          include: true
+    scripts:
+      - name: Install root workspace dependencies
+        script: npm ci
+
+      - name: Build the tax-engine package
+        # apps/mobile depends on @gig-tax-tracker/tax-engine as a workspace package — it's
+        # consumed via its compiled dist/ output (not gitignored source), so this must run
+        # before anything that imports it.
+        script: |
+          cd services/tax-engine
+          npm run build
+
+      - name: Run tax-engine tests
+        script: |
+          cd services/tax-engine
+          npm test
+
+      - name: Typecheck + test the mobile app
+        script: |
+          cd apps/mobile
+          npm run typecheck
+          npm test
+
+      - name: Generate the native iOS project (expo prebuild)
+        # Continuous Native Generation: ios/ is gitignored and regenerated fresh on every build
+        # from app.json + config plugins, so app.json's name/bundleIdentifier/icon settings are
+        # the actual source of truth, not anything checked into ios/.
+        script: |
+          cd apps/mobile
+          npx expo prebuild --platform ios
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd apps/mobile/ios
+          pod install
+
+      - name: Set up iOS code signing
+        # Uses the ios_signing config above + the App Store Connect integration to fetch/create
+        # the right provisioning profile and certificate automatically — no manually-managed
+        # .p12/.mobileprovision files checked in anywhere.
+        script: xcode-project use-profiles
+
+      - name: Build the .ipa
+        script: |
+          cd apps/mobile
+          xcode-project build-ipa \
+            --workspace "ios/$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - apps/mobile/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+      email:
+        recipients:
+          - jason.snyder1984@gmail.com
+        notify:
+          success: true
+          failure: true
+
+# Android isn't configured yet — no Google Play Console credentials/signing set up at the time
+# this file was written. Once those exist, add an "android-internal-track" workflow following
+# the same shape: npm ci → build tax-engine → typecheck/test → `expo prebuild --platform android`
+# → Gradle build → publish via google_play.
