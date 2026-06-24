@@ -5,6 +5,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import type { Entry, LocalUserProfile, TaxProfile } from "./src/types";
 import {
   addEntry,
+  clearAllLocalData,
   deleteEntry,
   getAppSettings,
   getEntries,
@@ -18,13 +19,14 @@ import {
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { AddEntryScreen } from "./src/screens/AddEntryScreen";
+import { EditTaxProfileScreen } from "./src/screens/EditTaxProfileScreen";
 import { LockScreen } from "./src/screens/LockScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { isAppLockAvailable, unlockWithDeviceAuth } from "./src/security/appLock";
 import { scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
 import { colors } from "./src/theme";
 
-type Screen = "loading" | "onboarding" | "dashboard" | "addEntry" | "settings";
+type Screen = "loading" | "onboarding" | "dashboard" | "addEntry" | "settings" | "editTaxProfile";
 
 export default function App() {
   return (
@@ -189,6 +191,48 @@ function AppContent() {
     }
   }
 
+  async function handleSaveProfile(profile: LocalUserProfile) {
+    try {
+      await saveLocalUserProfile(profile);
+      setLocalUserProfile(profile);
+      Alert.alert("Saved", "Your profile has been updated.");
+    } catch (error) {
+      Alert.alert(
+        "Couldn't save your profile",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
+  }
+
+  async function handleSaveTaxProfile(newTaxProfile: TaxProfile) {
+    try {
+      await saveTaxProfile(newTaxProfile);
+      setTaxProfile(newTaxProfile);
+      setScreen("settings");
+    } catch (error) {
+      Alert.alert(
+        "Couldn't save your tax profile",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
+  }
+
+  async function handleClearAllData() {
+    try {
+      await clearAllLocalData();
+      setEntries([]);
+      setLocalUserProfile(null);
+      setTaxProfile(null);
+      setAppLockEnabled(false);
+      setScreen("onboarding");
+    } catch (error) {
+      Alert.alert(
+        "Couldn't clear your data",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
+  }
+
   if (screen === "loading" || lockAvailable === null) {
     return (
       <View style={styles.loadingContainer}>
@@ -234,9 +278,27 @@ function AppContent() {
     return (
       <View style={styles.container}>
         <SettingsScreen
+          localUserProfile={localUserProfile as LocalUserProfile}
+          onSaveProfile={handleSaveProfile}
+          taxProfile={taxProfile as TaxProfile}
+          onEditTaxProfile={() => setScreen("editTaxProfile")}
           appLockEnabled={appLockEnabled}
           onToggleAppLock={handleToggleAppLock}
+          onClearAllData={handleClearAllData}
           onClose={() => setScreen("dashboard")}
+        />
+        <StatusBar style="dark" />
+      </View>
+    );
+  }
+
+  if (screen === "editTaxProfile") {
+    return (
+      <View style={styles.container}>
+        <EditTaxProfileScreen
+          taxProfile={taxProfile as TaxProfile}
+          onSave={handleSaveTaxProfile}
+          onCancel={() => setScreen("settings")}
         />
         <StatusBar style="dark" />
       </View>
