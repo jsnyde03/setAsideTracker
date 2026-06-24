@@ -84,6 +84,24 @@ workflows:
       - name: Apply iOS signing profiles
         script: xcode-project use-profiles
 
+      - name: Increment iOS build number
+        # Asks App Store Connect for the latest build number already uploaded for this bundle ID
+        # and increments from there, rather than relying on an assumed Codemagic variable (the
+        # earlier $CM_BUILD_NUMBER attempt resolved to something invalid and broke the build).
+        # Falls back to 0 (-> 1) if there's no prior TestFlight build yet, e.g. the very first
+        # successful upload for this app.
+        script: |
+          cd apps/mobile/ios
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            "com.gigtaxtracker.app" 2>/dev/null || true)
+          LATEST_BUILD_NUMBER=${LATEST_BUILD_NUMBER:-0}
+          NEW_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          echo "Latest TestFlight build number: $LATEST_BUILD_NUMBER -> using $NEW_BUILD_NUMBER"
+          agvtool new-version -all "$NEW_BUILD_NUMBER"
+
       - name: Build iOS IPA
         # Back to the xcode-project build-ipa wrapper now that the real signing issue (missing
         # Push Notifications capability on the provisioning profile) is fixed — it handles both
