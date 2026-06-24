@@ -93,24 +93,17 @@ workflows:
           agvtool new-version -all "$CM_BUILD_NUMBER"
 
       - name: Build iOS IPA
-        # Running xcodebuild directly (not through the xcode-project build-ipa wrapper) so
-        # nothing gets filtered — the wrapper's --verbose only showed its own command-tracing,
-        # not xcodebuild's actual stdout/stderr, which is where the real failure reason lives.
-        # `tee` prints everything live AND saves it to a file the artifacts section can pick up.
+        # Back to the xcode-project build-ipa wrapper now that the real signing issue (missing
+        # Push Notifications capability on the provisioning profile) is fixed — it handles both
+        # archiving and exporting the .ipa in one step, auto-generating the export options plist
+        # from the already-fetched profile rather than needing one hand-written here. If a build
+        # ever fails opaquely again, temporarily swap back to a raw `xcodebuild ... archive`
+        # piped through `tee` (as was done to diagnose this issue) to see the real error text.
         script: |
           cd apps/mobile
-          set -o pipefail
-          xcodebuild \
-            -workspace "ios/SetAsideTracker.xcworkspace" \
-            -scheme "SetAsideTracker" \
-            -archivePath "build/ios/xcarchive/SetAsideTracker.xcarchive" \
-            COMPILER_INDEX_STORE_ENABLE=NO \
-            DEVELOPMENT_TEAM=CVCY985YCD \
-            'CODE_SIGN_IDENTITY=Apple Distribution' \
-            CODE_SIGN_STYLE=Manual \
-            archive 2>&1 | tee xcodebuild-archive.log
-          echo "----- error/failed lines -----"
-          grep -iE "error:|failed|code ?sign" xcodebuild-archive.log || true
+          xcode-project build-ipa \
+            --workspace "ios/SetAsideTracker.xcworkspace" \
+            --scheme "SetAsideTracker"
 
       - name: List build outputs
         script: |
