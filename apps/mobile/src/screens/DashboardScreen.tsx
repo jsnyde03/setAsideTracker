@@ -153,6 +153,14 @@ export function DashboardScreen({
                 <Text style={styles.breakdownLabel}>{taxProfile.state} state income tax</Text>
                 <Text style={styles.breakdownValue}>{formatCurrency(estimate.stateTax.stateLevelTax)}</Text>
               </View>
+              {estimate.stateTax.creditApplied > 0 && (
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>{taxProfile.state} state tax credit</Text>
+                  <Text style={[styles.breakdownValue, styles.creditValue]}>
+                    −{formatCurrency(estimate.stateTax.creditApplied)}
+                  </Text>
+                </View>
+              )}
               {w2WithholdingYtdEstimate > 0 && (
                 <View style={styles.breakdownRow}>
                   <Text style={styles.breakdownLabel}>W2 withholding so far (est.)</Text>

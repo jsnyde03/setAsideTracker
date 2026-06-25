@@ -22,6 +22,20 @@ export type LocalTaxConfig =
   | { type: "flat"; rate: number }
   | { type: "bracket"; brackets: Record<FilingStatus, TaxBracket[]> };
 
+/**
+ * A nonrefundable state tax credit — reduces tax owed directly (unlike standardDeduction, which
+ * reduces taxable income before the rate/brackets are applied). Modeled as a flat per-filer
+ * amount and/or a flat per-dependent amount, both optional and additive. Nonrefundable: the
+ * applied amount is capped at the state-level tax otherwise owed and can't take it below zero —
+ * real per-state rules vary on refundability, but nonrefundable is the more common case and the
+ * safer assumption (never overstates the credit). Applied only against stateLevelTax, not local
+ * tax, mirroring how the federal Child Tax Credit only offsets income tax, not SE tax.
+ */
+export interface StateCreditConfig {
+  perFiler?: Record<FilingStatus, number>;
+  perDependent?: number;
+}
+
 /** A single flat rate applied to taxable income regardless of filing status (e.g. PA). */
 export interface FlatStateTax {
   type: "flat";
@@ -30,6 +44,8 @@ export interface FlatStateTax {
   standardDeduction?: Record<FilingStatus, number>;
   /** Local/county tax jurisdictions, keyed by jurisdiction name (e.g. "Montgomery County"). */
   localTaxJurisdictions?: Record<string, LocalTaxConfig>;
+  /** Nonrefundable per-filer/per-dependent tax credit, if this state has one modeled. */
+  credit?: StateCreditConfig;
 }
 
 /** Progressive brackets, keyed by filing status (e.g. CA, NY, MD). */
@@ -39,6 +55,8 @@ export interface BracketStateTax {
   standardDeduction: Record<FilingStatus, number>;
   /** Local/county tax jurisdictions, keyed by jurisdiction name (e.g. "Montgomery County"). */
   localTaxJurisdictions?: Record<string, LocalTaxConfig>;
+  /** Nonrefundable per-filer/per-dependent tax credit, if this state has one modeled. */
+  credit?: StateCreditConfig;
 }
 
 export type StateTaxConfig = NoStateTax | FlatStateTax | BracketStateTax;
@@ -101,7 +119,9 @@ export interface StateTaxResult {
   /** False if this state isn't in the config's stateTaxConfigs map — stateTax will be 0 and should be flagged in UI, not trusted. */
   supported: boolean;
   taxableIncome: number;
-  /** State-level tax only, excluding any local/county tax. */
+  /** State-level tax only, excluding any local/county tax. Left as the pre-credit gross amount —
+   * same convention as federalIncomeTax.incomeTax — so the UI can show a separate credit line
+   * rather than silently baking it in; creditApplied is only netted out in the final stateTax. */
   stateLevelTax: number;
   /** Jurisdiction name passed in, normalized. Undefined if not applicable/not provided. */
   county?: string;
@@ -114,8 +134,11 @@ export interface StateTaxResult {
    * should be flagged in UI as an unknown/missing amount, not a verified $0.
    */
   localTaxSupported: boolean;
-  /** Combined state + local tax owed — stateLevelTax + localTax. */
+  /** Combined state + local tax owed, net of creditApplied — max(0, stateLevelTax - creditApplied) + localTax. */
   stateTax: number;
+  /** Nonrefundable state credit actually applied (already netted into stateTax, not stateLevelTax) —
+   * exposed separately for "show your math" transparency. 0 if this state has no credit modeled. */
+  creditApplied: number;
 }
 
 export interface MileageDeductionResult {

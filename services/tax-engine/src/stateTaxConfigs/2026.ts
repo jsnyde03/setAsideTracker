@@ -69,10 +69,11 @@ import { mdLocalTaxJurisdictions2026 } from "./mdLocalTax2026";
  *   political contention over whether the *next* scheduled cut to 3.49% for 2027 will be frozen).
  *   Standard deduction $12,750/$25,500, confirmed.
  * - UT: flat 4.50% (CORRECTED — previously had 4.55%). Confirmed against Tax Foundation Feb 2026.
- *   **No standard deduction modeled** — Utah's "personal exemption" is structured as a
- *   nonrefundable tax credit (its "taxpayer tax credit"), not a deduction, and this engine has no
- *   state-level tax-credit mechanism. This is the one state left in this block without a real
- *   deduction figure, for a structural reason rather than a sourcing gap.
+ *   No standardDeduction (Utah's "personal exemption" isn't a deduction) — modeled instead via
+ *   the credit field as an APPROXIMATED flat nonrefundable credit ($966/$1,932). Utah's real
+ *   mechanism is 6% of a federal-exemption-equivalent figure with its own income-based phase-out,
+ *   not replicated here; the per-dependent piece of Utah's formula isn't modeled either, to avoid
+ *   false precision layered on an already-approximated base. See the `credit` config comment.
  *
  * Newly-converted-to-flat states, added in this pass — previously had no entry at all (they'd
  * have been miscategorized as "progressive bracket" states if added without checking, since
@@ -99,20 +100,22 @@ import { mdLocalTaxJurisdictions2026 } from "./mdLocalTax2026";
  * bracket thresholds for all of: AL, AR, CT, DE, HI, KS, ME, MA, MN, MO, MT, NE, NJ, NM, ND, OK,
  * OR, RI, SC, VT, VA, WV, WI, and DC.
  *
- * DELIBERATE SIMPLIFICATION, disclosed once here rather than repeated per state: this app's
- * StateTaxConfig only supports a single standardDeduction figure per filing status — it has no
- * mechanism for per-dependent deductions/credits or flat tax *credits* (a credit reduces tax
- * owed directly, completely different math from a deduction that reduces taxable income, and
- * is a separate engine feature this doesn't have yet). Where a state's exemption is structured
- * as a tax *credit* rather than a deduction — UT's "taxpayer tax credit" being the main example
- * left unmodeled in the flat-rate block above — or is a *per-dependent* amount this app's
- * dependents-count-only model can't apply correctly (a flat per-dependent credit/deduction, not
- * folded into the base standardDeduction figure: AR, DE, NE, OR, GA's dependent credit
- * specifically, MN's dependent credit, SC's dependent credit, NM's per-dependent deduction), that
- * amount is NOT modeled and is simply omitted. Those states' (or those specific taxpayers') tax
- * will be very slightly overstated, which is the safer direction of error here. Every state's
- * *base* standard deduction/personal exemption that's deduction-style is now modeled, closing
- * the broader gap that was previously deferred.
+ * STATE TAX CREDITS: `StateCreditConfig` (see types.ts) models a nonrefundable flat per-filer
+ * and/or per-dependent credit, applied against stateLevelTax only (never local tax), floored at
+ * $0 — mirroring how the federal Child Tax Credit only offsets income tax, not SE tax, and
+ * reusing the same numberOfChildren count already plumbed through for that. Modeled for:
+ * - UT (approximated flat credit, see above — its real formula isn't replicated)
+ * - AR, DE, NE, OR: small flat per-filer + per-dependent credits ($29–$256) — genuinely tiny,
+ *   modeled mainly because the mechanism existed anyway, not because they materially change a
+ *   user's estimate.
+ * - GA ($4,000/dependent), MN ($5,300/dependent), SC ($4,930/dependent): genuinely material for
+ *   a gig worker with kids — these were the actual motivation for building the credit mechanism.
+ * NOT modeled: NM's per-dependent *deduction* (not a credit — it's also an irregular "$4,000 for
+ * all but one dependent" rule, not a clean per-dependent multiple, which made it a poor fit to
+ * force into either the deduction or credit mechanism without misrepresenting the actual rule).
+ * Every other state's per-dependent amount found during sourcing was a credit, not a deduction —
+ * NM is the only deduction-shaped exception, left as a disclosed gap.
+ *
  * Where a state's personal exemption is itself deduction-style (reduces taxable income, not tax
  * owed directly) — AL, CT, HI, KS, ME, MA, NJ, OK, RI, VT, VA, WI, WV — it IS folded into that
  * state's standardDeduction figure below, since that's mathematically equivalent and a real
@@ -169,6 +172,8 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
     type: "flat",
     rate: 0.0519,
     standardDeduction: { single: 12000, marriedFilingJointly: 24000 },
+    // Georgia's $4,000/dependent credit — genuinely material for a parent, not a rounding error.
+    credit: { perDependent: 4000 },
   },
   IN: {
     type: "flat",
@@ -189,9 +194,14 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
     type: "flat",
     rate: 0.045,
     // Utah's "personal exemption" is structured as a nonrefundable tax CREDIT (its "taxpayer tax
-    // credit"), not a deduction from taxable income — this engine has no state-level tax-credit
-    // mechanism, so it isn't modeled, same as the other credit-style exemptions disclosed above.
-    // Genuinely no standardDeduction for Utah, unlike the other states in this block.
+    // credit"), not a deduction — modeled via the credit field below, NOT standardDeduction.
+    // APPROXIMATED: Utah's real formula is 6% of a federal-exemption-equivalent figure, with its
+    // own income-based phase-out that isn't replicated here. Using the flat $966/$1,932 figures
+    // Tax Foundation reports as the effective credit at typical income levels — accurate for most
+    // gig-worker incomes where the phase-out doesn't apply, but not a full replication of Utah's
+    // formula. The per-dependent piece of Utah's formula isn't modeled either, to avoid false
+    // precision on top of an already-approximated base figure.
+    credit: { perFiler: { single: 966, marriedFilingJointly: 1932 } },
   },
   ID: {
     type: "flat",
@@ -341,6 +351,7 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
   AR: {
     type: "bracket",
     standardDeduction: { single: 2470, marriedFilingJointly: 4940 },
+    credit: { perFiler: { single: 29, marriedFilingJointly: 58 }, perDependent: 29 },
     brackets: {
       single: [
         { min: 0, max: 4600, rate: 0.02 },
@@ -383,6 +394,7 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
   DE: {
     type: "bracket",
     standardDeduction: { single: 3250, marriedFilingJointly: 6500 },
+    credit: { perFiler: { single: 110, marriedFilingJointly: 220 }, perDependent: 110 },
     brackets: {
       single: [
         { min: 0, max: 2000, rate: 0 },
@@ -492,6 +504,8 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
   MN: {
     type: "bracket",
     standardDeduction: { single: 15300, marriedFilingJointly: 30600 },
+    // Minnesota's $5,300/dependent credit — genuinely material for a parent, not a rounding error.
+    credit: { perDependent: 5300 },
     brackets: {
       single: [
         { min: 0, max: 33310, rate: 0.0535 },
@@ -553,6 +567,7 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
   NE: {
     type: "bracket",
     standardDeduction: { single: 8850, marriedFilingJointly: 17700 },
+    credit: { perFiler: { single: 176, marriedFilingJointly: 352 }, perDependent: 176 },
     brackets: {
       single: [
         { min: 0, max: 4130, rate: 0.0246 },
@@ -656,6 +671,7 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
   OR: {
     type: "bracket",
     standardDeduction: { single: 2910, marriedFilingJointly: 5820 },
+    credit: { perFiler: { single: 256, marriedFilingJointly: 512 }, perDependent: 256 },
     brackets: {
       single: [
         { min: 0, max: 4550, rate: 0.0475 },
@@ -692,6 +708,8 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
   SC: {
     type: "bracket",
     standardDeduction: { single: 8350, marriedFilingJointly: 16700 },
+    // South Carolina's $4,930/dependent credit — genuinely material for a parent.
+    credit: { perDependent: 4930 },
     brackets: {
       single: [
         { min: 0, max: 3640, rate: 0 },

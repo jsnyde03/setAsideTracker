@@ -40,7 +40,8 @@ export function estimateTax(input: TaxEstimateInput, config: TaxYearConfig): Tax
     input.filingStatus,
     input.stateCode,
     config,
-    input.county
+    input.county,
+    input.numberOfChildren ?? 0
   );
 
   // input.otherTaxableIncome is treated as the full-year W2 income figure here, consistent with

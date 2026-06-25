@@ -1,10 +1,23 @@
 import type {
   FilingStatus,
   LocalTaxConfig,
+  StateCreditConfig,
   StateTaxResult,
   TaxYearConfig,
 } from "./types";
 import { applyBrackets } from "./bracketMath";
+
+/** Nonrefundable credit available before capping against tax owed — perFiler + perDependent. */
+function calculateAvailableStateCredit(
+  credit: StateCreditConfig | undefined,
+  filingStatus: FilingStatus,
+  numberOfChildren: number
+): number {
+  if (!credit) return 0;
+  const perFiler = credit.perFiler?.[filingStatus] ?? 0;
+  const perDependent = (credit.perDependent ?? 0) * Math.max(0, numberOfChildren);
+  return perFiler + perDependent;
+}
 
 interface LocalTaxLookupResult {
   county?: string;
@@ -49,9 +62,12 @@ function resolveLocalTax(
  * State (and, where applicable, local/county) income tax estimate. This is a simplification of
  * real state tax law: it approximates state taxable income as (net SE profit - deductible SE tax
  * portion + other income) minus the state's own standard deduction, mirroring the federal AGI
- * calc, then applies any local tax to that same base. Real state/local tax codes have their own
- * conformity rules, credits, and adjustments that this does not model — see ROADMAP §6 on the
- * annual tax-config review process.
+ * calc, then applies any local tax to that same base. A nonrefundable per-filer/per-dependent
+ * credit is applied where a state's config defines one (see StateCreditConfig) — but not every
+ * state's real credit/deduction mechanism is modeled this way; some are flat dollar amounts this
+ * can't represent (e.g. percentage-of-exemption formulas with their own phase-outs). Real
+ * state/local tax codes have other conformity rules and adjustments beyond this too — see
+ * ROADMAP §6 on the annual tax-config review process.
  */
 export function calculateStateTax(
   netSelfEmploymentProfit: number,
@@ -60,7 +76,8 @@ export function calculateStateTax(
   filingStatus: FilingStatus,
   stateCode: string,
   config: TaxYearConfig,
-  county?: string
+  county?: string,
+  numberOfChildren = 0
 ): StateTaxResult {
   const normalizedStateCode = stateCode.trim().toUpperCase();
   const stateConfig = config.stateTaxConfigs[normalizedStateCode];
@@ -74,6 +91,7 @@ export function calculateStateTax(
       localTax: 0,
       localTaxSupported: true,
       stateTax: 0,
+      creditApplied: 0,
     };
   }
 
@@ -91,6 +109,7 @@ export function calculateStateTax(
       localTax: 0,
       localTaxSupported: true,
       stateTax: 0,
+      creditApplied: 0,
     };
   }
 
@@ -110,14 +129,21 @@ export function calculateStateTax(
 
   const local = resolveLocalTax(stateConfig.localTaxJurisdictions, county, taxableIncome, filingStatus);
 
+  // Nonrefundable: capped at stateLevelTax, applied only against the state-level amount, never
+  // against local tax — mirrors how the federal Child Tax Credit only offsets income tax, not SE
+  // tax. stateLevelTax itself is left as the gross pre-credit figure (see its doc comment).
+  const availableCredit = calculateAvailableStateCredit(stateConfig.credit, filingStatus, numberOfChildren);
+  const creditApplied = Math.min(availableCredit, stateLevelTax);
+
   return {
     stateCode: normalizedStateCode,
     supported: true,
     taxableIncome,
     stateLevelTax,
+    creditApplied,
     county: local.county,
     localTax: local.localTax,
     localTaxSupported: local.localTaxSupported,
-    stateTax: stateLevelTax + local.localTax,
+    stateTax: stateLevelTax - creditApplied + local.localTax,
   };
 }

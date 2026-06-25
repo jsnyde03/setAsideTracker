@@ -27,11 +27,14 @@ describe("calculateStateTax (2026)", () => {
     expect(result.stateTax).toBeCloseTo(47000 * 0.0307, 2);
   });
 
-  it("applies UT's flat 4.50% rate with no standard deduction (its exemption is credit-style, not modeled)", () => {
+  it("applies UT's flat 4.50% rate with no standard deduction but its approximated $966 credit", () => {
     const result = calculateStateTax(50000, 3000, 0, "single", "UT", taxYear2026);
     expect(result.supported).toBe(true);
     expect(result.taxableIncome).toBeCloseTo(47000, 2);
-    expect(result.stateTax).toBeCloseTo(47000 * 0.045, 2);
+    const grossTax = 47000 * 0.045;
+    expect(result.stateLevelTax).toBeCloseTo(grossTax, 2);
+    expect(result.creditApplied).toBeCloseTo(966, 2);
+    expect(result.stateTax).toBeCloseTo(grossTax - 966, 2);
   });
 
   it("applies the correct flat rate and standard deduction for each of the other flat-rate states", () => {
@@ -52,6 +55,49 @@ describe("calculateStateTax (2026)", () => {
       expect(result.taxableIncome).toBeCloseTo(expectedTaxableIncome, 2);
       expect(result.stateTax).toBeCloseTo(expectedTaxableIncome * rate, 2);
     }
+  });
+
+  describe("nonrefundable state tax credits", () => {
+    it("applies Georgia's $4,000/dependent credit, which is material (not a rounding error)", () => {
+      // High enough income that the $8,000 credit isn't capped by the gross tax owed — the
+      // capped/floored scenario is covered separately below.
+      const noKids = calculateStateTax(300000, 3000, 0, "single", "GA", taxYear2026, undefined, 0);
+      const twoKids = calculateStateTax(300000, 3000, 0, "single", "GA", taxYear2026, undefined, 2);
+
+      expect(noKids.creditApplied).toBe(0);
+      expect(twoKids.creditApplied).toBeCloseTo(8000, 2);
+      expect(noKids.stateTax - twoKids.stateTax).toBeCloseTo(8000, 2);
+      // stateLevelTax (the gross, pre-credit figure) must be identical regardless of dependents —
+      // only stateTax (the net total) should differ.
+      expect(noKids.stateLevelTax).toBeCloseTo(twoKids.stateLevelTax, 2);
+    });
+
+    it("applies Minnesota's and South Carolina's per-dependent credits", () => {
+      const mn = calculateStateTax(200000, 3000, 0, "single", "MN", taxYear2026, undefined, 1);
+      expect(mn.creditApplied).toBeCloseTo(5300, 2);
+
+      const sc = calculateStateTax(150000, 3000, 0, "single", "SC", taxYear2026, undefined, 1);
+      expect(sc.creditApplied).toBeCloseTo(4930, 2);
+    });
+
+    it("combines a per-filer credit with a per-dependent credit (Arkansas)", () => {
+      const result = calculateStateTax(50000, 3000, 0, "marriedFilingJointly", "AR", taxYear2026, undefined, 3);
+      // $58 per-filer (MFJ) + 3 x $29 per-dependent = $145
+      expect(result.creditApplied).toBeCloseTo(145, 2);
+    });
+
+    it("floors the nonrefundable credit at the state tax otherwise owed — never produces a refund", () => {
+      // A tiny income with several dependents could otherwise compute a credit larger than the
+      // gross tax; the applied amount must cap at stateLevelTax, and stateTax must floor at 0.
+      const result = calculateStateTax(100, 0, 0, "single", "GA", taxYear2026, undefined, 5);
+      expect(result.creditApplied).toBeLessThanOrEqual(result.stateLevelTax);
+      expect(result.stateTax).toBeGreaterThanOrEqual(0);
+    });
+
+    it("defaults to 0 dependents when the parameter is omitted, matching pre-credit behavior", () => {
+      const result = calculateStateTax(50000, 3000, 0, "single", "GA", taxYear2026);
+      expect(result.creditApplied).toBe(0);
+    });
   });
 
   it("applies NC's flat 3.99% rate with its standard deduction", () => {
