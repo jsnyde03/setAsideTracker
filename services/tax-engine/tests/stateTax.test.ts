@@ -181,12 +181,25 @@ describe("calculateStateTax (2026)", () => {
     expect(meTaxableIncome).toBeCloseTo(30000, 2);
     expect(me.stateTax).toBeCloseTo(27399 * 0.058 + 2601 * 0.0675, 2);
 
-    // Maine: confirm the new 2% surcharge bracket kicks in above $1M taxable income.
+    // Maine: confirm the new 2% surcharge bracket kicks in above $1M taxable income. At this
+    // income the standard deduction is also fully phased out (income $1,020,600 is well past the
+    // $102,250 threshold + $75,000 additional limit), so taxable income equals AGI.
     const meHighEarner = calculateStateTax(1020600, 0, 0, "single", "ME", taxYear2026);
-    const meHighTaxableIncome = 1020600 - (15300 + 5300);
+    const meHighTaxableIncome = 1020600;
     const meHighExpectedTax =
       27399 * 0.058 + (64849 - 27399) * 0.0675 + (1000000 - 64849) * 0.0715 + (meHighTaxableIncome - 1000000) * 0.0915;
     expect(meHighEarner.stateTax).toBeCloseTo(meHighExpectedTax, 2);
+
+    // Maine: deduction phaseout in the partial range, single filer $40,000 over the $102,250
+    // threshold — ratio = 40000/75000, deduction reduced proportionally.
+    const meMidPhaseout = calculateStateTax(142250, 0, 0, "single", "ME", taxYear2026);
+    const meMidPhaseoutRatio = 40000 / 75000;
+    const meMidPhaseoutDeduction = (15300 + 5300) * (1 - meMidPhaseoutRatio);
+    const meMidPhaseoutTaxableIncome = 142250 - meMidPhaseoutDeduction;
+    expect(meMidPhaseout.stateTax).toBeCloseTo(
+      27399 * 0.058 + (64849 - 27399) * 0.0675 + (meMidPhaseoutTaxableIncome - 64849) * 0.0715,
+      2
+    );
 
     // Minnesota: 2 brackets crossed (5.35% / 6.8%) — separate from the credit-focused tests above.
     const mn = calculateStateTax(65300, 0, 0, "single", "MN", taxYear2026);

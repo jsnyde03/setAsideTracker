@@ -484,6 +484,18 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
     // directly against MRS's 2026 rate schedule: $15,300/$30,600, plus the separate $5,300
     // personal exemption.
     standardDeduction: { single: 15300 + 5300, marriedFilingJointly: 30600 + 5300 },
+    // Phaseout per Maine's own 2026 Estimated Tax Worksheet (36 M.R.S. 5124-C(2)/5125(7),
+    // confirmed directly against MRS's published worksheet): deduction is reduced by
+    // standardDeduction * min(1, (MAGI - threshold) / additionalLimit) once MAGI exceeds the
+    // threshold. Maine's personal-exemption phaseout (36 M.R.S. 5126-A) uses different, much
+    // higher thresholds ($125k/$250k-area divisors) — applying this lower-threshold formula to
+    // the combined deduction+exemption figure above is a simplification that slightly overstates
+    // tax at high incomes rather than understating it, consistent with this codebase's existing
+    // bias (see StandardDeductionPhaseout's doc comment).
+    standardDeductionPhaseout: {
+      threshold: { single: 102250, marriedFilingJointly: 204550 },
+      additionalLimit: { single: 75000, marriedFilingJointly: 150000 },
+    },
     brackets: {
       single: [
         { min: 0, max: 27399, rate: 0.058 },

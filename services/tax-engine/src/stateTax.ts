@@ -1,11 +1,26 @@
 import type {
   FilingStatus,
   LocalTaxConfig,
+  StandardDeductionPhaseout,
   StateCreditConfig,
   StateTaxResult,
   TaxYearConfig,
 } from "./types";
 import { applyBrackets } from "./bracketMath";
+
+/** Reduces a standard deduction above its phaseout threshold, per the state's own worksheet formula. */
+function applyStandardDeductionPhaseout(
+  standardDeduction: number,
+  phaseout: StandardDeductionPhaseout | undefined,
+  filingStatus: FilingStatus,
+  stateAdjustedGrossIncome: number
+): number {
+  if (!phaseout) return standardDeduction;
+  const threshold = phaseout.threshold[filingStatus];
+  const additionalLimit = phaseout.additionalLimit[filingStatus];
+  const ratio = Math.min(1, Math.max(0, (stateAdjustedGrossIncome - threshold) / additionalLimit));
+  return standardDeduction * (1 - ratio);
+}
 
 /** Nonrefundable credit available before capping against tax owed — perFiler + perDependent. */
 function calculateAvailableStateCredit(
@@ -122,7 +137,12 @@ export function calculateStateTax(
     stateLevelTax = taxableIncome * stateConfig.rate;
   } else {
     // stateConfig.type === "bracket"
-    const standardDeduction = stateConfig.standardDeduction[filingStatus];
+    const standardDeduction = applyStandardDeductionPhaseout(
+      stateConfig.standardDeduction[filingStatus],
+      stateConfig.standardDeductionPhaseout,
+      filingStatus,
+      stateAdjustedGrossIncome
+    );
     taxableIncome = Math.max(0, stateAdjustedGrossIncome - standardDeduction);
     stateLevelTax = applyBrackets(taxableIncome, stateConfig.brackets[filingStatus]);
   }

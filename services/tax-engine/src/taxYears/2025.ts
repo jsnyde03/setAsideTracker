@@ -477,6 +477,13 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
       // figure, $15,300/$30,600, does NOT match the federal 2026 figure). Personal exemption is
       // a separate $5,150/$10,300.
       standardDeduction: { single: 15000 + 5150, marriedFilingJointly: 30000 + 10300 },
+      // Phaseout per Maine's 2025 worksheet (36 M.R.S. 5124-C(2)/5125(7)): $100,000 single /
+      // $200,050 MFJ threshold, $75,000/$150,000 additional-limit divisor — see 2026.ts's ME
+      // entry for the full mechanism explanation and the same simplification caveat.
+      standardDeductionPhaseout: {
+        threshold: { single: 100000, marriedFilingJointly: 200050 },
+        additionalLimit: { single: 75000, marriedFilingJointly: 150000 },
+      },
       brackets: {
         single: [
           { min: 0, max: 26800, rate: 0.058 },

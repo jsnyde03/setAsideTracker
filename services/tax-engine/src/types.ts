@@ -36,6 +36,20 @@ export interface StateCreditConfig {
   perDependent?: number;
 }
 
+/**
+ * Income-based reduction of a state's standard deduction above a threshold (e.g. Maine's
+ * statutory phaseout under 36 M.R.S. 5124-C(2)/5125(7)). Mirrors the state's own worksheet
+ * formula: ratio = min(1, max(0, (stateAdjustedGrossIncome - threshold) / additionalLimit)),
+ * and the standard deduction is reduced by (deduction * ratio). Applied against the full
+ * standardDeduction figure, including any personal-exemption amount folded into it — a known
+ * simplification where a state's actual exemption phaseout uses different thresholds, since
+ * conflating them overstates tax slightly at high incomes rather than understating it.
+ */
+export interface StandardDeductionPhaseout {
+  threshold: Record<FilingStatus, number>;
+  additionalLimit: Record<FilingStatus, number>;
+}
+
 /** A single flat rate applied to taxable income regardless of filing status (e.g. PA). */
 export interface FlatStateTax {
   type: "flat";
@@ -53,6 +67,8 @@ export interface BracketStateTax {
   type: "bracket";
   brackets: Record<FilingStatus, TaxBracket[]>;
   standardDeduction: Record<FilingStatus, number>;
+  /** If set, standardDeduction phases out above an income threshold (e.g. ME). */
+  standardDeductionPhaseout?: StandardDeductionPhaseout;
   /** Local/county tax jurisdictions, keyed by jurisdiction name (e.g. "Montgomery County"). */
   localTaxJurisdictions?: Record<string, LocalTaxConfig>;
   /** Nonrefundable per-filer/per-dependent tax credit, if this state has one modeled. */
