@@ -27,25 +27,30 @@ describe("calculateStateTax (2026)", () => {
     expect(result.stateTax).toBeCloseTo(47000 * 0.0307, 2);
   });
 
-  it("applies the correct flat rate for each flat-rate state with no standard deduction modeled", () => {
-    const expectedRates: Record<string, number> = {
-      AZ: 0.025,
-      IL: 0.0495,
-      MI: 0.0425,
-      CO: 0.044,
-      GA: 0.0519,
-      IN: 0.0295,
-      KY: 0.035,
-      UT: 0.045,
-    };
+  it("applies UT's flat 4.50% rate with no standard deduction (its exemption is credit-style, not modeled)", () => {
+    const result = calculateStateTax(50000, 3000, 0, "single", "UT", taxYear2026);
+    expect(result.supported).toBe(true);
+    expect(result.taxableIncome).toBeCloseTo(47000, 2);
+    expect(result.stateTax).toBeCloseTo(47000 * 0.045, 2);
+  });
 
-    for (const [stateCode, rate] of Object.entries(expectedRates)) {
+  it("applies the correct flat rate and standard deduction for each of the other flat-rate states", () => {
+    const cases: { stateCode: string; rate: number; deduction: number }[] = [
+      { stateCode: "AZ", rate: 0.025, deduction: 16100 },
+      { stateCode: "IL", rate: 0.0495, deduction: 2925 },
+      { stateCode: "MI", rate: 0.0425, deduction: 5900 },
+      { stateCode: "CO", rate: 0.044, deduction: 16100 },
+      { stateCode: "GA", rate: 0.0519, deduction: 12000 },
+      { stateCode: "IN", rate: 0.0295, deduction: 1000 },
+      { stateCode: "KY", rate: 0.035, deduction: 3360 },
+    ];
+
+    for (const { stateCode, rate, deduction } of cases) {
       const result = calculateStateTax(50000, 3000, 0, "single", stateCode, taxYear2026);
+      const expectedTaxableIncome = 50000 - 3000 - deduction;
       expect(result.supported).toBe(true);
-      // No standard deduction modeled for any of these yet — see the doc comment in
-      // stateTaxConfigs/2026.ts on why that's a deliberate, disclosed simplification.
-      expect(result.taxableIncome).toBeCloseTo(47000, 2);
-      expect(result.stateTax).toBeCloseTo(47000 * rate, 2);
+      expect(result.taxableIncome).toBeCloseTo(expectedTaxableIncome, 2);
+      expect(result.stateTax).toBeCloseTo(expectedTaxableIncome * rate, 2);
     }
   });
 

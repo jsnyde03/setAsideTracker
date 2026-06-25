@@ -40,24 +40,39 @@ import { mdLocalTaxJurisdictions2026 } from "./mdLocalTax2026";
  * rate which hasn't moved since 2004. NOT backfilled into the 2025 config below, since these
  * rates differ by year and verifying each state's actual 2025 figure separately was out of
  * scope for this pass — they'll report unsupported for 2025 until someone backfills that year.
- * - AZ: flat 2.5%, unchanged since 2023 — high confidence, no scheduled further change.
- * - IL: flat 4.95% — high confidence, stable for years with no scheduled change.
+ * - AZ: flat 2.5%, unchanged since 2023 — high confidence, no scheduled further change. Standard
+ *   deduction conforms to the federal figure ($16,100/$32,200) — Arizona has no deduction of its
+ *   own, by statute.
+ * - IL: flat 4.95% — high confidence, stable for years with no scheduled change. Standard
+ *   deduction modeled from Illinois's per-person exemption ($2,925/$5,850), which is
+ *   deduction-style (reduces taxable income), not a credit.
  * - MI: flat 4.25% — high confidence. (A one-time trigger-based cut to 4.05% applied only to
- *   tax year 2023 per a state Supreme Court ruling; reverted to 4.25% for 2024 onward.)
+ *   tax year 2023 per a state Supreme Court ruling; reverted to 4.25% for 2024 onward.) Standard
+ *   deduction modeled from Michigan's per-person exemption ($5,900/$11,800), deduction-style.
  * - CO: flat 4.40% — confirmed against the Colorado Dept. of Revenue/Tax Foundation for 2026
  *   (the rate returned to 4.40% for 2025 after a one-year TABOR-triggered dip to 4.25% in 2024,
- *   and held at 4.40% for 2026 — no further TABOR trigger was hit). High confidence.
+ *   and held at 4.40% for 2026 — no further TABOR trigger was hit). High confidence. Colorado has
+ *   no standard deduction of its own — it taxes federal taxable income directly, so the federal
+ *   standard deduction figure ($16,100/$32,200) is used as an approximation; Colorado's own
+ *   addback/subtraction rules (e.g. a high-income addback above $300k AGI) aren't modeled.
  * - GA: flat 5.19% — confirmed against Tax Foundation's Feb 2026 report. High confidence.
+ *   Standard deduction $12,000/$24,000, confirmed.
  * - IN: flat 2.95% (CORRECTED — previously had 3.00% here, Indiana's actual legislated 2026 step
- *   down the multi-year phase-down schedule). Confirmed against Tax Foundation Feb 2026.
+ *   down the multi-year phase-down schedule). Confirmed against Tax Foundation Feb 2026. Standard
+ *   deduction modeled from Indiana's per-person exemption ($1,000/$2,000), deduction-style.
  * - KY: flat 3.50% (CORRECTED — previously had 4.00%; Kentucky's tax-trigger-based cut to 3.5%
  *   took effect Jan 1, 2026 per HB 1, confirmed via the 2025 legislative session). Confirmed
- *   against Tax Foundation Feb 2026.
+ *   against Tax Foundation Feb 2026. Standard deduction $3,360 (same figure for single and MFJ —
+ *   that's correct per actual Kentucky law, a flat per-filer amount, not doubled for joint filers).
  * - NC: flat 3.99% (CORRECTED — previously had 4.25%; North Carolina's scheduled cut to 3.99%
  *   DID take effect for 2026, confirmed via NCDOR/Kiplinger reporting as of mid-2026, despite
  *   political contention over whether the *next* scheduled cut to 3.49% for 2027 will be frozen).
- *   Now includes the standard deduction ($12,750 single / $25,500 MFJ), also confirmed.
+ *   Standard deduction $12,750/$25,500, confirmed.
  * - UT: flat 4.50% (CORRECTED — previously had 4.55%). Confirmed against Tax Foundation Feb 2026.
+ *   **No standard deduction modeled** — Utah's "personal exemption" is structured as a
+ *   nonrefundable tax credit (its "taxpayer tax credit"), not a deduction, and this engine has no
+ *   state-level tax-credit mechanism. This is the one state left in this block without a real
+ *   deduction figure, for a structural reason rather than a sourcing gap.
  *
  * Newly-converted-to-flat states, added in this pass — previously had no entry at all (they'd
  * have been miscategorized as "progressive bracket" states if added without checking, since
@@ -88,10 +103,16 @@ import { mdLocalTaxJurisdictions2026 } from "./mdLocalTax2026";
  * StateTaxConfig only supports a single standardDeduction figure per filing status — it has no
  * mechanism for per-dependent deductions/credits or flat tax *credits* (a credit reduces tax
  * owed directly, completely different math from a deduction that reduces taxable income, and
- * is a separate engine feature this doesn't have yet). Where a state's only "personal exemption"
- * is structured as a tax *credit* (e.g. small fixed-dollar credits in AR, DE, NE, OR, GA, MN,
- * SC, plus per-dependent deductions in NM), that amount is NOT modeled and is simply omitted —
- * those states' tax will be very slightly overstated, which is the safer direction of error here.
+ * is a separate engine feature this doesn't have yet). Where a state's exemption is structured
+ * as a tax *credit* rather than a deduction — UT's "taxpayer tax credit" being the main example
+ * left unmodeled in the flat-rate block above — or is a *per-dependent* amount this app's
+ * dependents-count-only model can't apply correctly (a flat per-dependent credit/deduction, not
+ * folded into the base standardDeduction figure: AR, DE, NE, OR, GA's dependent credit
+ * specifically, MN's dependent credit, SC's dependent credit, NM's per-dependent deduction), that
+ * amount is NOT modeled and is simply omitted. Those states' (or those specific taxpayers') tax
+ * will be very slightly overstated, which is the safer direction of error here. Every state's
+ * *base* standard deduction/personal exemption that's deduction-style is now modeled, closing
+ * the broader gap that was previously deferred.
  * Where a state's personal exemption is itself deduction-style (reduces taxable income, not tax
  * owed directly) — AL, CT, HI, KS, ME, MA, NJ, OK, RI, VT, VA, WI, WV — it IS folded into that
  * state's standardDeduction figure below, since that's mathematically equivalent and a real
@@ -115,19 +136,63 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
     rate: 0.0307,
     // PA's personal income tax has no standard deduction or personal exemption.
   },
-  AZ: { type: "flat", rate: 0.025 },
-  IL: { type: "flat", rate: 0.0495 },
-  MI: { type: "flat", rate: 0.0425 },
-  CO: { type: "flat", rate: 0.044 },
-  GA: { type: "flat", rate: 0.0519 },
-  IN: { type: "flat", rate: 0.0295 },
-  KY: { type: "flat", rate: 0.035 },
+  AZ: {
+    type: "flat",
+    rate: 0.025,
+    // Arizona conforms to the federal standard deduction rather than having its own figure.
+    standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+  },
+  IL: {
+    type: "flat",
+    rate: 0.0495,
+    // Illinois has no standard deduction, only a per-person exemption — deduction-style (not a
+    // credit), so it's modeled the same way as a standard deduction here.
+    standardDeduction: { single: 2925, marriedFilingJointly: 5850 },
+  },
+  MI: {
+    type: "flat",
+    rate: 0.0425,
+    standardDeduction: { single: 5900, marriedFilingJointly: 11800 },
+  },
+  CO: {
+    type: "flat",
+    rate: 0.044,
+    // Colorado has no standard deduction of its own — it taxes federal taxable income directly
+    // (already net of the federal standard deduction/itemized deductions), with state-specific
+    // additions/subtractions layered on top that aren't modeled here (e.g. a high-income addback
+    // above $300k AGI, a SALT addback). Using the federal standard deduction figure here
+    // approximates "federal taxable income" reasonably well for a typical gig worker's income
+    // level, without claiming to replicate Colorado's full addback/subtraction rules.
+    standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+  },
+  GA: {
+    type: "flat",
+    rate: 0.0519,
+    standardDeduction: { single: 12000, marriedFilingJointly: 24000 },
+  },
+  IN: {
+    type: "flat",
+    rate: 0.0295,
+    standardDeduction: { single: 1000, marriedFilingJointly: 2000 },
+  },
+  KY: {
+    type: "flat",
+    rate: 0.035,
+    standardDeduction: { single: 3360, marriedFilingJointly: 3360 },
+  },
   NC: {
     type: "flat",
     rate: 0.0399,
     standardDeduction: { single: 12750, marriedFilingJointly: 25500 },
   },
-  UT: { type: "flat", rate: 0.045 },
+  UT: {
+    type: "flat",
+    rate: 0.045,
+    // Utah's "personal exemption" is structured as a nonrefundable tax CREDIT (its "taxpayer tax
+    // credit"), not a deduction from taxable income — this engine has no state-level tax-credit
+    // mechanism, so it isn't modeled, same as the other credit-style exemptions disclosed above.
+    // Genuinely no standardDeduction for Utah, unlike the other states in this block.
+  },
   ID: {
     type: "flat",
     rate: 0.053,
