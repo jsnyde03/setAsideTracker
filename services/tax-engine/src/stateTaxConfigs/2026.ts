@@ -24,8 +24,15 @@ import { nyLocalTaxJurisdictions2026 } from "./nyLocalTax2026";
  *   surcharge threshold is explicitly flat/non-doubled for joint filers (confirmed in the
  *   existing comment elsewhere in this file), so MFJ needs an extra bracket "kink" splitting
  *   exactly at $1,000,000 where the surcharge starts applying mid-bracket — fixed below.
- * - NY: 2026 brackets are PROVISIONAL — sources disagreed on exact rates for the lowest five
- *   brackets (NY's FY2026 budget cut each by 0.2%, and different sources reported slightly
+ * - NY: 2026 brackets CONFIRMED — directly verified against the NYS Department of Taxation and
+ *   Finance's official "NYS-50-T-NYS (1/26)" withholding publication (bracket thresholds match
+ *   exactly) and a Grant Thornton legal summary of the actual enacting law (Chapter 59 of the
+ *   Laws of 2025, Part A / A3009): the cut is exactly -0.1 percentage point on the bottom five
+ *   sub-brackets below $215,400 single/$323,200 MFJ (4%→3.9%, 4.5%→4.4%, 5.25%→5.15%,
+ *   5.5%→5.4%, 6%→5.9%), with a further -0.1 step legislated for 2027 (down to 3.8%-5.8%) — the
+ *   brackets above $215,400/$323,200 are untouched by this cut. Previously flagged as
+ *   provisional over a since-resolved disagreement about whether the cut was -0.1 or -0.2 —
+ *   the existing rates/thresholds below turned out to already be correct, no change needed.
  *   different resulting numbers). Treat NY figures here as a placeholder needing verification
  *   against NYS Department of Taxation and Finance before relying on for real filings.
  * - MD: 2025/2026 brackets per Maryland statute text (10 brackets, 2%-6.5%, retroactively
