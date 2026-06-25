@@ -114,7 +114,9 @@ describe("calculateStateTax (2026)", () => {
       { stateCode: "IA", rate: 0.038, deduction: 16100 },
       { stateCode: "MS", rate: 0.04, deduction: 10000 + 2300 },
       { stateCode: "OH", rate: 0.0275, deduction: 26050 + 2400 },
-      { stateCode: "LA", rate: 0.03, deduction: 14600 },
+      // LA's deduction is Louisiana's own figure ($12,875, first CPI-U-adjusted from $12,500 for
+      // 2026) — not the federal conformity figure this test previously (incorrectly) assumed.
+      { stateCode: "LA", rate: 0.03, deduction: 12875 },
     ];
 
     for (const { stateCode, rate, deduction } of cases) {
@@ -151,6 +153,133 @@ describe("calculateStateTax (2026)", () => {
     const de = calculateStateTax(2500, 0, 0, "single", "DE", taxYear2026);
     expect(de.taxableIncome).toBe(0);
     expect(de.stateTax).toBe(0);
+  });
+
+  it("hand-verifies bracket math for the 19 progressive-bracket states added without a dedicated test", () => {
+    // Connecticut: 3 brackets crossed (2% / 4.5% / 5.5%).
+    const ct = calculateStateTax(75000, 0, 0, "single", "CT", taxYear2026);
+    const ctTaxableIncome = 75000 - 15000;
+    expect(ctTaxableIncome).toBeCloseTo(60000, 2);
+    expect(ct.stateTax).toBeCloseTo(10000 * 0.02 + 40000 * 0.045 + 10000 * 0.055, 2);
+
+    // Hawaii: 4 brackets crossed (1.4% / 3.2% / 5.5% / 6.4%).
+    const hi = calculateStateTax(25544, 0, 0, "single", "HI", taxYear2026);
+    const hiTaxableIncome = 25544 - (4400 + 1144);
+    expect(hiTaxableIncome).toBeCloseTo(20000, 2);
+    expect(hi.stateTax).toBeCloseTo(9600 * 0.014 + 4800 * 0.032 + 4800 * 0.055 + 800 * 0.064, 2);
+
+    // Kansas: 2 brackets crossed (5.2% / 5.58%).
+    const ks = calculateStateTax(42765, 0, 0, "single", "KS", taxYear2026);
+    const ksTaxableIncome = 42765 - (3605 + 9160);
+    expect(ksTaxableIncome).toBeCloseTo(30000, 2);
+    expect(ks.stateTax).toBeCloseTo(23000 * 0.052 + 7000 * 0.0558, 2);
+
+    // Maine: 2 brackets crossed (5.8% / 6.75%). Deduction is Maine's own COLA-indexed figure
+    // ($15,300 + $5,300 personal exemption for 2026), not federal conformity.
+    const me = calculateStateTax(50600, 0, 0, "single", "ME", taxYear2026);
+    const meTaxableIncome = 50600 - (15300 + 5300);
+    expect(meTaxableIncome).toBeCloseTo(30000, 2);
+    expect(me.stateTax).toBeCloseTo(27399 * 0.058 + 2601 * 0.0675, 2);
+
+    // Maine: confirm the new 2% surcharge bracket kicks in above $1M taxable income.
+    const meHighEarner = calculateStateTax(1020600, 0, 0, "single", "ME", taxYear2026);
+    const meHighTaxableIncome = 1020600 - (15300 + 5300);
+    const meHighExpectedTax =
+      27399 * 0.058 + (64849 - 27399) * 0.0675 + (1000000 - 64849) * 0.0715 + (meHighTaxableIncome - 1000000) * 0.0915;
+    expect(meHighEarner.stateTax).toBeCloseTo(meHighExpectedTax, 2);
+
+    // Minnesota: 2 brackets crossed (5.35% / 6.8%) — separate from the credit-focused tests above.
+    const mn = calculateStateTax(65300, 0, 0, "single", "MN", taxYear2026);
+    const mnTaxableIncome = 65300 - 15300;
+    expect(mnTaxableIncome).toBeCloseTo(50000, 2);
+    expect(mn.stateLevelTax).toBeCloseTo(33310 * 0.0535 + 16690 * 0.068, 2);
+
+    // Missouri: 7 non-zero brackets crossed, each exactly $1,348 wide.
+    const mo = calculateStateTax(26100, 0, 0, "single", "MO", taxYear2026);
+    const moTaxableIncome = 26100 - 16100;
+    expect(moTaxableIncome).toBeCloseTo(10000, 2);
+    const moExpectedTax =
+      1348 * 0.02 + 1348 * 0.025 + 1348 * 0.03 + 1348 * 0.035 + 1348 * 0.04 + 1348 * 0.045 + 564 * 0.047;
+    expect(mo.stateTax).toBeCloseTo(moExpectedTax, 2);
+
+    // Montana: 2 brackets crossed (4.7% / 5.65%).
+    const mt = calculateStateTax(76100, 0, 0, "single", "MT", taxYear2026);
+    const mtTaxableIncome = 76100 - 16100;
+    expect(mtTaxableIncome).toBeCloseTo(60000, 2);
+    expect(mt.stateTax).toBeCloseTo(47500 * 0.047 + 12500 * 0.0565, 2);
+
+    // Nebraska: all 3 brackets crossed (2.46% / 3.51% / 4.55%).
+    const ne = calculateStateTax(38850, 0, 0, "single", "NE", taxYear2026);
+    const neTaxableIncome = 38850 - 8850;
+    expect(neTaxableIncome).toBeCloseTo(30000, 2);
+    expect(ne.stateLevelTax).toBeCloseTo(4130 * 0.0246 + 20630 * 0.0351 + 5240 * 0.0455, 2);
+
+    // New Jersey: 4 brackets crossed (1.4% / 1.75% / 3.5% / 5.53%).
+    const nj = calculateStateTax(51000, 0, 0, "single", "NJ", taxYear2026);
+    const njTaxableIncome = 51000 - 1000;
+    expect(njTaxableIncome).toBeCloseTo(50000, 2);
+    expect(nj.stateTax).toBeCloseTo(20000 * 0.014 + 15000 * 0.0175 + 5000 * 0.035 + 10000 * 0.0553, 2);
+
+    // New Mexico: 3 brackets crossed (1.5% / 3.2% / 4.3%).
+    const nm = calculateStateTax(36100, 0, 0, "single", "NM", taxYear2026);
+    const nmTaxableIncome = 36100 - 16100;
+    expect(nmTaxableIncome).toBeCloseTo(20000, 2);
+    expect(nm.stateTax).toBeCloseTo(5500 * 0.015 + 11000 * 0.032 + 3500 * 0.043, 2);
+
+    // North Dakota: 0% bracket then 1.95% above $48,475.
+    const nd = calculateStateTax(76100, 0, 0, "single", "ND", taxYear2026);
+    const ndTaxableIncome = 76100 - 16100;
+    expect(ndTaxableIncome).toBeCloseTo(60000, 2);
+    expect(nd.stateTax).toBeCloseTo(11525 * 0.0195, 2);
+
+    // Oklahoma: 0% bracket then 2.5% and 3.5% brackets crossed.
+    const ok = calculateStateTax(13350, 0, 0, "single", "OK", taxYear2026);
+    const okTaxableIncome = 13350 - (6350 + 1000);
+    expect(okTaxableIncome).toBeCloseTo(6000, 2);
+    expect(ok.stateTax).toBeCloseTo(1150 * 0.025 + 1100 * 0.035, 2);
+
+    // Oregon: 3 brackets crossed (4.75% / 6.75% / 8.75%).
+    const or_ = calculateStateTax(17910, 0, 0, "single", "OR", taxYear2026);
+    const orTaxableIncome = 17910 - 2910;
+    expect(orTaxableIncome).toBeCloseTo(15000, 2);
+    expect(or_.stateLevelTax).toBeCloseTo(4550 * 0.0475 + 6850 * 0.0675 + 3600 * 0.0875, 2);
+
+    // Rhode Island: 2 brackets crossed (3.75% / 4.75%).
+    const ri = calculateStateTax(116450, 0, 0, "single", "RI", taxYear2026);
+    const riTaxableIncome = 116450 - (11200 + 5250);
+    expect(riTaxableIncome).toBeCloseTo(100000, 2);
+    expect(ri.stateTax).toBeCloseTo(82050 * 0.0375 + 17950 * 0.0475, 2);
+
+    // South Carolina: 0% bracket then 3% and 6% brackets crossed — separate from the
+    // credit-focused tests above.
+    const sc = calculateStateTax(28350, 0, 0, "single", "SC", taxYear2026);
+    const scTaxableIncome = 28350 - 8350;
+    expect(scTaxableIncome).toBeCloseTo(20000, 2);
+    expect(sc.stateLevelTax).toBeCloseTo(14590 * 0.03 + 1770 * 0.06, 2);
+
+    // Vermont: 2 brackets crossed (3.35% / 6.6%).
+    const vt = calculateStateTax(72950, 0, 0, "single", "VT", taxYear2026);
+    const vtTaxableIncome = 72950 - 12950;
+    expect(vtTaxableIncome).toBeCloseTo(60000, 2);
+    expect(vt.stateTax).toBeCloseTo(49400 * 0.0335 + 10600 * 0.066, 2);
+
+    // Virginia: 3 brackets crossed (2% / 3% / 5%).
+    const va = calculateStateTax(19680, 0, 0, "single", "VA", taxYear2026);
+    const vaTaxableIncome = 19680 - 9680;
+    expect(vaTaxableIncome).toBeCloseTo(10000, 2);
+    expect(va.stateTax).toBeCloseTo(3000 * 0.02 + 2000 * 0.03 + 5000 * 0.05, 2);
+
+    // West Virginia: 3 brackets crossed (2.22% / 2.96% / 3.33%).
+    const wv = calculateStateTax(32000, 0, 0, "single", "WV", taxYear2026);
+    const wvTaxableIncome = 32000 - 2000;
+    expect(wvTaxableIncome).toBeCloseTo(30000, 2);
+    expect(wv.stateTax).toBeCloseTo(10000 * 0.0222 + 15000 * 0.0296 + 5000 * 0.0333, 2);
+
+    // Wisconsin: 2 brackets crossed (3.5% / 4.4%).
+    const wi = calculateStateTax(34660, 0, 0, "single", "WI", taxYear2026);
+    const wiTaxableIncome = 34660 - (13960 + 700);
+    expect(wiTaxableIncome).toBeCloseTo(20000, 2);
+    expect(wi.stateTax).toBeCloseTo(15110 * 0.035 + 4890 * 0.044, 2);
   });
 
   it("treats DC as supported now that all 50 states + DC are covered", () => {

@@ -89,17 +89,14 @@ export const taxYear2025: TaxYearConfig = {
    * - OK: 2025 had 6 brackets (0.25%-4.75%); 2026 consolidated to 4 brackets (0%-4.5%) as part of
    *   a 2026 tax reform — confirmed structurally different, not just inflation drift.
    *
-   * NEWLY DISCOVERED, separate from this backfill, worth flagging for a future correction pass to
-   * 2026.ts itself (not fixed here to avoid scope creep on an already-large change):
-   * - ME's 2026 standardDeduction ($8,350+$5,300 personal exemption) doesn't match what Maine
-   *   Revenue Services actually publishes — Maine conforms to the FEDERAL standard deduction
-   *   ($16,100/$32,200 for 2026) plus its own ~$5,300ish personal exemption, not a separate
-   *   $8,350/$16,700 state-specific figure. This file's 2025 ME entry uses the verified
-   *   federal-conforming figure; 2026.ts likely needs the same correction.
-   * - LA's 2026 standardDeduction ($14,600/$29,200) looks like it may have been mistakenly set to
-   *   the federal conformity figure rather than Louisiana's own deduction — this file's 2025
-   *   figure ($12,500/$25,000) is sourced directly from Tax Foundation and is notably different,
-   *   more than inflation-drift would explain. Worth re-verifying 2026's LA figure specifically.
+   * RESOLVED during a later reverification pass (see IMPLEMENTATION_PLAN.md): both ME and LA's
+   * 2026.ts standardDeduction figures were confirmed wrong and corrected. ME doesn't conform to
+   * the federal standard deduction at all (a wrong assumption originally made here too, fixed
+   * below) — it has its own COLA-indexed figure ($15,300/$30,600 for 2026, $15,000/$30,000 for
+   * 2025, confirmed against Maine Revenue Services directly) plus a separate personal exemption.
+   * LA's 2026 figure was indeed the federal conformity number by mistake; corrected to
+   * $12,875/$25,750 (Louisiana's own deduction, first CPI-U-adjusted from its $12,500/$25,000
+   * 2025 starting figure).
    *
    * PA/NY/MD local tax: reused from the 2026 jurisdiction maps (Philadelphia/Pittsburgh/NYC/MD
    * counties) rather than left unwired, since leaving `localTaxJurisdictions` undefined entirely
@@ -471,9 +468,15 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
 
     ME: {
       type: "bracket",
-      // Maine conforms to the FEDERAL standard deduction plus its own ~$5,150/dependent personal
-      // exemption — verified directly against Maine Revenue Services' 2025 instructions.
-      standardDeduction: { single: 15750 + 5150, marriedFilingJointly: 31500 + 10300 },
+      // CORRECTED — Maine does NOT conform to the federal standard deduction; it has its own
+      // basic standard deduction (inflation-indexed via Maine's own COLA factor), confirmed
+      // directly against Maine Revenue Services' 2025 instructions as $15,000/$30,000. That
+      // figure coincidentally equals the stale pre-OBBBA federal figure this year, which is what
+      // led to the wrong assumption here originally — it's Maine's own number, not a
+      // federal-conforming one (2026.ts's corrected ME entry confirms this: Maine's own 2026
+      // figure, $15,300/$30,600, does NOT match the federal 2026 figure). Personal exemption is
+      // a separate $5,150/$10,300.
+      standardDeduction: { single: 15000 + 5150, marriedFilingJointly: 30000 + 10300 },
       brackets: {
         single: [
           { min: 0, max: 26800, rate: 0.058 },

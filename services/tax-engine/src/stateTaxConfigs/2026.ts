@@ -229,7 +229,11 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
   LA: {
     type: "flat",
     rate: 0.03,
-    standardDeduction: { single: 14600, marriedFilingJointly: 29200 },
+    // CORRECTED — previously had $14,600/$29,200, which was the FEDERAL standard deduction
+    // figure, not Louisiana's own. Louisiana's flat-tax reform set its own deduction at
+    // $12,500/$25,000 starting tax year 2025, with its first CPI-U inflation adjustment for 2026
+    // confirmed against the Tax Foundation's 2026 report: $12,875/$25,750.
+    standardDeduction: { single: 12875, marriedFilingJointly: 25750 },
   },
 
   // ----- Progressive brackets -----
@@ -473,17 +477,28 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
 
   ME: {
     type: "bracket",
-    standardDeduction: { single: 8350 + 5300, marriedFilingJointly: 16700 + 10600 },
+    // CORRECTED — previously had $8,350/$16,700 as "Maine's own standard deduction," but that
+    // doesn't match what Maine Revenue Services actually publishes. Maine has its OWN basic
+    // standard deduction (inflation-indexed via Maine's own 1.279 COLA factor for 2026, not
+    // federal conformity — the two only coincidentally lined up in some prior years), confirmed
+    // directly against MRS's 2026 rate schedule: $15,300/$30,600, plus the separate $5,300
+    // personal exemption.
+    standardDeduction: { single: 15300 + 5300, marriedFilingJointly: 30600 + 5300 },
     brackets: {
       single: [
         { min: 0, max: 27399, rate: 0.058 },
         { min: 27399, max: 64849, rate: 0.0675 },
-        { min: 64849, max: null, rate: 0.0715 },
+        { min: 64849, max: 1000000, rate: 0.0715 },
+        // Maine's new 2% surcharge (signed for tax years beginning 2026) on Maine taxable income
+        // over $1M single / $1.5M MFJ — modeled the same way MA's millionaire's surtax is, as an
+        // extra bracket tier, not a separate mechanism.
+        { min: 1000000, max: null, rate: 0.0915 },
       ],
       marriedFilingJointly: [
         { min: 0, max: 54849, rate: 0.058 },
         { min: 54849, max: 129749, rate: 0.0675 },
-        { min: 129749, max: null, rate: 0.0715 },
+        { min: 129749, max: 1500000, rate: 0.0715 },
+        { min: 1500000, max: null, rate: 0.0915 },
       ],
     },
   },
