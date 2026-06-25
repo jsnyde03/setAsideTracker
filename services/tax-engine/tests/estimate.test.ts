@@ -18,11 +18,13 @@ describe("estimateTax (2025)", () => {
     expect(result.mileageDeduction.deductionAmount).toBeCloseTo(700, 2);
     expect(result.netProfitAfterMileage).toBeCloseTo(50000, 2);
     expect(result.seTax.totalSeTax).toBeCloseTo(7064.775, 3);
-    expect(result.federalIncomeTax.incomeTax).toBeCloseTo(3537.6135, 3);
+    // Federal standard deduction is $15,750 (OBBBA-corrected 2025 figure) — see
+    // taxYears/2025.ts's file-level comment.
+    expect(result.federalIncomeTax.incomeTax).toBeCloseTo(3447.6135, 3);
     expect(result.stateTax.stateTax).toBe(0); // TX has no state income tax
     expect(result.stateTax.supported).toBe(true);
-    expect(result.totalEstimatedTax).toBeCloseTo(10602.3885, 3);
-    expect(result.effectiveSetAsideRate).toBeCloseTo(10602.3885 / 50000, 4);
+    expect(result.totalEstimatedTax).toBeCloseTo(10512.3885, 3);
+    expect(result.effectiveSetAsideRate).toBeCloseTo(10512.3885 / 50000, 4);
   });
 
   it("produces a sensible result for a typical part-time gig worker week scaled to a year", () => {

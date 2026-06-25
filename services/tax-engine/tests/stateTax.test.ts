@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { calculateStateTax } from "../src/stateTax";
 import { estimateTax } from "../src/estimate";
 import { taxYear2026 } from "../src/taxYears/2026";
+import { taxYear2025 } from "../src/taxYears/2025";
 
 describe("calculateStateTax (2026)", () => {
   it("returns zero state tax for states with no income tax (FL, TX)", () => {
@@ -317,6 +318,59 @@ describe("calculateStateTax (2026)", () => {
       expect(result.supported).toBe(true);
       expect(result.stateTax).toBe(0);
     }
+  });
+});
+
+describe("calculateStateTax (2025 backfill)", () => {
+  it("covers all 50 states + DC for 2025, not just the original 10-jurisdiction set", () => {
+    const allJurisdictions = [
+      "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA",
+      "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+      "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT",
+      "VA", "WA", "WV", "WI", "WY", "DC",
+    ];
+    for (const stateCode of allJurisdictions) {
+      const result = calculateStateTax(50000, 3000, 0, "single", stateCode, taxYear2025);
+      expect(result.supported).toBe(true);
+    }
+  });
+
+  it("applies GA's pre-phase-down 5.39% rate for 2025 (vs 5.19% for 2026)", () => {
+    const result = calculateStateTax(60000, 4000, 0, "single", "GA", taxYear2025, undefined, 0);
+    const taxableIncome = 60000 - 4000 - 12000;
+    expect(result.stateLevelTax).toBeCloseTo(taxableIncome * 0.0539, 2);
+  });
+
+  it("applies KY's flat $3,270 standard deduction, not doubled for joint filers", () => {
+    const single = calculateStateTax(50000, 3000, 0, "single", "KY", taxYear2025);
+    const mfj = calculateStateTax(50000, 3000, 0, "marriedFilingJointly", "KY", taxYear2025);
+    expect(single.taxableIncome).toBeCloseTo(50000 - 3000 - 3270, 2);
+    expect(mfj.taxableIncome).toBeCloseTo(50000 - 3000 - 3270, 2);
+  });
+
+  it("models OH as graduated brackets for 2025 (pre-2026 simplification to a single flat rate)", () => {
+    const result = calculateStateTax(150000, 8000, 0, "single", "OH", taxYear2025);
+    const taxableIncome = 150000 - 8000; // = 142,000
+    // 0% up to 28,450; 2.75% from 28,450 to 102,400; 3.5% above 102,400.
+    const expectedTax = (102400 - 28450) * 0.0275 + (taxableIncome - 102400) * 0.035;
+    expect(result.stateLevelTax).toBeCloseTo(expectedTax, 2);
+  });
+
+  it("applies Maryland's retroactive 10-bracket structure for 2025, same as 2026", () => {
+    const result2025 = calculateStateTax(200000, 10000, 0, "single", "MD", taxYear2025, "Montgomery County");
+    const result2026 = calculateStateTax(200000, 10000, 0, "single", "MD", taxYear2026, "Montgomery County");
+    expect(result2025.stateTax).toBeCloseTo(result2026.stateTax, 2);
+  });
+
+  it("wires up Philadelphia local tax for PA in 2025 (not silently $0)", () => {
+    const result = calculateStateTax(50000, 3000, 0, "single", "PA", taxYear2025, "Philadelphia");
+    expect(result.localTaxSupported).toBe(true);
+    expect(result.localTax).toBeGreaterThan(0);
+  });
+
+  it("uses the OBBBA-corrected $15,750/$31,500 federal-conforming standard deduction for 2025 (CO)", () => {
+    const result = calculateStateTax(50000, 3000, 0, "single", "CO", taxYear2025);
+    expect(result.taxableIncome).toBeCloseTo(50000 - 3000 - 15750, 2);
   });
 });
 

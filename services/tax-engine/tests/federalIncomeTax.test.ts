@@ -14,10 +14,12 @@ describe("calculateFederalIncomeTax (2025)", () => {
       taxYear2025
     );
 
+    // Standard deduction is $15,750 (the OBBBA-corrected 2025 figure, not the stale pre-OBBBA
+    // $15,000 Rev. Proc. 2024-40 figure) — see taxYears/2025.ts's file-level comment.
     expect(result.adjustedGrossIncome).toBeCloseTo(46467.6125, 3);
-    expect(result.taxableIncome).toBeCloseTo(31467.6125, 3);
-    // 11925 * 10% + (31467.6125 - 11925) * 12%
-    expect(result.incomeTax).toBeCloseTo(3537.6135, 3);
+    expect(result.taxableIncome).toBeCloseTo(30717.6125, 3);
+    // 11925 * 10% + (30717.6125 - 11925) * 12%
+    expect(result.incomeTax).toBeCloseTo(3447.6135, 3);
   });
 
   it("matches a hand-verified scenario spanning multiple brackets at $300,000 net SE profit", () => {
@@ -30,8 +32,8 @@ describe("calculateFederalIncomeTax (2025)", () => {
       taxYear2025
     );
 
-    expect(result.taxableIncome).toBeCloseTo(270064.575, 2);
-    expect(result.incomeTax).toBeCloseTo(64069.85125, 1);
+    expect(result.taxableIncome).toBeCloseTo(269314.575, 2);
+    expect(result.incomeTax).toBeCloseTo(63807.35125, 1);
   });
 
   it("never produces negative taxable income when deductions exceed income", () => {
