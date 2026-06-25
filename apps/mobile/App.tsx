@@ -22,6 +22,7 @@ import { AddEntryScreen } from "./src/screens/AddEntryScreen";
 import { EditTaxProfileScreen } from "./src/screens/EditTaxProfileScreen";
 import { LockScreen } from "./src/screens/LockScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
+import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { isAppLockAvailable, unlockWithDeviceAuth } from "./src/security/appLock";
 import { scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
 import { colors } from "./src/theme";
@@ -31,7 +32,9 @@ type Screen = "loading" | "onboarding" | "dashboard" | "addEntry" | "settings" |
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }
