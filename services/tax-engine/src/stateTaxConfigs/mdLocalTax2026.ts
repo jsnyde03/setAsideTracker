@@ -5,11 +5,15 @@ import type { LocalTaxConfig } from "../types";
  * income as the state-level tax. Maryland collects this on the state return (Form 502) on
  * behalf of all 23 counties and Baltimore City; there's no separate county filing.
  *
- * Source: third-party aggregation (countrytaxcalc.com), cross-checked against a Tax Foundation
- * summary noting the 2.25%-3.30% range, the Allegany (3.03%->3.20%) and Kent (3.20%->3.30%)
- * rate increases for 2026, and the 3.20% statutory cap with Dorchester/Kent authorized above it
- * by special local legislation. NOT yet cross-checked against the official Comptroller/DLS PDF
- * tables — verify before relying on for real filings (see ROADMAP §6 annual review process).
+ * Source: CONFIRMED directly against the Department of Legislative Services' official
+ * "Local Tax Rates" publication (dls.maryland.gov, sourced from the Office of the Comptroller)
+ * and the Comptroller's own "Withholding Tax Facts, January 2026" (COM RAD 098) for Anne
+ * Arundel's and Frederick's graduated brackets specifically. All 21 flat-rate counties plus
+ * Baltimore City match the official table exactly, including the Allegany (3.03%->3.20%) and
+ * Kent (3.20%->3.30%) rate increases for 2026 and the 3.20% statutory cap with Dorchester/Kent
+ * authorized above it by special local legislation. (Previously sourced from a third-party
+ * aggregator and flagged as unverified — re-verification against the official source found no
+ * discrepancies.)
  *
  * The rate that applies is based on county of RESIDENCE on Dec 31 of the tax year, not where
  * the work happens — this module doesn't know the difference between "primarily works in MD"
