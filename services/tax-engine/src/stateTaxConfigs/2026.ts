@@ -33,15 +33,12 @@ import { nyLocalTaxJurisdictions2026 } from "./nyLocalTax2026";
  *   brackets above $215,400/$323,200 are untouched by this cut. Previously flagged as
  *   provisional over a since-resolved disagreement about whether the cut was -0.1 or -0.2 —
  *   the existing rates/thresholds below turned out to already be correct, no change needed.
- *   different resulting numbers). Treat NY figures here as a placeholder needing verification
- *   against NYS Department of Taxation and Finance before relying on for real filings.
  * - MD: 2025/2026 brackets per Maryland statute text (10 brackets, 2%-6.5%, retroactively
  *   effective Jan 1, 2025 per the Budget Reconciliation and Financing Act of 2025) — high
- *   confidence, sourced from the actual statute. IMPORTANT GAP: this does NOT include Maryland's
- *   mandatory local/county "piggyback" income tax (roughly 2.25%-3.2% on top of the state rate,
- *   varies by county), which is a substantial chunk of a Maryland resident's real tax bill.
- *   State-only figures here will meaningfully understate total MD tax liability until county
- *   tax is added.
+ *   confidence, sourced from the actual statute. Mandatory local/county "piggyback" income tax
+ *   (2.25%-3.30%, varies by county) is modeled separately via `mdLocalTaxJurisdictions2026`
+ *   (see `mdLocalTax2026.ts`) — confirmed directly against the Comptroller/DLS official rate
+ *   table, no longer the third-party-sourced gap this comment used to describe.
  * - AK, NV, SD, TN, WY: no state personal income tax at all, by state constitution/statute —
  *   stable, not subject to change, same confidence as TX/FL.
  * - WA: no tax on wage/ordinary income (what this app calculates) — high confidence for gig

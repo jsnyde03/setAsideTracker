@@ -197,7 +197,7 @@ Gate on **automation/time-saved and scale**, not on **financial safety**. Never 
 ## 6. Compliance & Trust Considerations
 - Add a clear, persistent "estimates only, not tax advice" disclaimer
 - If you add bank/Plaid integration, you'll need to handle this with the same rigor as a fintech app (SOC 2 eventually, encryption at rest/in transit, data retention policy)
-- Tax rate configs must be reviewed/updated annually (have a process, not just code — IRS brackets/mileage rates change every year)
+- Tax rate configs must be reviewed/updated annually (have a process, not just code — IRS brackets/mileage rates change every year) — see [TAX_CONFIG_REVIEW.md](TAX_CONFIG_REVIEW.md) for the runbook
 - Consider an audit trail / "show your math" view for every tax estimate — builds trust and is good practice for a financial tool
 
 ---
