@@ -122,4 +122,43 @@ describe("estimateTax (2025)", () => {
     expect(result.childTaxCredit.refundableCredit).toBeGreaterThan(0);
     expect(result.totalEstimatedTax).toBeGreaterThanOrEqual(0);
   });
+
+  it("includes a w2WithholdingEstimate based on otherTaxableIncome, unaffected by SE income", () => {
+    const result = estimateTax(
+      {
+        filingStatus: "single",
+        netSelfEmploymentProfit: 50000,
+        businessMiles: 0,
+        otherTaxableIncome: 60000,
+        stateCode: "CA",
+      },
+      taxYear2025
+    );
+
+    expect(result.w2WithholdingEstimate.annualTotalEstimate).toBeGreaterThan(0);
+    // It's an isolated-income estimate — adding SE income on top must not change it, even though
+    // it changes the combined bracket calculation used for federalIncomeTax/stateTax above.
+    const withMoreSeIncome = estimateTax(
+      {
+        filingStatus: "single",
+        netSelfEmploymentProfit: 200000,
+        businessMiles: 0,
+        otherTaxableIncome: 60000,
+        stateCode: "CA",
+      },
+      taxYear2025
+    );
+    expect(withMoreSeIncome.w2WithholdingEstimate.annualTotalEstimate).toBeCloseTo(
+      result.w2WithholdingEstimate.annualTotalEstimate,
+      6
+    );
+  });
+
+  it("returns a zero w2WithholdingEstimate when there's no other taxable income", () => {
+    const result = estimateTax(
+      { filingStatus: "single", netSelfEmploymentProfit: 50000, businessMiles: 0, otherTaxableIncome: 0, stateCode: "TX" },
+      taxYear2025
+    );
+    expect(result.w2WithholdingEstimate.annualTotalEstimate).toBe(0);
+  });
 });
