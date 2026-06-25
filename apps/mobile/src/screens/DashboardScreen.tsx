@@ -49,7 +49,8 @@ export function DashboardScreen({
   onOpenSettings,
 }: DashboardScreenProps) {
   const taxEstimate = computeTaxEstimate(entries, taxProfile);
-  const { estimate, year, usedFallbackConfig } = taxEstimate;
+  const { estimate, year, usedFallbackConfig, w2WithholdingYtdEstimate, netAmountToSetAside } =
+    taxEstimate;
 
   // Headline numbers are scoped to the current tax year — entries from other years must never
   // bleed into "what should I set aside this year," even though the list below still shows
@@ -117,10 +118,15 @@ export function DashboardScreen({
                 <Ionicons name="shield-checkmark-outline" size={16} color="#F5C451" />
                 <Text style={styles.setAsideLabel}>Set aside for taxes</Text>
               </View>
-              <Text style={styles.setAsideValue}>{formatCurrency(estimate.totalEstimatedTax)}</Text>
+              <Text style={styles.setAsideValue}>{formatCurrency(netAmountToSetAside)}</Text>
               <Text style={styles.setAsideSubtext}>
-                ~{(estimate.effectiveSetAsideRate * 100).toFixed(1)}% of net earnings, tax year{" "}
-                {estimate.taxYear}
+                ~
+                {(
+                  (estimate.netProfitAfterMileage > 0
+                    ? netAmountToSetAside / estimate.netProfitAfterMileage
+                    : 0) * 100
+                ).toFixed(1)}
+                % of net earnings, tax year {estimate.taxYear}
               </Text>
 
               <View style={styles.breakdownRow}>
@@ -147,6 +153,14 @@ export function DashboardScreen({
                 <Text style={styles.breakdownLabel}>{taxProfile.state} state income tax</Text>
                 <Text style={styles.breakdownValue}>{formatCurrency(estimate.stateTax.stateLevelTax)}</Text>
               </View>
+              {w2WithholdingYtdEstimate > 0 && (
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>W2 withholding so far (est.)</Text>
+                  <Text style={[styles.breakdownValue, styles.creditValue]}>
+                    −{formatCurrency(w2WithholdingYtdEstimate)}
+                  </Text>
+                </View>
+              )}
               {estimate.stateTax.supported &&
                 estimate.stateTax.localTaxSupported &&
                 estimate.stateTax.county && (

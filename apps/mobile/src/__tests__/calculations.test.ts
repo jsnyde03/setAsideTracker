@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { estimateTax, currentTaxYear } from "@gig-tax-tracker/tax-engine";
 import {
   aggregateEntries,
+  annualIncomeFromPaycheck,
   computeTaxEstimate,
   entriesForYear,
   getCountiesForState,
+  w2WithholdingYearFraction,
   yearsWithEntries,
 } from "../calculations";
 import type { Entry, TaxProfile } from "../types";
@@ -110,6 +112,50 @@ describe("computeTaxEstimate", () => {
     expect(withW2.estimate.federalIncomeTax.taxableIncome).toBeGreaterThan(
       withoutW2.estimate.federalIncomeTax.taxableIncome
     );
+  });
+
+  it("credits estimated W2 withholding against the net amount to set aside", () => {
+    const entries = [makeEntry({ grossPay: 80000, tips: 0, mileage: 0 })];
+    const withW2 = computeTaxEstimate(entries, {
+      ...baseTaxProfile,
+      hasW2Job: true,
+      estimatedW2Income: 50000,
+    });
+
+    expect(withW2.w2WithholdingYtdEstimate).toBeGreaterThan(0);
+    expect(withW2.netAmountToSetAside).toBeLessThan(withW2.estimate.totalEstimatedTax);
+    expect(withW2.netAmountToSetAside).toBeCloseTo(
+      withW2.estimate.totalEstimatedTax - withW2.w2WithholdingYtdEstimate,
+      6
+    );
+  });
+
+  it("never produces a negative netAmountToSetAside even if withholding would exceed it", () => {
+    const entries = [makeEntry({ grossPay: 100, tips: 0, mileage: 0 })];
+    const result = computeTaxEstimate(entries, {
+      ...baseTaxProfile,
+      hasW2Job: true,
+      estimatedW2Income: 200000,
+    });
+    expect(result.netAmountToSetAside).toBeGreaterThanOrEqual(0);
+  });
+
+  it("leaves netAmountToSetAside equal to the gross total when there's no W2 job", () => {
+    const entries = [makeEntry({ grossPay: 50000, tips: 0, mileage: 0 })];
+    const result = computeTaxEstimate(entries, baseTaxProfile);
+    expect(result.w2WithholdingYtdEstimate).toBe(0);
+    expect(result.netAmountToSetAside).toBe(result.estimate.totalEstimatedTax);
+  });
+
+  it("zeroes out W2 income/withholding entirely when the job ended in a prior tax year", () => {
+    const entries = [makeEntry({ grossPay: 50000, tips: 0, mileage: 0 })];
+    const result = computeTaxEstimate(
+      entries,
+      { ...baseTaxProfile, hasW2Job: true, estimatedW2Income: 50000, w2EndDate: `${thisYear - 1}-06-15` },
+      thisYear
+    );
+    expect(result.w2WithholdingYtdEstimate).toBe(0);
+    expect(result.estimate.federalIncomeTax.taxableIncome).toBeLessThan(50000 + 50000);
   });
 
   it("returns zero estimate for no entries", () => {
@@ -232,6 +278,45 @@ describe("computeTaxEstimate", () => {
 
     expect(result.usedFallbackConfig).toBe(false);
     expect(result.estimate.taxYear).toBe(2025);
+  });
+});
+
+describe("annualIncomeFromPaycheck", () => {
+  it("converts each pay frequency to its annual equivalent", () => {
+    expect(annualIncomeFromPaycheck(1000, "weekly")).toBe(52000);
+    expect(annualIncomeFromPaycheck(2000, "biweekly")).toBe(52000);
+    expect(annualIncomeFromPaycheck(2166.67, "semimonthly")).toBeCloseTo(52000.08, 2);
+    expect(annualIncomeFromPaycheck(4333.33, "monthly")).toBeCloseTo(51999.96, 2);
+  });
+
+  it("returns 0 for a 0 paycheck amount", () => {
+    expect(annualIncomeFromPaycheck(0, "weekly")).toBe(0);
+  });
+});
+
+describe("w2WithholdingYearFraction", () => {
+  it("returns 0 before the year starts and 1 once the year (or end date) has fully passed", () => {
+    expect(w2WithholdingYearFraction(2026, undefined, new Date(2025, 11, 1))).toBe(0);
+    expect(w2WithholdingYearFraction(2026, undefined, new Date(2027, 0, 5))).toBe(1);
+  });
+
+  it("returns a fraction partway through the year with no end date", () => {
+    // July 2 is roughly the midpoint of a year.
+    const fraction = w2WithholdingYearFraction(2026, undefined, new Date(2026, 6, 2));
+    expect(fraction).toBeGreaterThan(0.45);
+    expect(fraction).toBeLessThan(0.55);
+  });
+
+  it("reaches 1 right after the job's end date, not at year-end, when an end date is set", () => {
+    const justAfterEnd = w2WithholdingYearFraction(2026, "2026-03-01", new Date(2026, 2, 2));
+    expect(justAfterEnd).toBe(1);
+    // And it stays at 1 for the rest of the year — once the job's done, it's done.
+    const muchLater = w2WithholdingYearFraction(2026, "2026-03-01", new Date(2026, 10, 1));
+    expect(muchLater).toBe(1);
+  });
+
+  it("returns 0 when the end date falls before the year even starts", () => {
+    expect(w2WithholdingYearFraction(2026, "2025-06-15", new Date(2026, 6, 1))).toBe(0);
   });
 });
 

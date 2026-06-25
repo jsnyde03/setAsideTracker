@@ -12,8 +12,8 @@ import {
   View,
 } from "react-native";
 import type { FilingStatus } from "@gig-tax-tracker/tax-engine";
-import type { TaxProfile } from "../types";
-import { getCountiesForState } from "../calculations";
+import type { PayFrequency, TaxProfile } from "../types";
+import { annualIncomeFromPaycheck, getCountiesForState } from "../calculations";
 import { Chip } from "../components/Chip";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
@@ -31,11 +31,34 @@ const FILING_STATUS_OPTIONS: { label: string; value: FilingStatus }[] = [
   { label: "Married Filing Jointly", value: "marriedFilingJointly" },
 ];
 
+const FREQUENCY_OPTIONS: { label: string; value: PayFrequency }[] = [
+  { label: "Weekly", value: "weekly" },
+  { label: "Biweekly", value: "biweekly" },
+  { label: "Semi-monthly", value: "semimonthly" },
+  { label: "Monthly", value: "monthly" },
+];
+
+function formatCurrency(amount: number): string {
+  return amount.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+}
+
+// Falls back to a best-guess reverse conversion for profiles saved before paycheck-based entry
+// existed (estimatedW2Income set directly, with no w2PaycheckAmount/w2PayFrequency on record).
+function defaultPaycheckAmount(taxProfile: TaxProfile): string {
+  if (taxProfile.w2PaycheckAmount !== undefined) return String(taxProfile.w2PaycheckAmount);
+  if (taxProfile.estimatedW2Income > 0) return String(Math.round(taxProfile.estimatedW2Income / 26));
+  return "";
+}
+
 export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxProfileScreenProps) {
   const [filingStatus, setFilingStatus] = useState<FilingStatus>(taxProfile.filingStatus);
   const [dependents, setDependents] = useState(String(taxProfile.dependents));
   const [hasW2Job, setHasW2Job] = useState(taxProfile.hasW2Job);
-  const [estimatedW2Income, setEstimatedW2Income] = useState(String(taxProfile.estimatedW2Income));
+  const [w2PaycheckAmount, setW2PaycheckAmount] = useState(defaultPaycheckAmount(taxProfile));
+  const [w2PayFrequency, setW2PayFrequency] = useState<PayFrequency>(
+    taxProfile.w2PayFrequency ?? "biweekly"
+  );
+  const [w2EndDate, setW2EndDate] = useState(taxProfile.w2EndDate ?? "");
   const [state, setState] = useState(taxProfile.state);
   const [county, setCounty] = useState<string | undefined>(taxProfile.county);
 
@@ -60,12 +83,21 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
       Alert.alert("County required", "Select the county you live in — it affects local tax.");
       return;
     }
+    if (hasW2Job && w2EndDate.trim().length > 0 && !/^\d{4}-\d{2}-\d{2}$/.test(w2EndDate.trim())) {
+      Alert.alert("Check end date", "Enter the W2 job's end date as YYYY-MM-DD, or leave it blank.");
+      return;
+    }
+
+    const paycheckAmountValue = Math.max(0, parseFloat(w2PaycheckAmount) || 0);
 
     onSave({
       filingStatus,
       dependents: Math.max(0, parseInt(dependents, 10) || 0),
       hasW2Job,
-      estimatedW2Income: hasW2Job ? Math.max(0, parseFloat(estimatedW2Income) || 0) : 0,
+      estimatedW2Income: hasW2Job ? annualIncomeFromPaycheck(paycheckAmountValue, w2PayFrequency) : 0,
+      w2PaycheckAmount: hasW2Job ? paycheckAmountValue : undefined,
+      w2PayFrequency: hasW2Job ? w2PayFrequency : undefined,
+      w2EndDate: hasW2Job && w2EndDate.trim().length > 0 ? w2EndDate.trim() : undefined,
       state: state.trim().toUpperCase(),
       county,
     });
@@ -154,13 +186,39 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
           </View>
 
           {hasW2Job && (
-            <TextField
-              label="Estimated annual W2 income"
-              placeholder="0"
-              value={estimatedW2Income}
-              onChangeText={setEstimatedW2Income}
-              keyboardType="decimal-pad"
-            />
+            <>
+              <TextField
+                label="Paycheck amount"
+                hint="How much you take home each paycheck — most people know this more easily than their annual gross."
+                placeholder="0"
+                value={w2PaycheckAmount}
+                onChangeText={setW2PaycheckAmount}
+                keyboardType="decimal-pad"
+              />
+              <Text style={styles.fieldLabel}>How often you're paid</Text>
+              <View style={styles.optionRow}>
+                {FREQUENCY_OPTIONS.map((option) => (
+                  <Chip
+                    key={option.value}
+                    label={option.label}
+                    selected={w2PayFrequency === option.value}
+                    onPress={() => setW2PayFrequency(option.value)}
+                  />
+                ))}
+              </View>
+              {Math.max(0, parseFloat(w2PaycheckAmount) || 0) > 0 && (
+                <Text style={styles.fieldHint}>
+                  ≈ {formatCurrency(annualIncomeFromPaycheck(parseFloat(w2PaycheckAmount) || 0, w2PayFrequency))}/year
+                </Text>
+              )}
+              <TextField
+                label="When does/did this job end? (optional)"
+                hint="Leave blank if it's ongoing through the end of the year."
+                placeholder="YYYY-MM-DD"
+                value={w2EndDate}
+                onChangeText={setW2EndDate}
+              />
+            </>
           )}
 
           <View style={styles.buttonWrap}>
