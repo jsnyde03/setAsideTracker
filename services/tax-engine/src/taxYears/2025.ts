@@ -45,6 +45,16 @@ export const taxYear2025: TaxYearConfig = {
     TX: { type: "none" },
     FL: { type: "none" },
     PA: { type: "flat", rate: 0.0307 },
+    // Equally stable/no-income-tax for 2025 as for 2026 — see stateTaxConfigs/2026.ts's doc
+    // comment for per-state notes (NH's repeal took effect Jan 1, 2025, so it applies for this
+    // year too; WA's capital-gains-only excise tax doesn't apply to wage/SE income).
+    AK: { type: "none" },
+    NV: { type: "none" },
+    SD: { type: "none" },
+    TN: { type: "none" },
+    WA: { type: "none" },
+    WY: { type: "none" },
+    NH: { type: "none" },
   },
   // Per the One Big Beautiful Bill Act (signed July 2025), the Child Tax Credit is permanently
   // $2,200/child starting this tax year (no longer reverting to the pre-TCJA $1,000 figure).

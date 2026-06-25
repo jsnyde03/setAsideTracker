@@ -27,10 +27,26 @@ import { mdLocalTaxJurisdictions2026 } from "./mdLocalTax2026";
  *   varies by county), which is a substantial chunk of a Maryland resident's real tax bill.
  *   State-only figures here will meaningfully understate total MD tax liability until county
  *   tax is added.
+ * - AK, NV, SD, TN, WY: no state personal income tax at all, by state constitution/statute —
+ *   stable, not subject to change, same confidence as TX/FL.
+ * - WA: no tax on wage/ordinary income (what this app calculates) — high confidence for gig
+ *   income specifically. Note WA does have a 7% excise tax on *capital gains* above ~$270k/year
+ *   (indexed annually), unrelated to wages/SE income and not modeled here since it's out of
+ *   scope for what this app tracks.
+ * - NH: fully repealed its 5% tax on interest/dividends (its only income tax of any kind)
+ *   effective Jan 1, 2025 — wage/SE income was never taxed by NH even before that. No state
+ *   income tax of any kind applies for 2025/2026.
  */
 export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
   TX: { type: "none" },
   FL: { type: "none" },
+  AK: { type: "none" },
+  NV: { type: "none" },
+  SD: { type: "none" },
+  TN: { type: "none" },
+  WA: { type: "none" },
+  WY: { type: "none" },
+  NH: { type: "none" },
 
   PA: {
     type: "flat",

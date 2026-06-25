@@ -117,9 +117,17 @@ describe("calculateStateTax (2026)", () => {
   });
 
   it("flags unsupported states instead of silently returning zero as if verified", () => {
-    const result = calculateStateTax(50000, 3000, 0, "single", "WA", taxYear2026);
+    const result = calculateStateTax(50000, 3000, 0, "single", "OH", taxYear2026);
     expect(result.supported).toBe(false);
     expect(result.stateTax).toBe(0);
+  });
+
+  it("returns zero state tax for the rest of the no-income-tax states (AK, NV, SD, TN, WA, WY, NH)", () => {
+    for (const stateCode of ["AK", "NV", "SD", "TN", "WA", "WY", "NH"]) {
+      const result = calculateStateTax(50000, 3000, 0, "single", stateCode, taxYear2026);
+      expect(result.supported).toBe(true);
+      expect(result.stateTax).toBe(0);
+    }
   });
 });
 

@@ -178,7 +178,7 @@ describe("computeTaxEstimate", () => {
 
   it("flags unsupported states rather than silently treating them as zero-tax", () => {
     const entries = [makeEntry({ grossPay: 60000, tips: 0, mileage: 0 })];
-    const result = computeTaxEstimate(entries, { ...baseTaxProfile, state: "WA" });
+    const result = computeTaxEstimate(entries, { ...baseTaxProfile, state: "OH" });
 
     expect(result.estimate.stateTax.supported).toBe(false);
   });
