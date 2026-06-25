@@ -27,6 +27,29 @@ describe("calculateStateTax (2026)", () => {
     expect(result.stateTax).toBeCloseTo(47000 * 0.0307, 2);
   });
 
+  it("applies the correct flat rate for each of the newly added flat-rate states", () => {
+    const expectedRates: Record<string, number> = {
+      AZ: 0.025,
+      IL: 0.0495,
+      MI: 0.0425,
+      CO: 0.044,
+      GA: 0.0519,
+      IN: 0.03,
+      KY: 0.04,
+      NC: 0.0425,
+      UT: 0.0455,
+    };
+
+    for (const [stateCode, rate] of Object.entries(expectedRates)) {
+      const result = calculateStateTax(50000, 3000, 0, "single", stateCode, taxYear2026);
+      expect(result.supported).toBe(true);
+      // No standard deduction modeled for any of these yet — see the doc comment in
+      // stateTaxConfigs/2026.ts on why that's a deliberate, disclosed simplification.
+      expect(result.taxableIncome).toBeCloseTo(47000, 2);
+      expect(result.stateTax).toBeCloseTo(47000 * rate, 2);
+    }
+  });
+
   it("applies CA's progressive brackets and standard deduction for a single filer", () => {
     const result = calculateStateTax(60000, 3500, 0, "single", "CA", taxYear2026);
     const expectedTaxableIncome = 60000 - 3500 - 5706; // = 50,794

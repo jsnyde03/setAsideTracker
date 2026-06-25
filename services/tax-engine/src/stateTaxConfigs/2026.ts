@@ -36,6 +36,47 @@ import { mdLocalTaxJurisdictions2026 } from "./mdLocalTax2026";
  * - NH: fully repealed its 5% tax on interest/dividends (its only income tax of any kind)
  *   effective Jan 1, 2025 — wage/SE income was never taxed by NH even before that. No state
  *   income tax of any kind applies for 2025/2026.
+ *
+ * Flat-rate states added for 2026 — confidence is mixed, several of these states are on active
+ * multi-year rate-reduction schedules (sometimes contingent on revenue triggers), unlike PA's
+ * rate which hasn't moved since 2004. NOT backfilled into the 2025 config below, since these
+ * rates differ by year and verifying each state's actual 2025 figure separately was out of
+ * scope for this pass — they'll report unsupported for 2025 until someone backfills that year.
+ * - AZ: flat 2.5%, unchanged since 2023 — high confidence, no scheduled further change.
+ * - IL: flat 4.95% — high confidence, stable for years with no scheduled change.
+ * - MI: flat 4.25% — high confidence. (A one-time trigger-based cut to 4.05% applied only to
+ *   tax year 2023 per a state Supreme Court ruling; reverted to 4.25% for 2024 onward.)
+ * - CO: flat 4.40% — LOWER CONFIDENCE. Colorado's rate moves via TABOR-surplus-triggered
+ *   temporary reductions from a 4.55% base rate almost every year recently, and whether a given
+ *   year gets a reduction (and to what rate) depends on actual state revenue that year. Verify
+ *   against the Colorado Department of Revenue before relying on this for 2026 specifically.
+ * - GA: flat 5.19% — LOWER CONFIDENCE. Georgia is on an active multi-year glide-down path
+ *   (legislatively accelerated more than once already) toward 4.99%; the exact 2026 step depends
+ *   on the latest legislative session. Verify against Georgia DOR before relying on this.
+ * - IN: flat 3.00% — LOWER CONFIDENCE. Indiana has a legislated multi-year phase-down (3.05% in
+ *   2024, 3.00% in 2025, continuing lower in steps); carried forward the 2025 rate since the
+ *   exact 2026 step wasn't independently confirmed. Verify against Indiana DOR.
+ * - KY: flat 4.00% — LOWER CONFIDENCE. Kentucky also reduces its flat rate periodically via
+ *   legislative action (4.5% in 2023, 4.0% in 2024); a further cut to 3.5% may already apply for
+ *   2026 but wasn't independently confirmed here — carried forward the last clearly-confirmed
+ *   rate rather than guess the newer one. Verify against Kentucky DOR.
+ * - NC: flat 4.25% — LOWER CONFIDENCE. North Carolina has a legislated schedule that would drop
+ *   this to 3.99% for 2026, but that further cut has reportedly been contingent on state revenue
+ *   triggers that may not have been met — carried forward the confirmed 4.25% (2025) rate rather
+ *   than assume the cut took effect, since overestimating the "set aside" number is the safer
+ *   direction of error for this app than underestimating it. Verify against NC DOR.
+ * - UT: flat 4.55% — LOWER CONFIDENCE. Utah has cut its flat rate in multiple recent sessions
+ *   (4.65% in 2023, 4.55% in 2024); whether a further cut applies for 2025/2026 wasn't
+ *   independently confirmed here. Verify against the Utah State Tax Commission.
+ *
+ * DELIBERATE SIMPLIFICATION across all 9 new flat-rate states: none of them have a
+ * standardDeduction configured here (matching PA's "no deduction" shape), even though several
+ * actually have their own standard deduction or personal-exemption mechanism that's meaningfully
+ * different from PA's true zero (e.g. IL/MI/IN use per-person exemptions, GA/KY/NC have their own
+ * standard deduction figures) — those weren't independently sourced for this pass. The effect is
+ * that state tax is OVERSTATED for those states until someone adds the real figures, which is the
+ * safer direction of error for a "how much should I set aside" app, but it is a real gap, not a
+ * deliberate match to those states' actual law. Affects AZ, IL, MI, CO, GA, IN, KY, NC, UT.
  */
 export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
   TX: { type: "none" },
@@ -53,6 +94,15 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
     rate: 0.0307,
     // PA's personal income tax has no standard deduction or personal exemption.
   },
+  AZ: { type: "flat", rate: 0.025 },
+  IL: { type: "flat", rate: 0.0495 },
+  MI: { type: "flat", rate: 0.0425 },
+  CO: { type: "flat", rate: 0.044 },
+  GA: { type: "flat", rate: 0.0519 },
+  IN: { type: "flat", rate: 0.03 },
+  KY: { type: "flat", rate: 0.04 },
+  NC: { type: "flat", rate: 0.0425 },
+  UT: { type: "flat", rate: 0.0455 },
 
   CA: {
     type: "bracket",
