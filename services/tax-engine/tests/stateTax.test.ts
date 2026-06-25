@@ -27,17 +27,16 @@ describe("calculateStateTax (2026)", () => {
     expect(result.stateTax).toBeCloseTo(47000 * 0.0307, 2);
   });
 
-  it("applies the correct flat rate for each of the newly added flat-rate states", () => {
+  it("applies the correct flat rate for each flat-rate state with no standard deduction modeled", () => {
     const expectedRates: Record<string, number> = {
       AZ: 0.025,
       IL: 0.0495,
       MI: 0.0425,
       CO: 0.044,
       GA: 0.0519,
-      IN: 0.03,
-      KY: 0.04,
-      NC: 0.0425,
-      UT: 0.0455,
+      IN: 0.0295,
+      KY: 0.035,
+      UT: 0.045,
     };
 
     for (const [stateCode, rate] of Object.entries(expectedRates)) {
@@ -48,6 +47,64 @@ describe("calculateStateTax (2026)", () => {
       expect(result.taxableIncome).toBeCloseTo(47000, 2);
       expect(result.stateTax).toBeCloseTo(47000 * rate, 2);
     }
+  });
+
+  it("applies NC's flat 3.99% rate with its standard deduction", () => {
+    const result = calculateStateTax(50000, 3000, 0, "single", "NC", taxYear2026);
+    const expectedTaxableIncome = 50000 - 3000 - 12750;
+    expect(result.taxableIncome).toBeCloseTo(expectedTaxableIncome, 2);
+    expect(result.stateTax).toBeCloseTo(expectedTaxableIncome * 0.0399, 2);
+  });
+
+  it("applies the threshold-as-deduction flat states (ID, IA, MS, OH, LA) correctly", () => {
+    const cases: { stateCode: string; rate: number; deduction: number }[] = [
+      { stateCode: "ID", rate: 0.053, deduction: 4811 + 16100 },
+      { stateCode: "IA", rate: 0.038, deduction: 16100 },
+      { stateCode: "MS", rate: 0.04, deduction: 10000 + 2300 },
+      { stateCode: "OH", rate: 0.0275, deduction: 26050 + 2400 },
+      { stateCode: "LA", rate: 0.03, deduction: 14600 },
+    ];
+
+    for (const { stateCode, rate, deduction } of cases) {
+      const result = calculateStateTax(80000, 3000, 0, "single", stateCode, taxYear2026);
+      const expectedTaxableIncome = Math.max(0, 80000 - 3000 - deduction);
+      expect(result.supported).toBe(true);
+      expect(result.taxableIncome).toBeCloseTo(expectedTaxableIncome, 2);
+      expect(result.stateTax).toBeCloseTo(expectedTaxableIncome * rate, 2);
+    }
+  });
+
+  it("applies progressive brackets correctly for a representative sample of the newly added states", () => {
+    // Alabama: simple 3-bracket structure, easy to hand-verify.
+    const al = calculateStateTax(50000, 3000, 0, "single", "AL", taxYear2026);
+    const alTaxableIncome = 50000 - 3000 - 4500; // 3000 std deduction + 1500 personal exemption
+    const alExpectedTax = 500 * 0.02 + (3000 - 500) * 0.04 + (alTaxableIncome - 3000) * 0.05;
+    expect(al.taxableIncome).toBeCloseTo(alTaxableIncome, 2);
+    expect(al.stateTax).toBeCloseTo(alExpectedTax, 2);
+
+    // Massachusetts: flat 5% below the millionaire's-tax threshold.
+    const ma = calculateStateTax(80000, 3000, 0, "single", "MA", taxYear2026);
+    const maTaxableIncome = 80000 - 3000 - 4400;
+    expect(ma.stateTax).toBeCloseTo(maTaxableIncome * 0.05, 2);
+
+    // Massachusetts: confirm the 9% surtax bracket actually kicks in above $1,083,150.
+    const maHighEarner = calculateStateTax(1200000, 3000, 0, "single", "MA", taxYear2026);
+    const maHighTaxableIncome = 1200000 - 3000 - 4400;
+    const maHighExpectedTax =
+      1083150 * 0.05 + (maHighTaxableIncome - 1083150) * 0.09;
+    expect(maHighEarner.stateTax).toBeCloseTo(maHighExpectedTax, 2);
+
+    // Delaware: confirm a small income is fully absorbed by the standard deduction (2500 - 3250
+    // would be negative, so taxableIncome floors at 0 rather than going negative).
+    const de = calculateStateTax(2500, 0, 0, "single", "DE", taxYear2026);
+    expect(de.taxableIncome).toBe(0);
+    expect(de.stateTax).toBe(0);
+  });
+
+  it("treats DC as supported now that all 50 states + DC are covered", () => {
+    const result = calculateStateTax(60000, 3000, 0, "single", "DC", taxYear2026);
+    expect(result.supported).toBe(true);
+    expect(result.stateTax).toBeGreaterThan(0);
   });
 
   it("applies CA's progressive brackets and standard deduction for a single filer", () => {
@@ -139,8 +196,11 @@ describe("calculateStateTax (2026)", () => {
     });
   });
 
-  it("flags unsupported states instead of silently returning zero as if verified", () => {
-    const result = calculateStateTax(50000, 3000, 0, "single", "OH", taxYear2026);
+  it("flags unsupported jurisdictions instead of silently returning zero as if verified", () => {
+    // All 50 states + DC are covered as of this revision, so there's no real state left to use
+    // as an "unsupported" example — use a clearly invalid code (e.g. a US territory not modeled,
+    // or a typo) to confirm the fallback path still works correctly.
+    const result = calculateStateTax(50000, 3000, 0, "single", "PR", taxYear2026);
     expect(result.supported).toBe(false);
     expect(result.stateTax).toBe(0);
   });

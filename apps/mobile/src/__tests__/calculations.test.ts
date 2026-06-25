@@ -176,9 +176,10 @@ describe("computeTaxEstimate", () => {
     expect(ca.estimate.totalEstimatedTax).toBeGreaterThan(fl.estimate.totalEstimatedTax);
   });
 
-  it("flags unsupported states rather than silently treating them as zero-tax", () => {
+  it("flags unsupported jurisdictions rather than silently treating them as zero-tax", () => {
+    // All 50 states + DC are covered now — use a real US territory that genuinely isn't modeled.
     const entries = [makeEntry({ grossPay: 60000, tips: 0, mileage: 0 })];
-    const result = computeTaxEstimate(entries, { ...baseTaxProfile, state: "OH" });
+    const result = computeTaxEstimate(entries, { ...baseTaxProfile, state: "PR" });
 
     expect(result.estimate.stateTax.supported).toBe(false);
   });
@@ -362,7 +363,8 @@ describe("getCountiesForState", () => {
     expect(getCountiesForState("TX")).toBeUndefined();
   });
 
-  it("returns undefined for unsupported states", () => {
-    expect(getCountiesForState("WA")).toBeUndefined();
+  it("returns undefined for unsupported jurisdictions", () => {
+    // All 50 states + DC are covered now — use a real US territory that genuinely isn't modeled.
+    expect(getCountiesForState("PR")).toBeUndefined();
   });
 });

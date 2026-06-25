@@ -2,10 +2,8 @@ import type { StateTaxConfig } from "../types";
 import { mdLocalTaxJurisdictions2026 } from "./mdLocalTax2026";
 
 /**
- * 2026 state tax configs for the initial v0.3 rollout — chosen to cover the three structural
- * types a state tax system can take: no income tax (TX, FL), a single flat rate (PA), and
- * progressive brackets (CA, NY). Add more states by adding entries to this map; no engine
- * code changes needed.
+ * 2026 state tax configs. All 50 states + DC are covered as of this revision. Add more states
+ * by adding entries to this map; no engine code changes needed.
  *
  * Confidence varies by state and should be reviewed before relying on for real filings (see
  * ROADMAP §6 annual review process):
@@ -37,7 +35,7 @@ import { mdLocalTaxJurisdictions2026 } from "./mdLocalTax2026";
  *   effective Jan 1, 2025 — wage/SE income was never taxed by NH even before that. No state
  *   income tax of any kind applies for 2025/2026.
  *
- * Flat-rate states added for 2026 — confidence is mixed, several of these states are on active
+ * Flat-rate states (first batch) — confidence is mixed, several of these states are on active
  * multi-year rate-reduction schedules (sometimes contingent on revenue triggers), unlike PA's
  * rate which hasn't moved since 2004. NOT backfilled into the 2025 config below, since these
  * rates differ by year and verifying each state's actual 2025 figure separately was out of
@@ -46,39 +44,61 @@ import { mdLocalTaxJurisdictions2026 } from "./mdLocalTax2026";
  * - IL: flat 4.95% — high confidence, stable for years with no scheduled change.
  * - MI: flat 4.25% — high confidence. (A one-time trigger-based cut to 4.05% applied only to
  *   tax year 2023 per a state Supreme Court ruling; reverted to 4.25% for 2024 onward.)
- * - CO: flat 4.40% — LOWER CONFIDENCE. Colorado's rate moves via TABOR-surplus-triggered
- *   temporary reductions from a 4.55% base rate almost every year recently, and whether a given
- *   year gets a reduction (and to what rate) depends on actual state revenue that year. Verify
- *   against the Colorado Department of Revenue before relying on this for 2026 specifically.
- * - GA: flat 5.19% — LOWER CONFIDENCE. Georgia is on an active multi-year glide-down path
- *   (legislatively accelerated more than once already) toward 4.99%; the exact 2026 step depends
- *   on the latest legislative session. Verify against Georgia DOR before relying on this.
- * - IN: flat 3.00% — LOWER CONFIDENCE. Indiana has a legislated multi-year phase-down (3.05% in
- *   2024, 3.00% in 2025, continuing lower in steps); carried forward the 2025 rate since the
- *   exact 2026 step wasn't independently confirmed. Verify against Indiana DOR.
- * - KY: flat 4.00% — LOWER CONFIDENCE. Kentucky also reduces its flat rate periodically via
- *   legislative action (4.5% in 2023, 4.0% in 2024); a further cut to 3.5% may already apply for
- *   2026 but wasn't independently confirmed here — carried forward the last clearly-confirmed
- *   rate rather than guess the newer one. Verify against Kentucky DOR.
- * - NC: flat 4.25% — LOWER CONFIDENCE. North Carolina has a legislated schedule that would drop
- *   this to 3.99% for 2026, but that further cut has reportedly been contingent on state revenue
- *   triggers that may not have been met — carried forward the confirmed 4.25% (2025) rate rather
- *   than assume the cut took effect, since overestimating the "set aside" number is the safer
- *   direction of error for this app than underestimating it. Verify against NC DOR.
- * - UT: flat 4.55% — LOWER CONFIDENCE. Utah has cut its flat rate in multiple recent sessions
- *   (4.65% in 2023, 4.55% in 2024); whether a further cut applies for 2025/2026 wasn't
- *   independently confirmed here. Verify against the Utah State Tax Commission.
+ * - CO: flat 4.40% — confirmed against the Colorado Dept. of Revenue/Tax Foundation for 2026
+ *   (the rate returned to 4.40% for 2025 after a one-year TABOR-triggered dip to 4.25% in 2024,
+ *   and held at 4.40% for 2026 — no further TABOR trigger was hit). High confidence.
+ * - GA: flat 5.19% — confirmed against Tax Foundation's Feb 2026 report. High confidence.
+ * - IN: flat 2.95% (CORRECTED — previously had 3.00% here, Indiana's actual legislated 2026 step
+ *   down the multi-year phase-down schedule). Confirmed against Tax Foundation Feb 2026.
+ * - KY: flat 3.50% (CORRECTED — previously had 4.00%; Kentucky's tax-trigger-based cut to 3.5%
+ *   took effect Jan 1, 2026 per HB 1, confirmed via the 2025 legislative session). Confirmed
+ *   against Tax Foundation Feb 2026.
+ * - NC: flat 3.99% (CORRECTED — previously had 4.25%; North Carolina's scheduled cut to 3.99%
+ *   DID take effect for 2026, confirmed via NCDOR/Kiplinger reporting as of mid-2026, despite
+ *   political contention over whether the *next* scheduled cut to 3.49% for 2027 will be frozen).
+ *   Now includes the standard deduction ($12,750 single / $25,500 MFJ), also confirmed.
+ * - UT: flat 4.50% (CORRECTED — previously had 4.55%). Confirmed against Tax Foundation Feb 2026.
  *
- * DELIBERATE SIMPLIFICATION across all 9 new flat-rate states: none of them have a
- * standardDeduction configured here (matching PA's "no deduction" shape), even though several
- * actually have their own standard deduction or personal-exemption mechanism that's meaningfully
- * different from PA's true zero (e.g. IL/MI/IN use per-person exemptions, GA/KY/NC have their own
- * standard deduction figures) — those weren't independently sourced for this pass. The effect is
- * that state tax is OVERSTATED for those states until someone adds the real figures, which is the
- * safer direction of error for a "how much should I set aside" app, but it is a real gap, not a
- * deliberate match to those states' actual law. Affects AZ, IL, MI, CO, GA, IN, KY, NC, UT.
+ * Newly-converted-to-flat states, added in this pass — previously had no entry at all (they'd
+ * have been miscategorized as "progressive bracket" states if added without checking, since
+ * several converted to flat taxes only recently as part of a broader nationwide trend):
+ * - ID: flat 5.3% on income over $4,811 (single) / $9,622 (MFJ) — modeled as a flat rate with
+ *   that threshold folded into standardDeduction, since "0% below X, flat rate above X" is
+ *   mathematically identical to "flat rate with a standard deduction of X" when nothing else
+ *   stacks on top. Plus Idaho's own separate standard deduction ($16,100/$32,200, conforms to
+ *   the federal amount) — both folded together below.
+ * - IA: flat 3.8%, completed its multi-year phase-down to a single rate starting tax year 2025.
+ *   Standard deduction $16,100/$32,200 (conforms to federal amount).
+ * - MS: flat 4% on income over $10,000 — same "threshold-as-deduction" modeling as Idaho, plus
+ *   Mississippi's own standard deduction ($2,300/$4,600), both folded together below.
+ * - OH: flat 2.75% on income over $26,050 — Ohio transitioned to a flat rate for 2026 (previously
+ *   had progressive brackets), modeled the same threshold-as-deduction way as Idaho/Mississippi.
+ * - LA: flat 3%, completed its move away from graduated brackets starting tax year 2025. Standard
+ *   deduction $14,600/$29,200.
+ * All five confirmed against Tax Foundation's Feb 2026 report / each state's DOR — high confidence
+ * for the headline rate; see the per-dependent/credit caveat below for what's NOT modeled.
+ *
+ * Progressive-bracket states added in this pass — all sourced from the Tax Foundation's "2026
+ * State Individual Income Tax Rates and Brackets" report (published Feb 11, 2026), the same
+ * style of authoritative source already used for CA/NY/MD above. High confidence on rates/
+ * bracket thresholds for all of: AL, AR, CT, DE, HI, KS, ME, MA, MN, MO, MT, NE, NJ, NM, ND, OK,
+ * OR, RI, SC, VT, VA, WV, WI, and DC.
+ *
+ * DELIBERATE SIMPLIFICATION, disclosed once here rather than repeated per state: this app's
+ * StateTaxConfig only supports a single standardDeduction figure per filing status — it has no
+ * mechanism for per-dependent deductions/credits or flat tax *credits* (a credit reduces tax
+ * owed directly, completely different math from a deduction that reduces taxable income, and
+ * is a separate engine feature this doesn't have yet). Where a state's only "personal exemption"
+ * is structured as a tax *credit* (e.g. small fixed-dollar credits in AR, DE, NE, OR, GA, MN,
+ * SC, plus per-dependent deductions in NM), that amount is NOT modeled and is simply omitted —
+ * those states' tax will be very slightly overstated, which is the safer direction of error here.
+ * Where a state's personal exemption is itself deduction-style (reduces taxable income, not tax
+ * owed directly) — AL, CT, HI, KS, ME, MA, NJ, OK, RI, VT, VA, WI, WV — it IS folded into that
+ * state's standardDeduction figure below, since that's mathematically equivalent and a real
+ * accuracy improvement over omitting it.
  */
 export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
+  // ----- No income tax -----
   TX: { type: "none" },
   FL: { type: "none" },
   AK: { type: "none" },
@@ -89,6 +109,7 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
   WY: { type: "none" },
   NH: { type: "none" },
 
+  // ----- Flat rate -----
   PA: {
     type: "flat",
     rate: 0.0307,
@@ -99,11 +120,41 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
   MI: { type: "flat", rate: 0.0425 },
   CO: { type: "flat", rate: 0.044 },
   GA: { type: "flat", rate: 0.0519 },
-  IN: { type: "flat", rate: 0.03 },
-  KY: { type: "flat", rate: 0.04 },
-  NC: { type: "flat", rate: 0.0425 },
-  UT: { type: "flat", rate: 0.0455 },
+  IN: { type: "flat", rate: 0.0295 },
+  KY: { type: "flat", rate: 0.035 },
+  NC: {
+    type: "flat",
+    rate: 0.0399,
+    standardDeduction: { single: 12750, marriedFilingJointly: 25500 },
+  },
+  UT: { type: "flat", rate: 0.045 },
+  ID: {
+    type: "flat",
+    rate: 0.053,
+    standardDeduction: { single: 4811 + 16100, marriedFilingJointly: 9622 + 32200 },
+  },
+  IA: {
+    type: "flat",
+    rate: 0.038,
+    standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+  },
+  MS: {
+    type: "flat",
+    rate: 0.04,
+    standardDeduction: { single: 10000 + 2300, marriedFilingJointly: 10000 + 4600 },
+  },
+  OH: {
+    type: "flat",
+    rate: 0.0275,
+    standardDeduction: { single: 26050 + 2400, marriedFilingJointly: 26050 + 4800 },
+  },
+  LA: {
+    type: "flat",
+    rate: 0.03,
+    standardDeduction: { single: 14600, marriedFilingJointly: 29200 },
+  },
 
+  // ----- Progressive brackets -----
   CA: {
     type: "bracket",
     standardDeduction: {
@@ -203,5 +254,493 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
       ],
     },
     localTaxJurisdictions: mdLocalTaxJurisdictions2026,
+  },
+
+  AL: {
+    type: "bracket",
+    standardDeduction: { single: 3000 + 1500, marriedFilingJointly: 8500 + 3000 },
+    brackets: {
+      single: [
+        { min: 0, max: 500, rate: 0.02 },
+        { min: 500, max: 3000, rate: 0.04 },
+        { min: 3000, max: null, rate: 0.05 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 1000, rate: 0.02 },
+        { min: 1000, max: 6000, rate: 0.04 },
+        { min: 6000, max: null, rate: 0.05 },
+      ],
+    },
+  },
+
+  AR: {
+    type: "bracket",
+    standardDeduction: { single: 2470, marriedFilingJointly: 4940 },
+    brackets: {
+      single: [
+        { min: 0, max: 4600, rate: 0.02 },
+        { min: 4600, max: null, rate: 0.039 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 4600, rate: 0.02 },
+        { min: 4600, max: null, rate: 0.039 },
+      ],
+    },
+  },
+
+  CT: {
+    type: "bracket",
+    // CT has no separately-listed "standard deduction" — its personal exemption figure
+    // ($15,000/$24,000) functions as the equivalent base reduction to taxable income.
+    standardDeduction: { single: 15000, marriedFilingJointly: 24000 },
+    brackets: {
+      single: [
+        { min: 0, max: 10000, rate: 0.02 },
+        { min: 10000, max: 50000, rate: 0.045 },
+        { min: 50000, max: 100000, rate: 0.055 },
+        { min: 100000, max: 200000, rate: 0.06 },
+        { min: 200000, max: 250000, rate: 0.065 },
+        { min: 250000, max: 500000, rate: 0.069 },
+        { min: 500000, max: null, rate: 0.0699 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 20000, rate: 0.02 },
+        { min: 20000, max: 100000, rate: 0.045 },
+        { min: 100000, max: 200000, rate: 0.055 },
+        { min: 200000, max: 400000, rate: 0.06 },
+        { min: 400000, max: 500000, rate: 0.065 },
+        { min: 500000, max: 1000000, rate: 0.069 },
+        { min: 1000000, max: null, rate: 0.0699 },
+      ],
+    },
+  },
+
+  DE: {
+    type: "bracket",
+    standardDeduction: { single: 3250, marriedFilingJointly: 6500 },
+    brackets: {
+      single: [
+        { min: 0, max: 2000, rate: 0 },
+        { min: 2000, max: 5000, rate: 0.022 },
+        { min: 5000, max: 10000, rate: 0.039 },
+        { min: 10000, max: 20000, rate: 0.048 },
+        { min: 20000, max: 25000, rate: 0.052 },
+        { min: 25000, max: 60000, rate: 0.0555 },
+        { min: 60000, max: null, rate: 0.066 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 2000, rate: 0 },
+        { min: 2000, max: 5000, rate: 0.022 },
+        { min: 5000, max: 10000, rate: 0.039 },
+        { min: 10000, max: 20000, rate: 0.048 },
+        { min: 20000, max: 25000, rate: 0.052 },
+        { min: 25000, max: 60000, rate: 0.0555 },
+        { min: 60000, max: null, rate: 0.066 },
+      ],
+    },
+  },
+
+  HI: {
+    type: "bracket",
+    standardDeduction: { single: 4400 + 1144, marriedFilingJointly: 8800 + 2288 },
+    brackets: {
+      single: [
+        { min: 0, max: 9600, rate: 0.014 },
+        { min: 9600, max: 14400, rate: 0.032 },
+        { min: 14400, max: 19200, rate: 0.055 },
+        { min: 19200, max: 24000, rate: 0.064 },
+        { min: 24000, max: 36000, rate: 0.068 },
+        { min: 36000, max: 48000, rate: 0.072 },
+        { min: 48000, max: 125000, rate: 0.076 },
+        { min: 125000, max: 175000, rate: 0.079 },
+        { min: 175000, max: 225000, rate: 0.0825 },
+        { min: 225000, max: 275000, rate: 0.09 },
+        { min: 275000, max: 325000, rate: 0.1 },
+        { min: 325000, max: null, rate: 0.11 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 19200, rate: 0.014 },
+        { min: 19200, max: 28800, rate: 0.032 },
+        { min: 28800, max: 38400, rate: 0.055 },
+        { min: 38400, max: 48000, rate: 0.064 },
+        { min: 48000, max: 72000, rate: 0.068 },
+        { min: 72000, max: 96000, rate: 0.072 },
+        { min: 96000, max: 250000, rate: 0.076 },
+        { min: 250000, max: 350000, rate: 0.079 },
+        { min: 350000, max: 450000, rate: 0.0825 },
+        { min: 450000, max: 550000, rate: 0.09 },
+        { min: 550000, max: 650000, rate: 0.1 },
+        { min: 650000, max: null, rate: 0.11 },
+      ],
+    },
+  },
+
+  KS: {
+    type: "bracket",
+    standardDeduction: { single: 3605 + 9160, marriedFilingJointly: 8240 + 18320 },
+    brackets: {
+      single: [
+        { min: 0, max: 23000, rate: 0.052 },
+        { min: 23000, max: null, rate: 0.0558 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 46000, rate: 0.052 },
+        { min: 46000, max: null, rate: 0.0558 },
+      ],
+    },
+  },
+
+  ME: {
+    type: "bracket",
+    standardDeduction: { single: 8350 + 5300, marriedFilingJointly: 16700 + 10600 },
+    brackets: {
+      single: [
+        { min: 0, max: 27399, rate: 0.058 },
+        { min: 27399, max: 64849, rate: 0.0675 },
+        { min: 64849, max: null, rate: 0.0715 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 54849, rate: 0.058 },
+        { min: 54849, max: 129749, rate: 0.0675 },
+        { min: 129749, max: null, rate: 0.0715 },
+      ],
+    },
+  },
+
+  MA: {
+    type: "bracket",
+    // Massachusetts: flat 5% plus a 4% surtax (so 9% total) on income above $1,083,150 — modeled
+    // as a 2-bracket structure rather than a true flat rate for that reason.
+    standardDeduction: { single: 4400, marriedFilingJointly: 8800 },
+    brackets: {
+      single: [
+        { min: 0, max: 1083150, rate: 0.05 },
+        { min: 1083150, max: null, rate: 0.09 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 1083150, rate: 0.05 },
+        { min: 1083150, max: null, rate: 0.09 },
+      ],
+    },
+  },
+
+  MN: {
+    type: "bracket",
+    standardDeduction: { single: 15300, marriedFilingJointly: 30600 },
+    brackets: {
+      single: [
+        { min: 0, max: 33310, rate: 0.0535 },
+        { min: 33310, max: 109430, rate: 0.068 },
+        { min: 109430, max: 203150, rate: 0.0785 },
+        { min: 203150, max: null, rate: 0.0985 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 48700, rate: 0.0535 },
+        { min: 48700, max: 193480, rate: 0.068 },
+        { min: 193480, max: 337930, rate: 0.0785 },
+        { min: 337930, max: null, rate: 0.0985 },
+      ],
+    },
+  },
+
+  MO: {
+    type: "bracket",
+    standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+    brackets: {
+      single: [
+        { min: 0, max: 1348, rate: 0 },
+        { min: 1348, max: 2696, rate: 0.02 },
+        { min: 2696, max: 4044, rate: 0.025 },
+        { min: 4044, max: 5392, rate: 0.03 },
+        { min: 5392, max: 6740, rate: 0.035 },
+        { min: 6740, max: 8088, rate: 0.04 },
+        { min: 8088, max: 9436, rate: 0.045 },
+        { min: 9436, max: null, rate: 0.047 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 1348, rate: 0 },
+        { min: 1348, max: 2696, rate: 0.02 },
+        { min: 2696, max: 4044, rate: 0.025 },
+        { min: 4044, max: 5392, rate: 0.03 },
+        { min: 5392, max: 6740, rate: 0.035 },
+        { min: 6740, max: 8088, rate: 0.04 },
+        { min: 8088, max: 9436, rate: 0.045 },
+        { min: 9436, max: null, rate: 0.047 },
+      ],
+    },
+  },
+
+  MT: {
+    type: "bracket",
+    standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+    brackets: {
+      single: [
+        { min: 0, max: 47500, rate: 0.047 },
+        { min: 47500, max: null, rate: 0.0565 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 95000, rate: 0.047 },
+        { min: 95000, max: null, rate: 0.0565 },
+      ],
+    },
+  },
+
+  NE: {
+    type: "bracket",
+    standardDeduction: { single: 8850, marriedFilingJointly: 17700 },
+    brackets: {
+      single: [
+        { min: 0, max: 4130, rate: 0.0246 },
+        { min: 4130, max: 24760, rate: 0.0351 },
+        { min: 24760, max: null, rate: 0.0455 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 8250, rate: 0.0246 },
+        { min: 8250, max: 49530, rate: 0.0351 },
+        { min: 49530, max: null, rate: 0.0455 },
+      ],
+    },
+  },
+
+  NJ: {
+    type: "bracket",
+    standardDeduction: { single: 1000, marriedFilingJointly: 2000 },
+    brackets: {
+      single: [
+        { min: 0, max: 20000, rate: 0.014 },
+        { min: 20000, max: 35000, rate: 0.0175 },
+        { min: 35000, max: 40000, rate: 0.035 },
+        { min: 40000, max: 75000, rate: 0.0553 },
+        { min: 75000, max: 500000, rate: 0.0637 },
+        { min: 500000, max: 1000000, rate: 0.0897 },
+        { min: 1000000, max: null, rate: 0.1075 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 20000, rate: 0.014 },
+        { min: 20000, max: 50000, rate: 0.0175 },
+        { min: 50000, max: 70000, rate: 0.0245 },
+        { min: 70000, max: 80000, rate: 0.035 },
+        { min: 80000, max: 150000, rate: 0.0553 },
+        { min: 150000, max: 500000, rate: 0.0637 },
+        { min: 500000, max: 1000000, rate: 0.0897 },
+        { min: 1000000, max: null, rate: 0.1075 },
+      ],
+    },
+  },
+
+  NM: {
+    type: "bracket",
+    // Per-dependent $4,000 deduction not modeled — see the per-state simplification note above.
+    standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+    brackets: {
+      single: [
+        { min: 0, max: 5500, rate: 0.015 },
+        { min: 5500, max: 16500, rate: 0.032 },
+        { min: 16500, max: 33500, rate: 0.043 },
+        { min: 33500, max: 66500, rate: 0.047 },
+        { min: 66500, max: 210000, rate: 0.049 },
+        { min: 210000, max: null, rate: 0.059 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 8000, rate: 0.015 },
+        { min: 8000, max: 25000, rate: 0.032 },
+        { min: 25000, max: 50000, rate: 0.043 },
+        { min: 50000, max: 100000, rate: 0.047 },
+        { min: 100000, max: 315000, rate: 0.049 },
+        { min: 315000, max: null, rate: 0.059 },
+      ],
+    },
+  },
+
+  ND: {
+    type: "bracket",
+    standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+    brackets: {
+      single: [
+        { min: 0, max: 48475, rate: 0 },
+        { min: 48475, max: 244825, rate: 0.0195 },
+        { min: 244825, max: null, rate: 0.025 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 80975, rate: 0 },
+        { min: 80975, max: 298075, rate: 0.0195 },
+        { min: 298075, max: null, rate: 0.025 },
+      ],
+    },
+  },
+
+  OK: {
+    type: "bracket",
+    standardDeduction: { single: 6350 + 1000, marriedFilingJointly: 12700 + 2000 },
+    brackets: {
+      single: [
+        { min: 0, max: 3750, rate: 0 },
+        { min: 3750, max: 4900, rate: 0.025 },
+        { min: 4900, max: 7200, rate: 0.035 },
+        { min: 7200, max: null, rate: 0.045 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 7500, rate: 0 },
+        { min: 7500, max: 9800, rate: 0.025 },
+        { min: 9800, max: 14400, rate: 0.035 },
+        { min: 14400, max: null, rate: 0.045 },
+      ],
+    },
+  },
+
+  OR: {
+    type: "bracket",
+    standardDeduction: { single: 2910, marriedFilingJointly: 5820 },
+    brackets: {
+      single: [
+        { min: 0, max: 4550, rate: 0.0475 },
+        { min: 4550, max: 11400, rate: 0.0675 },
+        { min: 11400, max: 125000, rate: 0.0875 },
+        { min: 125000, max: null, rate: 0.099 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 9100, rate: 0.0475 },
+        { min: 9100, max: 22800, rate: 0.0675 },
+        { min: 22800, max: 250000, rate: 0.0875 },
+        { min: 250000, max: null, rate: 0.099 },
+      ],
+    },
+  },
+
+  RI: {
+    type: "bracket",
+    standardDeduction: { single: 11200 + 5250, marriedFilingJointly: 22400 + 10500 },
+    brackets: {
+      single: [
+        { min: 0, max: 82050, rate: 0.0375 },
+        { min: 82050, max: 186450, rate: 0.0475 },
+        { min: 186450, max: null, rate: 0.0599 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 82050, rate: 0.0375 },
+        { min: 82050, max: 186450, rate: 0.0475 },
+        { min: 186450, max: null, rate: 0.0599 },
+      ],
+    },
+  },
+
+  SC: {
+    type: "bracket",
+    standardDeduction: { single: 8350, marriedFilingJointly: 16700 },
+    brackets: {
+      single: [
+        { min: 0, max: 3640, rate: 0 },
+        { min: 3640, max: 18230, rate: 0.03 },
+        { min: 18230, max: null, rate: 0.06 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 3640, rate: 0 },
+        { min: 3640, max: 18230, rate: 0.03 },
+        { min: 18230, max: null, rate: 0.06 },
+      ],
+    },
+  },
+
+  VT: {
+    type: "bracket",
+    standardDeduction: { single: 7650 + 5300, marriedFilingJointly: 15300 + 10600 },
+    brackets: {
+      single: [
+        { min: 0, max: 49400, rate: 0.0335 },
+        { min: 49400, max: 119700, rate: 0.066 },
+        { min: 119700, max: 249700, rate: 0.076 },
+        { min: 249700, max: null, rate: 0.0875 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 82500, rate: 0.0335 },
+        { min: 82500, max: 199450, rate: 0.066 },
+        { min: 199450, max: 304000, rate: 0.076 },
+        { min: 304000, max: null, rate: 0.0875 },
+      ],
+    },
+  },
+
+  VA: {
+    type: "bracket",
+    standardDeduction: { single: 8750 + 930, marriedFilingJointly: 17500 + 1860 },
+    brackets: {
+      single: [
+        { min: 0, max: 3000, rate: 0.02 },
+        { min: 3000, max: 5000, rate: 0.03 },
+        { min: 5000, max: 17000, rate: 0.05 },
+        { min: 17000, max: null, rate: 0.0575 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 3000, rate: 0.02 },
+        { min: 3000, max: 5000, rate: 0.03 },
+        { min: 5000, max: 17000, rate: 0.05 },
+        { min: 17000, max: null, rate: 0.0575 },
+      ],
+    },
+  },
+
+  WV: {
+    type: "bracket",
+    standardDeduction: { single: 2000, marriedFilingJointly: 4000 },
+    brackets: {
+      single: [
+        { min: 0, max: 10000, rate: 0.0222 },
+        { min: 10000, max: 25000, rate: 0.0296 },
+        { min: 25000, max: 40000, rate: 0.0333 },
+        { min: 40000, max: 60000, rate: 0.0444 },
+        { min: 60000, max: null, rate: 0.0482 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 10000, rate: 0.0222 },
+        { min: 10000, max: 25000, rate: 0.0296 },
+        { min: 25000, max: 40000, rate: 0.0333 },
+        { min: 40000, max: 60000, rate: 0.0444 },
+        { min: 60000, max: null, rate: 0.0482 },
+      ],
+    },
+  },
+
+  WI: {
+    type: "bracket",
+    standardDeduction: { single: 13960 + 700, marriedFilingJointly: 25840 + 1400 },
+    brackets: {
+      single: [
+        { min: 0, max: 15110, rate: 0.035 },
+        { min: 15110, max: 51950, rate: 0.044 },
+        { min: 51950, max: 332720, rate: 0.053 },
+        { min: 332720, max: null, rate: 0.0765 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 20150, rate: 0.035 },
+        { min: 20150, max: 69260, rate: 0.044 },
+        { min: 69260, max: 443630, rate: 0.053 },
+        { min: 443630, max: null, rate: 0.0765 },
+      ],
+    },
+  },
+
+  DC: {
+    type: "bracket",
+    standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+    brackets: {
+      single: [
+        { min: 0, max: 10000, rate: 0.04 },
+        { min: 10000, max: 40000, rate: 0.06 },
+        { min: 40000, max: 60000, rate: 0.065 },
+        { min: 60000, max: 250000, rate: 0.085 },
+        { min: 250000, max: 500000, rate: 0.0925 },
+        { min: 500000, max: 1000000, rate: 0.0975 },
+        { min: 1000000, max: null, rate: 0.1075 },
+      ],
+      marriedFilingJointly: [
+        { min: 0, max: 10000, rate: 0.04 },
+        { min: 10000, max: 40000, rate: 0.06 },
+        { min: 40000, max: 60000, rate: 0.065 },
+        { min: 60000, max: 250000, rate: 0.085 },
+        { min: 250000, max: 500000, rate: 0.0925 },
+        { min: 500000, max: 1000000, rate: 0.0975 },
+        { min: 1000000, max: null, rate: 0.1075 },
+      ],
+    },
   },
 };
