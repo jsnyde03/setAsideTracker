@@ -5,6 +5,7 @@ import {
   type TaxEstimateResult,
 } from "@gig-tax-tracker/tax-engine";
 import type { Entry, PayFrequency, TaxProfile } from "./types";
+import type { QuarterlyDueDate } from "./notifications/quarterlyDueDates";
 
 export interface EntryAggregate {
   netSelfEmploymentProfit: number;
@@ -80,6 +81,47 @@ export function w2WithholdingYearFraction(
   if (now.getTime() <= periodStart.getTime()) return 0;
 
   return (now.getTime() - periodStart.getTime()) / (periodEnd.getTime() - periodStart.getTime());
+}
+
+export interface CatchUpStatus {
+  amountSetAsideSoFar: number;
+  amountOwed: number;
+  /** amountOwed - amountSetAsideSoFar. Zero or negative means caught up or ahead of target. */
+  gap: number;
+  /** Only set when gap > 0 and a next due date is available to spread the gap across. */
+  weeklyCatchUpAmount?: number;
+  nextDueDate?: QuarterlyDueDate;
+}
+
+const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Compares what's actually been set aside so far against what's owed, and — if there's a
+ * shortfall — turns it into a concrete weekly amount to close the gap by the next due date,
+ * rather than just showing a bigger scary number as the year goes on. `now` is a parameter
+ * rather than read internally so this stays a pure, testable function (same convention as
+ * w2WithholdingYearFraction).
+ */
+export function computeCatchUpStatus(
+  amountOwed: number,
+  amountSetAsideSoFar: number,
+  nextDueDate?: QuarterlyDueDate,
+  now: Date = new Date()
+): CatchUpStatus {
+  const gap = amountOwed - amountSetAsideSoFar;
+
+  if (gap <= 0 || !nextDueDate) {
+    return { amountSetAsideSoFar, amountOwed, gap, nextDueDate };
+  }
+
+  const weeksRemaining = Math.max(1, Math.ceil((nextDueDate.dueDate.getTime() - now.getTime()) / MS_PER_WEEK));
+  return {
+    amountSetAsideSoFar,
+    amountOwed,
+    gap,
+    weeklyCatchUpAmount: gap / weeksRemaining,
+    nextDueDate,
+  };
 }
 
 function totalEntryExpenses(entry: Entry): number {

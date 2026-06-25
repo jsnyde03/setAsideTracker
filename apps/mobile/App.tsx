@@ -220,6 +220,23 @@ function AppContent() {
     }
   }
 
+  async function handleUpdateAmountSetAside(year: number, amount: number) {
+    if (!taxProfile) return;
+    const updated: TaxProfile = {
+      ...taxProfile,
+      amountSetAsideByYear: { ...taxProfile.amountSetAsideByYear, [year]: amount },
+    };
+    try {
+      await saveTaxProfile(updated);
+      setTaxProfile(updated);
+    } catch (error) {
+      Alert.alert(
+        "Couldn't save",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
+  }
+
   async function handleClearAllData() {
     try {
       await clearAllLocalData();
@@ -317,6 +334,7 @@ function AppContent() {
         onAddEntry={() => setScreen("addEntry")}
         onEditEntry={handleEditEntry}
         onOpenSettings={() => setScreen("settings")}
+        onUpdateAmountSetAside={handleUpdateAmountSetAside}
       />
       <StatusBar style="dark" />
     </View>

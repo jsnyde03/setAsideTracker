@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { Entry, TaxProfile } from "../types";
-import { aggregateEntries, computeTaxEstimate, entriesForYear } from "../calculations";
+import { aggregateEntries, computeCatchUpStatus, computeTaxEstimate, entriesForYear } from "../calculations";
+import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { colors, radius, shadow, shadowSm, spacing, type } from "../theme";
@@ -13,6 +15,7 @@ interface DashboardScreenProps {
   onAddEntry: () => void;
   onEditEntry: (entry: Entry) => void;
   onOpenSettings: () => void;
+  onUpdateAmountSetAside: (year: number, amount: number) => void;
 }
 
 const PLATFORM_LABELS: Record<Entry["platform"], string> = {
@@ -41,12 +44,17 @@ function totalEntryExpenses(entry: Entry): number {
   return entry.expenses.parking + entry.expenses.tolls + entry.expenses.supplies + entry.expenses.phone;
 }
 
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export function DashboardScreen({
   entries,
   taxProfile,
   onAddEntry,
   onEditEntry,
   onOpenSettings,
+  onUpdateAmountSetAside,
 }: DashboardScreenProps) {
   const taxEstimate = computeTaxEstimate(entries, taxProfile);
   const { estimate, year, usedFallbackConfig, w2WithholdingYtdEstimate, netAmountToSetAside } =
@@ -60,6 +68,21 @@ export function DashboardScreen({
   const totalEarnings = entriesThisYear.reduce((sum, entry) => sum + entry.grossPay + entry.tips, 0);
 
   const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+
+  const amountSetAsideSoFar = taxProfile.amountSetAsideByYear?.[year] ?? 0;
+  const [amountSetAsideInput, setAmountSetAsideInput] = useState(String(amountSetAsideSoFar));
+  // Resync the input whenever the persisted value changes from outside this screen's own edits
+  // (e.g. after a successful save round-trips a new taxProfile prop back down).
+  useEffect(() => {
+    setAmountSetAsideInput(String(amountSetAsideSoFar));
+  }, [amountSetAsideSoFar]);
+  const nextDueDate = getUpcomingQuarterlyDueDates()[0];
+  const catchUp = computeCatchUpStatus(netAmountToSetAside, amountSetAsideSoFar, nextDueDate);
+
+  function handleSaveAmountSetAside() {
+    const parsed = Math.max(0, parseFloat(amountSetAsideInput) || 0);
+    onUpdateAmountSetAside(year, parsed);
+  }
 
   return (
     <Screen edges={["top", "left", "right"]}>
@@ -198,6 +221,67 @@ export function DashboardScreen({
               )}
             </LinearGradient>
 
+            <View style={styles.progressCard}>
+              <Text style={styles.progressLabel}>Amount set aside so far ({year})</Text>
+              <View style={styles.progressInputRow}>
+                <Text style={styles.progressInputPrefix}>$</Text>
+                <TextInput
+                  style={styles.progressInput}
+                  value={amountSetAsideInput}
+                  onChangeText={setAmountSetAsideInput}
+                  onEndEditing={handleSaveAmountSetAside}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                  placeholderTextColor={colors.inkFaint}
+                  accessibilityLabel="Amount set aside so far"
+                />
+                <Pressable
+                  onPress={handleSaveAmountSetAside}
+                  hitSlop={8}
+                  accessibilityLabel="Save amount set aside"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="checkmark-circle" size={26} color={colors.primary} />
+                </Pressable>
+              </View>
+
+              {nextDueDate && (
+                <View style={styles.progressRow}>
+                  <Text style={styles.progressRowLabel}>Next payment due</Text>
+                  <Text style={styles.progressRowValue}>
+                    {nextDueDate.label} — {formatDate(nextDueDate.dueDate)}
+                  </Text>
+                </View>
+              )}
+
+              {catchUp.gap <= 0 ? (
+                <View style={[styles.statusBox, styles.statusBoxGood]}>
+                  <Ionicons name="checkmark-circle-outline" size={14} color={colors.accent} />
+                  <Text style={styles.statusTextGood}>
+                    {catchUp.gap === 0
+                      ? "You're on track — set aside matches what you owe so far."
+                      : `You've saved ${formatCurrency(-catchUp.gap)} more than you need so far. Nice work.`}
+                  </Text>
+                </View>
+              ) : catchUp.weeklyCatchUpAmount !== undefined && nextDueDate ? (
+                <View style={[styles.statusBox, styles.statusBoxBehind]}>
+                  <Ionicons name="warning-outline" size={14} color={colors.danger} />
+                  <Text style={styles.statusTextBehind}>
+                    You're {formatCurrency(catchUp.gap)} behind — set aside an extra{" "}
+                    {formatCurrency(catchUp.weeklyCatchUpAmount)}/week until {formatDate(nextDueDate.dueDate)} to
+                    catch up.
+                  </Text>
+                </View>
+              ) : (
+                <View style={[styles.statusBox, styles.statusBoxBehind]}>
+                  <Ionicons name="warning-outline" size={14} color={colors.danger} />
+                  <Text style={styles.statusTextBehind}>
+                    You're {formatCurrency(catchUp.gap)} behind what you've set aside so far.
+                  </Text>
+                </View>
+              )}
+            </View>
+
             <View style={styles.addButtonWrap}>
               <PrimaryButton
                 label="Log Earnings"
@@ -299,6 +383,50 @@ const styles = StyleSheet.create({
   breakdownLabel: { ...type.caption, color: "#D1D5DB" },
   breakdownValue: { ...type.caption, color: "#fff", fontWeight: "600" },
   creditValue: { color: "#86EFAC" },
+  progressCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadowSm,
+  },
+  progressLabel: { ...type.label, color: colors.ink, fontWeight: "500" },
+  progressInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  progressInputPrefix: { ...type.subtitle, color: colors.inkSubtle },
+  progressInput: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: colors.ink,
+    backgroundColor: colors.bg,
+  },
+  progressRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: spacing.md,
+  },
+  progressRowLabel: { ...type.caption, color: colors.inkFaint },
+  progressRowValue: { ...type.caption, color: colors.ink, fontWeight: "600" },
+  statusBox: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: spacing.md,
+    borderRadius: radius.sm,
+    padding: spacing.sm,
+  },
+  statusBoxGood: { backgroundColor: colors.accentSoft },
+  statusBoxBehind: { backgroundColor: colors.dangerSoft },
+  statusTextGood: { flex: 1, ...type.micro, color: colors.accent, lineHeight: 15 },
+  statusTextBehind: { flex: 1, ...type.micro, color: colors.danger, lineHeight: 15 },
   warningBox: {
     flexDirection: "row",
     gap: 6,

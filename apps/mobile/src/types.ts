@@ -29,6 +29,9 @@ export interface TaxProfile {
   state: string;
   /** County of residence, only required for states with a local "piggyback" income tax (e.g. MD). */
   county?: string;
+  /** Self-reported running total of how much the user has actually set aside this tax year,
+   * keyed by year. Manually entered — the app has no real visibility into a savings account. */
+  amountSetAsideByYear?: Record<number, number>;
 }
 
 export type GigPlatform =

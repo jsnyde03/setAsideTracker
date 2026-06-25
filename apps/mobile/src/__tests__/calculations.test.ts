@@ -3,12 +3,14 @@ import { estimateTax, currentTaxYear } from "@gig-tax-tracker/tax-engine";
 import {
   aggregateEntries,
   annualIncomeFromPaycheck,
+  computeCatchUpStatus,
   computeTaxEstimate,
   entriesForYear,
   getCountiesForState,
   w2WithholdingYearFraction,
   yearsWithEntries,
 } from "../calculations";
+import type { QuarterlyDueDate } from "../notifications/quarterlyDueDates";
 import type { Entry, TaxProfile } from "../types";
 
 const thisYear = new Date().getFullYear();
@@ -366,5 +368,44 @@ describe("getCountiesForState", () => {
   it("returns undefined for unsupported jurisdictions", () => {
     // All 50 states + DC are covered now — use a real US territory that genuinely isn't modeled.
     expect(getCountiesForState("PR")).toBeUndefined();
+  });
+});
+
+describe("computeCatchUpStatus", () => {
+  const dueDate: QuarterlyDueDate = { label: "Q3 2026 estimated tax", dueDate: new Date(2026, 8, 15) };
+
+  it("reports no weekly amount when exactly caught up", () => {
+    const status = computeCatchUpStatus(1000, 1000, dueDate, new Date(2026, 7, 1));
+    expect(status.gap).toBe(0);
+    expect(status.weeklyCatchUpAmount).toBeUndefined();
+  });
+
+  it("reports no weekly amount when ahead of target", () => {
+    const status = computeCatchUpStatus(1000, 1500, dueDate, new Date(2026, 7, 1));
+    expect(status.gap).toBe(-500);
+    expect(status.weeklyCatchUpAmount).toBeUndefined();
+  });
+
+  it("computes a weekly catch-up amount when behind, spread across the weeks remaining", () => {
+    // Aug 1 to Sep 15, 2026 is 45 days = ceil(45/7) = 7 weeks remaining.
+    const status = computeCatchUpStatus(1000, 300, dueDate, new Date(2026, 7, 1));
+    expect(status.gap).toBe(700);
+    expect(status.weeklyCatchUpAmount).toBeCloseTo(700 / 7, 2);
+  });
+
+  it("floors weeksRemaining at 1 when the due date is today or in the past", () => {
+    const today = computeCatchUpStatus(1000, 300, dueDate, new Date(2026, 8, 15));
+    expect(today.weeklyCatchUpAmount).toBeCloseTo(700, 2);
+
+    const pastDueDate: QuarterlyDueDate = { label: "Q2 2026 estimated tax", dueDate: new Date(2026, 5, 15) };
+    const past = computeCatchUpStatus(1000, 300, pastDueDate, new Date(2026, 7, 1));
+    expect(past.weeklyCatchUpAmount).toBeCloseTo(700, 2);
+  });
+
+  it("returns the gap with no weekly amount when there's no next due date", () => {
+    const status = computeCatchUpStatus(1000, 300, undefined, new Date(2026, 7, 1));
+    expect(status.gap).toBe(700);
+    expect(status.weeklyCatchUpAmount).toBeUndefined();
+    expect(status.nextDueDate).toBeUndefined();
   });
 });
