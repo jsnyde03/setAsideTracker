@@ -247,6 +247,61 @@ describe("calculateStateTax (2026)", () => {
     });
   });
 
+  describe("PA and NY local tax", () => {
+    it("flags PA local tax as unsupported (not silently $0) when no municipality is given", () => {
+      const result = calculateStateTax(50000, 3000, 0, "single", "PA", taxYear2026);
+      expect(result.supported).toBe(true);
+      expect(result.localTaxSupported).toBe(false);
+      expect(result.localTax).toBe(0);
+    });
+
+    it("applies Philadelphia's flat 3.72% blended local wage tax on top of PA state tax", () => {
+      const result = calculateStateTax(50000, 3000, 0, "single", "PA", taxYear2026, "Philadelphia");
+      const taxableIncome = 47000;
+      const expectedLocalTax = taxableIncome * 0.0372;
+
+      expect(result.localTaxSupported).toBe(true);
+      expect(result.localTax).toBeCloseTo(expectedLocalTax, 2);
+      expect(result.stateTax).toBeCloseTo(taxableIncome * 0.0307 + expectedLocalTax, 2);
+    });
+
+    it("applies Pittsburgh's flat 3.0% combined city + school district EIT", () => {
+      const result = calculateStateTax(50000, 3000, 0, "single", "PA", taxYear2026, "Pittsburgh");
+      const taxableIncome = 47000;
+      expect(result.localTaxSupported).toBe(true);
+      expect(result.localTax).toBeCloseTo(taxableIncome * 0.03, 2);
+    });
+
+    it("flags an unrecognized PA municipality rather than silently charging $0 local tax", () => {
+      const result = calculateStateTax(50000, 3000, 0, "single", "PA", taxYear2026, "Some Small Township");
+      expect(result.localTaxSupported).toBe(false);
+      expect(result.localTax).toBe(0);
+    });
+
+    it("flags NY local tax as unsupported (not silently $0) when no city is given", () => {
+      const result = calculateStateTax(50000, 3000, 0, "single", "NY", taxYear2026);
+      expect(result.supported).toBe(true);
+      expect(result.localTaxSupported).toBe(false);
+      expect(result.localTax).toBe(0);
+    });
+
+    it("applies NYC's graduated local resident tax on top of NY state tax", () => {
+      const result = calculateStateTax(80000, 4000, 0, "single", "NY", taxYear2026, "New York City");
+      const taxableIncome = 80000 - 4000 - 8000; // = 68,000
+
+      expect(result.localTaxSupported).toBe(true);
+      const expectedLocalTax =
+        12000 * 0.03078 + 13000 * 0.03762 + 25000 * 0.03819 + (taxableIncome - 50000) * 0.03876;
+      expect(result.localTax).toBeCloseTo(expectedLocalTax, 2);
+    });
+
+    it("flags an unrecognized NY city rather than silently charging $0 local tax", () => {
+      const result = calculateStateTax(50000, 3000, 0, "single", "NY", taxYear2026, "Buffalo");
+      expect(result.localTaxSupported).toBe(false);
+      expect(result.localTax).toBe(0);
+    });
+  });
+
   it("flags unsupported jurisdictions instead of silently returning zero as if verified", () => {
     // All 50 states + DC are covered as of this revision, so there's no real state left to use
     // as an "unsupported" example — use a clearly invalid code (e.g. a US territory not modeled,

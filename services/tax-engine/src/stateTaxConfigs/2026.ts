@@ -1,5 +1,7 @@
 import type { StateTaxConfig } from "../types";
 import { mdLocalTaxJurisdictions2026 } from "./mdLocalTax2026";
+import { paLocalTaxJurisdictions2026 } from "./paLocalTax2026";
+import { nyLocalTaxJurisdictions2026 } from "./nyLocalTax2026";
 
 /**
  * 2026 state tax configs. All 50 states + DC are covered as of this revision. Add more states
@@ -138,6 +140,7 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
     type: "flat",
     rate: 0.0307,
     // PA's personal income tax has no standard deduction or personal exemption.
+    localTaxJurisdictions: paLocalTaxJurisdictions2026,
   },
   AZ: {
     type: "flat",
@@ -270,6 +273,7 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
       single: 8000,
       marriedFilingJointly: 16050,
     },
+    localTaxJurisdictions: nyLocalTaxJurisdictions2026,
     brackets: {
       single: [
         { min: 0, max: 8500, rate: 0.039 },
