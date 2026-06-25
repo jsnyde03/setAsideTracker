@@ -307,12 +307,32 @@ describe("calculateStateTax (2026)", () => {
 
     expect(result.taxableIncome).toBeCloseTo(expectedTaxableIncome, 2);
 
-    // 50,794 falls partway into the 6% bracket (40,245-55,866) for a single filer.
+    // 50,794 falls partway into the 6% bracket (41,452-57,542) for a single filer.
     const expectedTax =
-      10756 * 0.01 +
-      (25499 - 10756) * 0.02 +
-      (40245 - 25499) * 0.04 +
-      (expectedTaxableIncome - 40245) * 0.06;
+      11079 * 0.01 +
+      (26264 - 11079) * 0.02 +
+      (41452 - 26264) * 0.04 +
+      (expectedTaxableIncome - 41452) * 0.06;
+    expect(result.stateTax).toBeCloseTo(expectedTax, 2);
+  });
+
+  it("applies CA's flat (non-doubled) $1M MHSA surcharge threshold for MFJ, not $2M", () => {
+    // MFJ taxable income of $1,200,000 falls inside the statutory 11.3% bracket (891,542 to
+    // 1,485,906), but the surcharge threshold is flat at $1,000,000 regardless of filing status —
+    // so income from $1,000,000 to $1,200,000 should be taxed at 12.3% (11.3% + 1% surcharge),
+    // not 11.3% as it would be if the surcharge were incorrectly doubled to $2M for joint filers.
+    const result = calculateStateTax(1200000 + 11412, 0, 0, "marriedFilingJointly", "CA", taxYear2026);
+    const taxableIncome = 1200000;
+    const expectedTax =
+      22158 * 0.01 +
+      (52528 - 22158) * 0.02 +
+      (82904 - 52528) * 0.04 +
+      (115084 - 82904) * 0.06 +
+      (145448 - 115084) * 0.08 +
+      (742958 - 145448) * 0.093 +
+      (891542 - 742958) * 0.103 +
+      (1000000 - 891542) * 0.113 +
+      (taxableIncome - 1000000) * 0.123;
     expect(result.stateTax).toBeCloseTo(expectedTax, 2);
   });
 

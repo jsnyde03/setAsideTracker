@@ -237,31 +237,39 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
 
     CA: {
       type: "bracket",
-      standardDeduction: { single: 5540, marriedFilingJointly: 11080 },
+      // CORRECTED — previously had the $5,540/$11,080 standard deduction and bracket thresholds
+      // that turned out to be 2024's figures, not 2025's. Confirmed 2025 figures ($5,706/$11,412
+      // deduction; thresholds below) directly against FTB-sourced reporting (NerdWallet, Tax
+      // Foundation) and the EDD's 2026 withholding schedule, which still uses these same 2025
+      // dollar amounts (FTB hadn't published a further-inflation-adjusted set as of writing) —
+      // see 2026.ts's CA entry for the full sourcing/verification note.
+      standardDeduction: { single: 5706, marriedFilingJointly: 11412 },
       brackets: {
         single: [
-          { min: 0, max: 10756, rate: 0.01 },
-          { min: 10756, max: 25499, rate: 0.02 },
-          { min: 25499, max: 40245, rate: 0.04 },
-          { min: 40245, max: 55866, rate: 0.06 },
-          { min: 55866, max: 70606, rate: 0.08 },
-          { min: 70606, max: 360659, rate: 0.093 },
-          { min: 360659, max: 432787, rate: 0.103 },
-          { min: 432787, max: 721314, rate: 0.113 },
-          { min: 721314, max: 1000000, rate: 0.123 },
+          { min: 0, max: 11079, rate: 0.01 },
+          { min: 11079, max: 26264, rate: 0.02 },
+          { min: 26264, max: 41452, rate: 0.04 },
+          { min: 41452, max: 57542, rate: 0.06 },
+          { min: 57542, max: 72724, rate: 0.08 },
+          { min: 72724, max: 371479, rate: 0.093 },
+          { min: 371479, max: 445771, rate: 0.103 },
+          { min: 445771, max: 742953, rate: 0.113 },
+          { min: 742953, max: 1000000, rate: 0.123 },
           { min: 1000000, max: null, rate: 0.133 },
         ],
         marriedFilingJointly: [
-          { min: 0, max: 21512, rate: 0.01 },
-          { min: 21512, max: 50998, rate: 0.02 },
-          { min: 50998, max: 80490, rate: 0.04 },
-          { min: 80490, max: 111732, rate: 0.06 },
-          { min: 111732, max: 141732, rate: 0.08 },
-          { min: 141732, max: 721318, rate: 0.093 },
-          { min: 721318, max: 865574, rate: 0.103 },
-          { min: 865574, max: 1000000, rate: 0.113 },
-          { min: 1000000, max: 1442628, rate: 0.123 },
-          { min: 1442628, max: null, rate: 0.133 },
+          { min: 0, max: 22158, rate: 0.01 },
+          { min: 22158, max: 52528, rate: 0.02 },
+          { min: 52528, max: 82904, rate: 0.04 },
+          { min: 82904, max: 115084, rate: 0.06 },
+          { min: 115084, max: 145448, rate: 0.08 },
+          { min: 145448, max: 742958, rate: 0.093 },
+          { min: 742958, max: 891542, rate: 0.103 },
+          // Kink at $1,000,000 — the flat (non-doubled) MHSA surcharge threshold cuts through
+          // the middle of the 11.3% bracket (891,542-1,485,906) for joint filers.
+          { min: 891542, max: 1000000, rate: 0.113 },
+          { min: 1000000, max: 1485906, rate: 0.123 },
+          { min: 1485906, max: null, rate: 0.133 },
         ],
       },
     },

@@ -11,11 +11,19 @@ import { nyLocalTaxJurisdictions2026 } from "./nyLocalTax2026";
  * ROADMAP §6 annual review process):
  * - TX, FL: no state income tax. Stable, not subject to change.
  * - PA: flat 3.07% rate, unchanged since 2004 — high confidence.
- * - CA: 2026 brackets per FTB-based projections (ustax.tools, consistent with confirmed 2025
- *   brackets + standard inflation adjustment). FTB had not published final certified 2026
- *   figures as of build time — verify against FTB.ca.gov before relying on for real filings.
- *   Standard deduction figures are 2025 FTB figures (2026 not yet published); used as a
- *   placeholder pending official release.
+ * - CA: 2026 brackets/standard deduction confirmed directly against the EDD's official
+ *   "California Withholding Schedules for 2026" PDF (edd.ca.gov), cross-checked against
+ *   FTB-sourced 2025 figures reported by NerdWallet and the Tax Foundation. EDD's 2026
+ *   withholding tables use the same dollar thresholds as the confirmed 2025 figures (FTB hadn't
+ *   yet published a distinct, further-inflation-adjusted set at time of writing) — high
+ *   confidence on thresholds and the $5,706/$11,412 standard deduction, but re-verify against
+ *   FTB.ca.gov once a 2026-specific 540 rate schedule is published, in case it differs.
+ *   IMPORTANT: previously had a real bug here — the prior thresholds were stale by about a
+ *   year (matched 2024 figures, not the confirmed 2025/2026 ones), AND the MFJ bracket
+ *   incorrectly doubled the $1M Mental Health Services Tax surcharge threshold to $2M. The
+ *   surcharge threshold is explicitly flat/non-doubled for joint filers (confirmed in the
+ *   existing comment elsewhere in this file), so MFJ needs an extra bracket "kink" splitting
+ *   exactly at $1,000,000 where the surcharge starts applying mid-bracket — fixed below.
  * - NY: 2026 brackets are PROVISIONAL — sources disagreed on exact rates for the lowest five
  *   brackets (NY's FY2026 budget cut each by 0.2%, and different sources reported slightly
  *   different resulting numbers). Treat NY figures here as a placeholder needing verification
@@ -245,28 +253,30 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
     },
     brackets: {
       single: [
-        { min: 0, max: 10756, rate: 0.01 },
-        { min: 10756, max: 25499, rate: 0.02 },
-        { min: 25499, max: 40245, rate: 0.04 },
-        { min: 40245, max: 55866, rate: 0.06 },
-        { min: 55866, max: 70612, rate: 0.08 },
-        { min: 70612, max: 360659, rate: 0.093 },
-        { min: 360659, max: 432787, rate: 0.103 },
-        { min: 432787, max: 721314, rate: 0.113 },
-        { min: 721314, max: 1000000, rate: 0.123 },
+        { min: 0, max: 11079, rate: 0.01 },
+        { min: 11079, max: 26264, rate: 0.02 },
+        { min: 26264, max: 41452, rate: 0.04 },
+        { min: 41452, max: 57542, rate: 0.06 },
+        { min: 57542, max: 72724, rate: 0.08 },
+        { min: 72724, max: 371479, rate: 0.093 },
+        { min: 371479, max: 445771, rate: 0.103 },
+        { min: 445771, max: 742953, rate: 0.113 },
+        { min: 742953, max: 1000000, rate: 0.123 },
         { min: 1000000, max: null, rate: 0.133 },
       ],
       marriedFilingJointly: [
-        { min: 0, max: 21512, rate: 0.01 },
-        { min: 21512, max: 50998, rate: 0.02 },
-        { min: 50998, max: 80490, rate: 0.04 },
-        { min: 80490, max: 111732, rate: 0.06 },
-        { min: 111732, max: 141224, rate: 0.08 },
-        { min: 141224, max: 721318, rate: 0.093 },
-        { min: 721318, max: 865574, rate: 0.103 },
-        { min: 865574, max: 1442628, rate: 0.113 },
-        { min: 1442628, max: 2000000, rate: 0.123 },
-        { min: 2000000, max: null, rate: 0.133 },
+        { min: 0, max: 22158, rate: 0.01 },
+        { min: 22158, max: 52528, rate: 0.02 },
+        { min: 52528, max: 82904, rate: 0.04 },
+        { min: 82904, max: 115084, rate: 0.06 },
+        { min: 115084, max: 145448, rate: 0.08 },
+        { min: 145448, max: 742958, rate: 0.093 },
+        { min: 742958, max: 891542, rate: 0.103 },
+        // Kink at exactly $1,000,000 — the 11.3% statutory bracket runs 891,542-1,485,906, but
+        // the flat (non-doubled) $1M MHSA surcharge threshold cuts through the middle of it.
+        { min: 891542, max: 1000000, rate: 0.113 },
+        { min: 1000000, max: 1485906, rate: 0.123 },
+        { min: 1485906, max: null, rate: 0.133 },
       ],
     },
   },
