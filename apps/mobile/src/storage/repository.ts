@@ -36,8 +36,8 @@ async function readJson<T>(key: string): Promise<T | null> {
     const decrypted = decryptText(raw, encryptionKey);
     return JSON.parse(decrypted) as T;
   } catch {
-    // Defensive fallback for data written before encryption was added to this alpha — not a
-    // formal migration system, just enough to not lose locally-entered test data.
+    // Defensive fallback for data written before encryption was added — not a formal migration
+    // system, just enough to not lose data written under an earlier version of the app.
     return JSON.parse(raw) as T;
   }
 }
@@ -101,7 +101,7 @@ export async function saveAppSettings(settings: AppSettings): Promise<void> {
   await writeJson(KEYS.appSettings, settings);
 }
 
-/** Clears all locally stored data. Used for sign-out / reset in this local-only alpha. */
+/** Clears all locally stored data — there's no real backend/account, so this is the app's reset. */
 export async function clearAllLocalData(): Promise<void> {
   await AsyncStorage.removeMany([KEYS.localUserProfile, KEYS.taxProfile, KEYS.entries]);
 }

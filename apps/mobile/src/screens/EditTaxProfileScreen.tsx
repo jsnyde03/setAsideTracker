@@ -152,7 +152,7 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
 
           <TextField
             label="State you primarily work in"
-            hint="State tax is currently calculated for CA, FL, MD, NY, PA, TX. Other states will show $0 state tax until added — you'll see a warning on the dashboard if yours isn't supported yet."
+            hint="State tax is calculated for all 50 states + DC. U.S. territories aren't supported yet — you'll see a warning on the dashboard if that applies to you."
             placeholder="e.g. CA"
             value={state}
             onChangeText={setState}

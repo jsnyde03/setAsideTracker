@@ -127,14 +127,13 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           </View>
           <Text style={styles.title}>Welcome</Text>
           <Text style={styles.subtitle}>
-            This is a local alpha build — everything you enter stays on this device. No account, no
-            password needed yet.
+            Everything you enter stays on this device — no account, no password needed.
           </Text>
 
           <Text style={styles.sectionLabel}>About you</Text>
           <TextField placeholder="Your name" value={displayName} onChangeText={setDisplayName} />
           <TextField
-            placeholder="Email (optional, for future sync)"
+            placeholder="Email (optional)"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -165,7 +164,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
           <TextField
             label="State you primarily work in"
-            hint="State tax is currently calculated for CA, FL, MD, NY, PA, TX. Other states will show $0 state tax until added — you'll see a warning on the dashboard if yours isn't supported yet."
+            hint="State tax is calculated for all 50 states + DC. U.S. territories aren't supported yet — you'll see a warning on the dashboard if that applies to you."
             placeholder="e.g. CA"
             value={state}
             onChangeText={setState}
