@@ -9,6 +9,7 @@ import {
   computeTaxEstimate,
   effectiveHourlyRate,
   entriesForYear,
+  yearsWithEntries,
 } from "../calculations";
 import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates";
 import { PrimaryButton } from "../components/PrimaryButton";
@@ -65,9 +66,28 @@ export function DashboardScreen({
 }: DashboardScreenProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const taxEstimate = computeTaxEstimate(entries, taxProfile);
+
+  // The current calendar year is always selectable, even before any entry exists for it yet —
+  // otherwise a brand-new year would have no way to be picked until an entry is logged for it.
+  const currentCalendarYear = new Date().getFullYear();
+  const availableYears = Array.from(new Set([currentCalendarYear, ...yearsWithEntries(entries)])).sort(
+    (a, b) => b - a
+  );
+  const [selectedYear, setSelectedYear] = useState(currentCalendarYear);
+  const selectedYearIndex = availableYears.indexOf(selectedYear);
+
+  const taxEstimate = computeTaxEstimate(entries, taxProfile, selectedYear);
   const { estimate, year, usedFallbackConfig, w2WithholdingYtdEstimate, netAmountToSetAside } =
     taxEstimate;
+
+  function handlePreviousYear() {
+    // Years are sorted descending, so "previous" (older) is the next index.
+    if (selectedYearIndex < availableYears.length - 1) setSelectedYear(availableYears[selectedYearIndex + 1]);
+  }
+
+  function handleNextYear() {
+    if (selectedYearIndex > 0) setSelectedYear(availableYears[selectedYearIndex - 1]);
+  }
 
   // Headline numbers are scoped to the current tax year — entries from other years must never
   // bleed into "what should I set aside this year," even though the list below still shows
@@ -110,9 +130,43 @@ export function DashboardScreen({
             <View style={styles.greetingRow}>
               <View style={styles.greetingTitleRow}>
                 <Text style={styles.greeting}>Your earnings</Text>
-                <View style={styles.yearBadge}>
-                  <Text style={styles.yearBadgeText}>{year}</Text>
-                </View>
+                {availableYears.length > 1 ? (
+                  <View style={styles.yearSwitcher}>
+                    <Pressable
+                      onPress={handlePreviousYear}
+                      disabled={selectedYearIndex >= availableYears.length - 1}
+                      hitSlop={8}
+                      accessibilityLabel="Previous year"
+                      accessibilityRole="button"
+                    >
+                      <Ionicons
+                        name="chevron-back"
+                        size={16}
+                        color={
+                          selectedYearIndex >= availableYears.length - 1 ? colors.inkFaint : colors.inkSubtle
+                        }
+                      />
+                    </Pressable>
+                    <Text style={styles.yearBadgeText}>{year}</Text>
+                    <Pressable
+                      onPress={handleNextYear}
+                      disabled={selectedYearIndex <= 0}
+                      hitSlop={8}
+                      accessibilityLabel="Next year"
+                      accessibilityRole="button"
+                    >
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color={selectedYearIndex <= 0 ? colors.inkFaint : colors.inkSubtle}
+                      />
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={styles.yearBadge}>
+                    <Text style={styles.yearBadgeText}>{year}</Text>
+                  </View>
+                )}
               </View>
               <Pressable
                 onPress={onOpenSettings}
@@ -370,6 +424,15 @@ function createStyles(colors: Colors) {
     paddingVertical: 4,
   },
   yearBadgeText: { ...type.label, color: colors.inkSubtle },
+  yearSwitcher: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
   warningBoxLight: { backgroundColor: colors.dangerSoft, marginBottom: spacing.md, marginTop: 0 },
   yearWarning: { flex: 1, ...type.micro, color: colors.danger, lineHeight: 15 },
   summaryCard: {
