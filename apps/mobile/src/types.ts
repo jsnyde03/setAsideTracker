@@ -58,6 +58,10 @@ export interface Entry {
   tips: number;
   mileage: number;
   expenses: EntryExpenses;
+  /** Hours actually worked on this shift. Optional — older entries won't have it, and some users
+   * may not want to track it for every entry. Powers the "effective hourly rate" insight, which
+   * only shows up once at least one entry in the period has this set. */
+  hoursWorked?: number;
   createdAt: string;
 }
 

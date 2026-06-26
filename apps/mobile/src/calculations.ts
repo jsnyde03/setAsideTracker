@@ -11,6 +11,9 @@ export interface EntryAggregate {
   netSelfEmploymentProfit: number;
   businessMiles: number;
   totalExpenses: number;
+  /** Sum of hoursWorked across entries that have it set — entries without it contribute 0, not
+   * an error, since it's an optional field. */
+  totalHoursWorked: number;
 }
 
 /** Result of computeTaxEstimate, with year-scoping metadata alongside the raw engine output. */
@@ -153,10 +156,29 @@ export function aggregateEntries(entries: Entry[]): EntryAggregate {
         netSelfEmploymentProfit: acc.netSelfEmploymentProfit + entry.grossPay + entry.tips - expenses,
         businessMiles: acc.businessMiles + entry.mileage,
         totalExpenses: acc.totalExpenses + expenses,
+        totalHoursWorked: acc.totalHoursWorked + (entry.hoursWorked ?? 0),
       };
     },
-    { netSelfEmploymentProfit: 0, businessMiles: 0, totalExpenses: 0 }
+    { netSelfEmploymentProfit: 0, businessMiles: 0, totalExpenses: 0, totalHoursWorked: 0 }
   );
+}
+
+/**
+ * "True" hourly rate: take-home pay (gross earnings minus logged cash expenses minus the tax
+ * set-aside) divided by hours actually worked. Deliberately does NOT also subtract a
+ * mileage-implied vehicle-cost estimate on top of that — the standard mileage rate already
+ * reduces the tax set-aside via the tax engine's deduction, so subtracting it again here would
+ * double-count it as if it were a second real cash outflow. Returns undefined when no hours have
+ * been logged, since dividing by zero isn't a rate, it's a missing input.
+ */
+export function effectiveHourlyRate(
+  totalEarnings: number,
+  totalExpenses: number,
+  netAmountToSetAside: number,
+  totalHoursWorked: number
+): number | undefined {
+  if (totalHoursWorked <= 0) return undefined;
+  return (totalEarnings - totalExpenses - netAmountToSetAside) / totalHoursWorked;
 }
 
 /**

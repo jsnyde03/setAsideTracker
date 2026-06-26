@@ -45,6 +45,7 @@ export function AddEntryScreen({ onSave, onCancel, entry, onDelete }: AddEntrySc
   const [grossPay, setGrossPay] = useState(entry ? String(entry.grossPay) : "");
   const [tips, setTips] = useState(entry ? String(entry.tips) : "");
   const [mileage, setMileage] = useState(entry ? String(entry.mileage) : "");
+  const [hoursWorked, setHoursWorked] = useState(entry?.hoursWorked ? String(entry.hoursWorked) : "");
   const [showExpenses, setShowExpenses] = useState(
     entry ? Object.values(entry.expenses).some((amount) => amount > 0) : false
   );
@@ -66,6 +67,8 @@ export function AddEntryScreen({ onSave, onCancel, entry, onDelete }: AddEntrySc
       return;
     }
 
+    const hoursWorkedValue = Math.max(0, parseFloat(hoursWorked) || 0);
+
     const savedEntry: Entry = {
       id: entry?.id ?? `entry-${Date.now()}`,
       platform,
@@ -73,6 +76,7 @@ export function AddEntryScreen({ onSave, onCancel, entry, onDelete }: AddEntrySc
       grossPay: grossPayValue,
       tips: Math.max(0, parseFloat(tips) || 0),
       mileage: Math.max(0, parseFloat(mileage) || 0),
+      hoursWorked: hoursWorkedValue > 0 ? hoursWorkedValue : undefined,
       expenses: {
         parking: Math.max(0, parseFloat(parking) || 0),
         tolls: Math.max(0, parseFloat(tolls) || 0),
@@ -158,6 +162,14 @@ export function AddEntryScreen({ onSave, onCancel, entry, onDelete }: AddEntrySc
             label="Mileage (business miles driven)"
             value={mileage}
             onChangeText={setMileage}
+            placeholder="0"
+            keyboardType="decimal-pad"
+          />
+          <TextField
+            label="Hours worked (optional)"
+            hint="Powers the effective hourly rate on your dashboard."
+            value={hoursWorked}
+            onChangeText={setHoursWorked}
             placeholder="0"
             keyboardType="decimal-pad"
           />

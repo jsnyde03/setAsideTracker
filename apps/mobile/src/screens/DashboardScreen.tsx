@@ -3,7 +3,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { Entry, TaxProfile } from "../types";
-import { aggregateEntries, computeCatchUpStatus, computeTaxEstimate, entriesForYear } from "../calculations";
+import {
+  aggregateEntries,
+  computeCatchUpStatus,
+  computeTaxEstimate,
+  effectiveHourlyRate,
+  entriesForYear,
+} from "../calculations";
 import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
@@ -66,6 +72,12 @@ export function DashboardScreen({
   const entriesThisYear = entriesForYear(entries, year);
   const aggregate = aggregateEntries(entriesThisYear);
   const totalEarnings = entriesThisYear.reduce((sum, entry) => sum + entry.grossPay + entry.tips, 0);
+  const hourlyRate = effectiveHourlyRate(
+    totalEarnings,
+    aggregate.totalExpenses,
+    netAmountToSetAside,
+    aggregate.totalHoursWorked
+  );
 
   const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -127,6 +139,12 @@ export function DashboardScreen({
                   <Text style={styles.breakdownValueLight}>
                     −{formatCurrency(aggregate.totalExpenses)}
                   </Text>
+                </View>
+              )}
+              {hourlyRate !== undefined && (
+                <View style={styles.breakdownRowLight}>
+                  <Text style={styles.breakdownLabelLight}>Effective hourly rate (after taxes)</Text>
+                  <Text style={styles.hourlyRateValue}>{formatCurrency(hourlyRate)}/hr</Text>
                 </View>
               )}
             </View>
@@ -362,6 +380,7 @@ const styles = StyleSheet.create({
   breakdownRowLight: { flexDirection: "row", justifyContent: "space-between", marginTop: spacing.sm },
   breakdownLabelLight: { ...type.caption, color: colors.inkFaint },
   breakdownValueLight: { ...type.caption, color: colors.danger, fontWeight: "600" },
+  hourlyRateValue: { ...type.caption, color: colors.primary, fontWeight: "700" },
   setAsideCard: {
     borderRadius: radius.xl,
     padding: spacing.lg,

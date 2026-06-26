@@ -5,6 +5,7 @@ import {
   annualIncomeFromPaycheck,
   computeCatchUpStatus,
   computeTaxEstimate,
+  effectiveHourlyRate,
   entriesForYear,
   getCountiesForState,
   w2WithholdingYearFraction,
@@ -46,6 +47,16 @@ describe("aggregateEntries", () => {
     expect(result.netSelfEmploymentProfit).toBe(0);
     expect(result.businessMiles).toBe(0);
     expect(result.totalExpenses).toBe(0);
+    expect(result.totalHoursWorked).toBe(0);
+  });
+
+  it("sums hoursWorked across entries, treating entries without it as 0", () => {
+    const entries = [
+      makeEntry({ id: "e1", hoursWorked: 5 }),
+      makeEntry({ id: "e2", hoursWorked: 3.5 }),
+      makeEntry({ id: "e3" }), // no hoursWorked set
+    ];
+    expect(aggregateEntries(entries).totalHoursWorked).toBe(8.5);
   });
 
   it("subtracts non-mileage expenses (parking, tolls, supplies, phone) from net SE profit", () => {
@@ -407,5 +418,20 @@ describe("computeCatchUpStatus", () => {
     expect(status.gap).toBe(700);
     expect(status.weeklyCatchUpAmount).toBeUndefined();
     expect(status.nextDueDate).toBeUndefined();
+  });
+});
+
+describe("effectiveHourlyRate", () => {
+  it("returns undefined when no hours have been logged", () => {
+    expect(effectiveHourlyRate(1000, 50, 200, 0)).toBeUndefined();
+  });
+
+  it("divides take-home pay (earnings minus expenses minus tax set-aside) by hours worked", () => {
+    // (1000 - 50 - 200) / 25 = 30
+    expect(effectiveHourlyRate(1000, 50, 200, 25)).toBeCloseTo(30, 2);
+  });
+
+  it("can return a negative rate if the tax set-aside exceeds take-home pay (a real, if rare, case)", () => {
+    expect(effectiveHourlyRate(100, 0, 200, 10)).toBeCloseTo(-10, 2);
   });
 });
