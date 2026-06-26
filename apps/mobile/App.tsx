@@ -11,6 +11,7 @@ import {
   getEntries,
   getLocalUserProfile,
   getTaxProfile,
+  restoreBackupSnapshot,
   saveAppSettings,
   saveLocalUserProfile,
   saveTaxProfile,
@@ -271,6 +272,16 @@ function AppContent() {
     }
   }
 
+  async function handleRestoreBackup(json: string) {
+    const restored = await restoreBackupSnapshot(json); // throws on a malformed file — let SettingsScreen's caller show the error
+    setEntries(restored.entries);
+    setLocalUserProfile(restored.localUserProfile);
+    setTaxProfile(restored.taxProfile);
+    setAppLockEnabled(restored.appSettings.appLockEnabled);
+    setScreen(restored.localUserProfile && restored.taxProfile ? "dashboard" : "onboarding");
+    Alert.alert("Restored", "Your data has been restored from the backup file.");
+  }
+
   if (screen === "loading" || lockAvailable === null) {
     return (
       <View style={styles.loadingContainer}>
@@ -324,6 +335,7 @@ function AppContent() {
           appLockEnabled={appLockEnabled}
           onToggleAppLock={handleToggleAppLock}
           onClearAllData={handleClearAllData}
+          onRestoreBackup={handleRestoreBackup}
           onClose={() => setScreen("dashboard")}
         />
         <StatusBar style="dark" />

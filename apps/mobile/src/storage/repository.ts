@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { AppSettings, Entry, LocalUserProfile, TaxProfile } from "../types";
+import { buildBackupSnapshot, parseBackupSnapshot, type BackupSnapshot } from "../backup";
 import { decryptText, encryptText, getOrCreateEncryptionKey } from "./encryption";
 
 const KEYS = {
@@ -103,4 +104,36 @@ export async function saveAppSettings(settings: AppSettings): Promise<void> {
 /** Clears all locally stored data. Used for sign-out / reset in this local-only alpha. */
 export async function clearAllLocalData(): Promise<void> {
   await AsyncStorage.removeMany([KEYS.localUserProfile, KEYS.taxProfile, KEYS.entries]);
+}
+
+/** Wholesale-replaces the entries list — used by backup restore, where the imported list IS the
+ * new source of truth, not something to merge with what's already on the device. */
+async function saveEntries(entries: Entry[]): Promise<void> {
+  await writeJson(KEYS.entries, entries);
+}
+
+/** Builds a full JSON backup of everything stored locally — the multi-device/account-recovery
+ * story for this local-only app: move your data to a new device by exporting here and importing
+ * via restoreBackupSnapshot there. */
+export async function exportBackupSnapshot(): Promise<string> {
+  const [localUserProfile, taxProfile, entries, appSettings] = await Promise.all([
+    getLocalUserProfile(),
+    getTaxProfile(),
+    getEntries(),
+    getAppSettings(),
+  ]);
+  return JSON.stringify(buildBackupSnapshot({ localUserProfile, taxProfile, entries, appSettings }));
+}
+
+/** Restores from a backup JSON string, overwriting all current local data. Returns the restored
+ * snapshot so the caller can update in-memory app state without requiring a full app restart. */
+export async function restoreBackupSnapshot(json: string): Promise<BackupSnapshot> {
+  const snapshot = parseBackupSnapshot(json);
+  await Promise.all([
+    snapshot.localUserProfile ? saveLocalUserProfile(snapshot.localUserProfile) : Promise.resolve(),
+    snapshot.taxProfile ? saveTaxProfile(snapshot.taxProfile) : Promise.resolve(),
+    saveEntries(snapshot.entries),
+    saveAppSettings(snapshot.appSettings),
+  ]);
+  return snapshot;
 }

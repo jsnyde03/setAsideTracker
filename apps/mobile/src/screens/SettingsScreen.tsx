@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import type { Entry, LocalUserProfile, TaxProfile } from "../types";
+import { buildBackupSnapshot } from "../backup";
+import { pickBackupFile, saveBackupFile } from "../backupFile";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
 import { exportEntriesAsCsv } from "../exportEntriesAsCsv";
+import { reportError } from "../errorReporting";
 import { isAppLockAvailable } from "../security/appLock";
 import { colors, radius, spacing, type } from "../theme";
 
@@ -18,6 +21,7 @@ interface SettingsScreenProps {
   appLockEnabled: boolean;
   onToggleAppLock: (enabled: boolean) => void;
   onClearAllData: () => void;
+  onRestoreBackup: (json: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -35,6 +39,7 @@ export function SettingsScreen({
   appLockEnabled,
   onToggleAppLock,
   onClearAllData,
+  onRestoreBackup,
   onClose,
 }: SettingsScreenProps) {
   // null = still checking device capability.
@@ -42,6 +47,8 @@ export function SettingsScreen({
   const [displayName, setDisplayName] = useState(localUserProfile.displayName);
   const [email, setEmail] = useState(localUserProfile.email);
   const [exporting, setExporting] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   useEffect(() => {
     isAppLockAvailable().then(setLockAvailable);
@@ -64,6 +71,7 @@ export function SettingsScreen({
     try {
       await exportEntriesAsCsv(entries, `entries-${new Date().toISOString().slice(0, 10)}.csv`);
     } catch (error) {
+      reportError(error, { where: "handleExportCsv" });
       Alert.alert(
         "Couldn't export",
         error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
@@ -71,6 +79,54 @@ export function SettingsScreen({
     } finally {
       setExporting(false);
     }
+  }
+
+  async function handleBackup() {
+    setBackingUp(true);
+    try {
+      const json = JSON.stringify(
+        buildBackupSnapshot({ localUserProfile, taxProfile, entries, appSettings: { appLockEnabled } })
+      );
+      await saveBackupFile(json, `setasidetracker-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    } catch (error) {
+      reportError(error, { where: "handleBackup" });
+      Alert.alert(
+        "Couldn't create backup",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    } finally {
+      setBackingUp(false);
+    }
+  }
+
+  async function handleRestore() {
+    Alert.alert(
+      "Restore from backup?",
+      "This replaces everything currently stored on this device — your profile, tax profile, and every entry — with what's in the backup file. This can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Choose File & Restore",
+          style: "destructive",
+          onPress: async () => {
+            setRestoring(true);
+            try {
+              const json = await pickBackupFile();
+              if (json === null) return; // user canceled the file picker
+              await onRestoreBackup(json);
+            } catch (error) {
+              reportError(error, { where: "handleRestore" });
+              Alert.alert(
+                "Couldn't restore backup",
+                error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+              );
+            } finally {
+              setRestoring(false);
+            }
+          },
+        },
+      ]
+    );
   }
 
   function handleClearAllData() {
@@ -170,6 +226,50 @@ export function SettingsScreen({
           </View>
           <Ionicons name="download-outline" size={18} color={colors.inkSubtle} />
         </Pressable>
+
+        <Text style={styles.sectionLabel}>Backup & Restore</Text>
+        <Pressable
+          onPress={handleBackup}
+          disabled={backingUp}
+          style={({ pressed }) => [
+            styles.row,
+            styles.rowSpaced,
+            pressed && styles.rowPressed,
+            backingUp && styles.rowDisabled,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Create backup file"
+          accessibilityState={{ disabled: backingUp, busy: backingUp }}
+        >
+          <View style={styles.rowText}>
+            <Text style={styles.rowLabel}>Create Backup File</Text>
+            <Text style={styles.rowHint}>
+              Save everything on this device to a file — move it to a new device, or keep it
+              somewhere safe in case this one is lost.
+            </Text>
+          </View>
+          <Ionicons name="cloud-download-outline" size={18} color={colors.inkSubtle} />
+        </Pressable>
+        <Pressable
+          onPress={handleRestore}
+          disabled={restoring}
+          style={({ pressed }) => [
+            styles.row,
+            pressed && styles.rowPressed,
+            restoring && styles.rowDisabled,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Restore from backup file"
+          accessibilityState={{ disabled: restoring, busy: restoring }}
+        >
+          <View style={styles.rowText}>
+            <Text style={styles.rowLabel}>Restore from Backup</Text>
+            <Text style={styles.rowHint}>Replace everything on this device with a backup file.</Text>
+          </View>
+          <Ionicons name="cloud-upload-outline" size={18} color={colors.inkSubtle} />
+        </Pressable>
+
+        <Text style={styles.sectionLabel}>Danger Zone</Text>
         <Pressable
           onPress={handleClearAllData}
           style={({ pressed }) => [styles.dangerButton, pressed && styles.rowPressed]}
