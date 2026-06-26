@@ -84,3 +84,10 @@ export async function scheduleQuarterlyReminders(): Promise<ScheduleResult> {
 
   return { scheduled: true, notificationCount };
 }
+
+/** Cancels any previously scheduled quarterly reminders — used when the user turns reminders off
+ * in Settings. No-op on web for the same reason scheduleQuarterlyReminders is. */
+export async function cancelQuarterlyReminders(): Promise<void> {
+  if (Platform.OS === "web") return;
+  await Notifications.cancelAllScheduledNotificationsAsync();
+}

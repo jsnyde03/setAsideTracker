@@ -24,6 +24,8 @@ interface SettingsScreenProps {
   onToggleAppLock: (enabled: boolean) => void;
   colorScheme: ColorSchemePreference;
   onChangeColorScheme: (scheme: ColorSchemePreference) => void;
+  remindersEnabled: boolean;
+  onToggleReminders: (enabled: boolean) => void;
   onClearAllData: () => void;
   onRestoreBackup: (json: string) => Promise<void>;
   onClose: () => void;
@@ -50,6 +52,8 @@ export function SettingsScreen({
   onToggleAppLock,
   colorScheme,
   onChangeColorScheme,
+  remindersEnabled,
+  onToggleReminders,
   onClearAllData,
   onRestoreBackup,
   onClose,
@@ -99,7 +103,12 @@ export function SettingsScreen({
     setBackingUp(true);
     try {
       const json = JSON.stringify(
-        buildBackupSnapshot({ localUserProfile, taxProfile, entries, appSettings: { appLockEnabled } })
+        buildBackupSnapshot({
+          localUserProfile,
+          taxProfile,
+          entries,
+          appSettings: { appLockEnabled, colorScheme, remindersEnabled },
+        })
       );
       await saveBackupFile(json, `setasidetracker-backup-${new Date().toISOString().slice(0, 10)}.json`);
     } catch (error) {
@@ -229,6 +238,21 @@ export function SettingsScreen({
             value={appLockEnabled}
             onValueChange={onToggleAppLock}
             disabled={lockAvailable !== true}
+            trackColor={{ true: colors.primary, false: colors.border }}
+          />
+        </View>
+
+        <Text style={styles.sectionLabel}>Notifications</Text>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowLabel}>Quarterly Due Date Reminders</Text>
+            <Text style={styles.rowHint}>
+              Get a heads-up 7 days before each estimated tax due date, and again on the day.
+            </Text>
+          </View>
+          <Switch
+            value={remindersEnabled}
+            onValueChange={onToggleReminders}
             trackColor={{ true: colors.primary, false: colors.border }}
           />
         </View>

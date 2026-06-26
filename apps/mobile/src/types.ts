@@ -71,4 +71,7 @@ export interface AppSettings {
   /** "system" (the default when unset) follows the OS's own light/dark setting; "light"/"dark"
    * are an explicit user override. */
   colorScheme?: "light" | "dark" | "system";
+  /** Defaults to true when unset — quarterly due-date reminders were always-on before this
+   * setting existed, so absence of the field means "keep the existing behavior," not "off." */
+  remindersEnabled?: boolean;
 }

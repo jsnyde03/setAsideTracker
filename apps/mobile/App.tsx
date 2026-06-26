@@ -25,7 +25,7 @@ import { LockScreen } from "./src/screens/LockScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { isAppLockAvailable, unlockWithDeviceAuth } from "./src/security/appLock";
-import { scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
+import { cancelQuarterlyReminders, scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
 import { trackEvent } from "./src/analytics";
 import { initErrorReporting, reportError } from "./src/errorReporting";
 import { ThemeProvider, useTheme, type ColorSchemePreference } from "./src/ThemeContext";
@@ -73,6 +73,9 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
   const [lockAvailable, setLockAvailable] = useState<boolean | null>(null);
   // Whether the user has opted into app lock — defaults to off, even on devices that support it.
   const [appLockEnabled, setAppLockEnabled] = useState(false);
+  // Whether quarterly due-date reminders are on — defaults to true (the always-on behavior
+  // before this setting existed, so existing users see no change until they actively turn it off).
+  const [remindersEnabled, setRemindersEnabled] = useState(true);
   const [isLocked, setIsLocked] = useState(false);
   const [showRetryHint, setShowRetryHint] = useState(false);
 
@@ -88,17 +91,20 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
             getAppSettings(),
           ]);
 
+        const storedRemindersEnabled = storedAppSettings.remindersEnabled ?? true;
+
         setEntries(storedEntries);
         setLockAvailable(lockIsAvailable);
         setAppLockEnabled(storedAppSettings.appLockEnabled);
         setIsLocked(lockIsAvailable && storedAppSettings.appLockEnabled);
         setColorScheme(storedAppSettings.colorScheme ?? "system");
+        setRemindersEnabled(storedRemindersEnabled);
 
         if (storedProfile && storedTaxProfile) {
           setLocalUserProfile(storedProfile);
           setTaxProfile(storedTaxProfile);
           setScreen("dashboard");
-          scheduleQuarterlyReminders();
+          if (storedRemindersEnabled) scheduleQuarterlyReminders();
         } else {
           setScreen("onboarding");
         }
@@ -153,7 +159,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
       setLocalUserProfile(profile);
       setTaxProfile(newTaxProfile);
       setScreen("dashboard");
-      scheduleQuarterlyReminders();
+      if (remindersEnabled) scheduleQuarterlyReminders();
       trackEvent("onboarding_completed", {
         state: newTaxProfile.state,
         hasW2Job: newTaxProfile.hasW2Job,
@@ -217,7 +223,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
     // next time the app backgrounds/returns or cold-starts, same as any other security setting.
     setAppLockEnabled(enabled);
     try {
-      await saveAppSettings({ appLockEnabled: enabled, colorScheme });
+      await saveAppSettings({ appLockEnabled: enabled, colorScheme, remindersEnabled });
     } catch (error) {
       reportError(error, { where: "handleToggleAppLock" });
       Alert.alert(
@@ -230,9 +236,27 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
   async function handleChangeColorScheme(scheme: ColorSchemePreference) {
     setColorScheme(scheme);
     try {
-      await saveAppSettings({ appLockEnabled, colorScheme: scheme });
+      await saveAppSettings({ appLockEnabled, colorScheme: scheme, remindersEnabled });
     } catch (error) {
       reportError(error, { where: "handleChangeColorScheme" });
+      Alert.alert(
+        "Couldn't save this setting",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
+  }
+
+  async function handleToggleReminders(enabled: boolean) {
+    setRemindersEnabled(enabled);
+    try {
+      await saveAppSettings({ appLockEnabled, colorScheme, remindersEnabled: enabled });
+      if (enabled) {
+        await scheduleQuarterlyReminders();
+      } else {
+        await cancelQuarterlyReminders();
+      }
+    } catch (error) {
+      reportError(error, { where: "handleToggleReminders" });
       Alert.alert(
         "Couldn't save this setting",
         error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
@@ -367,6 +391,8 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
           onToggleAppLock={handleToggleAppLock}
           colorScheme={colorScheme}
           onChangeColorScheme={handleChangeColorScheme}
+          remindersEnabled={remindersEnabled}
+          onToggleReminders={handleToggleReminders}
           onClearAllData={handleClearAllData}
           onRestoreBackup={handleRestoreBackup}
           onClose={() => setScreen("dashboard")}
