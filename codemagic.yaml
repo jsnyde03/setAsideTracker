@@ -15,6 +15,17 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.gigtaxtracker.app
 
+      vars:
+        # @sentry/react-native's Expo config plugin injects an "Upload Debug Symbols to Sentry"
+        # Xcode build phase that runs sentry-cli during archive — this app deliberately has no
+        # real Sentry project/DSN/org/auth-token configured yet (see errorReporting.ts: it's
+        # scaffolded but intentionally not live), so that upload has nothing valid to authenticate
+        # against and fails the whole archive step with a nonzero exit code. This explicitly
+        # disables the auto-upload to match that "not live yet" intent, rather than letting the
+        # build fail on a feature that isn't even active. Remove once a real Sentry
+        # project/DSN/auth-token exists and source-map upload is actually wanted.
+        SENTRY_DISABLE_AUTO_UPLOAD: "true"
+
     triggering:
       events:
         - push
