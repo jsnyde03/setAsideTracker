@@ -18,7 +18,8 @@ import { Chip } from "../components/Chip";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
-import { colors, spacing, type } from "../theme";
+import { spacing, type, type Colors } from "../theme";
+import { useTheme } from "../ThemeContext";
 
 interface EditTaxProfileScreenProps {
   taxProfile: TaxProfile;
@@ -51,6 +52,8 @@ function defaultPaycheckAmount(taxProfile: TaxProfile): string {
 }
 
 export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxProfileScreenProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [filingStatus, setFilingStatus] = useState<FilingStatus>(taxProfile.filingStatus);
   const [dependents, setDependents] = useState(String(taxProfile.dependents));
   const [hasW2Job, setHasW2Job] = useState(taxProfile.hasW2Job);
@@ -230,28 +233,30 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-  },
-  headerButton: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
-  headerTitle: { ...type.subtitle, fontSize: 17, color: colors.ink },
-  content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl },
-  fieldLabel: { ...type.label, color: colors.ink, marginBottom: 6, marginTop: spacing.md },
-  fieldHint: { ...type.micro, color: colors.inkSubtle, marginBottom: 6, lineHeight: 15 },
-  optionRow: { flexDirection: "row", gap: spacing.sm },
-  optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  switchRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: spacing.lg,
-  },
-  buttonWrap: { marginTop: spacing.xl },
-});
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    flex: { flex: 1 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.sm,
+    },
+    headerButton: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
+    headerTitle: { ...type.subtitle, fontSize: 17, color: colors.ink },
+    content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl },
+    fieldLabel: { ...type.label, color: colors.ink, marginBottom: 6, marginTop: spacing.md },
+    fieldHint: { ...type.micro, color: colors.inkSubtle, marginBottom: 6, lineHeight: 15 },
+    optionRow: { flexDirection: "row", gap: spacing.sm },
+    optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    switchRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: spacing.lg,
+    },
+    buttonWrap: { marginTop: spacing.xl },
+  });
+}

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
-import { colors, radius, type } from "../theme";
+import { radius, type, type Colors } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { todayIsoDate } from "../dateUtils";
 
 interface DateFieldProps {
@@ -14,6 +15,9 @@ interface DateFieldProps {
  * instead. Metro resolves this file automatically for web builds in place of DateField.tsx.
  */
 export function DateField({ label, value, onChangeValue }: DateFieldProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>{label}</Text>
@@ -22,31 +26,37 @@ export function DateField({ label, value, onChangeValue }: DateFieldProps) {
         value={value}
         max={todayIsoDate()}
         onChange={(event) => onChangeValue(event.target.value)}
-        style={webInputStyle}
+        style={webInputStyle(colors)}
         aria-label={label}
       />
     </View>
   );
 }
 
-const webInputStyle: React.CSSProperties = {
-  borderWidth: 1.5,
-  borderColor: colors.border,
-  borderStyle: "solid",
-  borderRadius: radius.md,
-  paddingTop: 11,
-  paddingBottom: 11,
-  paddingLeft: 14,
-  paddingRight: 14,
-  fontSize: 15,
-  color: colors.ink,
-  backgroundColor: colors.surface,
-  fontFamily: "inherit",
-  width: "100%",
-  boxSizing: "border-box",
-};
+// The browser's own calendar popup is OS/browser-rendered chrome and can't be restyled from
+// here — only the visible input box itself follows the theme.
+function webInputStyle(colors: Colors): React.CSSProperties {
+  return {
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderStyle: "solid",
+    borderRadius: radius.md,
+    paddingTop: 11,
+    paddingBottom: 11,
+    paddingLeft: 14,
+    paddingRight: 14,
+    fontSize: 15,
+    color: colors.ink,
+    backgroundColor: colors.surface,
+    fontFamily: "inherit",
+    width: "100%",
+    boxSizing: "border-box",
+  };
+}
 
-const styles = StyleSheet.create({
-  wrapper: { marginTop: 14 },
-  label: { ...type.label, color: colors.ink, marginBottom: 6 },
-});
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    wrapper: { marginTop: 14 },
+    label: { ...type.label, color: colors.ink, marginBottom: 6 },
+  });
+}

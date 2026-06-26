@@ -18,7 +18,8 @@ import { Chip } from "../components/Chip";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type, type Colors } from "../theme";
+import { useTheme } from "../ThemeContext";
 
 interface OnboardingScreenProps {
   onComplete: (profile: LocalUserProfile, taxProfile: TaxProfile) => void;
@@ -41,6 +42,8 @@ function formatCurrency(amount: number): string {
 }
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [filingStatus, setFilingStatus] = useState<FilingStatus>("single");
@@ -261,37 +264,39 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: { padding: spacing.xl, paddingBottom: spacing.xxxl },
-  iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.lg,
-  },
-  title: { ...type.display, color: colors.ink, marginBottom: 4 },
-  subtitle: { ...type.body, color: colors.inkSubtle, marginBottom: spacing.xl, lineHeight: 21 },
-  sectionLabel: { ...type.title, fontSize: 17, color: colors.ink, marginTop: spacing.lg, marginBottom: spacing.sm },
-  fieldLabel: { ...type.label, color: colors.ink, marginBottom: 6, marginTop: spacing.md },
-  fieldHint: { ...type.micro, color: colors.inkSubtle, marginBottom: 6, lineHeight: 15 },
-  optionRow: { flexDirection: "row", gap: spacing.sm },
-  optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  switchRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: spacing.lg,
-  },
-  disclaimerRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.sm,
-    marginTop: spacing.xl,
-  },
-  disclaimer: { flex: 1, ...type.micro, color: colors.inkSubtle, lineHeight: 16 },
-  buttonWrap: { marginTop: spacing.lg },
-});
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    flex: { flex: 1 },
+    content: { padding: spacing.xl, paddingBottom: spacing.xxxl },
+    iconCircle: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.lg,
+    },
+    title: { ...type.display, color: colors.ink, marginBottom: 4 },
+    subtitle: { ...type.body, color: colors.inkSubtle, marginBottom: spacing.xl, lineHeight: 21 },
+    sectionLabel: { ...type.title, fontSize: 17, color: colors.ink, marginTop: spacing.lg, marginBottom: spacing.sm },
+    fieldLabel: { ...type.label, color: colors.ink, marginBottom: 6, marginTop: spacing.md },
+    fieldHint: { ...type.micro, color: colors.inkSubtle, marginBottom: 6, lineHeight: 15 },
+    optionRow: { flexDirection: "row", gap: spacing.sm },
+    optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    switchRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: spacing.lg,
+    },
+    disclaimerRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+      marginTop: spacing.xl,
+    },
+    disclaimer: { flex: 1, ...type.micro, color: colors.inkSubtle, lineHeight: 16 },
+    buttonWrap: { marginTop: spacing.lg },
+  });
+}

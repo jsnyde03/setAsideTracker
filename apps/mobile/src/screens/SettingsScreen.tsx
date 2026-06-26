@@ -4,13 +4,15 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "re
 import type { Entry, LocalUserProfile, TaxProfile } from "../types";
 import { buildBackupSnapshot } from "../backup";
 import { pickBackupFile, saveBackupFile } from "../backupFile";
+import { Chip } from "../components/Chip";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
 import { exportEntriesAsCsv } from "../exportEntriesAsCsv";
 import { reportError } from "../errorReporting";
 import { isAppLockAvailable } from "../security/appLock";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type, type Colors } from "../theme";
+import { useTheme, type ColorSchemePreference } from "../ThemeContext";
 
 interface SettingsScreenProps {
   localUserProfile: LocalUserProfile;
@@ -20,6 +22,8 @@ interface SettingsScreenProps {
   entries: Entry[];
   appLockEnabled: boolean;
   onToggleAppLock: (enabled: boolean) => void;
+  colorScheme: ColorSchemePreference;
+  onChangeColorScheme: (scheme: ColorSchemePreference) => void;
   onClearAllData: () => void;
   onRestoreBackup: (json: string) => Promise<void>;
   onClose: () => void;
@@ -30,6 +34,12 @@ const FILING_STATUS_LABELS: Record<TaxProfile["filingStatus"], string> = {
   marriedFilingJointly: "Married Filing Jointly",
 };
 
+const COLOR_SCHEME_OPTIONS: { label: string; value: ColorSchemePreference }[] = [
+  { label: "System", value: "system" },
+  { label: "Light", value: "light" },
+  { label: "Dark", value: "dark" },
+];
+
 export function SettingsScreen({
   localUserProfile,
   onSaveProfile,
@@ -38,10 +48,14 @@ export function SettingsScreen({
   entries,
   appLockEnabled,
   onToggleAppLock,
+  colorScheme,
+  onChangeColorScheme,
   onClearAllData,
   onRestoreBackup,
   onClose,
 }: SettingsScreenProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   // null = still checking device capability.
   const [lockAvailable, setLockAvailable] = useState<boolean | null>(null);
   const [displayName, setDisplayName] = useState(localUserProfile.displayName);
@@ -188,6 +202,19 @@ export function SettingsScreen({
           <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
         </Pressable>
 
+        <Text style={styles.sectionLabel}>Appearance</Text>
+        <View style={styles.optionRow}>
+          {COLOR_SCHEME_OPTIONS.map((option) => (
+            <Chip
+              key={option.value}
+              label={option.label}
+              selected={colorScheme === option.value}
+              onPress={() => onChangeColorScheme(option.value)}
+              flex
+            />
+          ))}
+        </View>
+
         <Text style={styles.sectionLabel}>Security</Text>
         <View style={styles.row}>
           <View style={styles.rowText}>
@@ -287,7 +314,8 @@ export function SettingsScreen({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -300,6 +328,7 @@ const styles = StyleSheet.create({
   headerTitle: { ...type.subtitle, fontSize: 17, color: colors.ink },
   content: { padding: spacing.xl, paddingBottom: spacing.xxxl },
   sectionLabel: { ...type.title, fontSize: 17, color: colors.ink, marginTop: spacing.lg, marginBottom: spacing.md },
+  optionRow: { flexDirection: "row", gap: spacing.sm },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -334,4 +363,5 @@ const styles = StyleSheet.create({
   },
   dangerLabel: { ...type.subtitle, fontSize: 16, color: colors.danger },
   dangerHint: { ...type.micro, color: colors.inkFaint, marginTop: spacing.sm, lineHeight: 15 },
-});
+  });
+}

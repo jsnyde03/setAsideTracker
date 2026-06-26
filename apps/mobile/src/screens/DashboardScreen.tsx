@@ -13,7 +13,8 @@ import {
 import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
-import { colors, radius, shadow, shadowSm, spacing, type } from "../theme";
+import { radius, shadow, shadowSm, spacing, type, type Colors } from "../theme";
+import { useTheme } from "../ThemeContext";
 
 interface DashboardScreenProps {
   entries: Entry[];
@@ -62,6 +63,8 @@ export function DashboardScreen({
   onOpenSettings,
   onUpdateAmountSetAside,
 }: DashboardScreenProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const taxEstimate = computeTaxEstimate(entries, taxProfile);
   const { estimate, year, usedFallbackConfig, w2WithholdingYtdEstimate, netAmountToSetAside } =
     taxEstimate;
@@ -349,7 +352,8 @@ export function DashboardScreen({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
   listContent: { padding: spacing.xl, paddingBottom: spacing.xxxl },
   greetingRow: {
     flexDirection: "row",
@@ -485,4 +489,5 @@ const styles = StyleSheet.create({
   entryExpenses: { ...type.micro, color: colors.danger, marginTop: 2 },
   entryAmount: { ...type.subtitle, color: colors.ink },
   disclaimer: { ...type.micro, color: colors.inkFaint, textAlign: "center", marginTop: spacing.lg },
-});
+  });
+}

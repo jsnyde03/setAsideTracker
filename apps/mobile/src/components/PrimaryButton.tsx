@@ -1,6 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, radius, shadowSm, type } from "../theme";
+import { radius, shadowSm, type, type Colors } from "../theme";
+import { useTheme } from "../ThemeContext";
 
 interface PrimaryButtonProps {
   label: string;
@@ -19,6 +20,9 @@ export function PrimaryButton({
   disabled,
   loading,
 }: PrimaryButtonProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   function handlePress() {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -65,21 +69,23 @@ export function PrimaryButton({
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    borderRadius: radius.lg,
-    paddingVertical: 15,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  primary: { backgroundColor: colors.primary, ...shadowSm },
-  secondary: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border },
-  ghost: { backgroundColor: "transparent", paddingVertical: 12 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.985 }] },
-  disabled: { opacity: 0.45 },
-  content: { flexDirection: "row", alignItems: "center", gap: 8 },
-  label: { ...type.subtitle, fontSize: 16 },
-  labelPrimary: { color: "#fff" },
-  labelSecondary: { color: colors.ink },
-  labelGhost: { color: colors.primary },
-});
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    base: {
+      borderRadius: radius.lg,
+      paddingVertical: 15,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    primary: { backgroundColor: colors.primary, ...shadowSm },
+    secondary: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border },
+    ghost: { backgroundColor: "transparent", paddingVertical: 12 },
+    pressed: { opacity: 0.85, transform: [{ scale: 0.985 }] },
+    disabled: { opacity: 0.45 },
+    content: { flexDirection: "row", alignItems: "center", gap: 8 },
+    label: { ...type.subtitle, fontSize: 16 },
+    labelPrimary: { color: "#fff" },
+    labelSecondary: { color: colors.ink },
+    labelGhost: { color: colors.primary },
+  });
+}

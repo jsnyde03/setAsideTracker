@@ -17,7 +17,8 @@ import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
 import { todayIsoDate } from "../dateUtils";
-import { colors, spacing, type } from "../theme";
+import { spacing, type, type Colors } from "../theme";
+import { useTheme } from "../ThemeContext";
 
 interface AddEntryScreenProps {
   onSave: (entry: Entry) => void;
@@ -38,6 +39,8 @@ const PLATFORM_OPTIONS: { label: string; value: GigPlatform }[] = [
 ];
 
 export function AddEntryScreen({ onSave, onCancel, entry, onDelete }: AddEntryScreenProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const isEditing = entry !== undefined;
 
   const [platform, setPlatform] = useState<GigPlatform>(entry?.platform ?? "amazonFlex");
@@ -209,28 +212,30 @@ export function AddEntryScreen({ onSave, onCancel, entry, onDelete }: AddEntrySc
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-  },
-  headerButton: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
-  headerTitle: { ...type.subtitle, fontSize: 17, color: colors.ink },
-  content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl },
-  fieldLabel: { ...type.label, color: colors.ink, marginTop: spacing.sm, marginBottom: 6 },
-  optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  expensesToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: spacing.md,
-    marginTop: spacing.sm,
-  },
-  expensesToggleText: { color: colors.primary, ...type.label },
-  buttonGroup: { marginTop: spacing.xl, gap: spacing.sm },
-});
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    flex: { flex: 1 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.sm,
+    },
+    headerButton: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
+    headerTitle: { ...type.subtitle, fontSize: 17, color: colors.ink },
+    content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl },
+    fieldLabel: { ...type.label, color: colors.ink, marginTop: spacing.sm, marginBottom: 6 },
+    optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    expensesToggle: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingVertical: spacing.md,
+      marginTop: spacing.sm,
+    },
+    expensesToggleText: { color: colors.primary, ...type.label },
+    buttonGroup: { marginTop: spacing.xl, gap: spacing.sm },
+  });
+}

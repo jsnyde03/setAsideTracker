@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Animated, Platform, StyleSheet, ViewStyle } from "react-native";
 import { SafeAreaView, Edge } from "react-native-safe-area-context";
-import { colors } from "../theme";
+import type { Colors } from "../theme";
+import { useTheme } from "../ThemeContext";
 
 interface ScreenProps {
   children: React.ReactNode;
@@ -14,6 +15,8 @@ interface ScreenProps {
 const ANIMATE_ENTRANCE = Platform.OS !== "web";
 
 export function Screen({ children, style, edges = ["top", "bottom", "left", "right"] }: ScreenProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const opacity = useRef(new Animated.Value(ANIMATE_ENTRANCE ? 0 : 1)).current;
   const translateY = useRef(new Animated.Value(ANIMATE_ENTRANCE ? 8 : 0)).current;
 
@@ -34,7 +37,9 @@ export function Screen({ children, style, edges = ["top", "bottom", "left", "rig
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.bg },
-  flex: { flex: 1 },
-});
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: colors.bg },
+    flex: { flex: 1 },
+  });
+}

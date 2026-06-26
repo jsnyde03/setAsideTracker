@@ -28,23 +28,40 @@ import { isAppLockAvailable, unlockWithDeviceAuth } from "./src/security/appLock
 import { scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
 import { trackEvent } from "./src/analytics";
 import { initErrorReporting, reportError } from "./src/errorReporting";
-import { colors } from "./src/theme";
+import { ThemeProvider, useTheme, type ColorSchemePreference } from "./src/ThemeContext";
 
 initErrorReporting();
 
 type Screen = "loading" | "onboarding" | "dashboard" | "addEntry" | "settings" | "editTaxProfile";
 
 export default function App() {
+  // Lifted above AppContent (rather than state inside it) so ThemeProvider can wrap AppContent
+  // and still have AppContent's own useTheme() calls see the live value — a component can't
+  // consume a context it renders itself, only its descendants can.
+  const [colorScheme, setColorScheme] = useState<ColorSchemePreference>("system");
+
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <AppContent />
-      </ErrorBoundary>
+      <ThemeProvider scheme={colorScheme}>
+        <ErrorBoundary>
+          <AppContent colorScheme={colorScheme} setColorScheme={setColorScheme} />
+        </ErrorBoundary>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
 
-function AppContent() {
+interface AppContentProps {
+  colorScheme: ColorSchemePreference;
+  setColorScheme: (scheme: ColorSchemePreference) => void;
+}
+
+function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
+  const { colors, isDark } = useTheme();
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.bg },
+    loadingContainer: { flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
+  });
   const [screen, setScreen] = useState<Screen>("loading");
   const [localUserProfile, setLocalUserProfile] = useState<LocalUserProfile | null>(null);
   const [taxProfile, setTaxProfile] = useState<TaxProfile | null>(null);
@@ -75,6 +92,7 @@ function AppContent() {
         setLockAvailable(lockIsAvailable);
         setAppLockEnabled(storedAppSettings.appLockEnabled);
         setIsLocked(lockIsAvailable && storedAppSettings.appLockEnabled);
+        setColorScheme(storedAppSettings.colorScheme ?? "system");
 
         if (storedProfile && storedTaxProfile) {
           setLocalUserProfile(storedProfile);
@@ -199,9 +217,22 @@ function AppContent() {
     // next time the app backgrounds/returns or cold-starts, same as any other security setting.
     setAppLockEnabled(enabled);
     try {
-      await saveAppSettings({ appLockEnabled: enabled });
+      await saveAppSettings({ appLockEnabled: enabled, colorScheme });
     } catch (error) {
       reportError(error, { where: "handleToggleAppLock" });
+      Alert.alert(
+        "Couldn't save this setting",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
+  }
+
+  async function handleChangeColorScheme(scheme: ColorSchemePreference) {
+    setColorScheme(scheme);
+    try {
+      await saveAppSettings({ appLockEnabled, colorScheme: scheme });
+    } catch (error) {
+      reportError(error, { where: "handleChangeColorScheme" });
       Alert.alert(
         "Couldn't save this setting",
         error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
@@ -286,7 +317,7 @@ function AppContent() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <StatusBar style="dark" />
+        <StatusBar style={isDark ? "light" : "dark"} />
       </View>
     );
   }
@@ -295,7 +326,7 @@ function AppContent() {
     return (
       <View style={styles.container}>
         <LockScreen onUnlock={handleUnlock} showRetryHint={showRetryHint} />
-        <StatusBar style="dark" />
+        <StatusBar style={isDark ? "light" : "dark"} />
       </View>
     );
   }
@@ -304,7 +335,7 @@ function AppContent() {
     return (
       <View style={styles.container}>
         <OnboardingScreen onComplete={handleOnboardingComplete} />
-        <StatusBar style="dark" />
+        <StatusBar style={isDark ? "light" : "dark"} />
       </View>
     );
   }
@@ -318,7 +349,7 @@ function AppContent() {
           onCancel={handleCancelEntry}
           onDelete={handleDeleteEntry}
         />
-        <StatusBar style="dark" />
+        <StatusBar style={isDark ? "light" : "dark"} />
       </View>
     );
   }
@@ -334,11 +365,13 @@ function AppContent() {
           entries={entries}
           appLockEnabled={appLockEnabled}
           onToggleAppLock={handleToggleAppLock}
+          colorScheme={colorScheme}
+          onChangeColorScheme={handleChangeColorScheme}
           onClearAllData={handleClearAllData}
           onRestoreBackup={handleRestoreBackup}
           onClose={() => setScreen("dashboard")}
         />
-        <StatusBar style="dark" />
+        <StatusBar style={isDark ? "light" : "dark"} />
       </View>
     );
   }
@@ -351,7 +384,7 @@ function AppContent() {
           onSave={handleSaveTaxProfile}
           onCancel={() => setScreen("settings")}
         />
-        <StatusBar style="dark" />
+        <StatusBar style={isDark ? "light" : "dark"} />
       </View>
     );
   }
@@ -367,12 +400,7 @@ function AppContent() {
         onOpenSettings={() => setScreen("settings")}
         onUpdateAmountSetAside={handleUpdateAmountSetAside}
       />
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? "light" : "dark"} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  loadingContainer: { flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
-});

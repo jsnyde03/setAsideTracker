@@ -1,7 +1,8 @@
 import { useState } from "react";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, radius, type } from "../theme";
+import { radius, type, type Colors } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { parseIsoDateLocal, toIsoDateLocal } from "../dateUtils";
 
 interface DateFieldProps {
@@ -26,6 +27,8 @@ function formatDisplay(iso: string): string {
  * picker library has no web support at all, so Metro picks whichever file matches the platform.
  */
 export function DateField({ label, value, onChangeValue }: DateFieldProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [show, setShow] = useState(false);
 
   function handleChange(event: DateTimePickerEvent, selectedDate?: Date) {
@@ -61,16 +64,18 @@ export function DateField({ label, value, onChangeValue }: DateFieldProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: { marginTop: 14 },
-  label: { ...type.label, color: colors.ink, marginBottom: 6 },
-  input: {
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: colors.surface,
-  },
-  valueText: { fontSize: 15, color: colors.ink },
-});
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    wrapper: { marginTop: 14 },
+    label: { ...type.label, color: colors.ink, marginBottom: 6 },
+    input: {
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      backgroundColor: colors.surface,
+    },
+    valueText: { fontSize: 15, color: colors.ink },
+  });
+}

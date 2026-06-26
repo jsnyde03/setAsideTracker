@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 
-export const colors = {
+/** Light palette — the original, unchanged token values. */
+export const lightColors = {
   bg: "#F7F8FA",
   surface: "#FFFFFF",
   surfaceAlt: "#F0F2F5",
@@ -28,6 +29,39 @@ export const colors = {
 
   overlay: "rgba(15, 18, 25, 0.55)",
 };
+
+/** Dark palette — same semantic token set as lightColors, every screen/component reads through
+ * useTheme() so it actually applies; see ThemeContext.tsx. */
+export const darkColors: typeof lightColors = {
+  bg: "#0F1219",
+  surface: "#1A1E27",
+  surfaceAlt: "#222632",
+
+  ink: "#F2F4F7",
+  inkSubtle: "#A8AFBC",
+  inkFaint: "#6B7280",
+
+  primary: "#3B82F6",
+  primaryDark: "#1D4ED8",
+  primarySoft: "#1E2A44",
+
+  accent: "#34D399",
+  accentSoft: "#16302A",
+
+  warn: "#FBBF24",
+  warnBg: "#3A2E12",
+  warnBorder: "#5A4A1E",
+
+  danger: "#F87171",
+  dangerSoft: "#3A1F1F",
+
+  border: "#2B3040",
+  borderSoft: "#242834",
+
+  overlay: "rgba(0, 0, 0, 0.65)",
+};
+
+export type Colors = typeof lightColors;
 
 export const spacing = {
   xs: 4,

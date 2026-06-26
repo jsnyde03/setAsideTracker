@@ -68,4 +68,7 @@ export interface Entry {
 export interface AppSettings {
   /** Defaults to false — app lock is opt-in, not on by default, even on devices that support it. */
   appLockEnabled: boolean;
+  /** "system" (the default when unset) follows the OS's own light/dark setting; "light"/"dark"
+   * are an explicit user override. */
+  colorScheme?: "light" | "dark" | "system";
 }
