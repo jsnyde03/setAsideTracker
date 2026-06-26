@@ -68,18 +68,24 @@ workflows:
           cd apps/mobile/ios
           pod install
 
-      # Initializing the keychain and adding certificates by hand here was redundant, and may have
-      # actively been the cause of intermittent signing failures (e.g. "Failed to set code
-      # signing settings" for a third-party library's nested .xcodeproj): when `ios_signing` is
-      # configured under `environment` (above), Codemagic automatically initializes its own
-      # keychain and fetches/adds the matching certificate before any script step runs. Re-running
-      # `keychain initialize` here created a second, separate keychain that the certificate wasn't
-      # necessarily in, which could explain signing matching being inconsistent across different
-      # .xcodeproj targets in the same build. `xcode-project use-profiles` (the one remaining step)
-      # is still required — it's what *applies* the already-fetched profile to the Xcode project;
-      # only the keychain/certificate retrieval is automatic, not profile application.
+      # Initializing the keychain and adding certificates by hand here was redundant once
+      # `ios_signing` (above) was configured — Codemagic already does both automatically before
+      # any script runs — so those two steps were removed.
+      #
+      # Confirmed root cause of "Failed to set code signing settings for
+      # node_modules/@react-native-community/datetimepicker/ios/RNDateTimePicker.xcodeproj":
+      # `xcode-project use-profiles`'s `--project` flag defaults to the glob `**/*.xcodeproj`,
+      # which matches every Xcode project under the repo — including ones bundled inside
+      # third-party native module source under node_modules. @react-native-community/datetimepicker
+      # was the first dependency added to this project that ships its own standalone .xcodeproj, so
+      # this never came up before it was added. That library project has no provisioning profile of
+      # its own to match, so applying signing settings to it fails. Fixed by scoping `--project`
+      # explicitly to just the real app project, and adding `--warn-only` as a safety net in case a
+      # future dependency introduces another foreign .xcodeproj the same way.
       - name: Apply iOS signing profiles
-        script: xcode-project use-profiles
+        script: |
+          cd apps/mobile
+          xcode-project use-profiles --project ios/SetAsideTracker.xcodeproj --warn-only
 
       - name: Increment iOS build number
         # Matches the working pattern from the other app on this Codemagic account.
