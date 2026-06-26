@@ -157,7 +157,7 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
     - **Third issue, found on the build *after* that one (signing now passed, archive then failed):** the IPA build itself failed. `@sentry/react-native`'s Expo config plugin (also added in the same large push) injects an "Upload Debug Symbols to Sentry" Xcode build phase that runs `sentry-cli` during archive — confirmed via the actual `@sentry/react-native` GitHub issue tracker as a known failure mode when no real Sentry project/DSN/org/auth-token is configured (exactly this app's situation, since Sentry is deliberately scaffolded-but-not-live — see the crash-reporting item above). That upload step has nothing to authenticate against and fails with a nonzero exit code, aborting the whole archive. Fixed with `SENTRY_DISABLE_AUTO_UPLOAD: "true"` under `codemagic.yaml`'s `environment.vars` — matches the "not live yet" intent directly rather than letting an inactive feature fail the build. Remove this var once a real Sentry project/DSN/auth-token exists and source-map upload is actually wanted.
   - **Android intentionally not included** — no Google Play Console signing credentials set up yet. Adding it later follows the identical shape (prebuild → Gradle → `google_play` publishing) once those exist.
   - Verified everything that's verifiable outside macOS: `npm ci` at the repo root, `services/tax-engine`'s build + full test suite, and `apps/mobile`'s typecheck + full test suite all pass cleanly post-clean-install. `expo prebuild --platform ios` itself can only run on macOS/Linux (Expo skips iOS native generation on Windows) — confirmed the config is otherwise valid by successfully running `expo prebuild --platform android` instead as a structural sanity check (same `app.json`, same code-generation pipeline), then discarded that test output since Android isn't part of this CI workflow yet.
-- [x] **True hourly rate calculator — DONE, pulled forward from v1.4.** New optional `Entry.hoursWorked` field (`apps/mobile/src/types.ts`) plus a matching "Hours worked (optional)" `TextField` in `AddEntryScreen`, satisfying the prerequisite the original gap called out. New pure `effectiveHourlyRate()` in `calculations.ts`: take-home pay (gross earnings minus logged cash expenses minus the tax set-aside) divided by total hours worked across the year's entries, returning `undefined` when no hours have been logged anywhere (rather than dividing by zero) so the dashboard line only appears once it's meaningful. `EntryAggregate` gained `totalHoursWorked` (entries without `hoursWorked` contribute 0, not an error). New "Effective hourly rate (after taxes)" line in the existing "Total earnings logged" card on `DashboardScreen`.
+- [x] **True hourly rate calculator — DONE, pulled forward from v1.5 (Retention & Growth Features).** New optional `Entry.hoursWorked` field (`apps/mobile/src/types.ts`) plus a matching "Hours worked (optional)" `TextField` in `AddEntryScreen`, satisfying the prerequisite the original gap called out. New pure `effectiveHourlyRate()` in `calculations.ts`: take-home pay (gross earnings minus logged cash expenses minus the tax set-aside) divided by total hours worked across the year's entries, returning `undefined` when no hours have been logged anywhere (rather than dividing by zero) so the dashboard line only appears once it's meaningful. `EntryAggregate` gained `totalHoursWorked` (entries without `hoursWorked` contribute 0, not an error). New "Effective hourly rate (after taxes)" line in the existing "Total earnings logged" card on `DashboardScreen`.
   - **Deliberate simplification, flagged in code:** does NOT additionally subtract a mileage-implied vehicle-cost dollar estimate on top of the tax set-aside, even though the original gap description hedged that as "ideally" included — the standard mileage rate already reduces the tax set-aside via the tax engine's deduction, so subtracting it again here would double-count it as if it were a second real cash outflow, not just a tax deduction.
   - 4 new tests (3 for `effectiveHourlyRate`: no-hours-logged returns undefined, the standard divide-by-hours case, and the rare negative-rate case where the tax set-aside exceeds take-home pay; 1 for `aggregateEntries` summing `hoursWorked` across entries that have it set while treating entries without it as 0) — 45 mobile tests passing. Tax-engine untouched.
   - Verified end-to-end in a real browser session: an entry with no hours logged correctly showed no hourly-rate line at all; adding a second $300 entry with 10 hours logged (total $800 earnings, $113.04 tax set-aside, $0 expenses across both) showed "$68.70/hr," matching hand-checked arithmetic exactly ((800 − 0 − 113.04) ÷ 10 = 68.696).
@@ -209,9 +209,9 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
   - Verified in a real browser session: with only a 2026 entry, the badge shows as a plain static label (no switcher chrome). After logging a $500 entry dated 2025-03-15, the switcher appeared; clicking the back chevron correctly switched the entire dashboard — earnings ($0 → $500), the tax estimate ($0 → $70.65, recomputed against the 2025 config), and the catch-up status (recalculated against 2025's own `amountSetAsideByYear` entry, correctly separate from 2026's) — to 2025's data.
 **Ships to:** general public, free tier only. **Exit criteria:** stable public release, no payment infra live yet — validate retention before monetizing.
 
-## ⬜ v1.1 — Premium Tier Launch
+## ⬜ v1.1 — W2 Tax Modeling Rebuild
 **Status: Not Started**
-**Goal:** turn on monetization once free-tier retention looks healthy.
+**Goal:** fix the 3 compounding bugs found during v1.0 real-device testing and re-enable the W2 feature flag — free tier, no monetization dependency. Split out from what was originally one bundled "v1.1" so the rebuild doesn't wait on the payment-infra decision below, and premium launch doesn't wait on this rebuild finishing.
 - **[HIGH PRIORITY] Rebuild W2 tax modeling — disabled in v1.0 after real-device testing found 3 compounding bugs.** Pulled out of v1.0 (see that section's follow-up note for the full bug writeup) rather than patched under launch time pressure. Full redesign, confirmed during the v1.0 investigation:
   - **Lead with year-to-date actuals from a real pay stub, not estimates.** New optional `TaxProfile` fields: `w2YtdGrossPay`, `w2YtdFederalWithheld`, `w2YtdStateWithheld` (from the YTD column of a recent pay stub). When present, these replace the *elapsed* portion of the year's income/withholding entirely — only the *remaining* pay periods need projecting from a per-paycheck average. This is also the cleanest fix for **irregular/variable W2 pay** (a real edge case raised separately) — YTD actual is exact regardless of how lumpy past paychecks were; the averaging error only applies to the smaller, not-yet-happened portion of the year.
   - **Replace "take-home pay" with real pay-stub fields.** The current `w2PaycheckAmount` field is explicitly labeled "take-home pay" in the UI but is fed into the tax engine as gross taxable income — take-home already has tax/FICA/401k/insurance removed. Replace with: gross pay per paycheck, **401k per paycheck** and **insurance/HSA per paycheck as separate fields** (confirmed during design discussion — 401k reduces federal/state taxable wages but NOT Social Security/Medicare wages, while pre-tax insurance/HSA typically reduces both, so lumping them into one field would misstate FICA wages), and pay frequency (unchanged).
@@ -219,16 +219,22 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
   - **Stop time-proration of the withholding credit.** Today's `netAmountToSetAside` credits only *elapsed-time-prorated* withholding against the *full year's* liability — but future paychecks keep withholding automatically, so that "gap" isn't real. New logic: if YTD actuals are present, credit = YTD actual + (estimated withholding for only the *remaining* pay periods); if not, credit = the full unprorated annual estimate (no more penalizing for elapsed time against an estimate that was never grounded in real data anyway).
   - **Fix two real bugs in `services/tax-engine/src/seTax.ts`** that only manifest with combined W2+SE income — confirmed via direct code reading and the IRS Schedule SE instructions during this design pass, not just inferred: (1) **Social Security wage base** — `calculateSeTax` caps SE earnings against the *full* wage base regardless of W2 Social Security wages already counted toward it (Schedule SE Line 8 explicitly reduces the available base by W2 SS wages first) — currently *overstates* SE tax for anyone with substantial W2 income; (2) **Additional Medicare Tax** — computed on SE earnings alone, ignoring W2 wages already counting toward the $200k/$250k threshold — currently *understates* tax for high combined earners. Fix: `calculateSeTax` gains an `otherFicaWages` parameter (gross W2 pay minus insurance/HSA only, NOT minus 401k, since 401k doesn't reduce FICA wages) that reduces both the available SS wage base and the Additional Medicare threshold before applying them to SE earnings.
   - Existing W2 logic in `calculations.ts`/`w2Withholding.ts` (and its passing tests) was deliberately left in place when this was disabled for v1.0 — review it first as a starting point before rebuilding from scratch.
-- Payment infra decision executed: IAP (Apple Small Business Program enrolled for 15% rate) vs. Stripe web checkout per [ROADMAP §8.4](ROADMAP.md)
-- Subscription management + dunning/failed-payment handling
+**Ships to:** general public, free tier. **Exit criteria:** re-enable `W2_JOB_SUPPORT_ENABLED`, verify against the original real-device bug scenario plus the new pay-stub/irregular-pay edge cases.
+
+## ⬜ v1.2 — Premium Tier Launch
+**Status: Not Started**
+**Goal:** turn on monetization once free-tier retention looks healthy.
+- **Payment infra: Apple In-App Purchase (IAP), via StoreKit 2.** Decided over Stripe web checkout — Apple's App Review Guideline 3.1.1 requires IAP for unlocking in-app digital features (a Stripe-only path would risk rejection without restructuring the app around an external account/web-portal model), and StoreKit 2's local transaction/entitlement APIs fit this app's local-first, no-backend architecture without needing a server just to validate a subscription. Already enrolled in the Apple Small Business Program for the 15% rate. Per [ROADMAP §8.4](ROADMAP.md).
+- **Entitlement-check mechanism via RevenueCat — does not exist in the codebase at all today**, since there's no premium/free split yet. RevenueCat over raw StoreKit 2 since it already covers receipt validation, entitlement caching, restore-purchases, and subscription-lifecycle webhooks out of the box (also unifies with Google Play Billing for free if Android ever ships, without a second integration); already integrated this same way on another app, so the setup is a known quantity rather than new ground. `react-native-purchases` SDK, a RevenueCat-side product/entitlement configured to match the App Store Connect subscription, checked at app launch via the SDK's cached customer info (no custom server needed).
+- Subscription management + dunning/failed-payment handling — RevenueCat surfaces billing-issue/grace-period status directly on customer info, so this is mostly reading that and deep-linking to the App Store's native "Manage Subscription" screen rather than custom retry logic.
 - Unlimited platform tracking, multi-state support
 - PDF tax-ready summary report export
 - Year-over-year insights (once there's a year of data — soft-gate until applicable)
 - **"Show your math" audit-trail view** (free — ships alongside premium launch as a trust feature, never paywalled, per [ROADMAP §9.4](ROADMAP.md))
-- **Custom/user-defined expense categories** (premium) — pairs with the Schedule C alignment work in v1.5
+- **Custom/user-defined expense categories** (premium) — pairs with the Schedule C alignment work in v1.6
 **Ships to:** general public. **Exit criteria:** premium conversion funnel works end-to-end, including cancel/refund flows.
 
-## ⬜ v1.2 — Platform Auto-Sync
+## ⬜ v1.3 — Platform Auto-Sync
 **Status: Not Started**
 **Goal:** kill the manual-entry tax for the platforms that matter most.
 - Argyle (or equivalent) integration for Amazon Flex, Uber, DoorDash, Instacart per [ROADMAP §3.5](ROADMAP.md)
@@ -236,7 +242,7 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 - Premium-gated "auto-sync your earnings"
 **Ships to:** general public, premium feature. **Exit criteria:** auto-synced entries match manual entries in accuracy during a parallel-run validation period.
 
-## ⬜ v1.3 — Mileage & Receipts Automation
+## ⬜ v1.4 — Mileage & Receipts Automation
 **Status: Not Started**
 **Goal:** automate the two most tedious manual inputs.
 - GPS-assisted mileage tracking (geofencing/significant-change APIs, not continuous polling — battery concern per [ROADMAP §8.3](ROADMAP.md))
@@ -244,7 +250,7 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 - **IRS-compliant mileage log fields** (business purpose + locations per entry, not just a mileage total) — strengthens audit defensibility and gives GPS-detected trips somewhere to put the purpose they can't infer automatically. Per [ROADMAP §2.2](ROADMAP.md).
 **Ships to:** general public, premium feature.
 
-## ⬜ v1.4 — Retention & Growth Features
+## ⬜ v1.5 — Retention & Growth Features
 **Status: Not Started**
 **Goal:** the features designed to make this "kickass," not just functional — per [ROADMAP §9](ROADMAP.md).
 - Home-screen/lock-screen widget (today's earnings + set-aside number)
@@ -255,7 +261,7 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 **Ships to:** general public; widget + what-if simulator + milestones/referral in free tier (drives sharing/virality), optimizer as premium.
 **Note:** the true hourly rate calculator originally planned here was pulled forward into v1.0 — see below.
 
-## ⬜ v1.5 — Filing Season Toolkit
+## ⬜ v1.6 — Filing Season Toolkit
 **Status: Not Started**
 **Goal:** be indispensable in Jan–April, when gig workers actually file.
 - Schedule C category alignment for expenses ([ROADMAP §8.1](ROADMAP.md))
@@ -265,12 +271,12 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 - **Safe-harbor / Form 2210 underpayment-penalty calculator** (free, trust feature) — surfaces the IRS's 110%-of-prior-year safe-harbor rule directly in the UI. Per [ROADMAP §2.2/§9.4](ROADMAP.md).
 **Ships to:** general public, timed for tax season launch.
 
-## ⬜ v1.6 — Money-Moves & Pro Tools
+## ⬜ v1.7 — Money-Moves & Pro Tools
 **Status: Not Started**
 **Goal:** turn the app's data into concrete financial decisions, not just numbers — the "amazing premium tier" features.
 - W-4 withholding optimizer (W2+1099 combo — suggest adjusting W2 withholding to cover 1099 liability instead of quarterly payments)
 - QuickBooks Self-Employed-compatible export
-- CPA/tax-pro shareable summary package (beyond the plain PDF from v1.1 — a dedicated "share with your preparer" flow)
+- CPA/tax-pro shareable summary package (beyond the plain PDF from v1.2 — a dedicated "share with your preparer" flow)
 - Multi-vehicle selection/tracking (per-entry vehicle, feeding the v2.3 vehicle break-even analysis)
 **Ships to:** general public, premium feature. **Exit criteria:** each feature independently demonstrates a concrete dollar-value or time-saved benefit a user can point to (e.g. "this caught $X you'd have missed").
 
@@ -318,7 +324,8 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 ## Sequencing notes
 - **v0.1–v0.3 are not public** — they exist to de-risk the tax engine and core loop before any store submission or marketing spend.
-- **Don't start v1.2 (platform auto-sync) before v1.1 (payment infra) is stable** — auto-sync is the single best premium conversion driver and shouldn't launch into a broken checkout flow.
-- **v1.5 (filing season toolkit) is date-sensitive** — target shipping by early January regardless of where other version work stands, since the value window is narrow (Jan–April).
+- **v1.1 (W2 rebuild) has no dependency on v1.2's payment infra** — it's a free-tier bug fix pulled out of v1.0, so it can ship on its own timeline, ahead of or in parallel with the premium-launch decision.
+- **Don't start v1.3 (platform auto-sync) before v1.2 (payment infra) is stable** — auto-sync is the single best premium conversion driver and shouldn't launch into a broken checkout flow.
+- **v1.6 (filing season toolkit) is date-sensitive** — target shipping by early January regardless of where other version work stands, since the value window is narrow (Jan–April).
 - **v2.0 is gated on the cost model, not the calendar** — don't ship AI tier features until per-user inference economics are validated; this is the one version where "feature complete" should yield to "financially sound."
-- **v1.6 (Money-Moves & Pro Tools) only depends on v1.1's premium infra being live** — it doesn't need platform auto-sync (v1.2) or mileage/receipt automation (v1.3), so it can ship in parallel with or ahead of either if it's a faster win.
+- **v1.7 (Money-Moves & Pro Tools) only depends on v1.2's premium infra being live** — it doesn't need platform auto-sync (v1.3) or mileage/receipt automation (v1.4), so it can ship in parallel with or ahead of either if it's a faster win.
