@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
-import type { LocalUserProfile, TaxProfile } from "../types";
+import type { Entry, LocalUserProfile, TaxProfile } from "../types";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
+import { exportEntriesAsCsv } from "../exportEntriesAsCsv";
 import { isAppLockAvailable } from "../security/appLock";
 import { colors, radius, spacing, type } from "../theme";
 
@@ -13,6 +14,7 @@ interface SettingsScreenProps {
   onSaveProfile: (profile: LocalUserProfile) => void;
   taxProfile: TaxProfile;
   onEditTaxProfile: () => void;
+  entries: Entry[];
   appLockEnabled: boolean;
   onToggleAppLock: (enabled: boolean) => void;
   onClearAllData: () => void;
@@ -29,6 +31,7 @@ export function SettingsScreen({
   onSaveProfile,
   taxProfile,
   onEditTaxProfile,
+  entries,
   appLockEnabled,
   onToggleAppLock,
   onClearAllData,
@@ -38,6 +41,7 @@ export function SettingsScreen({
   const [lockAvailable, setLockAvailable] = useState<boolean | null>(null);
   const [displayName, setDisplayName] = useState(localUserProfile.displayName);
   const [email, setEmail] = useState(localUserProfile.email);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     isAppLockAvailable().then(setLockAvailable);
@@ -49,6 +53,24 @@ export function SettingsScreen({
       return;
     }
     onSaveProfile({ ...localUserProfile, displayName: displayName.trim(), email: email.trim() });
+  }
+
+  async function handleExportCsv() {
+    if (entries.length === 0) {
+      Alert.alert("No entries yet", "Log at least one entry before exporting.");
+      return;
+    }
+    setExporting(true);
+    try {
+      await exportEntriesAsCsv(entries, `entries-${new Date().toISOString().slice(0, 10)}.csv`);
+    } catch (error) {
+      Alert.alert(
+        "Couldn't export",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    } finally {
+      setExporting(false);
+    }
   }
 
   function handleClearAllData() {
@@ -130,6 +152,25 @@ export function SettingsScreen({
 
         <Text style={styles.sectionLabel}>Data</Text>
         <Pressable
+          onPress={handleExportCsv}
+          disabled={exporting}
+          style={({ pressed }) => [
+            styles.row,
+            styles.rowSpaced,
+            pressed && styles.rowPressed,
+            exporting && styles.rowDisabled,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Export data as CSV"
+          accessibilityState={{ disabled: exporting, busy: exporting }}
+        >
+          <View style={styles.rowText}>
+            <Text style={styles.rowLabel}>Export Data (CSV)</Text>
+            <Text style={styles.rowHint}>Download every logged entry as a spreadsheet file.</Text>
+          </View>
+          <Ionicons name="download-outline" size={18} color={colors.inkSubtle} />
+        </Pressable>
+        <Pressable
           onPress={handleClearAllData}
           style={({ pressed }) => [styles.dangerButton, pressed && styles.rowPressed]}
           accessibilityRole="button"
@@ -175,6 +216,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   rowPressed: { opacity: 0.7 },
+  rowDisabled: { opacity: 0.5 },
+  rowSpaced: { marginBottom: spacing.sm },
   rowText: { flex: 1 },
   rowLabel: { ...type.subtitle, color: colors.ink },
   rowHint: { ...type.micro, color: colors.inkSubtle, marginTop: 4, lineHeight: 15 },

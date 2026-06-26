@@ -302,6 +302,7 @@ function AppContent() {
           onSaveProfile={handleSaveProfile}
           taxProfile={taxProfile as TaxProfile}
           onEditTaxProfile={() => setScreen("editTaxProfile")}
+          entries={entries}
           appLockEnabled={appLockEnabled}
           onToggleAppLock={handleToggleAppLock}
           onClearAllData={handleClearAllData}
