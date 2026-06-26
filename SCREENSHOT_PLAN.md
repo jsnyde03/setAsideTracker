@@ -2,9 +2,9 @@
 
 What to capture, in what order, with what sample data, and at what sizes. Capture these from the **iOS Simulator** (or a real device/TestFlight build), not the web/browser dev build — Simulator screenshots are pixel-perfect at the exact required resolutions and show real native chrome (status bar, safe areas), which the web build doesn't replicate accurately.
 
-## One decision to make first: iPad
+## iPad — resolved: iPhone-only for v1.0
 
-`app.json` currently has `ios.supportsTablet: true`, which means Apple will expect iPad screenshots too unless you either (a) provide them, or (b) explicitly restrict the App Store listing to iPhone-only devices in App Store Connect's "Availability" settings. This app's UI hasn't been designed or tested for iPad layouts specifically (it's a single-column phone layout that would just stretch awkwardly on a tablet). **Recommendation: mark the listing iPhone-only for v1.0** rather than scrambling to validate iPad layouts — revisit if/when there's a real reason to support iPad properly.
+`app.json`'s `ios.supportsTablet` is now set to `false` (was `true`) — the binary itself no longer declares iPad support, so Apple won't expect iPad screenshots at all. This app's UI hasn't been designed or tested for iPad layouts specifically (it's a single-column phone layout that would just stretch awkwardly on a tablet). Revisit if/when there's a real reason to support iPad properly — re-enabling is a one-line config change away, but the resulting layout would need actual tablet-specific design work before it'd look right.
 
 ## Sample data setup (do this once, before capturing anything)
 
