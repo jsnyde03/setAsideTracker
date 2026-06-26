@@ -68,19 +68,16 @@ workflows:
           cd apps/mobile/ios
           pod install
 
-      - name: Initialize keychain
-        script: keychain initialize
-
-      # No fetch-signing-files step needed here: the actual fix for "no matching profiles" was
-      # creating the App Store profile for com.gigtaxtracker.app manually in Apple Developer
-      # Portal (it never existed at all, unlike the other app's bundle ID) and re-fetching it
-      # into Codemagic's profile list from there. That profile now exists, so the steps below
-      # find it directly — a redundant fetch-signing-files call here was failing on a missing
-      # APP_STORE_CONNECT_ISSUER_ID env var and isn't needed for anything it was already solved.
-
-      - name: Add signing certificates to keychain
-        script: keychain add-certificates
-
+      # Initializing the keychain and adding certificates by hand here was redundant, and may have
+      # actively been the cause of intermittent signing failures (e.g. "Failed to set code
+      # signing settings" for a third-party library's nested .xcodeproj): when `ios_signing` is
+      # configured under `environment` (above), Codemagic automatically initializes its own
+      # keychain and fetches/adds the matching certificate before any script step runs. Re-running
+      # `keychain initialize` here created a second, separate keychain that the certificate wasn't
+      # necessarily in, which could explain signing matching being inconsistent across different
+      # .xcodeproj targets in the same build. `xcode-project use-profiles` (the one remaining step)
+      # is still required — it's what *applies* the already-fetched profile to the Xcode project;
+      # only the keychain/certificate retrieval is automatic, not profile application.
       - name: Apply iOS signing profiles
         script: xcode-project use-profiles
 
