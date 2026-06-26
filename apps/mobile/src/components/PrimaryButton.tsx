@@ -38,6 +38,9 @@ export function PrimaryButton({
         pressed && !disabled && styles.pressed,
         (disabled || loading) && styles.disabled,
       ]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
     >
       <View style={styles.content}>
         {loading ? (

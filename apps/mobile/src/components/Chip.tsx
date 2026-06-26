@@ -26,6 +26,8 @@ export function Chip({ label, selected, onPress, flex }: ChipProps) {
         selected && styles.selected,
         pressed && styles.pressed,
       ]}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
     >
       <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
     </Pressable>

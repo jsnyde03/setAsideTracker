@@ -170,7 +170,12 @@ export function AddEntryScreen({ onSave, onCancel, entry, onDelete }: AddEntrySc
             keyboardType="decimal-pad"
           />
 
-          <Pressable style={styles.expensesToggle} onPress={() => setShowExpenses(!showExpenses)}>
+          <Pressable
+            style={styles.expensesToggle}
+            onPress={() => setShowExpenses(!showExpenses)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showExpenses }}
+          >
             <Ionicons
               name={showExpenses ? "chevron-up" : "add-circle-outline"}
               size={16}
