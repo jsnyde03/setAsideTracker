@@ -18,6 +18,7 @@ import { Chip } from "../components/Chip";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
+import { W2_JOB_SUPPORT_ENABLED } from "../featureFlags";
 import { spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
 
@@ -179,16 +180,18 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
             </>
           )}
 
-          <View style={styles.switchRow}>
-            <Text style={styles.fieldLabel}>I also have a W2 job</Text>
-            <Switch
-              value={hasW2Job}
-              onValueChange={setHasW2Job}
-              trackColor={{ true: colors.primary, false: colors.border }}
-            />
-          </View>
+          {W2_JOB_SUPPORT_ENABLED && (
+            <View style={styles.switchRow}>
+              <Text style={styles.fieldLabel}>I also have a W2 job</Text>
+              <Switch
+                value={hasW2Job}
+                onValueChange={setHasW2Job}
+                trackColor={{ true: colors.primary, false: colors.border }}
+              />
+            </View>
+          )}
 
-          {hasW2Job && (
+          {W2_JOB_SUPPORT_ENABLED && hasW2Job && (
             <>
               <TextField
                 label="Paycheck amount"
