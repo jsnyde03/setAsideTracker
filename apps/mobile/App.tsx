@@ -25,7 +25,11 @@ import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { isAppLockAvailable, unlockWithDeviceAuth } from "./src/security/appLock";
 import { scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
+import { trackEvent } from "./src/analytics";
+import { initErrorReporting, reportError } from "./src/errorReporting";
 import { colors } from "./src/theme";
+
+initErrorReporting();
 
 type Screen = "loading" | "onboarding" | "dashboard" | "addEntry" | "settings" | "editTaxProfile";
 
@@ -131,9 +135,14 @@ function AppContent() {
       setTaxProfile(newTaxProfile);
       setScreen("dashboard");
       scheduleQuarterlyReminders();
+      trackEvent("onboarding_completed", {
+        state: newTaxProfile.state,
+        hasW2Job: newTaxProfile.hasW2Job,
+      });
     } catch (error) {
       // Without this, a failed save here silently leaves the user stuck on the onboarding
       // screen with no feedback at all — "Continue does nothing" with no error in sight.
+      reportError(error, { where: "handleOnboardingComplete" });
       Alert.alert(
         "Couldn't save your info",
         error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
@@ -142,12 +151,15 @@ function AppContent() {
   }
 
   async function handleSaveEntry(entry: Entry) {
+    const isEditing = editingEntry !== null;
     try {
-      const updated = editingEntry ? await updateEntry(entry) : await addEntry(entry);
+      const updated = isEditing ? await updateEntry(entry) : await addEntry(entry);
       setEntries(updated);
       setEditingEntry(null);
       setScreen("dashboard");
+      trackEvent(isEditing ? "entry_updated" : "entry_logged", { platform: entry.platform });
     } catch (error) {
+      reportError(error, { where: "handleSaveEntry" });
       Alert.alert(
         "Couldn't save this entry",
         error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
@@ -167,6 +179,7 @@ function AppContent() {
       setEditingEntry(null);
       setScreen("dashboard");
     } catch (error) {
+      reportError(error, { where: "handleDeleteEntry" });
       Alert.alert(
         "Couldn't delete this entry",
         error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
@@ -187,6 +200,7 @@ function AppContent() {
     try {
       await saveAppSettings({ appLockEnabled: enabled });
     } catch (error) {
+      reportError(error, { where: "handleToggleAppLock" });
       Alert.alert(
         "Couldn't save this setting",
         error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
@@ -200,6 +214,7 @@ function AppContent() {
       setLocalUserProfile(profile);
       Alert.alert("Saved", "Your profile has been updated.");
     } catch (error) {
+      reportError(error, { where: "handleSaveProfile" });
       Alert.alert(
         "Couldn't save your profile",
         error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
@@ -213,6 +228,7 @@ function AppContent() {
       setTaxProfile(newTaxProfile);
       setScreen("settings");
     } catch (error) {
+      reportError(error, { where: "handleSaveTaxProfile" });
       Alert.alert(
         "Couldn't save your tax profile",
         error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
@@ -230,6 +246,7 @@ function AppContent() {
       await saveTaxProfile(updated);
       setTaxProfile(updated);
     } catch (error) {
+      reportError(error, { where: "handleUpdateAmountSetAside" });
       Alert.alert(
         "Couldn't save",
         error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
@@ -246,6 +263,7 @@ function AppContent() {
       setAppLockEnabled(false);
       setScreen("onboarding");
     } catch (error) {
+      reportError(error, { where: "handleClearAllData" });
       Alert.alert(
         "Couldn't clear your data",
         error instanceof Error ? error.message : "An unexpected error occurred. Please try again."

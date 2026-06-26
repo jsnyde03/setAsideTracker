@@ -1,8 +1,9 @@
-import { Component, type ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 import { PrimaryButton } from "./PrimaryButton";
 import { Screen } from "./Screen";
+import { reportError } from "../errorReporting";
 import { colors, radius, spacing, type } from "../theme";
 
 interface ErrorBoundaryProps {
@@ -25,6 +26,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo): void {
+    reportError(error, { componentStack: info.componentStack ?? undefined });
   }
 
   handleReset = (): void => {
