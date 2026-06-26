@@ -12,9 +12,11 @@ import {
 } from "react-native";
 import type { Entry, GigPlatform } from "../types";
 import { Chip } from "../components/Chip";
+import { DateField } from "../components/DateField";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
+import { todayIsoDate } from "../dateUtils";
 import { colors, spacing, type } from "../theme";
 
 interface AddEntryScreenProps {
@@ -34,18 +36,6 @@ const PLATFORM_OPTIONS: { label: string; value: GigPlatform }[] = [
   { label: "Instacart", value: "instacart" },
   { label: "Other", value: "other" },
 ];
-
-/**
- * Local "today" as YYYY-MM-DD. Deliberately not `new Date().toISOString().slice(0, 10)` — that's
- * always UTC, and every U.S. timezone is behind UTC, so it silently rolls over to tomorrow's date
- * during evening hours (exactly when a lot of gig shifts happen).
- */
-function todayIsoDate(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
-}
 
 export function AddEntryScreen({ onSave, onCancel, entry, onDelete }: AddEntryScreenProps) {
   const isEditing = entry !== undefined;
@@ -70,7 +60,9 @@ export function AddEntryScreen({ onSave, onCancel, entry, onDelete }: AddEntrySc
       return;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      Alert.alert("Check date", "Enter the date as YYYY-MM-DD.");
+      // Defensive guard, not the primary validation anymore — the date picker can't produce an
+      // invalid format, but the web `<input type="date">` can be cleared to an empty string.
+      Alert.alert("Check date", "Select a date.");
       return;
     }
 
@@ -147,7 +139,7 @@ export function AddEntryScreen({ onSave, onCancel, entry, onDelete }: AddEntrySc
             ))}
           </View>
 
-          <TextField label="Date" value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
+          <DateField label="Date" value={date} onChangeValue={setDate} />
           <TextField
             label="Gross pay"
             value={grossPay}
