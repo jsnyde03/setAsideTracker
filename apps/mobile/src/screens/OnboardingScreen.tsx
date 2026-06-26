@@ -4,6 +4,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
@@ -50,6 +51,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [w2EndDate, setW2EndDate] = useState("");
   const [state, setState] = useState("");
   const [county, setCounty] = useState<string | undefined>(undefined);
+  const [acknowledgedDisclaimer, setAcknowledgedDisclaimer] = useState(false);
 
   const availableCounties = getCountiesForState(state);
 
@@ -74,6 +76,13 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     }
     if (hasW2Job && w2EndDate.trim().length > 0 && !/^\d{4}-\d{2}-\d{2}$/.test(w2EndDate.trim())) {
       Alert.alert("Check end date", "Enter the W2 job's end date as YYYY-MM-DD, or leave it blank.");
+      return;
+    }
+    if (!acknowledgedDisclaimer) {
+      Alert.alert(
+        "Please confirm",
+        "Check the box confirming you understand this app provides estimates, not tax advice."
+      );
       return;
     }
 
@@ -225,10 +234,23 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             </>
           )}
 
-          <Text style={styles.disclaimer}>
-            Tax figures in this app are estimates for planning purposes only, not tax advice. Consult
-            a tax professional or filing software when it's time to file.
-          </Text>
+          <Pressable
+            style={styles.disclaimerRow}
+            onPress={() => setAcknowledgedDisclaimer(!acknowledgedDisclaimer)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: acknowledgedDisclaimer }}
+            accessibilityLabel="I understand this app provides estimates, not tax advice"
+          >
+            <Ionicons
+              name={acknowledgedDisclaimer ? "checkbox" : "square-outline"}
+              size={20}
+              color={acknowledgedDisclaimer ? colors.primary : colors.inkFaint}
+            />
+            <Text style={styles.disclaimer}>
+              Tax figures in this app are estimates for planning purposes only, not tax advice. Consult
+              a tax professional or filing software when it's time to file.
+            </Text>
+          </Pressable>
 
           <View style={styles.buttonWrap}>
             <PrimaryButton label="Continue" onPress={handleContinue} />
@@ -264,6 +286,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: spacing.lg,
   },
-  disclaimer: { ...type.micro, color: colors.inkSubtle, marginTop: spacing.xl, lineHeight: 16 },
+  disclaimerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+  },
+  disclaimer: { flex: 1, ...type.micro, color: colors.inkSubtle, lineHeight: 16 },
   buttonWrap: { marginTop: spacing.lg },
 });
