@@ -27,7 +27,7 @@ function formatDisplay(iso: string): string {
  * picker library has no web support at all, so Metro picks whichever file matches the platform.
  */
 export function DateField({ label, value, onChangeValue }: DateFieldProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = createStyles(colors);
   const [show, setShow] = useState(false);
 
@@ -58,6 +58,8 @@ export function DateField({ label, value, onChangeValue }: DateFieldProps) {
           maximumDate={new Date()}
           display={Platform.OS === "ios" ? "inline" : "default"}
           onChange={handleChange}
+          themeVariant={isDark ? "dark" : "light"}
+          accentColor={colors.primary}
         />
       )}
     </View>

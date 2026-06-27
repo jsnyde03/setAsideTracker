@@ -20,15 +20,70 @@ Use one consistent, realistic persona so every screenshot tells the same coheren
 
 App Store screenshots are shown in upload order, and the first 2-3 matter most for conversion — lead with the strongest, clearest value prop.
 
-1. **Dashboard hero shot.** The full "Set aside for taxes" gradient card with the SE/federal/state breakdown visible, plus the "Total earnings logged" card with the effective hourly rate line above it. *This is the single most important screenshot — it shows the entire core value prop in one glance.*
-2. **Quarterly due date + catch-up status.** The "Amount set aside so far" card showing the next due date and the green "you're on track" message. Demonstrates the app actively helps you stay ahead, not just shows a scary number.
-3. **Log Earnings screen.** The platform chips (Amazon Flex/Spark/DoorDash/Uber/Instacart/Other) and clean entry form. Shows how fast logging a shift is.
-4. **Dashboard "Recent entries" list**, scrolled to show several different platforms logged. Demonstrates real, active multi-platform use.
-5. **Settings → Backup & Restore / Export Data.** Shows users they're in full control of their data and can get it out anytime — a real trust signal for a financial app.
-6. **Settings → Security (App Lock) + Appearance.** Shows the privacy/security feature (Face ID/Touch ID lock) and the dark mode option in one shot.
-7. **Dark mode dashboard** (same as #1, just with Appearance set to Dark). One shot is enough to show the feature exists without doubling the whole set.
+AppScreens title/subtitle copy is listed under each screenshot. Keep titles short enough to read in ~1 second; subtitles can run to two short lines.
 
-That's 7 — comfortably within Apple's 10-screenshot max and well above Google Play's 2-minimum, while leaving room to add 1-2 more later (e.g. once a marketing-text-overlay pass happens) without hitting the cap.
+---
+
+**1. Dashboard hero shot.**
+The full "Set aside for taxes" gradient card with the SE/federal/state breakdown visible, plus the "Total earnings logged" card with the effective hourly rate line above it. *This is the single most important screenshot — it shows the entire core value prop in one glance.*
+
+> **Title:** Know exactly what to set aside
+> **Subtitle:** Real-time self-employment, federal, and state tax estimates — updated every time you log a shift.
+
+---
+
+**2. Quarterly due date + catch-up status.**
+The "Amount set aside so far" card showing the next due date and the green "you're on track" message. Demonstrates the app actively helps you stay ahead, not just shows a scary number.
+
+> **Title:** Stay ahead of quarterly taxes
+> **Subtitle:** See your next payment due date and exactly how much to save each week to hit it on time.
+
+---
+
+**3. Log Earnings screen.**
+The platform chips (Amazon Flex/Spark/DoorDash/Uber/Instacart/Other) and clean entry form. Shows how fast logging a shift is.
+
+> **Title:** Log a shift in seconds
+> **Subtitle:** Pick your platform, enter your pay. Your tax estimate updates the moment you save.
+
+---
+
+**4. Dashboard "Recent entries" list**, scrolled to show several different platforms logged. Demonstrates real, active multi-platform use.
+
+> **Title:** Every platform, one place
+> **Subtitle:** Amazon Flex, DoorDash, Uber, Instacart — log them all and see your full tax picture in one view.
+
+---
+
+**5. Settings → Backup & Restore / Export Data.**
+Shows users they're in full control of their data and can get it out anytime — a real trust signal for a financial app.
+
+> **Title:** Your data, your terms
+> **Subtitle:** Export a full CSV at tax time or create a backup file in one tap — no cloud account needed.
+
+---
+
+**6. Settings → Security (App Lock) + Appearance.**
+Shows the privacy/security feature (Face ID/Touch ID lock) and the dark mode option in one shot.
+
+> **Title:** Lock it with Face ID
+> **Subtitle:** Optional Face ID/Touch ID keeps your earnings private. Light and dark mode included.
+
+---
+
+**7. Dark mode dashboard** (same as #1, just with Appearance set to Dark). One shot is enough to show the feature exists without doubling the whole set.
+
+> **Title:** Looks great day or night
+> **Subtitle:** Dark mode built right in — easy on the eyes during late-night delivery shifts.
+
+---
+
+That's 7 — comfortably within Apple's 10-screenshot max and well above Google Play's 2-minimum, while leaving room to add 1-2 more later without hitting the cap.
+
+**Optional 8th screenshot (W2 job support):** Settings → Tax Profile with the "I also have a W2 job" toggle on and the pay-stub fields visible. Useful if you want to call out the W2+gig use case explicitly in the listing — skip if the pure-gig persona tells a cleaner story.
+
+> **Title:** Gig on the side of a day job?
+> **Subtitle:** Enter your pay stub and your set-aside only covers what your employer isn't already withholding.
 
 ## Required sizes
 

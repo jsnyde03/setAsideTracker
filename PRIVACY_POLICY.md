@@ -1,6 +1,6 @@
 # Privacy Policy — SetAsideTracker
 
-**Last updated: [DATE — fill in before publishing]**
+**Last updated: June 27, 2026**
 
 This policy describes how SetAsideTracker ("the app," "we," "us") handles information. It's written to accurately describe what the app actually does today, not generic boilerplate — read it alongside the app's actual behavior described below.
 
@@ -54,4 +54,4 @@ If how we handle data changes — for example, if we add a real account system, 
 
 ## Contact
 
-Questions about this policy: **[SUPPORT EMAIL — fill in before publishing]**
+Questions about this policy: **[your support email — e.g. support@setasidetracker.com or your personal address; must match what you enter in App Store Connect's Support URL / email field]**

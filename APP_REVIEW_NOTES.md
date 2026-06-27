@@ -7,10 +7,20 @@ SetAsideTracker has no login or account system by design — all data is stored 
 device, with no backend server. There's nothing to sign in with, so reviewers can go straight
 from the first launch screen into the app:
 
-1. On first launch, fill in a name and state (any 2-letter state code, e.g. "TX"), check the
-   required disclaimer checkbox, and tap Continue.
-2. From the dashboard, tap "Log Earnings" to add a sample entry (platform, date, gross pay are
-   the only required fields) and tap "Save Entry."
+1. On first launch, complete the tax-profile setup screen:
+   - Enter a name (required) and optional email.
+   - Select a filing status: Single, Married Filing Jointly, Head of Household, or Married
+     Filing Separately.
+   - Enter number of dependents (defaults to 0 — fine to leave).
+   - Enter a 2-letter U.S. state code (e.g. "TX"). For MD, NY, or PA, a county/city picker
+     appears automatically — select any county listed (e.g. "Montgomery County" for MD, or
+     "New York City" for NY).
+   - There is an optional "I also have a W2 job" toggle. Skip it entirely if you just want to
+     test the pure gig-income path — all fields under it are optional.
+   - Check the required disclaimer checkbox ("Tax figures are estimates, not tax advice").
+   - Tap "Continue."
+2. From the dashboard, tap "Log Earnings" to add a sample entry (platform, date, and gross pay
+   are the only required fields) and tap "Save Entry."
 3. The dashboard updates immediately to show an estimated tax "set aside" amount with a full
    breakdown (self-employment tax, federal income tax, state tax).
 4. The gear icon (top right) opens Settings, which includes optional Face ID/Touch ID app lock,
@@ -29,5 +39,7 @@ separately.
 ```
 
 ## Notes to self before submitting
-- Confirm the actual onboarding copy/flow still matches this description if anything changes before submission.
-- If Face ID/Touch ID could cause review friction, consider explicitly testing the "remains off by default" path so reviewers never even encounter the lock screen.
+- The W2 fields in onboarding are all optional — reviewers who skip the W2 toggle entirely will
+  still reach a fully functional dashboard. No need to fill in pay-stub fields during review.
+- If Face ID/Touch ID could cause review friction, consider explicitly testing the "remains off
+  by default" path so reviewers never even encounter the lock screen.
