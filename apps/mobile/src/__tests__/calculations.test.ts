@@ -82,7 +82,6 @@ describe("computeTaxEstimate", () => {
     filingStatus: "single",
     dependents: 0,
     hasW2Job: false,
-    estimatedW2Income: 0,
     state: "CA",
   };
 
@@ -118,7 +117,8 @@ describe("computeTaxEstimate", () => {
     const withW2 = computeTaxEstimate(entries, {
       ...baseTaxProfile,
       hasW2Job: true,
-      estimatedW2Income: 40000,
+      w2GrossPayPerPeriod: 40000 / 12,
+      w2PayFrequency: "monthly",
     });
     const withoutW2 = computeTaxEstimate(entries, baseTaxProfile);
 
@@ -132,7 +132,8 @@ describe("computeTaxEstimate", () => {
     const withW2 = computeTaxEstimate(entries, {
       ...baseTaxProfile,
       hasW2Job: true,
-      estimatedW2Income: 50000,
+      w2GrossPayPerPeriod: 50000 / 12,
+      w2PayFrequency: "monthly",
     });
 
     expect(withW2.w2WithholdingYtdEstimate).toBeGreaterThan(0);
@@ -148,7 +149,8 @@ describe("computeTaxEstimate", () => {
     const result = computeTaxEstimate(entries, {
       ...baseTaxProfile,
       hasW2Job: true,
-      estimatedW2Income: 200000,
+      w2GrossPayPerPeriod: 200000 / 12,
+      w2PayFrequency: "monthly",
     });
     expect(result.netAmountToSetAside).toBeGreaterThanOrEqual(0);
   });
@@ -164,7 +166,7 @@ describe("computeTaxEstimate", () => {
     const entries = [makeEntry({ grossPay: 50000, tips: 0, mileage: 0 })];
     const result = computeTaxEstimate(
       entries,
-      { ...baseTaxProfile, hasW2Job: true, estimatedW2Income: 50000, w2EndDate: `${thisYear - 1}-06-15` },
+      { ...baseTaxProfile, hasW2Job: true, w2GrossPayPerPeriod: 50000 / 12, w2PayFrequency: "monthly", w2EndDate: `${thisYear - 1}-06-15` },
       thisYear
     );
     expect(result.w2WithholdingYtdEstimate).toBe(0);
@@ -292,6 +294,132 @@ describe("computeTaxEstimate", () => {
 
     expect(result.usedFallbackConfig).toBe(false);
     expect(result.estimate.taxYear).toBe(2025);
+  });
+
+  // ── W2 rebuild: YTD actuals withholding path ──────────────────────────────────────────────────
+
+  it("YTD actuals from pay stub: adds modeled remaining withholding to the YTD amount when job is ongoing", () => {
+    // No end date → job runs to year-end → elapsedFraction is between 0 and 1 → model remainder > 0
+    // So w2WithholdingYtdEstimate = ytdActual + annualEstimate × (1 − elapsedFraction) > ytdActual
+    const entries = [makeEntry({ grossPay: 50000, tips: 0, mileage: 0 })];
+    const ytdFederal = 3000;
+    const ytdState = 500;
+
+    const withYtd = computeTaxEstimate(entries, {
+      ...baseTaxProfile,
+      hasW2Job: true,
+      w2GrossPayPerPeriod: 4000,
+      w2PayFrequency: "biweekly",
+      w2YtdFederalWithheld: ytdFederal,
+      w2YtdStateWithheld: ytdState,
+    });
+    const withoutYtd = computeTaxEstimate(entries, {
+      ...baseTaxProfile,
+      hasW2Job: true,
+      w2GrossPayPerPeriod: 4000,
+      w2PayFrequency: "biweekly",
+    });
+
+    // Without YTD actuals → full annual model estimate is the withholding credit
+    expect(withoutYtd.w2WithholdingYtdEstimate).toBeCloseTo(
+      withoutYtd.estimate.w2WithholdingEstimate.annualTotalEstimate, 6
+    );
+    // With YTD actuals + ongoing job → ytdActual + model remainder; must exceed ytdActual alone
+    expect(withYtd.w2WithholdingYtdEstimate).toBeGreaterThan(ytdFederal + ytdState);
+    expect(withYtd.netAmountToSetAside).toBeGreaterThanOrEqual(0);
+  });
+
+  it("YTD actuals: no model remainder when W2 job ended earlier in the current year (elapsed fraction = 1)", () => {
+    // Job ended Jan 15 of this year — well before today, so elapsedFraction = 1 and
+    // annualEstimate × (1 − 1) = 0. w2WithholdingYtdEstimate equals only the YTD actuals.
+    const entries = [makeEntry({ grossPay: 50000, tips: 0, mileage: 0 })];
+    const ytdFederal = 4500;
+    const ytdState = 800;
+
+    const result = computeTaxEstimate(entries, {
+      ...baseTaxProfile,
+      hasW2Job: true,
+      w2GrossPayPerPeriod: 4000,
+      w2PayFrequency: "biweekly",
+      w2EndDate: `${thisYear}-01-15`, // ended Jan 15 — today (well into the year) is past this date
+      w2YtdFederalWithheld: ytdFederal,
+      w2YtdStateWithheld: ytdState,
+    });
+
+    expect(result.w2WithholdingYtdEstimate).toBeCloseTo(ytdFederal + ytdState, 2);
+  });
+
+  // ── W2 rebuild: 401k vs pretax benefits — FICA wage distinction ───────────────────────────────
+
+  it("w2RetirementPerPeriod reduces W2 federal taxable income by periods × contribution (2026 SS base check)", () => {
+    // A moderate W2 gross ($3k/biweekly = $78k/year) where FICA wages stay well below the
+    // SS base regardless. Both retirement and pretax benefits reduce federal taxable income by the
+    // same amount, but only benefits reduce FICA wages. At this income level the FICA distinction
+    // doesn't change SE SS tax (base is far from exhausted), so the test focuses on the income-tax
+    // reduction: taxableIncome must drop by exactly (retirement × 26 biweekly periods).
+    const entries = [makeEntry({ date: `${thisYear}-06-01`, grossPay: 20000, tips: 0, mileage: 0 })];
+    const gross = 3000;
+    const retirement = 500;
+
+    const noRetirement = computeTaxEstimate(entries, {
+      ...baseTaxProfile,
+      state: "TX",
+      hasW2Job: true,
+      w2GrossPayPerPeriod: gross,
+      w2PayFrequency: "biweekly",
+    });
+    const with401k = computeTaxEstimate(entries, {
+      ...baseTaxProfile,
+      state: "TX",
+      hasW2Job: true,
+      w2GrossPayPerPeriod: gross,
+      w2RetirementPerPeriod: retirement,
+      w2PayFrequency: "biweekly",
+    });
+
+    // 401k reduces annual W2 taxable income by $500 × 26 = $13,000
+    expect(with401k.estimate.federalIncomeTax.taxableIncome).toBeCloseTo(
+      noRetirement.estimate.federalIncomeTax.taxableIncome - retirement * 26, 2
+    );
+    // But FICA wages are unchanged → SE SS and Medicare tax are unaffected
+    expect(with401k.estimate.seTax.socialSecurityTax).toBeCloseTo(
+      noRetirement.estimate.seTax.socialSecurityTax, 6
+    );
+    expect(with401k.estimate.seTax.medicareTax).toBeCloseTo(
+      noRetirement.estimate.seTax.medicareTax, 6
+    );
+  });
+
+  it("401k vs pretax benefits: different FICA wages — only 401k exhausts the SS base for SE earnings (2026)", () => {
+    // Pin to 2026 (SS wage base = $184,500). W2 gross: $8k/biweekly = $208k/year (above base).
+    // 401k $1k/period = $26k/year:          FICA wages = $208k (above $184.5k) → SS base exhausted
+    //   by W2 alone → SE social security tax = $0.
+    // Pretax benefits $1k/period = $26k/yr: FICA wages = $182k (below $184.5k) → $2.5k SS base
+    //   remains; SE net earnings ($18,470) > $2.5k → SS on all $2,500 = $310.
+    //
+    // Secondary effect (correct, not a bug): 401k's higher FICA wages exhaust more of the AMT
+    // threshold too, triggering more non-deductible AMT on SE earnings and raising AGI in the
+    // 401k case — so federal taxable income ends up HIGHER with 401k than with benefits.
+    const entries = [makeEntry({ date: "2026-06-01", grossPay: 20000, tips: 0, mileage: 0 })];
+    const base = {
+      ...baseTaxProfile,
+      state: "TX",
+      hasW2Job: true,
+      w2GrossPayPerPeriod: 8000,
+      w2PayFrequency: "biweekly" as const,
+    };
+
+    const with401k = computeTaxEstimate(entries, { ...base, w2RetirementPerPeriod: 1000 }, 2026);
+    const withBenefits = computeTaxEstimate(entries, { ...base, w2PreTaxBenefitsPerPeriod: 1000 }, 2026);
+
+    // 401k: W2 FICA wages = $208k > SS base $184.5k → SE SS tax = $0
+    expect(with401k.estimate.seTax.socialSecurityTax).toBeCloseTo(0, 2);
+    // Pretax benefits: W2 FICA wages = $182k < SS base $184.5k → $2,500 available → SE SS = $310
+    expect(withBenefits.estimate.seTax.socialSecurityTax).toBeCloseTo(2500 * 0.124, 2);
+    // Benefits case has more deductible SE tax → lower AGI → lower federal taxable income
+    expect(withBenefits.estimate.federalIncomeTax.taxableIncome).toBeLessThan(
+      with401k.estimate.federalIncomeTax.taxableIncome
+    );
   });
 });
 
