@@ -12,7 +12,6 @@ const taxProfile: TaxProfile = {
   filingStatus: "single",
   dependents: 0,
   hasW2Job: false,
-  estimatedW2Income: 0,
   state: "TX",
 };
 const entries: Entry[] = [

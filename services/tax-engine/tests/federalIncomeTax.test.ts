@@ -62,4 +62,18 @@ describe("calculateFederalIncomeTax (2025)", () => {
     expect(withOtherIncome.taxableIncome).toBeCloseTo(withoutOtherIncome.taxableIncome + 40000, 3);
     expect(withOtherIncome.incomeTax).toBeGreaterThan(withoutOtherIncome.incomeTax);
   });
+
+  it("HoH standard deduction ($23,625) is larger than single ($15,750) for 2025", () => {
+    const single = calculateFederalIncomeTax(80000, 0, 0, "single", taxYear2025);
+    const hoh = calculateFederalIncomeTax(80000, 0, 0, "headOfHousehold", taxYear2025);
+    expect(hoh.taxableIncome).toBeCloseTo(80000 - 23625, 2);
+    expect(hoh.taxableIncome).toBeLessThan(single.taxableIncome);
+    expect(hoh.incomeTax).toBeLessThan(single.incomeTax);
+  });
+
+  it("MFS standard deduction equals single ($15,750) for 2025", () => {
+    const single = calculateFederalIncomeTax(80000, 0, 0, "single", taxYear2025);
+    const mfs = calculateFederalIncomeTax(80000, 0, 0, "marriedFilingSeparately", taxYear2025);
+    expect(mfs.taxableIncome).toBeCloseTo(single.taxableIncome, 2);
+  });
 });

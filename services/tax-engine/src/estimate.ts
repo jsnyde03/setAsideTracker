@@ -14,7 +14,12 @@ export function estimateTax(input: TaxEstimateInput, config: TaxYearConfig): Tax
     input.netSelfEmploymentProfit - mileageDeduction.deductionAmount
   );
 
-  const seTax = calculateSeTax(netProfitAfterMileage, input.filingStatus, config);
+  const seTax = calculateSeTax(
+    netProfitAfterMileage,
+    input.filingStatus,
+    config,
+    input.otherFicaWages ?? input.otherTaxableIncome
+  );
 
   const federalIncomeTax = calculateFederalIncomeTax(
     netProfitAfterMileage,

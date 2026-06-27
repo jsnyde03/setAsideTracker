@@ -20,6 +20,10 @@ import { nyLocalTaxJurisdictions2026 } from "../stateTaxConfigs/nyLocalTax2026";
  */
 export const taxYear2025: TaxYearConfig = {
   year: 2025,
+  // headOfHousehold/marriedFilingSeparately brackets per IRS Rev. Proc. 2024-40 (the federal rate
+  // tables themselves were unchanged by OBBBA for 2025 — only the standard deduction baseline was
+  // reset, confirmed directly in Rev. Proc. 2025-32's text). MFS brackets are exactly half of
+  // MFJ's at every threshold, the same convention confirmed for 2026.
   federalBrackets: {
     single: [
       { min: 0, max: 11925, rate: 0.1 },
@@ -39,15 +43,38 @@ export const taxYear2025: TaxYearConfig = {
       { min: 501050, max: 751600, rate: 0.35 },
       { min: 751600, max: null, rate: 0.37 },
     ],
+    headOfHousehold: [
+      { min: 0, max: 17000, rate: 0.1 },
+      { min: 17000, max: 64850, rate: 0.12 },
+      { min: 64850, max: 103350, rate: 0.22 },
+      { min: 103350, max: 197300, rate: 0.24 },
+      { min: 197300, max: 250500, rate: 0.32 },
+      { min: 250500, max: 626350, rate: 0.35 },
+      { min: 626350, max: null, rate: 0.37 },
+    ],
+    marriedFilingSeparately: [
+      { min: 0, max: 11925, rate: 0.1 },
+      { min: 11925, max: 48475, rate: 0.12 },
+      { min: 48475, max: 103350, rate: 0.22 },
+      { min: 103350, max: 197300, rate: 0.24 },
+      { min: 197300, max: 250525, rate: 0.32 },
+      { min: 250525, max: 375800, rate: 0.35 },
+      { min: 375800, max: null, rate: 0.37 },
+    ],
   },
+  // Per the OBBBA, confirmed directly via Rev. Proc. 2025-32 Section 3.01's table.
   standardDeduction: {
     single: 15750,
     marriedFilingJointly: 31500,
+    headOfHousehold: 23625,
+    marriedFilingSeparately: 15750,
   },
   socialSecurityWageBase: 176100,
   additionalMedicareThreshold: {
     single: 200000,
     marriedFilingJointly: 250000,
+    headOfHousehold: 200000,
+    marriedFilingSeparately: 125000,
   },
   standardMileageRate: 0.7,
   /**
@@ -121,7 +148,12 @@ export const taxYear2025: TaxYearConfig = {
   childTaxCredit: {
     amountPerChild: 2200,
     refundableCapPerChild: 1700,
-    phaseOutThreshold: { single: 200000, marriedFilingJointly: 400000 },
+    phaseOutThreshold: {
+      single: 200000,
+      marriedFilingJointly: 400000,
+      headOfHousehold: 200000,
+      marriedFilingSeparately: 200000,
+    },
     phaseOutReductionPer1000: 50,
   },
 };
@@ -148,68 +180,68 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
     AZ: {
       type: "flat",
       rate: 0.025,
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 15750, marriedFilingJointly: 31500, headOfHousehold: 23625, marriedFilingSeparately: 15750 },
     },
     IL: {
       type: "flat",
       rate: 0.0495,
-      standardDeduction: { single: 2850, marriedFilingJointly: 5700 },
+      standardDeduction: { single: 2850, marriedFilingJointly: 5700, headOfHousehold: 2850, marriedFilingSeparately: 2850 },
     },
     MI: {
       type: "flat",
       rate: 0.0425,
-      standardDeduction: { single: 5800, marriedFilingJointly: 11600 },
+      standardDeduction: { single: 5800, marriedFilingJointly: 11600, headOfHousehold: 5800, marriedFilingSeparately: 5800 },
     },
     CO: {
       type: "flat",
       rate: 0.044,
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 15750, marriedFilingJointly: 31500, headOfHousehold: 23625, marriedFilingSeparately: 15750 },
     },
     GA: {
       type: "flat",
       rate: 0.0539,
-      standardDeduction: { single: 12000, marriedFilingJointly: 24000 },
+      standardDeduction: { single: 12000, marriedFilingJointly: 24000, headOfHousehold: 18000, marriedFilingSeparately: 12000 },
       credit: { perDependent: 4000 },
     },
     IN: {
       type: "flat",
       rate: 0.03,
-      standardDeduction: { single: 1000, marriedFilingJointly: 2000 },
+      standardDeduction: { single: 1000, marriedFilingJointly: 2000, headOfHousehold: 1000, marriedFilingSeparately: 1000 },
     },
     KY: {
       type: "flat",
       rate: 0.04,
-      standardDeduction: { single: 3270, marriedFilingJointly: 3270 },
+      standardDeduction: { single: 3270, marriedFilingJointly: 3270, headOfHousehold: 3270, marriedFilingSeparately: 3270 },
     },
     NC: {
       type: "flat",
       rate: 0.0425,
-      standardDeduction: { single: 12750, marriedFilingJointly: 25500 },
+      standardDeduction: { single: 12750, marriedFilingJointly: 25500, headOfHousehold: 19125, marriedFilingSeparately: 12750 },
     },
     UT: {
       type: "flat",
       rate: 0.0455,
-      credit: { perFiler: { single: 900, marriedFilingJointly: 1800 } },
+      credit: { perFiler: { single: 900, marriedFilingJointly: 1800, headOfHousehold: 900, marriedFilingSeparately: 900 } },
     },
     ID: {
       type: "flat",
       rate: 0.05695,
-      standardDeduction: { single: 4673 + 15750, marriedFilingJointly: 9346 + 31500 },
+      standardDeduction: { single: 4673 + 15750, marriedFilingJointly: 9346 + 31500, headOfHousehold: 4673 + 23625, marriedFilingSeparately: 4673 + 15750 },
     },
     IA: {
       type: "flat",
       rate: 0.038,
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 15750, marriedFilingJointly: 31500, headOfHousehold: 23625, marriedFilingSeparately: 15750 },
     },
     MS: {
       type: "flat",
       rate: 0.044,
-      standardDeduction: { single: 10000 + 2300, marriedFilingJointly: 10000 + 4600 },
+      standardDeduction: { single: 10000 + 2300, marriedFilingJointly: 10000 + 4600, headOfHousehold: 10000 + 2300, marriedFilingSeparately: 10000 + 2300 },
     },
     LA: {
       type: "flat",
       rate: 0.03,
-      standardDeduction: { single: 12500, marriedFilingJointly: 25000 },
+      standardDeduction: { single: 12500, marriedFilingJointly: 25000, headOfHousehold: 12500, marriedFilingSeparately: 12500 },
     },
 
     // ----- Progressive brackets -----
@@ -220,7 +252,7 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
       type: "bracket",
       // The $2,400/$4,800 personal exemption is folded directly into the bracket thresholds
       // above (not into a separate standardDeduction), so this is 0 to avoid double-counting.
-      standardDeduction: { single: 0, marriedFilingJointly: 0 },
+      standardDeduction: { single: 0, marriedFilingJointly: 0, headOfHousehold: 0, marriedFilingSeparately: 0 },
       brackets: {
         single: [
           { min: 0, max: 26050 + 2400, rate: 0 },
@@ -231,6 +263,16 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 0, max: 26050 + 4800, rate: 0 },
           { min: 26050 + 4800, max: 100000 + 4800, rate: 0.0275 },
           { min: 100000 + 4800, max: null, rate: 0.035 },
+        ],
+        headOfHousehold: [
+          { min: 0, max: 26050 + 2400, rate: 0 },
+          { min: 26050 + 2400, max: 100000 + 2400, rate: 0.0275 },
+          { min: 100000 + 2400, max: null, rate: 0.035 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 26050 + 2400, rate: 0 },
+          { min: 26050 + 2400, max: 100000 + 2400, rate: 0.0275 },
+          { min: 100000 + 2400, max: null, rate: 0.035 },
         ],
       },
     },
@@ -243,7 +285,7 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
       // Foundation) and the EDD's 2026 withholding schedule, which still uses these same 2025
       // dollar amounts (FTB hadn't published a further-inflation-adjusted set as of writing) —
       // see 2026.ts's CA entry for the full sourcing/verification note.
-      standardDeduction: { single: 5706, marriedFilingJointly: 11412 },
+      standardDeduction: { single: 5706, marriedFilingJointly: 11412, headOfHousehold: 5706, marriedFilingSeparately: 5706 },
       brackets: {
         single: [
           { min: 0, max: 11079, rate: 0.01 },
@@ -271,12 +313,36 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 1000000, max: 1485906, rate: 0.123 },
           { min: 1485906, max: null, rate: 0.133 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 11079, rate: 0.01 },
+          { min: 11079, max: 26264, rate: 0.02 },
+          { min: 26264, max: 41452, rate: 0.04 },
+          { min: 41452, max: 57542, rate: 0.06 },
+          { min: 57542, max: 72724, rate: 0.08 },
+          { min: 72724, max: 371479, rate: 0.093 },
+          { min: 371479, max: 445771, rate: 0.103 },
+          { min: 445771, max: 742953, rate: 0.113 },
+          { min: 742953, max: 1000000, rate: 0.123 },
+          { min: 1000000, max: null, rate: 0.133 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 11079, rate: 0.01 },
+          { min: 11079, max: 26264, rate: 0.02 },
+          { min: 26264, max: 41452, rate: 0.04 },
+          { min: 41452, max: 57542, rate: 0.06 },
+          { min: 57542, max: 72724, rate: 0.08 },
+          { min: 72724, max: 371479, rate: 0.093 },
+          { min: 371479, max: 445771, rate: 0.103 },
+          { min: 445771, max: 742953, rate: 0.113 },
+          { min: 742953, max: 1000000, rate: 0.123 },
+          { min: 1000000, max: null, rate: 0.133 },
+        ],
       },
     },
 
     NY: {
       type: "bracket",
-      standardDeduction: { single: 8000, marriedFilingJointly: 16050 },
+      standardDeduction: { single: 8000, marriedFilingJointly: 16050, headOfHousehold: 11200, marriedFilingSeparately: 8000 },
       localTaxJurisdictions: nyLocalTaxJurisdictions2026,
       brackets: {
         single: [
@@ -301,6 +367,31 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 5000000, max: 25000000, rate: 0.103 },
           { min: 25000000, max: null, rate: 0.109 },
         ],
+        // NY 2025 HoH brackets: confirmed thresholds from NYS-50-T-NYS withholding tables
+        // (same dollar thresholds as 2026 — only rates differ: +0.1pp on the five lowest brackets
+        // below $269,300). MFS uses the single schedule.
+        headOfHousehold: [
+          { min: 0, max: 12800, rate: 0.04 },
+          { min: 12800, max: 17650, rate: 0.045 },
+          { min: 17650, max: 20900, rate: 0.0525 },
+          { min: 20900, max: 107650, rate: 0.055 },
+          { min: 107650, max: 269300, rate: 0.06 },
+          { min: 269300, max: 1616450, rate: 0.0685 },
+          { min: 1616450, max: 5000000, rate: 0.0965 },
+          { min: 5000000, max: 25000000, rate: 0.103 },
+          { min: 25000000, max: null, rate: 0.109 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 8500, rate: 0.04 },
+          { min: 8500, max: 11700, rate: 0.045 },
+          { min: 11700, max: 13900, rate: 0.0525 },
+          { min: 13900, max: 80650, rate: 0.055 },
+          { min: 80650, max: 215400, rate: 0.06 },
+          { min: 215400, max: 1077550, rate: 0.0685 },
+          { min: 1077550, max: 5000000, rate: 0.0965 },
+          { min: 5000000, max: 25000000, rate: 0.103 },
+          { min: 25000000, max: null, rate: 0.109 },
+        ],
       },
     },
 
@@ -310,7 +401,7 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
     // still showed (published before the retroactive law passed).
     MD: {
       type: "bracket",
-      standardDeduction: { single: 3350, marriedFilingJointly: 6700 },
+      standardDeduction: { single: 3350, marriedFilingJointly: 6700, headOfHousehold: 3350, marriedFilingSeparately: 3350 },
       brackets: {
         single: [
           { min: 0, max: 1000, rate: 0.02 },
@@ -336,13 +427,37 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 600000, max: 1200000, rate: 0.0625 },
           { min: 1200000, max: null, rate: 0.065 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 1000, rate: 0.02 },
+          { min: 1000, max: 2000, rate: 0.03 },
+          { min: 2000, max: 3000, rate: 0.04 },
+          { min: 3000, max: 100000, rate: 0.0475 },
+          { min: 100000, max: 125000, rate: 0.05 },
+          { min: 125000, max: 150000, rate: 0.0525 },
+          { min: 150000, max: 250000, rate: 0.055 },
+          { min: 250000, max: 500000, rate: 0.0575 },
+          { min: 500000, max: 1000000, rate: 0.0625 },
+          { min: 1000000, max: null, rate: 0.065 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 1000, rate: 0.02 },
+          { min: 1000, max: 2000, rate: 0.03 },
+          { min: 2000, max: 3000, rate: 0.04 },
+          { min: 3000, max: 100000, rate: 0.0475 },
+          { min: 100000, max: 125000, rate: 0.05 },
+          { min: 125000, max: 150000, rate: 0.0525 },
+          { min: 150000, max: 250000, rate: 0.055 },
+          { min: 250000, max: 500000, rate: 0.0575 },
+          { min: 500000, max: 1000000, rate: 0.0625 },
+          { min: 1000000, max: null, rate: 0.065 },
+        ],
       },
       localTaxJurisdictions: mdLocalTaxJurisdictions2026,
     },
 
     AL: {
       type: "bracket",
-      standardDeduction: { single: 3000 + 1500, marriedFilingJointly: 8500 + 3000 },
+      standardDeduction: { single: 3000 + 1500, marriedFilingJointly: 8500 + 3000, headOfHousehold: 3000 + 1500, marriedFilingSeparately: 3000 + 1500 },
       brackets: {
         single: [
           { min: 0, max: 500, rate: 0.02 },
@@ -354,13 +469,23 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 1000, max: 6000, rate: 0.04 },
           { min: 6000, max: null, rate: 0.05 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 500, rate: 0.02 },
+          { min: 500, max: 3000, rate: 0.04 },
+          { min: 3000, max: null, rate: 0.05 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 500, rate: 0.02 },
+          { min: 500, max: 3000, rate: 0.04 },
+          { min: 3000, max: null, rate: 0.05 },
+        ],
       },
     },
 
     AR: {
       type: "bracket",
-      standardDeduction: { single: 2410, marriedFilingJointly: 4820 },
-      credit: { perFiler: { single: 29, marriedFilingJointly: 58 }, perDependent: 29 },
+      standardDeduction: { single: 2410, marriedFilingJointly: 4820, headOfHousehold: 2410, marriedFilingSeparately: 2410 },
+      credit: { perFiler: { single: 29, marriedFilingJointly: 58, headOfHousehold: 29, marriedFilingSeparately: 29 }, perDependent: 29 },
       brackets: {
         single: [
           { min: 0, max: 4500, rate: 0.02 },
@@ -370,12 +495,20 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 0, max: 4500, rate: 0.02 },
           { min: 4500, max: null, rate: 0.039 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 4500, rate: 0.02 },
+          { min: 4500, max: null, rate: 0.039 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 4500, rate: 0.02 },
+          { min: 4500, max: null, rate: 0.039 },
+        ],
       },
     },
 
     CT: {
       type: "bracket",
-      standardDeduction: { single: 15000, marriedFilingJointly: 24000 },
+      standardDeduction: { single: 15000, marriedFilingJointly: 24000, headOfHousehold: 19000, marriedFilingSeparately: 12000 },
       brackets: {
         single: [
           { min: 0, max: 10000, rate: 0.02 },
@@ -395,13 +528,31 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 500000, max: 1000000, rate: 0.069 },
           { min: 1000000, max: null, rate: 0.0699 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 10000, rate: 0.02 },
+          { min: 10000, max: 50000, rate: 0.045 },
+          { min: 50000, max: 100000, rate: 0.055 },
+          { min: 100000, max: 200000, rate: 0.06 },
+          { min: 200000, max: 250000, rate: 0.065 },
+          { min: 250000, max: 500000, rate: 0.069 },
+          { min: 500000, max: null, rate: 0.0699 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 10000, rate: 0.02 },
+          { min: 10000, max: 50000, rate: 0.045 },
+          { min: 50000, max: 100000, rate: 0.055 },
+          { min: 100000, max: 200000, rate: 0.06 },
+          { min: 200000, max: 250000, rate: 0.065 },
+          { min: 250000, max: 500000, rate: 0.069 },
+          { min: 500000, max: null, rate: 0.0699 },
+        ],
       },
     },
 
     DE: {
       type: "bracket",
-      standardDeduction: { single: 3250, marriedFilingJointly: 6500 },
-      credit: { perFiler: { single: 110, marriedFilingJointly: 220 }, perDependent: 110 },
+      standardDeduction: { single: 3250, marriedFilingJointly: 6500, headOfHousehold: 3250, marriedFilingSeparately: 3250 },
+      credit: { perFiler: { single: 110, marriedFilingJointly: 220, headOfHousehold: 110, marriedFilingSeparately: 110 }, perDependent: 110 },
       brackets: {
         single: [
           { min: 0, max: 2000, rate: 0 },
@@ -421,12 +572,30 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 25000, max: 60000, rate: 0.0555 },
           { min: 60000, max: null, rate: 0.066 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 2000, rate: 0 },
+          { min: 2000, max: 5000, rate: 0.022 },
+          { min: 5000, max: 10000, rate: 0.039 },
+          { min: 10000, max: 20000, rate: 0.048 },
+          { min: 20000, max: 25000, rate: 0.052 },
+          { min: 25000, max: 60000, rate: 0.0555 },
+          { min: 60000, max: null, rate: 0.066 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 2000, rate: 0 },
+          { min: 2000, max: 5000, rate: 0.022 },
+          { min: 5000, max: 10000, rate: 0.039 },
+          { min: 10000, max: 20000, rate: 0.048 },
+          { min: 20000, max: 25000, rate: 0.052 },
+          { min: 25000, max: 60000, rate: 0.0555 },
+          { min: 60000, max: null, rate: 0.066 },
+        ],
       },
     },
 
     HI: {
       type: "bracket",
-      standardDeduction: { single: 4400 + 1144, marriedFilingJointly: 8800 + 2288 },
+      standardDeduction: { single: 4400 + 1144, marriedFilingJointly: 8800 + 2288, headOfHousehold: 4400 + 1144, marriedFilingSeparately: 4400 + 1144 },
       brackets: {
         single: [
           { min: 0, max: 9600, rate: 0.014 },
@@ -456,12 +625,40 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 550000, max: 650000, rate: 0.1 },
           { min: 650000, max: null, rate: 0.11 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 9600, rate: 0.014 },
+          { min: 9600, max: 14400, rate: 0.032 },
+          { min: 14400, max: 19200, rate: 0.055 },
+          { min: 19200, max: 24000, rate: 0.064 },
+          { min: 24000, max: 36000, rate: 0.068 },
+          { min: 36000, max: 48000, rate: 0.072 },
+          { min: 48000, max: 125000, rate: 0.076 },
+          { min: 125000, max: 175000, rate: 0.079 },
+          { min: 175000, max: 225000, rate: 0.0825 },
+          { min: 225000, max: 275000, rate: 0.09 },
+          { min: 275000, max: 325000, rate: 0.1 },
+          { min: 325000, max: null, rate: 0.11 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 9600, rate: 0.014 },
+          { min: 9600, max: 14400, rate: 0.032 },
+          { min: 14400, max: 19200, rate: 0.055 },
+          { min: 19200, max: 24000, rate: 0.064 },
+          { min: 24000, max: 36000, rate: 0.068 },
+          { min: 36000, max: 48000, rate: 0.072 },
+          { min: 48000, max: 125000, rate: 0.076 },
+          { min: 125000, max: 175000, rate: 0.079 },
+          { min: 175000, max: 225000, rate: 0.0825 },
+          { min: 225000, max: 275000, rate: 0.09 },
+          { min: 275000, max: 325000, rate: 0.1 },
+          { min: 325000, max: null, rate: 0.11 },
+        ],
       },
     },
 
     KS: {
       type: "bracket",
-      standardDeduction: { single: 3605 + 9160, marriedFilingJointly: 8240 + 18320 },
+      standardDeduction: { single: 3605 + 9160, marriedFilingJointly: 8240 + 18320, headOfHousehold: 3605 + 9160, marriedFilingSeparately: 3605 + 9160 },
       brackets: {
         single: [
           { min: 0, max: 23000, rate: 0.052 },
@@ -470,6 +667,14 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
         marriedFilingJointly: [
           { min: 0, max: 46000, rate: 0.052 },
           { min: 46000, max: null, rate: 0.0558 },
+        ],
+        headOfHousehold: [
+          { min: 0, max: 23000, rate: 0.052 },
+          { min: 23000, max: null, rate: 0.0558 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 23000, rate: 0.052 },
+          { min: 23000, max: null, rate: 0.0558 },
         ],
       },
     },
@@ -484,13 +689,13 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
       // federal-conforming one (2026.ts's corrected ME entry confirms this: Maine's own 2026
       // figure, $15,300/$30,600, does NOT match the federal 2026 figure). Personal exemption is
       // a separate $5,150/$10,300.
-      standardDeduction: { single: 15000 + 5150, marriedFilingJointly: 30000 + 10300 },
+      standardDeduction: { single: 15000 + 5150, marriedFilingJointly: 30000 + 10300, headOfHousehold: 15000 + 5150, marriedFilingSeparately: 15000 + 5150 },
       // Phaseout per Maine's 2025 worksheet (36 M.R.S. 5124-C(2)/5125(7)): $100,000 single /
       // $200,050 MFJ threshold, $75,000/$150,000 additional-limit divisor — see 2026.ts's ME
       // entry for the full mechanism explanation and the same simplification caveat.
       standardDeductionPhaseout: {
-        threshold: { single: 100000, marriedFilingJointly: 200050 },
-        additionalLimit: { single: 75000, marriedFilingJointly: 150000 },
+        threshold: { single: 100000, marriedFilingJointly: 200050, headOfHousehold: 100000, marriedFilingSeparately: 100000 },
+        additionalLimit: { single: 75000, marriedFilingJointly: 150000, headOfHousehold: 75000, marriedFilingSeparately: 75000 },
       },
       brackets: {
         single: [
@@ -503,12 +708,22 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 53600, max: 126900, rate: 0.0675 },
           { min: 126900, max: null, rate: 0.0715 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 26800, rate: 0.058 },
+          { min: 26800, max: 63450, rate: 0.0675 },
+          { min: 63450, max: null, rate: 0.0715 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 26800, rate: 0.058 },
+          { min: 26800, max: 63450, rate: 0.0675 },
+          { min: 63450, max: null, rate: 0.0715 },
+        ],
       },
     },
 
     MA: {
       type: "bracket",
-      standardDeduction: { single: 4400, marriedFilingJointly: 8800 },
+      standardDeduction: { single: 4400, marriedFilingJointly: 8800, headOfHousehold: 6800, marriedFilingSeparately: 4400 },
       brackets: {
         single: [
           { min: 0, max: 1083150, rate: 0.05 },
@@ -518,12 +733,20 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 0, max: 1083150, rate: 0.05 },
           { min: 1083150, max: null, rate: 0.09 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 1083150, rate: 0.05 },
+          { min: 1083150, max: null, rate: 0.09 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 1083150, rate: 0.05 },
+          { min: 1083150, max: null, rate: 0.09 },
+        ],
       },
     },
 
     MN: {
       type: "bracket",
-      standardDeduction: { single: 14950, marriedFilingJointly: 29900 },
+      standardDeduction: { single: 14950, marriedFilingJointly: 29900, headOfHousehold: 14950, marriedFilingSeparately: 14950 },
       credit: { perDependent: 5300 },
       brackets: {
         single: [
@@ -538,12 +761,24 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 189180, max: 330410, rate: 0.0785 },
           { min: 330410, max: null, rate: 0.0985 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 32570, rate: 0.0535 },
+          { min: 32570, max: 106990, rate: 0.068 },
+          { min: 106990, max: 198630, rate: 0.0785 },
+          { min: 198630, max: null, rate: 0.0985 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 32570, rate: 0.0535 },
+          { min: 32570, max: 106990, rate: 0.068 },
+          { min: 106990, max: 198630, rate: 0.0785 },
+          { min: 198630, max: null, rate: 0.0985 },
+        ],
       },
     },
 
     MO: {
       type: "bracket",
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 15750, marriedFilingJointly: 31500, headOfHousehold: 23625, marriedFilingSeparately: 15750 },
       brackets: {
         single: [
           { min: 0, max: 1313, rate: 0 },
@@ -556,6 +791,26 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 9191, max: null, rate: 0.047 },
         ],
         marriedFilingJointly: [
+          { min: 0, max: 1313, rate: 0 },
+          { min: 1313, max: 2626, rate: 0.02 },
+          { min: 2626, max: 3939, rate: 0.025 },
+          { min: 3939, max: 5252, rate: 0.03 },
+          { min: 5252, max: 6565, rate: 0.035 },
+          { min: 6565, max: 7878, rate: 0.04 },
+          { min: 7878, max: 9191, rate: 0.045 },
+          { min: 9191, max: null, rate: 0.047 },
+        ],
+        headOfHousehold: [
+          { min: 0, max: 1313, rate: 0 },
+          { min: 1313, max: 2626, rate: 0.02 },
+          { min: 2626, max: 3939, rate: 0.025 },
+          { min: 3939, max: 5252, rate: 0.03 },
+          { min: 5252, max: 6565, rate: 0.035 },
+          { min: 6565, max: 7878, rate: 0.04 },
+          { min: 7878, max: 9191, rate: 0.045 },
+          { min: 9191, max: null, rate: 0.047 },
+        ],
+        marriedFilingSeparately: [
           { min: 0, max: 1313, rate: 0 },
           { min: 1313, max: 2626, rate: 0.02 },
           { min: 2626, max: 3939, rate: 0.025 },
@@ -570,7 +825,7 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
 
     MT: {
       type: "bracket",
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 15750, marriedFilingJointly: 31500, headOfHousehold: 23625, marriedFilingSeparately: 15750 },
       brackets: {
         single: [
           { min: 0, max: 21100, rate: 0.047 },
@@ -580,13 +835,21 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 0, max: 42200, rate: 0.047 },
           { min: 42200, max: null, rate: 0.059 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 21100, rate: 0.047 },
+          { min: 21100, max: null, rate: 0.059 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 21100, rate: 0.047 },
+          { min: 21100, max: null, rate: 0.059 },
+        ],
       },
     },
 
     NE: {
       type: "bracket",
-      standardDeduction: { single: 8600, marriedFilingJointly: 17200 },
-      credit: { perFiler: { single: 176, marriedFilingJointly: 352 }, perDependent: 176 },
+      standardDeduction: { single: 8600, marriedFilingJointly: 17200, headOfHousehold: 8600, marriedFilingSeparately: 8600 },
+      credit: { perFiler: { single: 176, marriedFilingJointly: 352, headOfHousehold: 176, marriedFilingSeparately: 176 }, perDependent: 176 },
       brackets: {
         single: [
           { min: 0, max: 4030, rate: 0.0246 },
@@ -600,12 +863,24 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 48250, max: 77730, rate: 0.0501 },
           { min: 77730, max: null, rate: 0.052 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 4030, rate: 0.0246 },
+          { min: 4030, max: 24120, rate: 0.0351 },
+          { min: 24120, max: 38870, rate: 0.0501 },
+          { min: 38870, max: null, rate: 0.052 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 4030, rate: 0.0246 },
+          { min: 4030, max: 24120, rate: 0.0351 },
+          { min: 24120, max: 38870, rate: 0.0501 },
+          { min: 38870, max: null, rate: 0.052 },
+        ],
       },
     },
 
     NJ: {
       type: "bracket",
-      standardDeduction: { single: 1000, marriedFilingJointly: 2000 },
+      standardDeduction: { single: 1000, marriedFilingJointly: 2000, headOfHousehold: 1000, marriedFilingSeparately: 1000 },
       brackets: {
         single: [
           { min: 0, max: 20000, rate: 0.014 },
@@ -626,12 +901,30 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 500000, max: 1000000, rate: 0.0897 },
           { min: 1000000, max: null, rate: 0.1075 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 20000, rate: 0.014 },
+          { min: 20000, max: 35000, rate: 0.0175 },
+          { min: 35000, max: 40000, rate: 0.035 },
+          { min: 40000, max: 75000, rate: 0.0553 },
+          { min: 75000, max: 500000, rate: 0.0637 },
+          { min: 500000, max: 1000000, rate: 0.0897 },
+          { min: 1000000, max: null, rate: 0.1075 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 20000, rate: 0.014 },
+          { min: 20000, max: 35000, rate: 0.0175 },
+          { min: 35000, max: 40000, rate: 0.035 },
+          { min: 40000, max: 75000, rate: 0.0553 },
+          { min: 75000, max: 500000, rate: 0.0637 },
+          { min: 500000, max: 1000000, rate: 0.0897 },
+          { min: 1000000, max: null, rate: 0.1075 },
+        ],
       },
     },
 
     NM: {
       type: "bracket",
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 15750, marriedFilingJointly: 31500, headOfHousehold: 23625, marriedFilingSeparately: 15750 },
       brackets: {
         single: [
           { min: 0, max: 5500, rate: 0.015 },
@@ -649,12 +942,28 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 100000, max: 315000, rate: 0.049 },
           { min: 315000, max: null, rate: 0.059 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 5500, rate: 0.015 },
+          { min: 5500, max: 16500, rate: 0.032 },
+          { min: 16500, max: 33500, rate: 0.043 },
+          { min: 33500, max: 66500, rate: 0.047 },
+          { min: 66500, max: 210000, rate: 0.049 },
+          { min: 210000, max: null, rate: 0.059 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 5500, rate: 0.015 },
+          { min: 5500, max: 16500, rate: 0.032 },
+          { min: 16500, max: 33500, rate: 0.043 },
+          { min: 33500, max: 66500, rate: 0.047 },
+          { min: 66500, max: 210000, rate: 0.049 },
+          { min: 210000, max: null, rate: 0.059 },
+        ],
       },
     },
 
     ND: {
       type: "bracket",
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 15750, marriedFilingJointly: 31500, headOfHousehold: 23625, marriedFilingSeparately: 15750 },
       brackets: {
         single: [
           { min: 0, max: 48475, rate: 0 },
@@ -666,12 +975,22 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 80975, max: 298075, rate: 0.0195 },
           { min: 298075, max: null, rate: 0.025 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 48475, rate: 0 },
+          { min: 48475, max: 244825, rate: 0.0195 },
+          { min: 244825, max: null, rate: 0.025 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 48475, rate: 0 },
+          { min: 48475, max: 244825, rate: 0.0195 },
+          { min: 244825, max: null, rate: 0.025 },
+        ],
       },
     },
 
     OK: {
       type: "bracket",
-      standardDeduction: { single: 6350 + 1000, marriedFilingJointly: 12700 + 2000 },
+      standardDeduction: { single: 6350 + 1000, marriedFilingJointly: 12700 + 2000, headOfHousehold: 6350 + 1000, marriedFilingSeparately: 6350 + 1000 },
       brackets: {
         single: [
           { min: 0, max: 1000, rate: 0.0025 },
@@ -689,13 +1008,29 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 9800, max: 14400, rate: 0.0375 },
           { min: 14400, max: null, rate: 0.0475 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 1000, rate: 0.0025 },
+          { min: 1000, max: 2500, rate: 0.0075 },
+          { min: 2500, max: 3750, rate: 0.0175 },
+          { min: 3750, max: 4900, rate: 0.0275 },
+          { min: 4900, max: 7200, rate: 0.0375 },
+          { min: 7200, max: null, rate: 0.0475 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 1000, rate: 0.0025 },
+          { min: 1000, max: 2500, rate: 0.0075 },
+          { min: 2500, max: 3750, rate: 0.0175 },
+          { min: 3750, max: 4900, rate: 0.0275 },
+          { min: 4900, max: 7200, rate: 0.0375 },
+          { min: 7200, max: null, rate: 0.0475 },
+        ],
       },
     },
 
     OR: {
       type: "bracket",
-      standardDeduction: { single: 2800, marriedFilingJointly: 5600 },
-      credit: { perFiler: { single: 256, marriedFilingJointly: 512 }, perDependent: 256 },
+      standardDeduction: { single: 2800, marriedFilingJointly: 5600, headOfHousehold: 2800, marriedFilingSeparately: 2800 },
+      credit: { perFiler: { single: 256, marriedFilingJointly: 512, headOfHousehold: 256, marriedFilingSeparately: 256 }, perDependent: 256 },
       brackets: {
         single: [
           { min: 0, max: 4400, rate: 0.0475 },
@@ -709,12 +1044,24 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 22100, max: 250000, rate: 0.0875 },
           { min: 250000, max: null, rate: 0.099 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 4400, rate: 0.0475 },
+          { min: 4400, max: 11050, rate: 0.0675 },
+          { min: 11050, max: 125000, rate: 0.0875 },
+          { min: 125000, max: null, rate: 0.099 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 4400, rate: 0.0475 },
+          { min: 4400, max: 11050, rate: 0.0675 },
+          { min: 11050, max: 125000, rate: 0.0875 },
+          { min: 125000, max: null, rate: 0.099 },
+        ],
       },
     },
 
     RI: {
       type: "bracket",
-      standardDeduction: { single: 11200 + 5100, marriedFilingJointly: 22400 + 10200 },
+      standardDeduction: { single: 11200 + 5100, marriedFilingJointly: 22400 + 10200, headOfHousehold: 11200 + 5100, marriedFilingSeparately: 11200 + 5100 },
       brackets: {
         single: [
           { min: 0, max: 79900, rate: 0.0375 },
@@ -726,6 +1073,16 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 79900, max: 181650, rate: 0.0475 },
           { min: 181650, max: null, rate: 0.0599 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 79900, rate: 0.0375 },
+          { min: 79900, max: 181650, rate: 0.0475 },
+          { min: 181650, max: null, rate: 0.0599 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 79900, rate: 0.0375 },
+          { min: 79900, max: 181650, rate: 0.0475 },
+          { min: 181650, max: null, rate: 0.0599 },
+        ],
       },
     },
 
@@ -733,7 +1090,7 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
       type: "bracket",
       // South Carolina has no standard deduction of its own — it starts from federal taxable
       // income, so the federal standard deduction applies directly (confirmed via SC DOR).
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 15750, marriedFilingJointly: 31500, headOfHousehold: 23625, marriedFilingSeparately: 15750 },
       credit: { perDependent: 4930 },
       brackets: {
         single: [
@@ -746,12 +1103,22 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 3560, max: 17830, rate: 0.03 },
           { min: 17830, max: null, rate: 0.062 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 3560, rate: 0 },
+          { min: 3560, max: 17830, rate: 0.03 },
+          { min: 17830, max: null, rate: 0.062 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 3560, rate: 0 },
+          { min: 3560, max: 17830, rate: 0.03 },
+          { min: 17830, max: null, rate: 0.062 },
+        ],
       },
     },
 
     VT: {
       type: "bracket",
-      standardDeduction: { single: 7400 + 5100, marriedFilingJointly: 14850 + 10200 },
+      standardDeduction: { single: 7400 + 5100, marriedFilingJointly: 14850 + 10200, headOfHousehold: 7400 + 5100, marriedFilingSeparately: 7400 + 5100 },
       brackets: {
         single: [
           { min: 0, max: 47900, rate: 0.0335 },
@@ -765,12 +1132,24 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 193300, max: 294600, rate: 0.076 },
           { min: 294600, max: null, rate: 0.0875 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 47900, rate: 0.0335 },
+          { min: 47900, max: 116000, rate: 0.066 },
+          { min: 116000, max: 242000, rate: 0.076 },
+          { min: 242000, max: null, rate: 0.0875 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 47900, rate: 0.0335 },
+          { min: 47900, max: 116000, rate: 0.066 },
+          { min: 116000, max: 242000, rate: 0.076 },
+          { min: 242000, max: null, rate: 0.0875 },
+        ],
       },
     },
 
     VA: {
       type: "bracket",
-      standardDeduction: { single: 8500 + 930, marriedFilingJointly: 17000 + 1860 },
+      standardDeduction: { single: 8500 + 930, marriedFilingJointly: 17000 + 1860, headOfHousehold: 8500 + 930, marriedFilingSeparately: 8500 + 930 },
       brackets: {
         single: [
           { min: 0, max: 3000, rate: 0.02 },
@@ -779,6 +1158,18 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 17000, max: null, rate: 0.0575 },
         ],
         marriedFilingJointly: [
+          { min: 0, max: 3000, rate: 0.02 },
+          { min: 3000, max: 5000, rate: 0.03 },
+          { min: 5000, max: 17000, rate: 0.05 },
+          { min: 17000, max: null, rate: 0.0575 },
+        ],
+        headOfHousehold: [
+          { min: 0, max: 3000, rate: 0.02 },
+          { min: 3000, max: 5000, rate: 0.03 },
+          { min: 5000, max: 17000, rate: 0.05 },
+          { min: 17000, max: null, rate: 0.0575 },
+        ],
+        marriedFilingSeparately: [
           { min: 0, max: 3000, rate: 0.02 },
           { min: 3000, max: 5000, rate: 0.03 },
           { min: 5000, max: 17000, rate: 0.05 },
@@ -789,7 +1180,7 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
 
     WV: {
       type: "bracket",
-      standardDeduction: { single: 2000, marriedFilingJointly: 4000 },
+      standardDeduction: { single: 2000, marriedFilingJointly: 4000, headOfHousehold: 2000, marriedFilingSeparately: 2000 },
       brackets: {
         single: [
           { min: 0, max: 10000, rate: 0.0222 },
@@ -799,6 +1190,20 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 60000, max: null, rate: 0.0482 },
         ],
         marriedFilingJointly: [
+          { min: 0, max: 10000, rate: 0.0222 },
+          { min: 10000, max: 25000, rate: 0.0296 },
+          { min: 25000, max: 40000, rate: 0.0333 },
+          { min: 40000, max: 60000, rate: 0.0444 },
+          { min: 60000, max: null, rate: 0.0482 },
+        ],
+        headOfHousehold: [
+          { min: 0, max: 10000, rate: 0.0222 },
+          { min: 10000, max: 25000, rate: 0.0296 },
+          { min: 25000, max: 40000, rate: 0.0333 },
+          { min: 40000, max: 60000, rate: 0.0444 },
+          { min: 60000, max: null, rate: 0.0482 },
+        ],
+        marriedFilingSeparately: [
           { min: 0, max: 10000, rate: 0.0222 },
           { min: 10000, max: 25000, rate: 0.0296 },
           { min: 25000, max: 40000, rate: 0.0333 },
@@ -810,7 +1215,7 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
 
     WI: {
       type: "bracket",
-      standardDeduction: { single: 13560 + 700, marriedFilingJointly: 25110 + 1400 },
+      standardDeduction: { single: 13560 + 700, marriedFilingJointly: 25110 + 1400, headOfHousehold: 13560 + 700, marriedFilingSeparately: 13560 + 700 },
       brackets: {
         single: [
           { min: 0, max: 14680, rate: 0.035 },
@@ -824,12 +1229,24 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 39150, max: 431060, rate: 0.053 },
           { min: 431060, max: null, rate: 0.0765 },
         ],
+        headOfHousehold: [
+          { min: 0, max: 14680, rate: 0.035 },
+          { min: 14680, max: 29370, rate: 0.044 },
+          { min: 29370, max: 323290, rate: 0.053 },
+          { min: 323290, max: null, rate: 0.0765 },
+        ],
+        marriedFilingSeparately: [
+          { min: 0, max: 14680, rate: 0.035 },
+          { min: 14680, max: 29370, rate: 0.044 },
+          { min: 29370, max: 323290, rate: 0.053 },
+          { min: 323290, max: null, rate: 0.0765 },
+        ],
       },
     },
 
     DC: {
       type: "bracket",
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 15750, marriedFilingJointly: 31500, headOfHousehold: 23625, marriedFilingSeparately: 15750 },
       brackets: {
         single: [
           { min: 0, max: 10000, rate: 0.04 },
@@ -841,6 +1258,24 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
           { min: 1000000, max: null, rate: 0.1075 },
         ],
         marriedFilingJointly: [
+          { min: 0, max: 10000, rate: 0.04 },
+          { min: 10000, max: 40000, rate: 0.06 },
+          { min: 40000, max: 60000, rate: 0.065 },
+          { min: 60000, max: 250000, rate: 0.085 },
+          { min: 250000, max: 500000, rate: 0.0925 },
+          { min: 500000, max: 1000000, rate: 0.0975 },
+          { min: 1000000, max: null, rate: 0.1075 },
+        ],
+        headOfHousehold: [
+          { min: 0, max: 10000, rate: 0.04 },
+          { min: 10000, max: 40000, rate: 0.06 },
+          { min: 40000, max: 60000, rate: 0.065 },
+          { min: 60000, max: 250000, rate: 0.085 },
+          { min: 250000, max: 500000, rate: 0.0925 },
+          { min: 500000, max: 1000000, rate: 0.0975 },
+          { min: 1000000, max: null, rate: 0.1075 },
+        ],
+        marriedFilingSeparately: [
           { min: 0, max: 10000, rate: 0.04 },
           { min: 10000, max: 40000, rate: 0.06 },
           { min: 40000, max: 60000, rate: 0.065 },

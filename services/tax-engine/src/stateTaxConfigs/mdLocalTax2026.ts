@@ -61,6 +61,17 @@ export const mdLocalTaxJurisdictions2026: Record<string, LocalTaxConfig> = {
         { min: 75000, max: 480000, rate: 0.0294 },
         { min: 480000, max: null, rate: 0.032 },
       ],
+      // MD county tax doesn't publish separate HoH/MFS bracket schedules; using single thresholds.
+      headOfHousehold: [
+        { min: 0, max: 50000, rate: 0.027 },
+        { min: 50000, max: 400000, rate: 0.0294 },
+        { min: 400000, max: null, rate: 0.032 },
+      ],
+      marriedFilingSeparately: [
+        { min: 0, max: 50000, rate: 0.027 },
+        { min: 50000, max: 400000, rate: 0.0294 },
+        { min: 400000, max: null, rate: 0.032 },
+      ],
     },
   },
 
@@ -78,6 +89,19 @@ export const mdLocalTaxJurisdictions2026: Record<string, LocalTaxConfig> = {
         { min: 25000, max: 100000, rate: 0.0275 },
         { min: 100000, max: 250000, rate: 0.0296 },
         { min: 250000, max: null, rate: 0.032 },
+      ],
+      // MD county tax doesn't publish separate HoH/MFS bracket schedules; using single thresholds.
+      headOfHousehold: [
+        { min: 0, max: 25000, rate: 0.0225 },
+        { min: 25000, max: 50000, rate: 0.0275 },
+        { min: 50000, max: 150000, rate: 0.0296 },
+        { min: 150000, max: null, rate: 0.032 },
+      ],
+      marriedFilingSeparately: [
+        { min: 0, max: 25000, rate: 0.0225 },
+        { min: 25000, max: 50000, rate: 0.0275 },
+        { min: 50000, max: 150000, rate: 0.0296 },
+        { min: 150000, max: null, rate: 0.032 },
       ],
     },
   },

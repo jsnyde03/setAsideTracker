@@ -29,6 +29,8 @@ interface OnboardingScreenProps {
 const FILING_STATUS_OPTIONS: { label: string; value: FilingStatus }[] = [
   { label: "Single", value: "single" },
   { label: "Married Filing Jointly", value: "marriedFilingJointly" },
+  { label: "Head of Household", value: "headOfHousehold" },
+  { label: "Married Filing Separately", value: "marriedFilingSeparately" },
 ];
 
 const FREQUENCY_OPTIONS: { label: string; value: PayFrequency }[] = [
@@ -50,7 +52,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [filingStatus, setFilingStatus] = useState<FilingStatus>("single");
   const [dependents, setDependents] = useState("0");
   const [hasW2Job, setHasW2Job] = useState(false);
-  const [w2PaycheckAmount, setW2PaycheckAmount] = useState("");
+  const [w2GrossPayPerPeriod, setW2GrossPayPerPeriod] = useState("");
+  const [w2RetirementPerPeriod, setW2RetirementPerPeriod] = useState("");
+  const [w2PreTaxBenefitsPerPeriod, setW2PreTaxBenefitsPerPeriod] = useState("");
+  const [w2YtdFederalWithheld, setW2YtdFederalWithheld] = useState("");
+  const [w2YtdStateWithheld, setW2YtdStateWithheld] = useState("");
   const [w2PayFrequency, setW2PayFrequency] = useState<PayFrequency>("biweekly");
   const [w2EndDate, setW2EndDate] = useState("");
   const [state, setState] = useState("");
@@ -97,16 +103,23 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       createdAt: new Date().toISOString(),
     };
 
-    const paycheckAmountValue = Math.max(0, parseFloat(w2PaycheckAmount) || 0);
+    const grossAmount = Math.max(0, parseFloat(w2GrossPayPerPeriod) || 0);
+    const retirementAmount = Math.max(0, parseFloat(w2RetirementPerPeriod) || 0);
+    const preTaxBenefitsAmount = Math.max(0, parseFloat(w2PreTaxBenefitsPerPeriod) || 0);
+    const ytdFederalAmount = Math.max(0, parseFloat(w2YtdFederalWithheld) || 0);
+    const ytdStateAmount = Math.max(0, parseFloat(w2YtdStateWithheld) || 0);
 
     const taxProfile: TaxProfile = {
       filingStatus,
       dependents: Math.max(0, parseInt(dependents, 10) || 0),
       hasW2Job,
-      estimatedW2Income: hasW2Job ? annualIncomeFromPaycheck(paycheckAmountValue, w2PayFrequency) : 0,
-      w2PaycheckAmount: hasW2Job ? paycheckAmountValue : undefined,
+      w2GrossPayPerPeriod: hasW2Job && grossAmount > 0 ? grossAmount : undefined,
+      w2RetirementPerPeriod: hasW2Job && retirementAmount > 0 ? retirementAmount : undefined,
+      w2PreTaxBenefitsPerPeriod: hasW2Job && preTaxBenefitsAmount > 0 ? preTaxBenefitsAmount : undefined,
       w2PayFrequency: hasW2Job ? w2PayFrequency : undefined,
       w2EndDate: hasW2Job && w2EndDate.trim().length > 0 ? w2EndDate.trim() : undefined,
+      w2YtdFederalWithheld: hasW2Job && ytdFederalAmount > 0 ? ytdFederalAmount : undefined,
+      w2YtdStateWithheld: hasW2Job && ytdStateAmount > 0 ? ytdStateAmount : undefined,
       state: state.trim().toUpperCase(),
       county,
     };
@@ -206,11 +219,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           {W2_JOB_SUPPORT_ENABLED && hasW2Job && (
             <>
               <TextField
-                label="Paycheck amount"
-                hint="How much you take home each paycheck — most people know this more easily than their annual gross."
+                label="Gross pay per paycheck"
+                hint="The top-line amount before any deductions — shown as 'Gross Pay' on your pay stub."
                 placeholder="0"
-                value={w2PaycheckAmount}
-                onChangeText={setW2PaycheckAmount}
+                value={w2GrossPayPerPeriod}
+                onChangeText={setW2GrossPayPerPeriod}
                 keyboardType="decimal-pad"
               />
               <Text style={styles.fieldLabel}>How often you're paid</Text>
@@ -224,11 +237,43 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                   />
                 ))}
               </View>
-              {Math.max(0, parseFloat(w2PaycheckAmount) || 0) > 0 && (
+              {Math.max(0, parseFloat(w2GrossPayPerPeriod) || 0) > 0 && (
                 <Text style={styles.fieldHint}>
-                  ≈ {formatCurrency(annualIncomeFromPaycheck(parseFloat(w2PaycheckAmount) || 0, w2PayFrequency))}/year
+                  ≈ {formatCurrency(annualIncomeFromPaycheck(parseFloat(w2GrossPayPerPeriod) || 0, w2PayFrequency))}/year gross
                 </Text>
               )}
+              <TextField
+                label="401k / 403b contribution per paycheck (optional)"
+                hint="Pretax retirement contributions reduce your income tax but not Social Security/Medicare."
+                placeholder="0"
+                value={w2RetirementPerPeriod}
+                onChangeText={setW2RetirementPerPeriod}
+                keyboardType="decimal-pad"
+              />
+              <TextField
+                label="Pretax insurance / HSA / FSA per paycheck (optional)"
+                hint="Pretax benefits reduce both income tax and Social Security/Medicare wages."
+                placeholder="0"
+                value={w2PreTaxBenefitsPerPeriod}
+                onChangeText={setW2PreTaxBenefitsPerPeriod}
+                keyboardType="decimal-pad"
+              />
+              <TextField
+                label="Federal income tax withheld YTD (optional)"
+                hint="From the 'Federal Income Tax Withheld' YTD column on your most recent pay stub. Improves withholding credit accuracy."
+                placeholder="0"
+                value={w2YtdFederalWithheld}
+                onChangeText={setW2YtdFederalWithheld}
+                keyboardType="decimal-pad"
+              />
+              <TextField
+                label="State income tax withheld YTD (optional)"
+                hint="From the 'State Income Tax Withheld' YTD column on your most recent pay stub."
+                placeholder="0"
+                value={w2YtdStateWithheld}
+                onChangeText={setW2YtdStateWithheld}
+                keyboardType="decimal-pad"
+              />
               <TextField
                 label="When does/did this job end? (optional)"
                 hint="Leave blank if it's ongoing through the end of the year."

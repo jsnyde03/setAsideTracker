@@ -34,6 +34,8 @@ interface SettingsScreenProps {
 const FILING_STATUS_LABELS: Record<TaxProfile["filingStatus"], string> = {
   single: "Single",
   marriedFilingJointly: "Married Filing Jointly",
+  headOfHousehold: "Head of Household",
+  marriedFilingSeparately: "Married Filing Separately",
 };
 
 const COLOR_SCHEME_OPTIONS: { label: string; value: ColorSchemePreference }[] = [

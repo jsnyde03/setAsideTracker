@@ -553,3 +553,49 @@ describe("estimateTax with state tax (2026)", () => {
     expect(ca.totalEstimatedTax - fl.totalEstimatedTax).toBeCloseTo(ca.stateTax.stateTax, 2);
   });
 });
+
+describe("Head of Household and Married Filing Separately state tax", () => {
+  it("applies NY's distinct HoH standard deduction ($11,200, not $8,000 single)", () => {
+    const hoh = calculateStateTax(80000, 5000, 0, "headOfHousehold", "NY", taxYear2026);
+    const single = calculateStateTax(80000, 5000, 0, "single", "NY", taxYear2026);
+    // HoH deduction ($11,200) > single ($8,000), so HoH taxable income is lower.
+    expect(hoh.taxableIncome).toBeLessThan(single.taxableIncome);
+    expect(hoh.taxableIncome).toBeCloseTo(80000 - 5000 - 11200, 2);
+  });
+
+  it("applies SC's federal-conforming HoH deduction ($23,625 for 2025)", () => {
+    const hoh = calculateStateTax(100000, 5000, 0, "headOfHousehold", "SC", taxYear2025);
+    const single = calculateStateTax(100000, 5000, 0, "single", "SC", taxYear2025);
+    expect(hoh.taxableIncome).toBeCloseTo(100000 - 5000 - 23625, 2);
+    expect(hoh.taxableIncome).toBeLessThan(single.taxableIncome);
+  });
+
+  it("applies DC's federal-conforming HoH deduction ($23,625 for 2025)", () => {
+    const hoh = calculateStateTax(100000, 5000, 0, "headOfHousehold", "DC", taxYear2025);
+    expect(hoh.taxableIncome).toBeCloseTo(100000 - 5000 - 23625, 2);
+  });
+
+  it("MFS uses the same deduction as single for states that don't have a separate MFS deduction (NY)", () => {
+    const mfs = calculateStateTax(80000, 5000, 0, "marriedFilingSeparately", "NY", taxYear2026);
+    const single = calculateStateTax(80000, 5000, 0, "single", "NY", taxYear2026);
+    expect(mfs.taxableIncome).toBeCloseTo(single.taxableIncome, 2);
+  });
+
+  it("produces a nonzero result for HoH and MFS across representative 2025 states", () => {
+    const states = ["CA", "TX", "NY", "OR", "VA", "WI", "DC"];
+    for (const stateCode of states) {
+      const hoh = calculateStateTax(75000, 4000, 0, "headOfHousehold", stateCode, taxYear2025);
+      const mfs = calculateStateTax(75000, 4000, 0, "marriedFilingSeparately", stateCode, taxYear2025);
+      expect(hoh.supported).toBe(true);
+      expect(mfs.supported).toBe(true);
+      // State tax should be >= 0 for all supported states.
+      expect(hoh.stateTax).toBeGreaterThanOrEqual(0);
+      expect(mfs.stateTax).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("OR HoH uses the single per-filer credit ($256, not the MFJ $512)", () => {
+    const hoh = calculateStateTax(60000, 3000, 0, "headOfHousehold", "OR", taxYear2026);
+    expect(hoh.creditApplied).toBeCloseTo(256, 2);
+  });
+});

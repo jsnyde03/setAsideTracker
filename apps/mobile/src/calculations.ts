@@ -59,10 +59,9 @@ function w2JobActiveDuringYear(year: number, w2EndDate?: string): boolean {
 }
 
 /**
- * Fraction (0–1) of a W2 job's active period within `year` that has elapsed as of `now`. The
- * active period runs from Jan 1 of `year` through `w2EndDate` if it falls within `year`,
- * otherwise through Dec 31. A job that ends before today is fully elapsed (1); one that hasn't
- * started relative to `now` is 0 (not a real scenario here, but keeps the function well-defined).
+ * Fraction (0–1) of a W2 job's active period within `year` that has elapsed as of `now`. Used
+ * only in the YTD-actuals withholding path to estimate remaining employer withholding — not for
+ * prorating the withholding credit against total tax owed (that old approach was wrong; see below).
  */
 export function w2WithholdingYearFraction(
   year: number,
@@ -84,6 +83,29 @@ export function w2WithholdingYearFraction(
   if (now.getTime() <= periodStart.getTime()) return 0;
 
   return (now.getTime() - periodStart.getTime()) / (periodEnd.getTime() - periodStart.getTime());
+}
+
+/**
+ * Derives the two W2 income figures the tax engine needs from per-paycheck pay stub fields:
+ * - w2FicaWages: gross minus pretax insurance/HSA only (NOT minus 401k, since 401k reduces
+ *   income tax but not Social Security/Medicare wages per IRC §3121(a)(5))
+ * - w2FederalTaxableIncome: gross minus 401k minus pretax benefits (what the W-4 targets and
+ *   what income/state tax brackets apply to)
+ * Returns zeros when the job is not active.
+ */
+function deriveW2Incomes(taxProfile: TaxProfile, w2Active: boolean): {
+  w2FicaWages: number;
+  w2FederalTaxableIncome: number;
+} {
+  if (!w2Active) return { w2FicaWages: 0, w2FederalTaxableIncome: 0 };
+  const gross = taxProfile.w2GrossPayPerPeriod ?? 0;
+  const retirement = taxProfile.w2RetirementPerPeriod ?? 0;
+  const preTaxBenefits = taxProfile.w2PreTaxBenefitsPerPeriod ?? 0;
+  const periods = PAY_PERIODS_PER_YEAR[taxProfile.w2PayFrequency ?? "biweekly"];
+  return {
+    w2FicaWages: Math.max(0, gross - preTaxBenefits) * periods,
+    w2FederalTaxableIncome: Math.max(0, gross - retirement - preTaxBenefits) * periods,
+  };
 }
 
 export interface CatchUpStatus {
@@ -210,14 +232,15 @@ export function computeTaxEstimate(
   const config = taxYearConfigs[year] ?? currentTaxYear;
 
   const w2Active = taxProfile.hasW2Job && w2JobActiveDuringYear(year, taxProfile.w2EndDate);
-  const w2Income = w2Active ? taxProfile.estimatedW2Income : 0;
+  const { w2FicaWages, w2FederalTaxableIncome } = deriveW2Incomes(taxProfile, w2Active);
 
   const estimate = estimateTax(
     {
       filingStatus: taxProfile.filingStatus,
       netSelfEmploymentProfit: aggregate.netSelfEmploymentProfit,
       businessMiles: aggregate.businessMiles,
-      otherTaxableIncome: w2Income,
+      otherTaxableIncome: w2FederalTaxableIncome,
+      otherFicaWages: w2FicaWages,
       stateCode: taxProfile.state,
       county: taxProfile.county,
       // Simplification: treats every declared dependent as a CTC-qualifying child — see the
@@ -227,8 +250,29 @@ export function computeTaxEstimate(
     config
   );
 
-  const w2Fraction = w2Active ? w2WithholdingYearFraction(year, taxProfile.w2EndDate) : 0;
-  const w2WithholdingYtdEstimate = estimate.w2WithholdingEstimate.annualTotalEstimate * w2Fraction;
+  // Withholding credit — how much W2 employer withholding will cover this year's tax bill.
+  // The old approach (prorate by elapsed time) was wrong: it implied the user owed the
+  // "not-yet-withheld" portion themselves, when future paychecks will withhold it automatically.
+  //
+  // Correct approach:
+  // - If YTD actuals are available: ytdActual (already withheld) + model estimate for remaining
+  //   pay periods (1 - elapsedFraction of the annual estimate).
+  // - Otherwise: credit the full annual estimate — the gap between gig income tax and $0 is
+  //   what the user actually needs to set aside, not a partial-year proration.
+  let w2WithholdingYtdEstimate = 0;
+  if (w2Active) {
+    const annualEstimate = estimate.w2WithholdingEstimate.annualTotalEstimate;
+    const hasYtdActuals =
+      taxProfile.w2YtdFederalWithheld !== undefined || taxProfile.w2YtdStateWithheld !== undefined;
+    if (hasYtdActuals) {
+      const ytdActual = (taxProfile.w2YtdFederalWithheld ?? 0) + (taxProfile.w2YtdStateWithheld ?? 0);
+      const elapsedFraction = w2WithholdingYearFraction(year, taxProfile.w2EndDate);
+      w2WithholdingYtdEstimate = ytdActual + annualEstimate * Math.max(0, 1 - elapsedFraction);
+    } else {
+      w2WithholdingYtdEstimate = annualEstimate;
+    }
+  }
+
   const netAmountToSetAside = Math.max(0, estimate.totalEstimatedTax - w2WithholdingYtdEstimate);
 
   return {

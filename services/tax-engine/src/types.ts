@@ -1,4 +1,4 @@
-export type FilingStatus = "single" | "marriedFilingJointly";
+export type FilingStatus = "single" | "marriedFilingJointly" | "headOfHousehold" | "marriedFilingSeparately";
 
 export interface TaxBracket {
   /** Inclusive lower bound of taxable income for this bracket. */
@@ -169,8 +169,17 @@ export interface TaxEstimateInput {
   netSelfEmploymentProfit: number;
   /** Business miles driven, deductible via the standard mileage rate (already excluded from netSelfEmploymentProfit if using actual-expense method elsewhere). */
   businessMiles: number;
-  /** Any other taxable income outside of self-employment, e.g. a W2 job, already net of its own withholding. */
+  /** W2 federal taxable income for the year (gross minus 401k minus pretax insurance/HSA). Used for
+   * federal/state income tax bracket-pushing and withholding estimates. */
   otherTaxableIncome: number;
+  /**
+   * W2 FICA wages for the year (gross minus pretax insurance/HSA, but NOT minus 401k — 401k
+   * reduces income tax but not Social Security/Medicare wages). Used to reduce the available SS wage
+   * base and Additional Medicare Tax threshold before applying them to SE earnings, per Schedule SE
+   * Line 8. Defaults to otherTaxableIncome when omitted (conservative approximation — slightly
+   * understates FICA wages when 401k is in play, overstating SS tax for high earners).
+   */
+  otherFicaWages?: number;
   /** Two-letter state code the user primarily works in, e.g. "CA", "TX". */
   stateCode: string;
   /** County/local jurisdiction name, required for states with a local tax layer (e.g. MD). */

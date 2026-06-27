@@ -43,6 +43,20 @@ export const nyLocalTaxJurisdictions2026: Record<string, LocalTaxConfig> = {
         { min: 45000, max: 90000, rate: 0.03819 },
         { min: 90000, max: null, rate: 0.03876 },
       ],
+      // NYC publishes only two bracket schedules (single and MFJ); HoH and MFS are not separately
+      // defined at the city level — both use the single schedule as the closest approximation.
+      headOfHousehold: [
+        { min: 0, max: 12000, rate: 0.03078 },
+        { min: 12000, max: 25000, rate: 0.03762 },
+        { min: 25000, max: 50000, rate: 0.03819 },
+        { min: 50000, max: null, rate: 0.03876 },
+      ],
+      marriedFilingSeparately: [
+        { min: 0, max: 12000, rate: 0.03078 },
+        { min: 12000, max: 25000, rate: 0.03762 },
+        { min: 25000, max: 50000, rate: 0.03819 },
+        { min: 50000, max: null, rate: 0.03876 },
+      ],
     },
   },
 };

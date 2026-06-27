@@ -13,19 +13,25 @@ export interface TaxProfile {
   filingStatus: FilingStatus;
   dependents: number;
   hasW2Job: boolean;
-  /** Annual W2 income, if hasW2Job is true. Used as otherTaxableIncome in the tax estimate. This
-   * is the canonical value used everywhere downstream — it's computed from w2PaycheckAmount /
-   * w2PayFrequency in the UI (most people know their paycheck amount, not their annual gross),
-   * but every consumer of TaxProfile should keep reading this field, not the paycheck ones. */
-  estimatedW2Income: number;
-  /** The raw paycheck amount the user entered, if they entered it that way. Stored purely so the
-   * edit form can show it back to them next time, instead of making them reverse-calculate it
-   * from estimatedW2Income. */
-  w2PaycheckAmount?: number;
+  // ── W2 per-paycheck fields (only meaningful when hasW2Job is true) ─────────────────────────
+  /** Gross pay per paycheck before any deductions (the top-line "Gross Pay" on a pay stub). */
+  w2GrossPayPerPeriod?: number;
+  /** Pretax 401k/403b contribution per paycheck. Reduces federal/state taxable income but NOT
+   * FICA wages — so this must be tracked separately from pretax benefits. Optional; defaults to 0. */
+  w2RetirementPerPeriod?: number;
+  /** Pretax insurance/HSA/FSA deductions per paycheck. Reduces both taxable income AND FICA wages
+   * (unlike 401k). Optional; defaults to 0. */
+  w2PreTaxBenefitsPerPeriod?: number;
   w2PayFrequency?: PayFrequency;
   /** If the W2 job ends (or already ended) partway through the tax year, income/withholding
    * stop accruing after this date. Omit if the job runs through year-end. */
   w2EndDate?: string;
+  // ── YTD actuals from a recent pay stub (optional — improves withholding credit accuracy) ───
+  /** Federal income tax withheld year-to-date, from the YTD column of the most recent pay stub. */
+  w2YtdFederalWithheld?: number;
+  /** State income tax withheld year-to-date, from the YTD column of the most recent pay stub. */
+  w2YtdStateWithheld?: number;
+  // ─────────────────────────────────────────────────────────────────────────────────────────────
   state: string;
   /** County of residence, only required for states with a local "piggyback" income tax (e.g. MD). */
   county?: string;
