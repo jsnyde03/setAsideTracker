@@ -243,19 +243,19 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 </details>
 
-## ⬜ v1.1 — Premium Tier Launch + Free Tier Growth
+## 🔄 v1.1 — Premium Tier Launch + Free Tier Growth
 
 <details>
-<summary>Status: Not Started</summary>
+<summary>Status: In Progress</summary>
 
-**Status: Not Started**
+**Status: In Progress** — work lives on the `v1.1` branch (not merged to `master` until v1.0 is live). Sequencing, dependencies, and external prerequisites are tracked in [V1.1_EXECUTION_PLAN.md](V1.1_EXECUTION_PLAN.md). Shipped so far: Workstream 0 (Playwright + Maestro + CI testing harness) and the "Show your math" audit trail (Phase A #1).
 **Goal:** launch monetization once free-tier retention looks healthy; simultaneously add free features that deepen engagement and drive organic sharing.
 
 **Prerequisite: wire up Sentry and analytics before this ships.** Both `apps/mobile/src/errorReporting.ts` and `analytics.ts` are scaffolded with no real backend (`EXPO_PUBLIC_SENTRY_DSN` unset, no analytics vendor configured). Set up a real Sentry project + DSN, and pick an analytics vendor (PostHog or Amplitude are natural fits) and wire `analytics.ts` to it. You need crash data and real usage patterns before making confident feature-prioritization decisions — this is operational work, not a separate version, and should happen immediately post–App Store approval.
 
 ### Free additions (ships alongside premium, never paywalled)
 
-- **"Show your math" audit-trail view.** Tap any line in the dashboard's tax breakdown (SE tax, federal income tax, state tax, child tax credit, W2 withholding credit) to see the actual calculation: which brackets applied, what the standard deduction was, how the mileage deduction reduced the base. Never paywalled per [ROADMAP §9.4](ROADMAP.md) and the tier-gating principle — this is the trust layer that converts free users to subscribers.
+- ✅ **"Show your math" audit-trail view.** *(Shipped, `v1.1` branch.)* Each line in the dashboard's tax breakdown (SE tax, federal income tax, state tax + credit/local, child tax credit, W2 withholding credit) is now tappable and opens a bottom-sheet showing the actual calculation: AGI → standard deduction → taxable income → the per-bracket tax, plus the SS/Medicare split and credit details. Engine exposes this via additive `standardDeductionUsed`/`bracketsApplied` fields (`AppliedBracket`, `applyBracketsDetailed`); UI is `BreakdownDetailSheet` fed by the pure, reusable `breakdownDetails.ts` builder. Covered by engine unit tests, a mobile builder test, and a `show-your-math` Playwright flow. Never paywalled per [ROADMAP §9.4](ROADMAP.md) and the tier-gating principle — this is the trust layer that converts free users to subscribers.
 - **"What-if" earnings simulator.** Reruns the existing tax engine with hypothetical earnings, expense, or hours-worked inputs against the current profile. No AI cost — pure tax-engine reuse. Pulled forward from old v1.4. Free per [ROADMAP §5](ROADMAP.md). Strong between-shifts engagement: "what if I take an extra Flex block today?"
 - **In-app tax literacy.** Lightweight glossary and "why this number" explainers inline with the tax breakdown cards — tap any term (SE tax, standard mileage rate, estimated tax, standard deduction) for a plain-language explainer. Most users are first-time self-employed; this is the educational layer that makes the numbers feel trustworthy rather than magic. Per [ROADMAP §9.4](ROADMAP.md) and [§5](ROADMAP.md). Not yet implemented anywhere.
 - **Platform earnings comparison.** Per-platform breakdown of total earnings, effective hourly rate, and entry count, derived from existing `Entry.platform` + `Entry.hoursWorked` data. Organic sharing driver: "my DoorDash rate vs. Uber Eats." New idea, not yet in the roadmap.
