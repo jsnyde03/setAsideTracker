@@ -14,6 +14,8 @@ import {
 import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
+import { BreakdownDetailSheet } from "../components/BreakdownDetailSheet";
+import { buildBreakdownDetail, type BreakdownRowKey } from "../breakdownDetails";
 import { radius, shadow, shadowSm, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
 
@@ -56,6 +58,33 @@ function formatDate(date: Date): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+interface MathBreakdownRowProps {
+  label: string;
+  value: string;
+  /** Renders the value in the green "credit" treatment (for reductions like the W2 credit). */
+  credit?: boolean;
+  onPress: () => void;
+  styles: ReturnType<typeof createStyles>;
+}
+
+/** A tappable line in the tax breakdown card that opens its "show your math" detail sheet. */
+function MathBreakdownRow({ label, value, credit, onPress, styles }: MathBreakdownRowProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.breakdownRow, pressed && styles.breakdownRowPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}. Tap to see how this is calculated.`}
+    >
+      <Text style={styles.breakdownLabel}>{label}</Text>
+      <View style={styles.breakdownValueWrap}>
+        <Text style={[styles.breakdownValue, credit && styles.creditValue]}>{value}</Text>
+        <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.4)" />
+      </View>
+    </Pressable>
+  );
+}
+
 export function DashboardScreen({
   entries,
   taxProfile,
@@ -79,6 +108,16 @@ export function DashboardScreen({
   const taxEstimate = computeTaxEstimate(entries, taxProfile, selectedYear);
   const { estimate, year, usedFallbackConfig, w2WithholdingYtdEstimate, netAmountToSetAside } =
     taxEstimate;
+
+  // "Show your math" — which breakdown row's detail sheet is open (null = closed).
+  const [activeDetailKey, setActiveDetailKey] = useState<BreakdownRowKey | null>(null);
+  const activeDetail = activeDetailKey
+    ? buildBreakdownDetail(activeDetailKey, {
+        estimate,
+        stateLabel: taxProfile.state,
+        w2WithholdingYtd: w2WithholdingYtdEstimate,
+      })
+    : null;
 
   function handlePreviousYear() {
     // Years are sorted descending, so "previous" (older) is the next index.
@@ -226,54 +265,62 @@ export function DashboardScreen({
                 ).toFixed(1)}
                 % of net earnings, tax year {estimate.taxYear}
               </Text>
+              <Text style={styles.breakdownHint}>Tap any line to see how it's calculated.</Text>
 
-              <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>Self-employment tax</Text>
-                <Text style={styles.breakdownValue}>{formatCurrency(estimate.seTax.totalSeTax)}</Text>
-              </View>
-              <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>Federal income tax</Text>
-                <Text style={styles.breakdownValue}>
-                  {formatCurrency(estimate.federalIncomeTax.incomeTax)}
-                </Text>
-              </View>
+              <MathBreakdownRow
+                label="Self-employment tax"
+                value={formatCurrency(estimate.seTax.totalSeTax)}
+                onPress={() => setActiveDetailKey("seTax")}
+                styles={styles}
+              />
+              <MathBreakdownRow
+                label="Federal income tax"
+                value={formatCurrency(estimate.federalIncomeTax.incomeTax)}
+                onPress={() => setActiveDetailKey("federalIncomeTax")}
+                styles={styles}
+              />
               {estimate.childTaxCredit.totalCredit > 0 && (
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>
-                    Child Tax Credit ({estimate.childTaxCredit.numberOfChildren})
-                  </Text>
-                  <Text style={[styles.breakdownValue, styles.creditValue]}>
-                    −{formatCurrency(estimate.childTaxCredit.totalCredit)}
-                  </Text>
-                </View>
+                <MathBreakdownRow
+                  label={`Child Tax Credit (${estimate.childTaxCredit.numberOfChildren})`}
+                  value={`−${formatCurrency(estimate.childTaxCredit.totalCredit)}`}
+                  credit
+                  onPress={() => setActiveDetailKey("childTaxCredit")}
+                  styles={styles}
+                />
               )}
-              <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>{taxProfile.state} state income tax</Text>
-                <Text style={styles.breakdownValue}>{formatCurrency(estimate.stateTax.stateLevelTax)}</Text>
-              </View>
+              <MathBreakdownRow
+                label={`${taxProfile.state} state income tax`}
+                value={formatCurrency(estimate.stateTax.stateLevelTax)}
+                onPress={() => setActiveDetailKey("stateTax")}
+                styles={styles}
+              />
               {estimate.stateTax.creditApplied > 0 && (
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>{taxProfile.state} state tax credit</Text>
-                  <Text style={[styles.breakdownValue, styles.creditValue]}>
-                    −{formatCurrency(estimate.stateTax.creditApplied)}
-                  </Text>
-                </View>
+                <MathBreakdownRow
+                  label={`${taxProfile.state} state tax credit`}
+                  value={`−${formatCurrency(estimate.stateTax.creditApplied)}`}
+                  credit
+                  onPress={() => setActiveDetailKey("stateTax")}
+                  styles={styles}
+                />
               )}
               {w2WithholdingYtdEstimate > 0 && (
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>W2 withholding so far (est.)</Text>
-                  <Text style={[styles.breakdownValue, styles.creditValue]}>
-                    −{formatCurrency(w2WithholdingYtdEstimate)}
-                  </Text>
-                </View>
+                <MathBreakdownRow
+                  label="W2 withholding so far (est.)"
+                  value={`−${formatCurrency(w2WithholdingYtdEstimate)}`}
+                  credit
+                  onPress={() => setActiveDetailKey("w2Withholding")}
+                  styles={styles}
+                />
               )}
               {estimate.stateTax.supported &&
                 estimate.stateTax.localTaxSupported &&
                 estimate.stateTax.county && (
-                  <View style={styles.breakdownRow}>
-                    <Text style={styles.breakdownLabel}>{estimate.stateTax.county} local tax</Text>
-                    <Text style={styles.breakdownValue}>{formatCurrency(estimate.stateTax.localTax)}</Text>
-                  </View>
+                  <MathBreakdownRow
+                    label={`${estimate.stateTax.county} local tax`}
+                    value={formatCurrency(estimate.stateTax.localTax)}
+                    onPress={() => setActiveDetailKey("stateTax")}
+                    styles={styles}
+                  />
                 )}
               {!estimate.stateTax.supported && (
                 <View style={styles.warningBox}>
@@ -402,6 +449,7 @@ export function DashboardScreen({
           <Text style={styles.disclaimer}>Estimates for planning purposes only — not tax advice.</Text>
         }
       />
+      <BreakdownDetailSheet detail={activeDetail} onClose={() => setActiveDetailKey(null)} />
     </Screen>
   );
 }
@@ -466,6 +514,9 @@ function createStyles(colors: Colors) {
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.1)",
   },
+  breakdownRowPressed: { opacity: 0.6 },
+  breakdownValueWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
+  breakdownHint: { ...type.micro, color: "#9CA3AF", marginTop: spacing.md, fontStyle: "italic" },
   breakdownLabel: { ...type.caption, color: "#D1D5DB" },
   breakdownValue: { ...type.caption, color: "#fff", fontWeight: "600" },
   creditValue: { color: "#86EFAC" },

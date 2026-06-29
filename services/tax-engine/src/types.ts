@@ -8,6 +8,23 @@ export interface TaxBracket {
   rate: number;
 }
 
+/**
+ * One bracket actually reached when taxing income, with the slice of income that fell inside it
+ * and the resulting tax — the per-bracket detail behind a progressive tax figure, surfaced for
+ * the "show your math" audit trail. Only brackets the income actually reached are emitted.
+ */
+export interface AppliedBracket {
+  /** Inclusive lower bound of the bracket (same as the source TaxBracket). */
+  min: number;
+  /** Exclusive upper bound; null for the top bracket. */
+  max: number | null;
+  rate: number;
+  /** Portion of taxable income that fell within this bracket's [min, upperBound) range. */
+  amountInBracket: number;
+  /** amountInBracket * rate — the tax contributed by this bracket alone. */
+  taxFromBracket: number;
+}
+
 /** No state income tax at all (e.g. TX, FL). */
 export interface NoStateTax {
   type: "none";
@@ -128,6 +145,12 @@ export interface FederalIncomeTaxResult {
   adjustedGrossIncome: number;
   taxableIncome: number;
   incomeTax: number;
+  /** Standard deduction subtracted from AGI to reach taxableIncome — the figure used, exposed for
+   * the "show your math" breakdown so the UI doesn't have to re-derive it from the config. */
+  standardDeductionUsed: number;
+  /** Per-bracket detail behind incomeTax — only the brackets this taxable income actually reached.
+   * Empty when taxableIncome is 0. */
+  bracketsApplied: AppliedBracket[];
 }
 
 export interface StateTaxResult {
@@ -155,6 +178,13 @@ export interface StateTaxResult {
   /** Nonrefundable state credit actually applied (already netted into stateTax, not stateLevelTax) —
    * exposed separately for "show your math" transparency. 0 if this state has no credit modeled. */
   creditApplied: number;
+  /** State standard deduction subtracted to reach taxableIncome (after any income-based phaseout).
+   * 0 for no-income-tax states, unsupported states, and flat-tax states with no standard deduction. */
+  standardDeductionUsed: number;
+  /** Per-bracket detail behind stateLevelTax. For a flat-tax state, a single synthetic entry
+   * spanning the whole taxable base at the flat rate. Empty for no-tax/unsupported states or when
+   * taxableIncome is 0. */
+  bracketsApplied: AppliedBracket[];
 }
 
 export interface MileageDeductionResult {

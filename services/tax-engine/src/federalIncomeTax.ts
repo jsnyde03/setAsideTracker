@@ -1,5 +1,5 @@
 import type { FederalIncomeTaxResult, FilingStatus, TaxYearConfig } from "./types";
-import { applyBrackets } from "./bracketMath";
+import { applyBracketsDetailed } from "./bracketMath";
 
 /**
  * Federal income tax on combined SE profit (less the deductible half of SE tax)
@@ -21,11 +21,13 @@ export function calculateFederalIncomeTax(
   const taxableIncome = Math.max(0, adjustedGrossIncome - standardDeduction);
 
   const brackets = config.federalBrackets[filingStatus];
-  const incomeTax = applyBrackets(taxableIncome, brackets);
+  const { tax: incomeTax, applied: bracketsApplied } = applyBracketsDetailed(taxableIncome, brackets);
 
   return {
     adjustedGrossIncome,
     taxableIncome,
     incomeTax,
+    standardDeductionUsed: standardDeduction,
+    bracketsApplied,
   };
 }
