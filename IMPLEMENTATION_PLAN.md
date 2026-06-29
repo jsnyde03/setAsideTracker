@@ -4,9 +4,11 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 **Status legend:** ✅ Done · 🔄 In Progress · ⬜ Not Started
 
----
-
 ## ✅ v0.1 — Tax Engine Proof of Concept (internal only)
+
+<details>
+<summary>Status: Done — services/tax-engine/</summary>
+
 **Status: Done** — `services/tax-engine/`
 **Goal:** prove the core math is right before building anything else on top of it.
 - [x] Standalone tax-engine package: SE tax, federal bracket calc, standard mileage deduction
@@ -15,7 +17,13 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 - [x] No UI — test harness only, via Vitest
 **Ships to:** you/dev team only. **Exit criteria:** ✅ met — tax engine outputs match hand-calculated IRS examples exactly for both tax years.
 
+</details>
+
 ## ✅ v0.2 — Manual Entry + Dashboard (internal alpha)
+
+<details>
+<summary>Status: Done — apps/mobile/ (Expo/React Native + TypeScript)</summary>
+
 **Status: Done** — `apps/mobile/` (Expo/React Native + TypeScript)
 **Goal:** the core daily-use loop works end to end on a device.
 - [x] Auth — **stubbed as a local profile** (name/email, no password, stored on-device via AsyncStorage). Real Apple/Google OAuth deferred until Apple Developer/Google Cloud credentials are available — by design, see decision log below.
@@ -36,7 +44,13 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 **Bug fixed during verification:** browser mode initially loaded a blank white page with no visible error. Root cause was a `react`/`react-dom` version mismatch (19.2.3 vs 19.2.0) — React 19 fails hard on any mismatch and React Native Web's error overlay doesn't always surface it clearly. Found it by loading the page in a headless browser and reading the actual console/page error rather than guessing. Fixed by pinning `react-dom` to the exact same version as `react` (`"19.2.3"`, no `^` range) so they can't drift apart again on a future `npm install`.
 
+</details>
+
 ## ✅ v0.3 — Closed Beta (expenses + reminders)
+
+<details>
+<summary>Status: Done — all planned items shipped; see exit-criteria caveat below before calling t…</summary>
+
 **Status: Done** — all planned items shipped; see exit-criteria caveat below before calling this fully verified.
 **Goal:** feature-complete enough for a small group of real gig workers to rely on.
 - [x] **State tax module** for 6 states — `services/tax-engine/src/stateTax.ts` + `src/stateTaxConfigs/2026.ts`. Covers all three structural types a state tax system can take: no income tax (**TX, FL**), flat rate (**PA**, 3.07%), and progressive brackets (**CA, NY, MD**). Wired into `estimateTax`/`TaxEstimateResult` (new `stateTax` field) and the mobile dashboard, which now shows a SE/federal/state breakdown and a red warning banner if the user's state isn't in the supported list yet (never silently treats an unsupported state as $0 tax owed without flagging it). 14 new tests (8 in tax-engine, 4 in mobile glue layer, plus updated existing tests) — all passing.
@@ -58,8 +72,14 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
   - **Not verified by automated testing:** real Face ID/Touch ID prompts can't be triggered headlessly. Face ID specifically does not work inside Expo Go — needs a development build to test on iOS.
 **Ships to:** 20–50 closed beta testers (recruit from gig-worker subreddits/FB groups). **Exit criteria:** beta users keep using it past week 2 without prompting. **Before recruiting beta testers:** verify notification delivery and biometric unlock on a real device — both are flagged above as unverifiable by automated testing alone.
 
-## 🔄 v1.0 — Public Launch (Free Tier)
-**Status: In Progress** — paused before submission. Everything below was originally complete and store-submission-ready, but two tax-accuracy gaps were found during a post-launch-planning review (the W2 rebuild and a Head-of-Household/MFS filing-status gap, both below) and pulled back into v1.0 rather than shipped now and patched after — neither is the kind of thing this app should knowingly ship to its first real users when nothing has been submitted yet and both are fixable in a contained scope. The remaining steps for actual store submission are still manual App Store Connect/Play Console actions outside this codebase (see the submission-prep item below), not tracked as open engineering items.
+</details>
+
+## ✅ v1.0 — Public Launch (Free Tier)
+
+<details>
+<summary>Status: Done — all engineering complete. The two tax-accuracy blockers that briefly pause…</summary>
+
+**Status: Done** — all engineering complete. The two tax-accuracy blockers that briefly paused submission (the W2 rebuild and Head-of-Household/MFS filing-status fix) were resolved and folded back in before any App Store submission, so v1.0 shipped with them included rather than patching afterward. Manual App Store Connect actions (hosting the privacy policy, uploading screenshots, triggering the TestFlight build via the existing `codemagic.yaml`, submitting for review) are the user's to complete outside this codebase — not tracked as open engineering items.
 **Goal:** first public release; free tier ships exactly as scoped, no more, no less — with the W2 feature actually correct and every filing status it claims to support modeled accurately, not just gated off or silently wrong.
 - [x] **Mobile polish / premium visual pass** — `apps/mobile/src/theme.ts` (color/spacing/radius/typography/shadow tokens) + shared components (`PrimaryButton`, `Chip`, `TextField`, `Screen`) in `apps/mobile/src/components/`. All four screens (Onboarding, Dashboard, AddEntry, LockScreen) restyled on the shared token set instead of inline ad-hoc styles.
   - Safe-area handling via `react-native-safe-area-context` (`SafeAreaProvider` in `App.tsx`, `Screen` wraps every screen) — previously content could sit under the notch/status bar on real devices.
@@ -219,117 +239,230 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
   - Child Tax Credit phase-out thresholds (`childTaxCredit.ts`) are also keyed by filing status — confirm HoH/MFS figures there too while this is open, not just the income-tax brackets.
   - **DONE.** `FilingStatus` extended to all 4 statuses. Federal brackets/deductions sourced from IRS Rev. Proc. 2025-32 (2026) and OBBBA-confirmed figures (2025). All 50 states + DC updated in both `taxYears/2025.ts` and `stateTaxConfigs/2026.ts` with per-state HoH/MFS deductions (state-specific where published: NY $11,200, GA $18,000, NC $19,125, CT $19,000, MA $6,800; federal-conforming for SC/DC; single used as default elsewhere) and brackets (NY has distinct HoH bracket thresholds; all other states use single as HoH/MFS approximation). Local tax tables (NYC, MD counties) updated. `SettingsScreen.tsx` label map extended. 8 new tests added; 83 passing. Both typechecks clean.
   - **Verified end-to-end in browser (Playwright):** All 4 filing-status chips visible and selectable on onboarding. HoH → CA and MFS → CO both navigate to dashboard with correct state tax line labels, no JS errors. The `$0.00` figures shown are correct (zero entries logged, and at $10k income HoH's $24,150 standard deduction fully offsets taxable income — the zero is right, not a bug).
-**Ships to:** general public, free tier only. **Exit criteria:** the two items above are both fixed and verified (re-enable `W2_JOB_SUPPORT_ENABLED`, new filing statuses checked against IRS Pub 17/Schedule X-Y-Z figures with the same rigor as the existing state-tax verification process), full test suite green, then proceed to actual store submission. No payment infra live yet — validate retention before monetizing.
+**Ships to:** general public, free tier only. **Exit criteria met:** W2 rebuild complete (`W2_JOB_SUPPORT_ENABLED` re-enabled), all four filing statuses verified against IRS figures, full test suite green (88 tax-engine + 54 mobile tests). No payment infra live — validate retention before monetizing.
 
-## ⬜ v1.1 — Premium Tier Launch
-**Status: Not Started**
-**Goal:** turn on monetization once free-tier retention looks healthy.
-- **Payment infra: Apple In-App Purchase (IAP), via RevenueCat.** Decided over Stripe web checkout — Apple's App Review Guideline 3.1.1 requires IAP for unlocking in-app digital features (a Stripe-only path would risk rejection without restructuring the app around an external account/web-portal model). Already enrolled in the Apple Small Business Program for the 15% rate. Per [ROADMAP §8.4](ROADMAP.md).
-- **Entitlement-check mechanism via RevenueCat — does not exist in the codebase at all today**, since there's no premium/free split yet. RevenueCat over raw StoreKit 2 since it already covers receipt validation, entitlement caching, restore-purchases, and subscription-lifecycle webhooks out of the box (also unifies with Google Play Billing for free if Android ever ships, without a second integration); already integrated this same way on another app, so the setup is a known quantity rather than new ground. `react-native-purchases` SDK, a RevenueCat-side product/entitlement configured to match the App Store Connect subscription, checked at app launch via the SDK's cached customer info (no custom server needed).
-- Subscription management + dunning/failed-payment handling — RevenueCat surfaces billing-issue/grace-period status directly on customer info, so this is mostly reading that and deep-linking to the App Store's native "Manage Subscription" screen rather than custom retry logic.
-- **Network-failure handling for the entitlement check** — flagged during the post-v1.0 roadmap gap review: this app has been local-first by default (no backend at all), but the RevenueCat SDK call is the first real network dependency a user can hit mid-session. Needs an explicit decision on fallback behavior (e.g. trust RevenueCat's local cached entitlement when offline rather than blocking premium features on a live network call) — not just "assume it works," per the offline-resilience principle in [ROADMAP §8.3](ROADMAP.md#L230).
-- Unlimited platform tracking
-- **Multi-state support — needs real scoping, not just a toggle.** Pulled out of the old one-line "unlimited platform tracking, multi-state support" bullet during the post-v1.0 roadmap gap review, since it's a genuine tax-law problem, not a UI feature: `TaxProfile` currently has exactly one `state` field, and the engine has no concept of income sourcing/apportionment across states. Gig income is generally sourced to where the work is physically performed, not the worker's residence, and some state pairs have reciprocity agreements that change this — a driver living in NJ but driving in NY (or working DoorDash across a metro area that spans a state line) needs both states modeled correctly, with credits for tax paid to a non-resident state where applicable. This needs an actual design pass (which states' rules to model first, how `Entry` would need a per-entry "state worked in" field vs. a simple resident/non-resident split) before estimating the build — don't treat this as a quick add when premium scoping starts.
-- PDF tax-ready summary report export
-- Year-over-year insights (once there's a year of data — soft-gate until applicable)
-- **"Show your math" audit-trail view** (free — ships alongside premium launch as a trust feature, never paywalled, per [ROADMAP §9.4](ROADMAP.md))
-- **Custom/user-defined expense categories** (premium) — pairs with the Schedule C alignment work in v1.5
-**Ships to:** general public. **Exit criteria:** premium conversion funnel works end-to-end, including cancel/refund flows.
+</details>
 
-## ⬜ v1.2 — Platform Auto-Sync
+## ⬜ v1.1 — Premium Tier Launch + Free Tier Growth
+
+<details>
+<summary>Status: Not Started</summary>
+
 **Status: Not Started**
-**Goal:** kill the manual-entry tax for the platforms that matter most.
-- Argyle (or equivalent) integration for Amazon Flex, Uber, DoorDash, Instacart per [ROADMAP §3.5](ROADMAP.md)
-- Email/statement parsing fallback for platforms aggregator doesn't cover (verify Spark coverage)
-- Premium-gated "auto-sync your earnings"
-- **Sync-failure/offline handling** — flagged during the post-v1.0 roadmap gap review: this is the first feature where a failed network call mid-shift (spotty cell service while driving, the exact scenario [ROADMAP §8.3](ROADMAP.md#L230) calls out) needs a real fallback, not a generic error. Queue/retry rather than silently dropping a sync attempt, and make sure manual entry still works as a fallback if auto-sync is degraded — auto-sync should never become a single point of failure for the core "know what to set aside" use case.
-**Ships to:** general public, premium feature. **Exit criteria:** auto-synced entries match manual entries in accuracy during a parallel-run validation period.
+**Goal:** launch monetization once free-tier retention looks healthy; simultaneously add free features that deepen engagement and drive organic sharing.
+
+**Prerequisite: wire up Sentry and analytics before this ships.** Both `apps/mobile/src/errorReporting.ts` and `analytics.ts` are scaffolded with no real backend (`EXPO_PUBLIC_SENTRY_DSN` unset, no analytics vendor configured). Set up a real Sentry project + DSN, and pick an analytics vendor (PostHog or Amplitude are natural fits) and wire `analytics.ts` to it. You need crash data and real usage patterns before making confident feature-prioritization decisions — this is operational work, not a separate version, and should happen immediately post–App Store approval.
+
+### Free additions (ships alongside premium, never paywalled)
+
+- **"Show your math" audit-trail view.** Tap any line in the dashboard's tax breakdown (SE tax, federal income tax, state tax, child tax credit, W2 withholding credit) to see the actual calculation: which brackets applied, what the standard deduction was, how the mileage deduction reduced the base. Never paywalled per [ROADMAP §9.4](ROADMAP.md) and the tier-gating principle — this is the trust layer that converts free users to subscribers.
+- **"What-if" earnings simulator.** Reruns the existing tax engine with hypothetical earnings, expense, or hours-worked inputs against the current profile. No AI cost — pure tax-engine reuse. Pulled forward from old v1.4. Free per [ROADMAP §5](ROADMAP.md). Strong between-shifts engagement: "what if I take an extra Flex block today?"
+- **In-app tax literacy.** Lightweight glossary and "why this number" explainers inline with the tax breakdown cards — tap any term (SE tax, standard mileage rate, estimated tax, standard deduction) for a plain-language explainer. Most users are first-time self-employed; this is the educational layer that makes the numbers feel trustworthy rather than magic. Per [ROADMAP §9.4](ROADMAP.md) and [§5](ROADMAP.md). Not yet implemented anywhere.
+- **Platform earnings comparison.** Per-platform breakdown of total earnings, effective hourly rate, and entry count, derived from existing `Entry.platform` + `Entry.hoursWorked` data. Organic sharing driver: "my DoorDash rate vs. Uber Eats." New idea, not yet in the roadmap.
+- **Earnings share card.** One-tap shareable summary image — earnings, estimated set-aside, effective hourly rate — formatted for Reddit/Facebook gig-worker communities. Low build cost (`react-native-view-shot` or equivalent); high viral potential. New idea, not yet in the roadmap.
+- **App rating prompt (well-timed).** After a user logs their 5th entry or successfully meets their first catch-up period, surface `expo-store-review` / `SKStoreReviewController`. Crucial for App Store search ranking; timing must be after real value is experienced — never on first launch.
+
+### Premium features (IAP via RevenueCat)
+
+- **Payment infrastructure.** Apple IAP via RevenueCat (`react-native-purchases` SDK). Entitlement check at cold start; offline fallback must trust RevenueCat's locally cached entitlement rather than blocking premium features on a failed network call — this is the first real network dependency in an otherwise local-first app. Already decided over Stripe web checkout (App Review Guideline 3.1.1 requires IAP for in-app digital feature unlocking). Already enrolled in Apple Small Business Program (15% rate). RevenueCat also unifies with Google Play Billing once Android ships (v1.2) via the same SDK — no second integration. Per [ROADMAP §8.4](ROADMAP.md).
+- **PDF tax-ready summary export.** Structured annual report: earnings, deductions, expense breakdown by Schedule C category, tax estimate. Suitable for handing to a CPA or uploading to TurboTax/FreeTaxUSA. Natural premium anchor, especially in filing season.
+- **Schedule C category alignment.** Existing expense categories remapped to actual Schedule C line items (Line 9 car/truck, Line 13 depreciation, Line 17 insurance, Line 22 supplies, Line 25 phone/utilities) so PDF and CSV exports are usable at filing time. Pulled forward from v1.5 as a natural companion to the PDF export. Per [ROADMAP §8.1](ROADMAP.md).
+- **W-4 withholding optimizer.** For the W2+1099 combo: given the user's paycheck details (already modeled in the rebuilt W2 engine), suggest the specific additional per-paycheck withholding amount to enter on a new W-4 so the employer's withholding covers the 1099 tax liability — eliminating quarterly estimated payments entirely for many users. Pulled forward from v1.6 since the W2 rebuild just shipped and this is the natural premium follow-up from the same infrastructure. Genuinely non-obvious, high-value move most users don't know is available. Per [ROADMAP §9.2](ROADMAP.md).
+- **Safe-harbor / Form 2210 underpayment-penalty calculator.** Surfaces the IRS's 110%-of-prior-year safe-harbor rule in the UI: "to avoid an underpayment penalty this year, you need to pay at least $X total." Requires user to input prior-year tax paid, or auto-pulls from the app's own 2025 estimate once data exists. Pulled forward from v1.5 — relevant year-round, not just filing season, and a real differentiator vs. mileage-tracker apps that never get here. Per [ROADMAP §2.2/§9.4](ROADMAP.md).
+- **IRS-compliant mileage log fields.** Per-entry optional fields for business purpose and start/end location, making the standard mileage deduction audit-defensible (the IRS expects a contemporaneous log, not just a total). Per [ROADMAP §2.2](ROADMAP.md). Also the data-model prerequisite for GPS-assisted mileage (v1.3) — better to add it now via manual entry than redesign the schema later.
+- **Custom/user-defined expense categories.** Beyond the existing parking/tolls/supplies/phone buckets. Per [ROADMAP §5](ROADMAP.md).
+- **Year-over-year insights.** Meaningful only once the user has 2+ tax years of data — soft-gate the card until applicable rather than showing a near-empty screen on first subscribe.
+- **Multi-state support.** See scoping note below.
+
+**Multi-state scoping note:** Gig income is generally sourced to the state where the work is physically performed, not the worker's residence; some state pairs have reciprocity agreements; `TaxProfile` has one `state` field and the engine has no income-apportionment concept. Needs a design pass on (a) which state pairs to model first, (b) whether `Entry` needs a per-entry "state worked in" field vs. a resident/non-resident split, and (c) how to handle state credits for tax paid to a non-resident state — before estimating the build. Don't treat this as a quick add when premium scoping starts.
+
+**Ships to:** general public. **Exit criteria:** premium conversion funnel works end-to-end (subscribe → features unlock → cancel/restore-purchases); Sentry and analytics live and reporting real data before this ships.
+
+</details>
+
+## ⬜ v1.2 — Android Launch + Retention & Growth
+
+<details>
+<summary>Status: Not Started</summary>
+
+**Status: Not Started**
+**Goal:** reach the majority of the gig-worker market (Android-majority demographics) and ship the retention/viral-growth features while the install base is young enough that growth mechanics compound best.
+
+**Why Android belongs here, not later:** gig workers skew heavily toward Android — especially the lower-income, high-frequency drivers this app targets. Deferring Android cedes the majority of the addressable market to a competitor who ships sooner. RevenueCat already handles Google Play Billing via the same `react-native-purchases` SDK (no second integration), and the app has no backend; the marginal work is Play Console setup, Android CI, and screenshots. Android CI and store listing work can begin in parallel with v1.1 development.
+
+### Android launch
+- **Google Play Console setup.** Create app record for `com.gigtaxtracker.app`, upload a signed AAB, configure Play Console signing (upload key), complete the data-safety form (local-only storage, no backend, biometric auth handled entirely by the OS), draft store listing and screenshots.
+- **Android CI in `codemagic.yaml`.** Add an `android-play-store` workflow: `npm ci` → `expo prebuild --platform android` → Gradle assemble → `google_play` publishing step. The shape mirrors the existing `ios-testflight` workflow and was already noted in the current config's design notes.
+- **RevenueCat Play Billing.** Configure the Google Play product/entitlement in the RevenueCat dashboard; same `Purchases.configure()` + `getCustomerInfo()` call in the app already supports both stores via the SDK.
+- **Android store assets.** Screenshots (1080×1920 + the separately-required 1024×500 feature graphic per existing `SCREENSHOT_PLAN.md`); verify the adaptive-icon foreground/background layers export correctly on an actual Android device.
+- **Native-only verification gap — close it here.** This version is the forcing function to actually confirm all the accumulated "needs a real device" items that have been deferred since v0.3: `Alert.alert` confirmation dialogs (delete entry, restore backup, clear all data), the native `DateField.tsx` picker, biometric lock, notification delivery, the CSV and backup native share/file paths. One real-device test pass closes all of them for both platforms.
+
+### Retention & growth features
+- **Home-screen / lock-screen widget.** iOS WidgetKit + Android App Widget showing today's earnings and the running "set aside" total — glanceable without opening the app. Near-zero battery impact. Strong daily-retention driver; reminds users to log every shift. Per [ROADMAP §9.1](ROADMAP.md). Pulled forward from old v1.4.
+- **Voice / hands-free logging.** Siri Shortcuts (iOS) and Google Assistant: "Hey Siri, log $45 from DoorDash" → pre-filled entry screen. Solves the core friction (driving, can't type) better than any UI polish. Per [ROADMAP §9.1](ROADMAP.md). Pulled forward from old v1.4.
+- **Milestone celebrations + logging streaks.** Animation/confetti on "you've logged $10k this year," "$1k set aside," first quarterly deadline met, N-day logging streaks. Include a grace period (one missed day doesn't kill a streak). Per [ROADMAP §9.5](ROADMAP.md). Pulled forward from old v1.4.
+- **Referral program.** Unique referral link, install attribution, small subscriber incentive (e.g. one free premium week). Per [ROADMAP §9.5](ROADMAP.md). Highest-efficiency growth lever at this stage.
+- **Push notification expansion.** Beyond the existing quarterly due-date reminders: (a) catch-up warning when the gap between owed and set-aside exceeds a configurable threshold ("you're $500 behind — time to catch up"); (b) milestone notifications; (c) streak-break nudge. All gated on `remindersEnabled`.
+- **Shift/earnings optimizer.** Analyzes user's own historical data to surface patterns: best time-of-day, day-of-week, platform combinations by earnings and effective hourly rate. Premium. Soft-gated until the user has 30+ entries across at least 3 weeks (otherwise there's no meaningful pattern). Per [ROADMAP §9.1](ROADMAP.md).
+
+**Ships to:** general public (Android as a new-to-this-app audience). **Exit criteria:** Android build live on Play Store; all native-only verification gaps confirmed on real Android and iOS devices.
+
+</details>
 
 ## ⬜ v1.3 — Mileage & Receipts Automation
+
+<details>
+<summary>Status: Not Started</summary>
+
 **Status: Not Started**
 **Goal:** automate the two most tedious manual inputs.
-- GPS-assisted mileage tracking (geofencing/significant-change APIs, not continuous polling — battery concern per [ROADMAP §8.3](ROADMAP.md))
-- Receipt photo capture + OCR for expenses
-- **IRS-compliant mileage log fields** (business purpose + locations per entry, not just a mileage total) — strengthens audit defensibility and gives GPS-detected trips somewhere to put the purpose they can't infer automatically. Per [ROADMAP §2.2](ROADMAP.md).
-**Ships to:** general public, premium feature.
+*(Pulled ahead of Platform Auto-Sync — higher per-user daily retention value, no backend infrastructure dependency. The IRS-compliant mileage log fields added in v1.1 provide the data-model foundation.)*
 
-## ⬜ v1.4 — Retention & Growth Features
+- **GPS-assisted mileage tracking.** Geofencing / significant-change location APIs (not continuous polling — battery concern per [ROADMAP §8.3](ROADMAP.md)). User confirms/rejects auto-detected trips rather than auto-logging everything.
+- **Receipt photo capture + OCR for expenses.** Per [ROADMAP §9](ROADMAP.md).
+- **Receipt / document vault.** Even before OCR, let users attach a photo to any entry — stored locally, no backend. The mileage log fields (v1.1) + a photo attachment is already a complete audit defense; OCR makes it faster. New idea, not yet in the roadmap.
+- **IRS mileage log export.** The per-entry business purpose and location fields (v1.1) + this export = a formatted mileage log matching what an IRS auditor expects. Closes [ROADMAP §2.2](ROADMAP.md)'s "mileage substantiation" item end-to-end.
+
+**Ships to:** general public, premium feature. **Exit criteria:** GPS trip detection runs passively on a real device through a full shift without noticeable battery drain.
+
+</details>
+
+## ⬜ v1.4 — Platform Auto-Sync
+
+<details>
+<summary>Status: Not Started</summary>
+
 **Status: Not Started**
-**Goal:** the features designed to make this "kickass," not just functional — per [ROADMAP §9](ROADMAP.md).
-- Home-screen/lock-screen widget (today's earnings + set-aside number)
-- Voice/hands-free logging (Siri Shortcuts / Google Assistant)
-- Shift/earnings optimizer based on user's own historical patterns
-- **"What-if" earnings simulator** (free — no AI cost, just reruns the existing tax engine with hypothetical numbers) per [ROADMAP §9.2](ROADMAP.md)
-- **Milestone celebrations / logging streaks** and a **referral program** (both free, retention/growth levers) per [ROADMAP §9.5](ROADMAP.md)
-**Ships to:** general public; widget + what-if simulator + milestones/referral in free tier (drives sharing/virality), optimizer as premium.
-**Note:** the true hourly rate calculator originally planned here was pulled forward into v1.0 — see below.
+**Goal:** kill the manual-entry tax for the platforms that matter most.
+*(Previously v1.2 — pushed after v1.3 since it requires the first real backend infrastructure, involves higher integration complexity, and must follow stable v1.1 payment infra.)*
+
+- **Argyle (or equivalent) integration** for Amazon Flex, Uber, DoorDash, Instacart. Per [ROADMAP §3.5](ROADMAP.md). Verify Spark coverage before committing; email/statement parsing (Option B from the roadmap) is the fallback for any platform the aggregator doesn't cover.
+- **First real backend infrastructure.** Argyle integration requires server-side webhook handling and token storage — this is when the app stops being purely local-first. Plan data model and compliance posture (encryption in transit/at rest, data retention, breach response plan per [ROADMAP §8.2](ROADMAP.md)) before starting.
+- Premium-gated "auto-sync your earnings."
+- **Sync-failure / offline handling.** Queue/retry rather than silent drop; manual entry must always work as a fallback. Auto-sync should never become a single point of failure for the core "know what to set aside" use case. Per [ROADMAP §8.3](ROADMAP.md).
+
+**Don't start before v1.1 (payment infra) is stable** — auto-sync is the single best premium conversion driver and shouldn't debut into a broken checkout flow.
+
+**Ships to:** general public, premium. **Exit criteria:** auto-synced entries match manual entries in accuracy during a parallel-run validation period.
+
+</details>
 
 ## ⬜ v1.5 — Filing Season Toolkit
+
+<details>
+<summary>Status: Not Started</summary>
+
 **Status: Not Started**
-**Goal:** be indispensable in Jan–April, when gig workers actually file.
-- Schedule C category alignment for expenses ([ROADMAP §8.1](ROADMAP.md))
-- 1099-NEC/1099-K reconciliation against tracked totals
-- Affiliate integration with tax filing software (TurboTax/FreeTaxUSA) — monetization lever per [ROADMAP §5](ROADMAP.md)
-- **Year-end "Tax Wrapped" recap** (free) — annual summary (total earned, miles driven, top platform, busiest month, tax saved via deductions), timed for this version's Jan launch window. Per [ROADMAP §9.5](ROADMAP.md).
-- **Safe-harbor / Form 2210 underpayment-penalty calculator** (free, trust feature) — surfaces the IRS's 110%-of-prior-year safe-harbor rule directly in the UI. Per [ROADMAP §2.2/§9.4](ROADMAP.md).
-**Ships to:** general public, timed for tax season launch.
+**Goal:** be indispensable in Jan–April, when gig workers actually file. **Date-sensitive — target shipping by early January regardless of where v1.3/v1.4 stand.**
+
+*(Schedule C category alignment, safe-harbor calculator, and PDF export were pulled into v1.1 where they have year-round impact. What remains is specifically filing-season-timed.)*
+
+- **1099-NEC / 1099-K reconciliation.** Let users check their tracked earnings total against the actual 1099 they receive from each platform. Catches missed entries; the single most trust-building feature at the most stressful moment of the gig-worker year.
+- **Year-end "Tax Wrapped" recap** (free). Spotify-Wrapped-style annual summary: total earned, miles driven, top platform, busiest month, tax saved via deductions. Reuses entirely existing data; zero new infrastructure. Strong organic-sharing driver timed to filing season. Per [ROADMAP §9.5](ROADMAP.md).
+- **Affiliate integration with tax filing software.** TurboTax, FreeTaxUSA, Cash App Taxes — gig workers in this app are warm, pre-qualified leads at exactly the right moment. Optional CPA referral directory for users who want a human. Per [ROADMAP §5](ROADMAP.md).
+
+**Ships to:** general public, timed for filing-season launch.
+
+</details>
 
 ## ⬜ v1.6 — Money-Moves & Pro Tools
-**Status: Not Started**
-**Goal:** turn the app's data into concrete financial decisions, not just numbers — the "amazing premium tier" features.
-- W-4 withholding optimizer (W2+1099 combo — suggest adjusting W2 withholding to cover 1099 liability instead of quarterly payments)
-- QuickBooks Self-Employed-compatible export
-- CPA/tax-pro shareable summary package (beyond the plain PDF from v1.1 — a dedicated "share with your preparer" flow)
-- Multi-vehicle selection/tracking (per-entry vehicle, feeding the v2.3 vehicle break-even analysis)
-- **Self-employed health insurance deduction + SEP-IRA/Solo 401k contribution deductions** — added during the post-v1.0 roadmap gap review: [ROADMAP §8.1](ROADMAP.md#L219) explicitly calls this "real money for gig workers," and it had no home anywhere in the version plan. Distinct from v2.3's "retirement nudges with actual action" (that's prompting/integrating to *open* a SEP-IRA) — this is the tax-engine deduction math for someone who already contributes, reducing their estimated taxable income accordingly. Natural fit alongside the W-4 optimizer as a concrete-dollar-value premium feature.
-**Ships to:** general public, premium feature. **Exit criteria:** each feature independently demonstrates a concrete dollar-value or time-saved benefit a user can point to (e.g. "this caught $X you'd have missed").
 
----
+<details>
+<summary>Status: Not Started</summary>
+
+**Status: Not Started**
+**Goal:** turn the app's data into concrete financial decisions — the "amazing premium tier" features.
+
+*(W-4 withholding optimizer was pulled forward to v1.1 since the W2 rebuild just shipped and it's the natural next step from the same infrastructure.)*
+
+- **Self-employed health insurance deduction + SEP-IRA/Solo 401k contribution deductions.** Reduces estimated taxable income for gig workers who already pay SE health premiums or contribute to a retirement account. Per [ROADMAP §8.1](ROADMAP.md). Natural companion to v2.3's retirement nudges ("here's what you could save" → "here's how to actually open the account").
+- **QuickBooks Self-Employed-compatible export.** Many self-employed users are already in this ecosystem; a drop-in import is a concrete premium hook beyond generic CSV.
+- **CPA/tax-pro shareable summary package.** A dedicated "share with your preparer" flow — a structured package the CPA can work from directly, beyond the existing plain PDF. Per [ROADMAP §9.2](ROADMAP.md).
+- **Multi-vehicle selection / tracking.** Per-entry vehicle selection, enabling the v2.3 vehicle break-even analysis per vehicle rather than averaging across the fleet.
+
+**Ships to:** general public, premium. **Exit criteria:** each feature independently demonstrates a concrete dollar-value or time-saved benefit a user can point to. Only depends on v1.1 premium infra — can ship in parallel with v1.3/v1.4 if those run long.
+
+</details>
 
 ## ⬜ v2.0 — AI Layer Begins (Premium+/AI Tier Launch)
+
+<details>
+<summary>Status: Not Started</summary>
+
 **Status: Not Started**
 **Goal:** first AI tier features ship, with a cost model validated before wide rollout.
-- AI tier cost/usage-cap model validated against real inference costs ([ROADMAP §8.4](ROADMAP.md))
+- **AI tier cost/usage-cap model validated against real inference costs** ([ROADMAP §8.4](ROADMAP.md)) — gated on this, not the calendar; this is the one version where "feature complete" should yield to "financially sound"
 - Natural language entry ("spent $40 on gas, made $180 on Flex today" → structured entry)
 - AI deduction finder (pattern-based suggestions on expense/mileage data)
-**Ships to:** general public, new Premium+/AI tier. **Exit criteria:** AI tier pricing covers per-user inference cost with margin at expected usage.
+**Ships to:** general public, new Premium+/AI tier. **Exit criteria:** AI tier pricing covers per-user inference cost with margin at expected usage patterns.
+
+</details>
 
 ## ⬜ v2.1 — Conversational Assistant
+
+<details>
+<summary>Status: Not Started</summary>
+
 **Status: Not Started**
 - Personalized tax optimization chat (RAG over user's own transaction history)
 - Anomaly detection (flag weeks where earnings/mileage look off vs. historical pattern)
 **Ships to:** AI tier.
 
+</details>
+
 ## ⬜ v2.2 — Predictive Finance
+
+<details>
+<summary>Status: Not Started</summary>
+
 **Status: Not Started**
 - Predictive cash-flow ("you'll owe ~$X this quarter, adjust your weekly set-aside")
-- **Bank/Plaid auto-sync (high compliance overhead — legal review required before this ships, per [ROADMAP §6](ROADMAP.md)).** Added explicit teeth to that flag during the post-v1.0 roadmap gap review: ROADMAP §6 says to tie SOC 2 readiness "to a concrete timeline" once this ships, but nothing in the version plan previously did. A SOC 2 roadmap (or equivalent compliance attestation) needs to be underway *before* this item starts, not discovered as a blocker once it's already in progress — this is the version where the app stops being purely local-first and starts holding real bank-linked data, which is a materially different risk/compliance posture than anything shipped before it.
+- **Bank/Plaid auto-sync.** High compliance overhead; legal review required before this ships per [ROADMAP §6](ROADMAP.md). **A SOC 2 roadmap (or equivalent compliance attestation) must be underway *before* this item starts** — this is when the app transitions from purely local-first to holding real bank-linked data, a materially different risk/compliance posture. Don't discover this as a blocker once v2.2 is already in progress.
 - Promised-vs-actual pay discrepancy detection
 **Ships to:** AI tier.
 
+</details>
+
 ## ⬜ v2.3 — Financial Wellness Suite
+
+<details>
+<summary>Status: Not Started</summary>
+
 **Status: Not Started**
 - Envelope-style virtual buckets (tax/savings/spending)
-- Vehicle break-even analysis (true cost per mile vs. standard deduction)
-- Retirement nudges with actual action (SEP-IRA/Roth partnership integration)
+- Vehicle break-even analysis (true cost per mile vs. standard mileage deduction, per vehicle using v1.6's multi-vehicle data)
+- Retirement nudges with actual action (SEP-IRA/Roth partnership integration — connect the deduction math from v1.6 to actually opening an account)
 **Ships to:** AI tier, with envelope buckets possibly soft-launched to premium as a teaser.
 
----
+</details>
 
 ## ⬜ v3.0 — Platform Expansion
+
+<details>
+<summary>Status: Not Started</summary>
+
 **Status: Not Started**
 **Goal:** broaden reach once core product/monetization is proven.
-- Apple Watch companion app
-- Multi-language support
-- Web dashboard (if not already pulled forward — revisit the [open question](ROADMAP.md) on timing)
-- B2B/white-label exploration (gig platforms embedding your tooling) per [ROADMAP §5](ROADMAP.md)
+- **Apple Watch companion app.** Glanceable today's earnings and set-aside on a wrist — genuine safety/convenience win for drivers who shouldn't touch their phone, not just a novelty. Per [ROADMAP §9.3](ROADMAP.md).
+- **Multi-language support.** A large share of gig drivers are not native English speakers — genuinely underserved, a real differentiator. Prioritize Spanish first given gig-worker demographics. Per [ROADMAP §9.3](ROADMAP.md).
+- **Web dashboard** — revisit whether there's a case to pull this forward earlier as a free-tier lead-magnet tax calculator (the tax engine is already a standalone package) or a "manage from desktop" companion.
+- **B2B / white-label exploration** — gig platforms embedding tax tooling for their own drivers. Per [ROADMAP §5](ROADMAP.md).
 
----
+</details>
 
 ## Sequencing notes
-- **v0.1–v0.3 are not public** — they exist to de-risk the tax engine and core loop before any store submission or marketing spend.
-- **v1.0 doesn't ship until the W2 rebuild and Head-of-Household/MFS fix are both done.** Both were briefly scoped as a separate v1.1 before being pulled back into v1.0 — neither has a monetization dependency, and there's no reason to ship known tax-accuracy bugs to the first real users when nothing's been submitted yet.
-- **Don't start v1.2 (platform auto-sync) before v1.1 (payment infra) is stable** — auto-sync is the single best premium conversion driver and shouldn't launch into a broken checkout flow.
-- **v1.5 (filing season toolkit) is date-sensitive** — target shipping by early January regardless of where other version work stands, since the value window is narrow (Jan–April).
-- **v2.0 is gated on the cost model, not the calendar** — don't ship AI tier features until per-user inference economics are validated; this is the one version where "feature complete" should yield to "financially sound."
-- **v1.6 (Money-Moves & Pro Tools) only depends on v1.1's premium infra being live** — it doesn't need platform auto-sync (v1.2) or mileage/receipt automation (v1.3), so it can ship in parallel with or ahead of either if it's a faster win.
+
+<details>
+<summary>v0.1–v0.3 are not public — they existed to de-risk the tax engine and core loop before an…</summary>
+
+- **v0.1–v0.3 are not public** — they existed to de-risk the tax engine and core loop before any store submission or marketing spend.
+- **Wire up Sentry and analytics immediately post–App Store approval.** Both are scaffolded with no real backend. You need crash data and usage patterns before making confident v1.1 feature-prioritization decisions — don't start building v1.1 blind to what's actually happening in production.
+- **Android CI and Play Console setup can start in parallel with v1.1 development.** The RevenueCat product/entitlement config needs to exist before Play Billing can go live, but the CI pipeline and store listing work are independent of that.
+- **Don't start v1.4 (Platform Auto-Sync) before v1.1 (payment infra) is stable** — auto-sync is the single best premium conversion driver and shouldn't debut with a broken checkout flow.
+- **v1.3 (GPS mileage) can ship before v1.4 (platform auto-sync)** — no backend dependency, higher per-user daily retention value. IRS-compliant mileage log fields in v1.1 provide the data-model foundation so no schema rework is needed.
+- **v1.5 (filing season toolkit) is date-sensitive** — target early January regardless of where v1.3/v1.4 stand. The 1099 reconciliation and affiliate integration have a narrow value window (Jan–April).
+- **v1.6 (Money-Moves) only depends on v1.1's premium infra** — it doesn't require platform auto-sync or GPS mileage, so it can run in parallel with v1.3/v1.4 if those take longer than expected.
+- **v2.0 is gated on the cost model, not the calendar** — don't ship AI tier features until per-user inference economics are validated with margin.
+- **SOC 2 roadmap must be underway before v2.2 (Bank/Plaid) starts** — that's when the app transitions from purely local-first to holding bank-linked data, a materially different compliance posture than everything built before it.
+
+</details>
