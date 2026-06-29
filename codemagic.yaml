@@ -26,6 +26,11 @@ workflows:
         # project/DSN/auth-token exists and source-map upload is actually wanted.
         SENTRY_DISABLE_AUTO_UPLOAD: "true"
 
+    # Auto-builds only on master (the release branch). To live-test an in-progress feature branch
+    # like v1.1 on TestFlight WITHOUT merging to master, start this workflow manually from the
+    # Codemagic UI ("Start new build" → pick this workflow → pick the branch). Manual builds ignore
+    # the branch_patterns filter, so no change here is needed; the branch carries its own app.json
+    # version (e.g. v1.1 is bumped to 1.1.0) so its TestFlight builds stay distinct from 1.0.0.
     triggering:
       events:
         - push
