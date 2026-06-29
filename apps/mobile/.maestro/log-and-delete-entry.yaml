@@ -1,0 +1,34 @@
+# Log an entry, then delete it. Covers two native-only paths: the DateField native picker (left at
+# its default of today) and the destructive "Delete entry?" Alert confirmation dialog — neither of
+# which the web Playwright suite can exercise.
+appId: com.gigtaxtracker.app
+name: Log + delete entry (native picker + confirm dialog)
+---
+# Precondition: a fresh onboarded session on the dashboard.
+- runFlow: onboarding.yaml
+
+# --- Log a DoorDash entry ---
+- tapOn: "Log Earnings"
+- assertVisible: "Platform"
+- tapOn: "DoorDash"
+# Gross pay is the first field with the "0.00" placeholder.
+- tapOn:
+    text: "0.00"
+    index: 0
+- inputText: "120"
+- hideKeyboard
+- tapOn: "Save Entry"
+- assertVisible: "Set aside for taxes"
+- assertVisible:
+    text: "Edit DoorDash entry.*"
+
+# --- Delete it, confirming the native destructive Alert ---
+- tapOn:
+    text: "Edit DoorDash entry.*"
+- assertVisible: "Edit Entry"
+- tapOn: "Delete entry"
+- assertVisible: "Delete entry?"
+- tapOn: "Delete"
+- assertVisible: "Set aside for taxes"
+- assertNotVisible:
+    text: "Edit DoorDash entry.*"

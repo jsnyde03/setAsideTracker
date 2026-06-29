@@ -27,6 +27,7 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "@types/crypto-js": "^4.2.2",
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3",
@@ -38,7 +39,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "e2e": "playwright test --config e2e/playwright.config.ts",
+    "e2e:install": "playwright install chromium"
   },
   "private": true
 }

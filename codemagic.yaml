@@ -141,6 +141,139 @@ workflows:
           success: true
           failure: true
 
+  # ─────────────────────────────────────────────────────────────────────────────────────────────
+  # web-e2e — Playwright against the Expo-web build. Cheap and fast (Linux/Node, no Xcode), so it
+  # runs on every branch incl. PRs. Catches UI-logic regressions across whole flows that the Vitest
+  # unit suite can't. See apps/mobile/e2e/. Validated locally before landing.
+  # ─────────────────────────────────────────────────────────────────────────────────────────────
+  web-e2e:
+    name: SetAsideTracker — Web E2E (Playwright)
+
+    environment:
+      node: 22
+
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: "*"
+          include: true
+
+    scripts:
+      - name: Install root workspace dependencies
+        script: |
+          rm -rf node_modules
+          npm install
+
+      - name: Build the tax-engine package
+        # apps/mobile consumes @gig-tax-tracker/tax-engine via its compiled dist/, so build it first.
+        script: |
+          cd services/tax-engine
+          npm run build
+
+      - name: Install Playwright Chromium
+        script: |
+          cd apps/mobile
+          npx playwright install --with-deps chromium
+
+      - name: Run web E2E (Playwright boots Expo web itself)
+        # The playwright.config.ts webServer block starts `npm run web` and waits for :8081, so no
+        # separate server step is needed. CI=true makes Expo non-interactive and turns on retries.
+        script: |
+          cd apps/mobile
+          CI=true npm run e2e
+
+    artifacts:
+      - apps/mobile/playwright-report/**
+      - apps/mobile/e2e/.results/**
+
+  # ─────────────────────────────────────────────────────────────────────────────────────────────
+  # maestro-ios — Maestro native flows on an iOS Simulator. This is the forcing function for the
+  # long-deferred "needs a real device" coverage (Alert dialogs, native date picker, etc.). Heavier
+  # (mac instance + Xcode build), so it's scoped to the v1.1 branch for now.
+  #
+  # FIRST-RUN CAVEAT: like ios-testflight before it, this build recipe is expected to need a round
+  # of tuning on a real Codemagic mac runner (simulator name/runtime, build-products path). Treat
+  # the first run as the validation pass. A Release simulator build is used so the JS bundle is
+  # embedded and no Metro server is required during the Maestro run.
+  # ─────────────────────────────────────────────────────────────────────────────────────────────
+  maestro-ios:
+    name: SetAsideTracker — iOS Maestro (native flows)
+
+    instance_type: mac_mini_m2
+
+    environment:
+      node: 22
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: "v1.1"
+          include: true
+
+    scripts:
+      - name: Install root workspace dependencies
+        script: |
+          rm -rf node_modules
+          npm install
+
+      - name: Build the tax-engine package
+        script: |
+          cd services/tax-engine
+          npm run build
+
+      - name: Typecheck + unit test (fail fast before the slow native build)
+        script: |
+          cd apps/mobile
+          npm run typecheck
+          npm test
+
+      - name: Generate the native iOS project (expo prebuild)
+        script: |
+          cd apps/mobile
+          npx expo prebuild --platform ios
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd apps/mobile/ios
+          pod install
+
+      - name: Build the app for the iOS Simulator
+        # Release embeds the JS bundle (no Metro needed at run time); CODE_SIGNING_ALLOWED=NO because
+        # simulator builds don't need signing.
+        script: |
+          cd apps/mobile
+          xcodebuild \
+            -workspace ios/SetAsideTracker.xcworkspace \
+            -scheme SetAsideTracker \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -derivedDataPath ios/build \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build
+
+      - name: Boot a simulator and install the app
+        script: |
+          xcrun simctl boot "iPhone 15" || true
+          xcrun simctl install booted \
+            apps/mobile/ios/build/Build/Products/Release-iphonesimulator/SetAsideTracker.app
+
+      - name: Install Maestro
+        script: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+
+      - name: Run Maestro native flows
+        script: |
+          export PATH="$PATH:$HOME/.maestro/bin"
+          cd apps/mobile
+          maestro test .maestro
+
+    artifacts:
+      - apps/mobile/.maestro/**/*.png
+      - $HOME/.maestro/tests/**
+
 # Android isn't configured yet — no Google Play Console credentials/signing set up at the time
 # this file was written. Once those exist, add an "android-internal-track" workflow following
 # the same shape: npm ci → build tax-engine → typecheck/test → `expo prebuild --platform android`
