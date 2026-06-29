@@ -5,10 +5,12 @@ import {
   annualIncomeFromPaycheck,
   computeCatchUpStatus,
   computeTaxEstimate,
+  computeWhatIfEstimate,
   effectiveHourlyRate,
   entriesForYear,
   getCountiesForState,
   w2WithholdingYearFraction,
+  whatIfAggregate,
   yearsWithEntries,
 } from "../calculations";
 import type { QuarterlyDueDate } from "../notifications/quarterlyDueDates";
@@ -546,6 +548,53 @@ describe("computeCatchUpStatus", () => {
     expect(status.gap).toBe(700);
     expect(status.weeklyCatchUpAmount).toBeUndefined();
     expect(status.nextDueDate).toBeUndefined();
+  });
+});
+
+describe("computeWhatIfEstimate", () => {
+  const baseTaxProfile: TaxProfile = {
+    filingStatus: "single",
+    dependents: 0,
+    hasW2Job: false,
+    state: "CA",
+  };
+
+  it("matches computeTaxEstimate on entries that produce the same aggregate", () => {
+    // A hypothetical scenario and a real entry set with identical totals must yield identical
+    // numbers — the What-if path is the same pipeline, just fed made-up inputs.
+    const entries = [makeEntry({ grossPay: 40000, tips: 5000, mileage: 1200, expenses: { parking: 0, tolls: 0, supplies: 800, phone: 200 } })];
+    const fromEntries = computeTaxEstimate(entries, baseTaxProfile, thisYear);
+    const fromScenario = computeWhatIfEstimate(
+      baseTaxProfile,
+      { grossEarnings: 45000, businessExpenses: 1000, businessMiles: 1200, hoursWorked: 0 },
+      thisYear
+    );
+    expect(fromScenario.estimate.totalEstimatedTax).toBeCloseTo(fromEntries.estimate.totalEstimatedTax, 2);
+    expect(fromScenario.netAmountToSetAside).toBeCloseTo(fromEntries.netAmountToSetAside, 2);
+  });
+
+  it("higher earnings produce a higher set-aside (monotonic)", () => {
+    const low = computeWhatIfEstimate(baseTaxProfile, { grossEarnings: 20000, businessExpenses: 0, businessMiles: 0, hoursWorked: 0 }, thisYear);
+    const high = computeWhatIfEstimate(baseTaxProfile, { grossEarnings: 60000, businessExpenses: 0, businessMiles: 0, hoursWorked: 0 }, thisYear);
+    expect(high.netAmountToSetAside).toBeGreaterThan(low.netAmountToSetAside);
+  });
+
+  it("applies the W2 withholding credit just like the dashboard does", () => {
+    const w2Profile: TaxProfile = {
+      ...baseTaxProfile,
+      hasW2Job: true,
+      w2GrossPayPerPeriod: 2000,
+      w2PayFrequency: "biweekly",
+    };
+    const result = computeWhatIfEstimate(w2Profile, { grossEarnings: 30000, businessExpenses: 0, businessMiles: 0, hoursWorked: 0 }, thisYear);
+    expect(result.w2WithholdingYtdEstimate).toBeGreaterThan(0);
+    expect(result.netAmountToSetAside).toBeLessThan(result.estimate.totalEstimatedTax);
+  });
+
+  it("whatIfAggregate lets net profit go negative when expenses exceed earnings", () => {
+    const aggregate = whatIfAggregate({ grossEarnings: 1000, businessExpenses: 1500, businessMiles: 0, hoursWorked: 0 });
+    expect(aggregate.netSelfEmploymentProfit).toBe(-500);
+    expect(aggregate.totalExpenses).toBe(1500);
   });
 });
 

@@ -228,7 +228,21 @@ export function computeTaxEstimate(
   taxProfile: TaxProfile,
   year: number = new Date().getFullYear()
 ): TaxEstimateForYear {
-  const aggregate = aggregateEntries(entriesForYear(entries, year));
+  return estimateFromAggregate(aggregateEntries(entriesForYear(entries, year)), taxProfile, year);
+}
+
+/**
+ * The shared core behind both the dashboard estimate and the What-if simulator: given an already
+ * computed income aggregate (real entries, or a hypothetical scenario), run it through the tax
+ * engine and the W2-withholding credit logic for a year. Pulling this out of computeTaxEstimate
+ * lets the What-if screen reuse the exact same pipeline — including the withholding credit — rather
+ * than re-deriving a parallel, drift-prone copy.
+ */
+export function estimateFromAggregate(
+  aggregate: EntryAggregate,
+  taxProfile: TaxProfile,
+  year: number = new Date().getFullYear()
+): TaxEstimateForYear {
   const config = taxYearConfigs[year] ?? currentTaxYear;
 
   const w2Active = taxProfile.hasW2Job && w2JobActiveDuringYear(year, taxProfile.w2EndDate);
@@ -282,4 +296,44 @@ export function computeTaxEstimate(
     w2WithholdingYtdEstimate,
     netAmountToSetAside,
   };
+}
+
+/**
+ * A hypothetical full-year income picture for the What-if simulator. Phrased in the same
+ * user-facing terms as the entry form (gross earnings + expenses), not the engine's net-profit
+ * input — the screen pre-fills these from the year's actuals and the user tweaks them.
+ */
+export interface WhatIfScenario {
+  /** Total gig earnings for the year (gross pay + tips), before expenses. */
+  grossEarnings: number;
+  /** Total non-mileage business expenses for the year. */
+  businessExpenses: number;
+  /** Total business miles for the year (deducted via the standard mileage rate). */
+  businessMiles: number;
+  /** Total hours worked for the year — powers the effective-hourly-rate comparison; 0 if unknown. */
+  hoursWorked: number;
+}
+
+/** Turns a What-if scenario into the same aggregate shape aggregateEntries produces. Net profit can
+ * go negative (expenses above earnings); the engine floors it, matching how real entries behave. */
+export function whatIfAggregate(scenario: WhatIfScenario): EntryAggregate {
+  return {
+    netSelfEmploymentProfit: scenario.grossEarnings - scenario.businessExpenses,
+    businessMiles: scenario.businessMiles,
+    totalExpenses: scenario.businessExpenses,
+    totalHoursWorked: scenario.hoursWorked,
+  };
+}
+
+/**
+ * Runs a hypothetical scenario through the real tax pipeline against the current profile — the
+ * engine behind the What-if simulator. Reuses estimateFromAggregate so the projected numbers are
+ * computed identically to the dashboard's, just from made-up inputs.
+ */
+export function computeWhatIfEstimate(
+  taxProfile: TaxProfile,
+  scenario: WhatIfScenario,
+  year: number = new Date().getFullYear()
+): TaxEstimateForYear {
+  return estimateFromAggregate(whatIfAggregate(scenario), taxProfile, year);
 }

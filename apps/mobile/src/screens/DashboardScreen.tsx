@@ -25,6 +25,7 @@ interface DashboardScreenProps {
   onAddEntry: () => void;
   onEditEntry: (entry: Entry) => void;
   onOpenSettings: () => void;
+  onOpenWhatIf: () => void;
   onUpdateAmountSetAside: (year: number, amount: number) => void;
 }
 
@@ -91,6 +92,7 @@ export function DashboardScreen({
   onAddEntry,
   onEditEntry,
   onOpenSettings,
+  onOpenWhatIf,
   onUpdateAmountSetAside,
 }: DashboardScreenProps) {
   const { colors } = useTheme();
@@ -410,6 +412,15 @@ export function DashboardScreen({
                 onPress={onAddEntry}
                 icon={<Ionicons name="add" size={20} color="#fff" />}
               />
+              <Pressable
+                onPress={onOpenWhatIf}
+                style={({ pressed }) => [styles.whatIfButton, pressed && styles.whatIfButtonPressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Try a what-if scenario"
+              >
+                <Ionicons name="calculator-outline" size={18} color={colors.primary} />
+                <Text style={styles.whatIfButtonText}>What if I earned more?</Text>
+              </Pressable>
             </View>
 
             <Text style={styles.sectionHeader}>Recent entries</Text>
@@ -574,6 +585,20 @@ function createStyles(colors: Colors) {
   },
   stateWarning: { flex: 1, ...type.micro, color: "#FECACA", lineHeight: 15 },
   addButtonWrap: { marginVertical: spacing.sm },
+  whatIfButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  whatIfButtonPressed: { opacity: 0.7 },
+  whatIfButtonText: { ...type.label, color: colors.primary },
   sectionHeader: { ...type.title, fontSize: 18, color: colors.ink, marginTop: spacing.lg, marginBottom: spacing.sm },
   emptyState: { alignItems: "center", paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyText: { ...type.body, color: colors.inkFaint, textAlign: "center" },

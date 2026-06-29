@@ -20,6 +20,7 @@ import {
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { AddEntryScreen } from "./src/screens/AddEntryScreen";
+import { WhatIfScreen } from "./src/screens/WhatIfScreen";
 import { EditTaxProfileScreen } from "./src/screens/EditTaxProfileScreen";
 import { LockScreen } from "./src/screens/LockScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
@@ -32,7 +33,7 @@ import { ThemeProvider, useTheme, type ColorSchemePreference } from "./src/Theme
 
 initErrorReporting();
 
-type Screen = "loading" | "onboarding" | "dashboard" | "addEntry" | "settings" | "editTaxProfile";
+type Screen = "loading" | "onboarding" | "dashboard" | "addEntry" | "settings" | "editTaxProfile" | "whatIf";
 
 export default function App() {
   // Lifted above AppContent (rather than state inside it) so ThemeProvider can wrap AppContent
@@ -378,6 +379,19 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
     );
   }
 
+  if (screen === "whatIf") {
+    return (
+      <View style={styles.container}>
+        <WhatIfScreen
+          entries={entries}
+          taxProfile={taxProfile as TaxProfile}
+          onClose={() => setScreen("dashboard")}
+        />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
   if (screen === "settings") {
     return (
       <View style={styles.container}>
@@ -424,6 +438,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
         onAddEntry={() => setScreen("addEntry")}
         onEditEntry={handleEditEntry}
         onOpenSettings={() => setScreen("settings")}
+        onOpenWhatIf={() => setScreen("whatIf")}
         onUpdateAmountSetAside={handleUpdateAmountSetAside}
       />
       <StatusBar style={isDark ? "light" : "dark"} />
