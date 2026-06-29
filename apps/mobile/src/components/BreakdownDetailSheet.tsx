@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { BreakdownDetail } from "../breakdownDetails";
+import { glossaryEntry, type GlossaryTermKey } from "../glossary";
 import { radius, shadow, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
 
@@ -22,6 +24,13 @@ const SHEET_ANIMATION = Platform.OS === "web" ? "none" : "slide";
 export function BreakdownDetailSheet({ detail, onClose }: BreakdownDetailSheetProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+
+  // Which glossary term's plain-language definition is expanded inline (null = none). Reset whenever
+  // a different breakdown is opened so a term left open on one sheet doesn't bleed into the next.
+  const [openTerm, setOpenTerm] = useState<GlossaryTermKey | null>(null);
+  useEffect(() => {
+    setOpenTerm(null);
+  }, [detail?.title]);
 
   return (
     <Modal
@@ -92,6 +101,43 @@ export function BreakdownDetailSheet({ detail, onClose }: BreakdownDetailSheetPr
 
               {detail.footnote && <Text style={styles.footnote}>{detail.footnote}</Text>}
 
+              {detail.terms.length > 0 && (
+                <View style={styles.termsSection}>
+                  <Text style={styles.termsHeader}>What these mean</Text>
+                  <View style={styles.termPills}>
+                    {detail.terms.map((key) => {
+                      const entry = glossaryEntry(key);
+                      const active = openTerm === key;
+                      return (
+                        <Pressable
+                          key={key}
+                          onPress={() => setOpenTerm(active ? null : key)}
+                          style={[styles.termPill, active && styles.termPillActive]}
+                          accessibilityRole="button"
+                          accessibilityState={{ expanded: active }}
+                          accessibilityLabel={`Define ${entry.term}`}
+                        >
+                          <Text style={[styles.termPillText, active && styles.termPillTextActive]}>
+                            {entry.term}
+                          </Text>
+                          <Ionicons
+                            name={active ? "chevron-up" : "help-circle-outline"}
+                            size={13}
+                            color={active ? colors.primaryDark : colors.inkSubtle}
+                          />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {openTerm && (
+                    <View style={styles.definitionCard}>
+                      <Text style={styles.definitionTerm}>{glossaryEntry(openTerm).term}</Text>
+                      <Text style={styles.definitionText}>{glossaryEntry(openTerm).definition}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
               <Text style={styles.disclaimer}>Estimates for planning only — not tax advice.</Text>
             </ScrollView>
           )}
@@ -160,6 +206,31 @@ function createStyles(colors: Colors) {
       lineHeight: 15,
       marginTop: spacing.lg,
     },
-    disclaimer: { ...type.micro, color: colors.inkFaint, marginTop: spacing.md },
+    termsSection: { marginTop: spacing.lg },
+    termsHeader: { ...type.label, color: colors.inkSubtle, marginBottom: spacing.sm },
+    termPills: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    termPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.pill,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      backgroundColor: colors.surfaceAlt,
+    },
+    termPillActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+    termPillText: { ...type.caption, color: colors.inkSubtle, fontWeight: "600" },
+    termPillTextActive: { color: colors.primaryDark },
+    definitionCard: {
+      marginTop: spacing.md,
+      backgroundColor: colors.primarySoft,
+      borderRadius: radius.md,
+      padding: spacing.md,
+    },
+    definitionTerm: { ...type.label, color: colors.primaryDark, marginBottom: 2 },
+    definitionText: { ...type.caption, color: colors.ink, lineHeight: 18 },
+    disclaimer: { ...type.micro, color: colors.inkFaint, marginTop: spacing.lg },
   });
 }

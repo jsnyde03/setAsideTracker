@@ -26,14 +26,21 @@ test.describe("show your math", () => {
     await expect(page.getByText("Tap any line to see how it's calculated.")).toBeVisible();
 
     // Federal income tax → detail sheet shows AGI, taxable income and at least one bracket line.
+    // (.first() targets the math line; these words also appear on the glossary term pills below.)
     await page.getByLabel(/Federal income tax:.*Tap to see how this is calculated/).click();
-    await expect(page.getByText("Adjusted gross income")).toBeVisible();
-    await expect(page.getByText("Taxable income")).toBeVisible();
-    await expect(page.getByText("Standard deduction", { exact: true })).toBeVisible();
+    await expect(page.getByText("Adjusted gross income").first()).toBeVisible();
+    await expect(page.getByText("Taxable income").first()).toBeVisible();
+    await expect(page.getByText("Standard deduction", { exact: true }).first()).toBeVisible();
     // A progressive-bracket line, e.g. "10% on $9,000.00".
     await expect(page.getByText(/%\s+on\s+\$/).first()).toBeVisible();
+
+    // Tax-literacy layer: tapping a glossary term reveals its plain-language definition inline.
+    await expect(page.getByText("What these mean")).toBeVisible();
+    await page.getByLabel("Define Tax brackets").click();
+    await expect(page.getByText(/Each slice of your income is taxed at its own rate/)).toBeVisible();
+
     await page.getByLabel("Close").click();
-    await expect(page.getByText("Adjusted gross income")).toBeHidden();
+    await expect(page.getByText("Adjusted gross income").first()).toBeHidden();
 
     // Self-employment tax → detail sheet shows the Social Security / Medicare split.
     await page.getByLabel(/Self-employment tax:.*Tap to see how this is calculated/).click();

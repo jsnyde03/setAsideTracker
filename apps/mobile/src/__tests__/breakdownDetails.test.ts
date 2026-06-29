@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { estimateTax, currentTaxYear, type TaxEstimateResult } from "@gig-tax-tracker/tax-engine";
-import { buildBreakdownDetail, type BreakdownDetailContext } from "../breakdownDetails";
+import { buildBreakdownDetail, type BreakdownDetailContext, type BreakdownRowKey } from "../breakdownDetails";
+import { GLOSSARY } from "../glossary";
 
 function estimateFor(overrides: Partial<Parameters<typeof estimateTax>[0]> = {}): TaxEstimateResult {
   return estimateTax(
@@ -89,5 +90,23 @@ describe("buildBreakdownDetail", () => {
     const estimate = estimateFor({ otherTaxableIncome: 60000 });
     const detail = buildBreakdownDetail("w2Withholding", ctx(estimate, { w2WithholdingYtd: 1234.56 }));
     expect(totalValue(detail.lines)).toBeCloseTo(-1234.56, 2);
+  });
+
+  it("every breakdown tags at least one glossary term, and all tagged terms exist", () => {
+    const estimate = estimateFor({ numberOfChildren: 2, otherTaxableIncome: 60000 });
+    const keys: BreakdownRowKey[] = ["seTax", "federalIncomeTax", "childTaxCredit", "stateTax", "w2Withholding"];
+    for (const key of keys) {
+      const detail = buildBreakdownDetail(key, ctx(estimate));
+      expect(detail.terms.length, key).toBeGreaterThan(0);
+      for (const term of detail.terms) {
+        expect(GLOSSARY[term], `${key} references unknown term ${term}`).toBeDefined();
+      }
+    }
+  });
+
+  it("federal detail surfaces the bracket-tiers explainer; SE detail surfaces the SE-tax term", () => {
+    const estimate = estimateFor();
+    expect(buildBreakdownDetail("federalIncomeTax", ctx(estimate)).terms).toContain("marginalBracket");
+    expect(buildBreakdownDetail("seTax", ctx(estimate)).terms).toContain("selfEmploymentTax");
   });
 });

@@ -1,4 +1,5 @@
 import type { TaxEstimateResult } from "@gig-tax-tracker/tax-engine";
+import type { GlossaryTermKey } from "./glossary";
 
 /**
  * "Show your math" — turns a computed tax estimate into a plain-language, line-by-line breakdown
@@ -35,6 +36,9 @@ export interface BreakdownDetail {
   intro: string;
   lines: DetailLine[];
   footnote?: string;
+  /** Glossary terms relevant to this breakdown, rendered as tappable "what does this mean?" pills
+   * — the in-app tax-literacy layer. Ordered most-to-least central to the figure. */
+  terms: GlossaryTermKey[];
 }
 
 export interface BreakdownDetailContext {
@@ -69,9 +73,12 @@ function seTaxDetail(estimate: TaxEstimateResult): BreakdownDetail {
     { label: "Social Security (12.4%)", value: money(se.socialSecurityTax) },
     { label: "Medicare (2.9%)", value: money(se.medicareTax) },
   ];
+  const terms: GlossaryTermKey[] = ["selfEmploymentTax", "socialSecurity", "medicare"];
   if (se.additionalMedicareTax > 0) {
     lines.push({ label: "Additional Medicare (0.9%)", value: money(se.additionalMedicareTax) });
+    terms.push("additionalMedicare");
   }
+  terms.push("netProfit", "standardMileageRate");
   lines.push({ label: "Self-employment tax", value: money(se.totalSeTax), kind: "total" });
 
   return {
@@ -82,6 +89,7 @@ function seTaxDetail(estimate: TaxEstimateResult): BreakdownDetail {
     footnote: `Half of this (${money(
       se.deductibleSeTaxPortion
     )}) is deducted before your income tax is figured, so the same dollars aren't taxed twice.`,
+    terms,
   };
 }
 
@@ -100,6 +108,15 @@ function federalIncomeTaxDetail(estimate: TaxEstimateResult): BreakdownDetail {
   }
   lines.push({ label: "Federal income tax", value: money(fit.incomeTax), kind: "total" });
 
+  const terms: GlossaryTermKey[] = [
+    "federalIncomeTax",
+    "adjustedGrossIncome",
+    "standardDeduction",
+    "taxableIncome",
+    "marginalBracket",
+  ];
+  if (estimate.childTaxCredit.totalCredit > 0) terms.push("childTaxCredit");
+
   return {
     title: "Federal income tax",
     intro:
@@ -109,6 +126,7 @@ function federalIncomeTaxDetail(estimate: TaxEstimateResult): BreakdownDetail {
       estimate.childTaxCredit.totalCredit > 0
         ? "Your Child Tax Credit is then applied against this amount — see the Child Tax Credit line."
         : undefined,
+    terms,
   };
 }
 
@@ -130,6 +148,7 @@ function childTaxCreditDetail(estimate: TaxEstimateResult): BreakdownDetail {
     intro:
       "The Child Tax Credit lowers your tax for each qualifying child. Part of it reduces your income tax (down to zero), and a further refundable portion can come back to you even when you owe no income tax.",
     lines,
+    terms: ["childTaxCredit", "federalIncomeTax"],
   };
 }
 
@@ -142,6 +161,7 @@ function stateTaxDetail(estimate: TaxEstimateResult, stateLabel: string): Breakd
       title,
       intro: `${stateLabel} isn't supported yet, so state income tax shows as $0 and is not included in your set-aside number. Account for it manually until this state is added.`,
       lines: [],
+      terms: ["stateIncomeTax"],
     };
   }
 
@@ -151,25 +171,31 @@ function stateTaxDetail(estimate: TaxEstimateResult, stateLabel: string): Breakd
       title,
       intro: `${stateLabel} has no state income tax, so there's nothing to set aside for the state.`,
       lines: [{ label: "State income tax", value: money(0), kind: "total" }],
+      terms: ["stateIncomeTax"],
     };
   }
 
   const lines: DetailLine[] = [];
+  const terms: GlossaryTermKey[] = ["stateIncomeTax"];
   if (st.standardDeductionUsed > 0) {
     lines.push({ label: "Standard deduction applied", value: money(st.standardDeductionUsed), kind: "subtle" });
+    terms.push("standardDeduction");
   }
   lines.push({ label: "State taxable income", value: money(st.taxableIncome), kind: "subtle" });
+  terms.push("taxableIncome");
   for (const bracket of st.bracketsApplied) {
     lines.push({
       label: `${percent(bracket.rate)} on ${money(bracket.amountInBracket)}`,
       value: money(bracket.taxFromBracket),
     });
   }
+  if (st.bracketsApplied.length > 1) terms.push("marginalBracket");
   if (st.creditApplied > 0) {
     lines.push({ label: `${stateLabel} tax credit`, value: negative(st.creditApplied), kind: "credit" });
   }
   if (st.county && st.localTaxSupported && st.localTax > 0) {
     lines.push({ label: `${st.county} local tax`, value: money(st.localTax) });
+    terms.push("localTax");
   }
   lines.push({ label: "State & local tax", value: money(st.stateTax), kind: "total" });
 
@@ -182,6 +208,7 @@ function stateTaxDetail(estimate: TaxEstimateResult, stateLabel: string): Breakd
       !st.localTaxSupported
         ? `${stateLabel} has a local county income tax that isn't included here — your county isn't set or wasn't recognized, so this estimate is missing that amount.`
         : undefined,
+    terms,
   };
 }
 
@@ -197,6 +224,7 @@ function w2WithholdingDetail(estimate: TaxEstimateResult, w2WithholdingYtd: numb
       { label: "Withholding credited", value: negative(w2WithholdingYtd), kind: "total" },
     ],
     footnote: "This is an estimate from your pay-stub figures — your actual withholding is shown on your pay stub.",
+    terms: ["withholding", "estimatedTax"],
   };
 }
 
