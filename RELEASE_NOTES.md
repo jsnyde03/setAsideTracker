@@ -60,18 +60,18 @@ above are the free-tier additions, which are live on the branch.)*
 <details>
 <summary>Premium (🔄 Phase B — in progress)</summary>
 
-- 🔄 **IAP spine (RevenueCat)** — `react-native-purchases` integrated; `usePremium()` gate with
+- ✅ **IAP spine (RevenueCat)** — `react-native-purchases` integrated; `usePremium()` gate with
   offline-cached entitlement; **Paywall** screen (Apple 3.1.2-compliant: billed price is the most
   prominent element, full auto-renewal disclosure, Terms/Privacy links, restore); funnel analytics
   wired. App Store Connect products + RevenueCat dashboard configured (Annual $29.99 / Monthly
-  $4.99, entitlement `premium`, offering `default`). **Built + unit-tested; the real purchase →
-  unlock → restore loop is not yet verified on TestFlight.**
-- 🔄 **PDF tax-ready export + Schedule C category alignment** — premium-gated "Tax Summary (PDF)" in
+  $4.99, entitlement `premium`, offering `default`). **Validated on TestFlight 2026-06-30: the real
+  purchase → unlock → restore loop works as expected on a real device.**
+- ✅ **PDF tax-ready export + Schedule C category alignment** — premium-gated "Tax Summary (PDF)" in
   Settings generates a tax-ready PDF (via `expo-print`): a Schedule C breakdown (Line 9 car/truck
   incl. mileage + parking/tolls, Line 22 supplies, Line 25 utilities) plus the estimated tax and
-  amount-to-set-aside, reconciled to the engine. Non-subscribers are routed to the paywall. **Built;
-  unit tests (Schedule C + HTML builder) + the paywall Playwright flow pass; native print/share and
-  the gated-unlock path are pending the batched TestFlight pass.**
+  amount-to-set-aside, reconciled to the engine. Non-subscribers are routed to the paywall. **Unit
+  tests (Schedule C + HTML builder) + the paywall Playwright flow pass; native print/share and the
+  gated unlock confirmed on TestFlight 2026-06-30.**
 - ⬜ W-4 withholding optimizer
 - ⬜ Safe-harbor / Form 2210 underpayment calculator
 - ⬜ IRS-compliant mileage-log fields

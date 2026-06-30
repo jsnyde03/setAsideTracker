@@ -1,5 +1,11 @@
 # Phase B — Batched TestFlight Validation Checklist
 
+> ## ✅ PASSED — 2026-06-30
+> Ran on a real device via TestFlight. **All sections (A–D) passed**, including the live IAP
+> purchase → unlock → restore loop and the PDF / Schedule C export print+share. This was the
+> **Phase B exit criterion** — the premium spine is validated end-to-end. The only remaining gate
+> before Premium goes live is **v1.0 clearing App Store review** (then merge `v1.1` → `master`).
+
 The off-device work is done and green (typecheck, 103 unit tests, 7/7 Playwright incl. the paywall flow).
 What's left is the **native, device-only** pass. To respect the Codemagic minute budget, this is written
 as **one build that validates everything** — the IAP purchase/restore loop **and** the PDF/Schedule C

@@ -133,10 +133,9 @@ This is the actual thing users buy. RevenueCat (Task 4) wraps it; it has to exis
 > **one tier ("Premium"), two SKUs — Annual $29.99 + Monthly $4.99, no free trial.** Create exactly
 > the two products below; do **not** create a second/Premium+ tier (that's a v2.0 thing).
 >
-> **Status (2026-06-30): ✅ Both subscriptions created + localized display names/descriptions added; RevenueCat (Task 4) wired. Core IAP setup is complete.**
-> Two sub-items remain, both needed for the batched TestFlight pass (not for coding):
-> - ⬜ **#6 review screenshot** — ✅ generated ([`store-assets/iap-review-paywall.png`](store-assets/iap-review-paywall.png)); you just upload it to both products' Review Information.
-> - ⬜ **#7 sandbox tester account** — required to run the on-device purchase → unlock → restore loop. Create it before the TestFlight pass.
+> **Status (2026-06-30): ✅ COMPLETE.** Both subscriptions created + localized; RevenueCat (Task 4) wired; the live purchase → unlock → restore loop **passed on TestFlight 2026-06-30** (so the sandbox tester #7 is in place and the products work end-to-end).
+> - **#6 review screenshot** — generated at [`store-assets/iap-review-paywall.png`](store-assets/iap-review-paywall.png); attach to both products' Review Information when submitting v1.1 for review.
+> - **#7 sandbox tester account** — ✅ confirmed working (the sandbox purchase succeeded on-device).
 
 ### Steps
 1. [x] **https://appstoreconnect.apple.com** → **My Apps** → your app → **Subscriptions**
