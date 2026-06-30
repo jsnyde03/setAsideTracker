@@ -66,9 +66,12 @@ no-ops until a real DSN is set. You're creating the project and handing me three
 5. [ ] Create an **auth token** for source-map upload: **Settings → Auth Tokens →
        Create New Token**, scopes: `project:releases` and `org:read`. *This one IS a secret —
        do not paste it into chat. You'll add it to Codemagic yourself (Step 7 below tells you when).*
-       🔄 A placeholder `SENTRY_AUTH_TOKEN` line is **already in codemagic.yaml** with paste
-       instructions. Encrypt the token in the Codemagic UI ("Copy as Encrypted") and replace
-       `REPLACE_WITH_Encrypted_TOKEN` with the `Encrypted(...)` string. Then tell me.
+       🔄 **No YAML edit needed.** Add `SENTRY_AUTH_TOKEN` as a **Secure** variable in the
+       Codemagic **`AppleConnect`** group (UI → Environment variables → group AppleConnect → name
+       `SENTRY_AUTH_TOKEN` → paste token → check Secure → Add). The workflow already loads that
+       group, so it's injected automatically. (We do NOT put the token in codemagic.yaml — it's
+       committed, and Codemagic hides secrets so there's no "copy as encrypted" to paste anyway.)
+       Then tell me it's added.
 
 ### ➡️ Hand back to Claude
 | Value | Example | Where it goes |
