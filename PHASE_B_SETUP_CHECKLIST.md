@@ -135,7 +135,7 @@ This is the actual thing users buy. RevenueCat (Task 4) wraps it; it has to exis
 >
 > **Status (2026-06-30): ✅ Both subscriptions created + localized display names/descriptions added; RevenueCat (Task 4) wired. Core IAP setup is complete.**
 > Two sub-items remain, both needed for the batched TestFlight pass (not for coding):
-> - ⬜ **#6 review screenshot** — now **unblocked**: the Paywall screen is built, so I can generate a paywall screenshot for you to attach to both products.
+> - ⬜ **#6 review screenshot** — ✅ generated ([`store-assets/iap-review-paywall.png`](store-assets/iap-review-paywall.png)); you just upload it to both products' Review Information.
 > - ⬜ **#7 sandbox tester account** — required to run the on-device purchase → unlock → restore loop. Create it before the TestFlight pass.
 
 ### Steps
@@ -164,8 +164,10 @@ This is the actual thing users buy. RevenueCat (Task 4) wraps it; it has to exis
    > which is fine at near-zero COGS. Don't hold the launch for SBP. See [PREMIUM_PRICING_STRATEGY.md §6](PREMIUM_PRICING_STRATEGY.md).
 5. [x] Add **localized display name + description** to **both** products (required, or they stay in "Missing Metadata").
 6. [ ] Add a **review screenshot** + notes to **both** products (Apple requires this to approve the
-       IAP; can be a mock of the paywall — I'll generate a paywall screenshot once that screen is
-       built, so you may circle back here). *(Deferred — comes after the Paywall screen is built.)*
+       IAP; can be a mock of the paywall). ✅ **Screenshot generated 2026-06-30:**
+       [`store-assets/iap-review-paywall.png`](store-assets/iap-review-paywall.png) (1290×2796, all
+       Guideline 3.1.2 elements). **You:** upload it to the Review Information of *both* the Annual and
+       Monthly products.
 7. [ ] Create a **Sandbox tester account**: **Users and Access → Sandbox → Testers → +**.
        Use an email you control that is **not** a real Apple ID. You'll sign in with this on a
        device to test purchases without being charged. *(Needed for the on-device purchase test, not for me to start coding.)*
