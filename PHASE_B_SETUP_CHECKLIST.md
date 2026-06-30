@@ -64,15 +64,10 @@ no-ops until a real DSN is set. You're creating the project and handing me three
 4. [x] Note your **org slug** and **project slug** (visible in the URL:
        `sentry.io/organizations/<ORG-SLUG>/projects/<PROJECT-SLUG>/`).
        ✅ org slug = `jason-snyder`, project slug = `react-native` (received 2026-06-30).
-5. [ ] Create an **auth token** for source-map upload: **Settings → Auth Tokens →
-       Create New Token**, scopes: `project:releases` and `org:read`. *This one IS a secret —
-       do not paste it into chat. You'll add it to Codemagic yourself (Step 7 below tells you when).*
-       🔄 **No YAML edit needed.** Add `SENTRY_AUTH_TOKEN` as a **Secure** variable in the
-       Codemagic **`AppleConnect`** group (UI → Environment variables → group AppleConnect → name
-       `SENTRY_AUTH_TOKEN` → paste token → check Secure → Add). The workflow already loads that
-       group, so it's injected automatically. (We do NOT put the token in codemagic.yaml — it's
-       committed, and Codemagic hides secrets so there's no "copy as encrypted" to paste anyway.)
-       Then tell me it's added.
+5. [x] Create an **auth token** for source-map upload (org auth token, or a user token with
+       `project:releases` + `org:read`). ✅ **Done** — added as a **Secure** `SENTRY_AUTH_TOKEN`
+       variable in the Codemagic **`AppleConnect`** group, which the workflow auto-loads. Kept out
+       of committed codemagic.yaml (no secret in git). Source-map upload verified on a real build.
 
 ### ➡️ Hand back to Claude
 | Value | Example | Where it goes |
