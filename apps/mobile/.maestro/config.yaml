@@ -5,3 +5,4 @@ flows:
   - onboarding-validation.yaml
   - log-and-delete-entry.yaml
   - premium-paywall.yaml
+  - mileage-log-gating.yaml

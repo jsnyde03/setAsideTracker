@@ -88,6 +88,9 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
   const [entries, setEntries] = useState<Entry[]>([]);
   // Non-null means AddEntryScreen is showing in edit mode for this entry.
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
+  // Where the paywall returns to when closed — the paywall is reachable from more than one screen
+  // (Settings' PDF export, the entry form's locked mileage log), so it remembers its origin.
+  const [paywallOrigin, setPaywallOrigin] = useState<Screen>("settings");
 
   // null = still checking whether a lock can be enforced on this device.
   const [lockAvailable, setLockAvailable] = useState<boolean | null>(null);
@@ -402,6 +405,10 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
           onSave={handleSaveEntry}
           onCancel={handleCancelEntry}
           onDelete={handleDeleteEntry}
+          onOpenPaywall={() => {
+            setPaywallOrigin("addEntry");
+            setScreen("paywall");
+          }}
         />
         <StatusBar style={isDark ? "light" : "dark"} />
       </View>
@@ -433,7 +440,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
   if (screen === "paywall") {
     return (
       <View style={styles.container}>
-        <PaywallScreen onClose={() => setScreen("settings")} />
+        <PaywallScreen onClose={() => setScreen(paywallOrigin)} />
         <StatusBar style={isDark ? "light" : "dark"} />
       </View>
     );
@@ -447,7 +454,10 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
           onSaveProfile={handleSaveProfile}
           taxProfile={taxProfile as TaxProfile}
           onEditTaxProfile={() => setScreen("editTaxProfile")}
-          onOpenPaywall={() => setScreen("paywall")}
+          onOpenPaywall={() => {
+            setPaywallOrigin("settings");
+            setScreen("paywall");
+          }}
           entries={entries}
           appLockEnabled={appLockEnabled}
           onToggleAppLock={handleToggleAppLock}

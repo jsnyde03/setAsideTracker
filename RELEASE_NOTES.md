@@ -29,9 +29,14 @@ What's new in 1.1:
 • Compare your platforms — see which app actually pays best per hour after expenses.
 • Share your earnings — a clean, shareable summary of your numbers.
 • Plain-language explanations of tax terms throughout.
+
+Premium:
+• Tax-ready PDF export with a Schedule C breakdown.
+• IRS-compliant mileage log — record each trip's purpose and start/end location for an
+  audit-ready record of your business miles.
 ```
-*(Premium features are added to this list as each one ships — see "Remaining" below. The line items
-above are the free-tier additions, which are live on the branch.)*
+*(Premium features are added to this list as each one ships — see "Remaining" below. The free-tier
+line items above are live on the branch.)*
 
 ### Completed in this release
 
@@ -72,9 +77,15 @@ above are the free-tier additions, which are live on the branch.)*
   amount-to-set-aside, reconciled to the engine. Non-subscribers are routed to the paywall. **Unit
   tests (Schedule C + HTML builder) + the paywall Playwright flow pass; native print/share and the
   gated unlock confirmed on TestFlight 2026-06-30.**
+- ✅ **IRS-compliant mileage-log fields** — premium-authored business purpose + start/end location
+  per entry, the contemporaneous substantiation the IRS expects for the standard mileage deduction.
+  Additive `Entry.mileageLog` schema (also the data-model groundwork for v1.3 GPS-assisted
+  mileage); a premium-gated "IRS mileage log" section in the entry form (free users see a locked
+  Premium row that routes to the paywall); the fields flow into the existing CSV export so the log
+  is actually usable at tax time. Unit tests (CSV columns + escaping) + a Playwright gate test pass;
+  the native locked-row → Alert → paywall hop is covered by a new Maestro flow.
 - ⬜ W-4 withholding optimizer
 - ⬜ Safe-harbor / Form 2210 underpayment calculator
-- ⬜ IRS-compliant mileage-log fields
 - ⬜ Custom expense categories
 - ⬜ Year-over-year insights
 - ⬜ Multi-state support (design pass first)

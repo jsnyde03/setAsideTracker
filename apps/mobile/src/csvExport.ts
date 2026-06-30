@@ -11,6 +11,10 @@ const HEADER = [
   "Tolls",
   "Supplies",
   "Phone",
+  // IRS mileage-log fields (Premium-authored; blank for entries without a log).
+  "Trip Purpose",
+  "Start Location",
+  "End Location",
 ];
 
 const PLATFORM_LABELS: Record<Entry["platform"], string> = {
@@ -23,9 +27,9 @@ const PLATFORM_LABELS: Record<Entry["platform"], string> = {
 };
 
 /** Escapes a CSV field per RFC 4180 — wraps in quotes and doubles any embedded quotes whenever
- * the value contains a comma, quote, or newline. Every value here is a plain number/date/platform
- * label today, none of which need escaping, but entries are partly user-influenced data (platform
- * is a fixed enum, but this keeps the function correct if a free-text field is ever added). */
+ * the value contains a comma, quote, or newline. Most columns are plain numbers/dates/enum labels,
+ * but the IRS mileage-log columns (purpose, start/end location) are free text, so escaping is now
+ * load-bearing: a purpose like "Deliveries, downtown" would otherwise split a row. */
 function csvField(value: string | number): string {
   const str = String(value);
   if (/[",\n]/.test(str)) {
@@ -53,6 +57,9 @@ export function entriesToCsv(entries: Entry[]): string {
       entry.expenses.tolls,
       entry.expenses.supplies,
       entry.expenses.phone,
+      entry.mileageLog?.purpose ?? "",
+      entry.mileageLog?.startLocation ?? "",
+      entry.mileageLog?.endLocation ?? "",
     ]
       .map(csvField)
       .join(",")

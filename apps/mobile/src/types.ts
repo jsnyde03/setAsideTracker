@@ -56,6 +56,22 @@ export interface EntryExpenses {
   phone: number;
 }
 
+/**
+ * IRS-compliant mileage-log substantiation for the business miles in an entry. To claim the
+ * standard mileage deduction the IRS requires a contemporaneous log recording, for each trip, the
+ * business purpose and where it went — the raw `Entry.mileage` number alone isn't enough on audit.
+ * Authoring these is a Premium feature; the mileage *number* stays free. All fields are optional
+ * (older entries and free users won't have them) and stored as trimmed free text. This is also the
+ * data-model groundwork for v1.3 GPS-assisted mileage, which will populate the same shape. */
+export interface MileageLog {
+  /** Business purpose of the trip (e.g. "DoorDash deliveries — downtown zone"). */
+  purpose?: string;
+  /** Where the trip started — free-text address or place name. */
+  startLocation?: string;
+  /** Where the trip ended. */
+  endLocation?: string;
+}
+
 export interface Entry {
   id: string;
   platform: GigPlatform;
@@ -68,6 +84,9 @@ export interface Entry {
    * may not want to track it for every entry. Powers the "effective hourly rate" insight, which
    * only shows up once at least one entry in the period has this set. */
   hoursWorked?: number;
+  /** IRS mileage-log details substantiating this entry's business miles. Optional and
+   * Premium-authored; absent on older entries and for free users. See {@link MileageLog}. */
+  mileageLog?: MileageLog;
   createdAt: string;
 }
 
