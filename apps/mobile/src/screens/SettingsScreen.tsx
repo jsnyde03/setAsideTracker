@@ -9,8 +9,13 @@ import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
 import { exportEntriesAsCsv } from "../exportEntriesAsCsv";
+import { exportTaxSummaryPdf } from "../taxSummaryPdf";
+import { buildTaxSummaryHtml } from "../taxSummaryHtml";
+import { buildScheduleCSummary } from "../scheduleC";
+import { computeTaxEstimate, entriesForYear } from "../calculations";
 import { reportError } from "../errorReporting";
 import { isAppLockAvailable } from "../security/appLock";
+import { usePremium } from "../premium/PremiumContext";
 import { radius, spacing, type, type Colors } from "../theme";
 import { useTheme, type ColorSchemePreference } from "../ThemeContext";
 
@@ -19,6 +24,7 @@ interface SettingsScreenProps {
   onSaveProfile: (profile: LocalUserProfile) => void;
   taxProfile: TaxProfile;
   onEditTaxProfile: () => void;
+  onOpenPaywall: () => void;
   entries: Entry[];
   appLockEnabled: boolean;
   onToggleAppLock: (enabled: boolean) => void;
@@ -49,6 +55,7 @@ export function SettingsScreen({
   onSaveProfile,
   taxProfile,
   onEditTaxProfile,
+  onOpenPaywall,
   entries,
   appLockEnabled,
   onToggleAppLock,
@@ -62,11 +69,13 @@ export function SettingsScreen({
 }: SettingsScreenProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const { isPremium } = usePremium();
   // null = still checking device capability.
   const [lockAvailable, setLockAvailable] = useState<boolean | null>(null);
   const [displayName, setDisplayName] = useState(localUserProfile.displayName);
   const [email, setEmail] = useState(localUserProfile.email);
   const [exporting, setExporting] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [backingUp, setBackingUp] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
@@ -98,6 +107,43 @@ export function SettingsScreen({
       );
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function handleExportPdf() {
+    // Premium-gated: non-subscribers are routed to the paywall instead of the export.
+    if (!isPremium) {
+      onOpenPaywall();
+      return;
+    }
+    const year = new Date().getFullYear();
+    const yearEntries = entriesForYear(entries, year);
+    if (yearEntries.length === 0) {
+      Alert.alert(`No ${year} entries yet`, "Log at least one entry this year before exporting a tax summary.");
+      return;
+    }
+    setExportingPdf(true);
+    try {
+      const estimate = computeTaxEstimate(entries, taxProfile, year);
+      const scheduleC = buildScheduleCSummary(yearEntries, estimate.estimate.mileageDeduction.deductionAmount);
+      const html = buildTaxSummaryHtml({
+        preparedFor: localUserProfile.displayName,
+        year,
+        filingStatusLabel: FILING_STATUS_LABELS[taxProfile.filingStatus],
+        locationLabel: taxProfile.county ? `${taxProfile.state} · ${taxProfile.county}` : taxProfile.state,
+        generatedOn: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+        scheduleC,
+        estimate,
+      });
+      await exportTaxSummaryPdf(html, `tax-summary-${year}.pdf`);
+    } catch (error) {
+      reportError(error, { where: "handleExportPdf" });
+      Alert.alert(
+        "Couldn't export",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    } finally {
+      setExportingPdf(false);
     }
   }
 
@@ -182,6 +228,34 @@ export function SettingsScreen({
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Text style={styles.sectionLabel}>Premium</Text>
+        {isPremium ? (
+          <View style={styles.row}>
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>Premium active</Text>
+              <Text style={styles.rowHint}>
+                You have all premium tools. Manage or cancel your subscription in the App Store.
+              </Text>
+            </View>
+            <Ionicons name="checkmark-circle" size={20} color={colors.accent} />
+          </View>
+        ) : (
+          <Pressable
+            onPress={onOpenPaywall}
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Upgrade to Premium"
+          >
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>Upgrade to Premium</Text>
+              <Text style={styles.rowHint}>
+                PDF export, Schedule C, W-4 optimizer, safe-harbor calculator, and more.
+              </Text>
+            </View>
+            <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
+          </Pressable>
+        )}
+
         <Text style={styles.sectionLabel}>Profile</Text>
         <View style={styles.card}>
           <TextField label="Name" value={displayName} onChangeText={setDisplayName} />
@@ -260,6 +334,34 @@ export function SettingsScreen({
         </View>
 
         <Text style={styles.sectionLabel}>Data</Text>
+        <Pressable
+          onPress={handleExportPdf}
+          disabled={exportingPdf}
+          style={({ pressed }) => [
+            styles.row,
+            styles.rowSpaced,
+            pressed && styles.rowPressed,
+            exportingPdf && styles.rowDisabled,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Export tax summary as PDF"
+          accessibilityState={{ disabled: exportingPdf, busy: exportingPdf }}
+        >
+          <View style={styles.rowText}>
+            <Text style={styles.rowLabel}>
+              Tax Summary (PDF){isPremium ? "" : "  ·  Premium"}
+            </Text>
+            <Text style={styles.rowHint}>
+              A tax-ready PDF with your Schedule C breakdown and tax estimate — hand it to a CPA or
+              import into TurboTax/FreeTaxUSA.
+            </Text>
+          </View>
+          <Ionicons
+            name={isPremium ? "document-text-outline" : "lock-closed-outline"}
+            size={18}
+            color={colors.inkSubtle}
+          />
+        </Pressable>
         <Pressable
           onPress={handleExportCsv}
           disabled={exporting}

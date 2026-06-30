@@ -1,0 +1,29 @@
+# Premium paywall smoke (native). Verifies the paywall is reachable from Settings and shows the
+# Apple-required elements (price, auto-renewal disclosure, Terms/Privacy links, restore, subscribe).
+# The actual sandbox purchase → unlock → restore loop needs a StoreKit sandbox account and Apple's
+# purchase sheet, which can't be driven reliably here — that's a manual TestFlight pass.
+appId: com.gigtaxtracker.app
+name: Premium Paywall (smoke)
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Welcome"
+- tapOn: "Your name"
+- inputText: "Maestro Tester"
+- tapOn: "Single"
+- tapOn: "e.g. CA"
+- inputText: "TX"
+- hideKeyboard
+- tapOn: "I understand this app provides estimates, not tax advice"
+- tapOn: "Continue"
+- assertVisible: "Set aside for taxes"
+# Open Settings → the premium upsell row → the paywall.
+- tapOn: "Settings"
+- assertVisible: "Upgrade to Premium"
+- tapOn: "Upgrade to Premium"
+- assertVisible: "SetAside Premium"
+- assertVisible: "Subscribe"
+- assertVisible: "Restore purchases"
+- assertVisible: "Terms of Use (EULA)"
+- assertVisible: "Privacy Policy"
+- assertVisible: "automatically renews"

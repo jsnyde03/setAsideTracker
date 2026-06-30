@@ -1,0 +1,122 @@
+# Release Notes
+
+**Living document** — updated as each feature/enhancement/bug fix lands, as part of the same
+documentation pass (not reconstructed at submission time). Newest release on top. Each release has a
+clean **What's New** block (the draft for the App Store "What's New" field) plus a detailed
+**Completed in this release** list.
+
+**Status legend:** ✅ Live · 🔄 In progress / in review · ⬜ Not started
+
+> When an item ships: flip its plan-doc status, add a user-facing line here, and (for store-facing
+> changes) run the Apple guideline compliance pass. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+
+---
+
+## v1.1 — Premium Tier Launch + Free Tier Growth  🔄 In progress
+
+> Branch `v1.1`; not merged to `master` until v1.0 is live. Phase A (free additions) is complete;
+> Phase B (premium) is in progress. Full plan: [V1.1_EXECUTION_PLAN.md](V1.1_EXECUTION_PLAN.md) /
+> [PHASE_B_EXECUTION_PLAN.md](PHASE_B_EXECUTION_PLAN.md). Pricing: [PREMIUM_PRICING_STRATEGY.md](PREMIUM_PRICING_STRATEGY.md).
+
+### What's New (draft for the App Store "What's New")
+
+```
+What's new in 1.1:
+
+• See the math behind every number — tap any line in your tax breakdown to see exactly how it
+  was calculated, in plain English.
+• New "What if I earned more?" simulator — see how an extra shift changes your tax set-aside.
+• Compare your platforms — see which app actually pays best per hour after expenses.
+• Share your earnings — a clean, shareable summary of your numbers.
+• Plain-language explanations of tax terms throughout.
+```
+*(Premium features are added to this list as each one ships — see "Remaining" below. The line items
+above are the free-tier additions, which are live on the branch.)*
+
+### Completed in this release
+
+<details>
+<summary>Free-tier additions (✅ shipped on branch — never paywalled)</summary>
+
+- ✅ **"Show your math" audit trail** — every tax-breakdown line is tappable and shows the full
+  calculation (AGI → deductions → per-bracket tax, SE split, credits).
+- ✅ **In-app tax literacy** — tappable plain-language glossary pills on each breakdown.
+- ✅ **"What if I earned more?" simulator** — live recompute of set-aside + effective hourly rate.
+- ✅ **Platform earnings comparison** — per-platform earnings + after-expense hourly rate.
+- ✅ **Earnings share card** — branded shareable summary via the native share sheet (iOS).
+- ✅ **Well-timed app rating prompt** — fires after the 5th entry / first catch-up, once.
+
+</details>
+
+<details>
+<summary>Infrastructure & observability (✅)</summary>
+
+- ✅ **Testing harness (Workstream 0)** — Playwright web E2E + Maestro native flows + CI workflows.
+- ✅ **Sentry crash reporting** — live in CI/TestFlight builds, source maps uploaded.
+- ✅ **PostHog analytics** — live in CI/TestFlight builds, with the premium-funnel events defined.
+
+</details>
+
+<details>
+<summary>Premium (🔄 Phase B — in progress)</summary>
+
+- 🔄 **IAP spine (RevenueCat)** — `react-native-purchases` integrated; `usePremium()` gate with
+  offline-cached entitlement; **Paywall** screen (Apple 3.1.2-compliant: billed price is the most
+  prominent element, full auto-renewal disclosure, Terms/Privacy links, restore); funnel analytics
+  wired. App Store Connect products + RevenueCat dashboard configured (Annual $29.99 / Monthly
+  $4.99, entitlement `premium`, offering `default`). **Built + unit-tested; the real purchase →
+  unlock → restore loop is not yet verified on TestFlight.**
+- 🔄 **PDF tax-ready export + Schedule C category alignment** — premium-gated "Tax Summary (PDF)" in
+  Settings generates a tax-ready PDF (via `expo-print`): a Schedule C breakdown (Line 9 car/truck
+  incl. mileage + parking/tolls, Line 22 supplies, Line 25 utilities) plus the estimated tax and
+  amount-to-set-aside, reconciled to the engine. Non-subscribers are routed to the paywall. **Built;
+  unit tests (Schedule C + HTML builder) + the paywall Playwright flow pass; native print/share and
+  the gated-unlock path are pending the batched TestFlight pass.**
+- ⬜ W-4 withholding optimizer
+- ⬜ Safe-harbor / Form 2210 underpayment calculator
+- ⬜ IRS-compliant mileage-log fields
+- ⬜ Custom expense categories
+- ⬜ Year-over-year insights
+- ⬜ Multi-state support (design pass first)
+
+</details>
+
+---
+
+## v1.0 — Public Launch (Free Tier)  🔄 In App Store review (as of 2026-06-30)
+
+> Submitted; awaiting approval. Details: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+
+### What's New (initial release)
+
+```
+SetAside Tracker helps gig workers know exactly how much to set aside for taxes.
+
+• Log earnings, expenses, and mileage in seconds.
+• Get your real-time federal + state tax estimate and "set aside" number.
+• Handles W2 + 1099 combos, all 50 states + DC, and every filing status.
+• See your true after-expense hourly rate and per-platform breakdown.
+• Quarterly due-date reminders so you're never caught off guard.
+• Private by design — your data stays on your device.
+```
+
+### Completed in this release
+
+<details>
+<summary>v1.0 scope (✅ engineering-complete, in review)</summary>
+
+- ✅ Free-tier core: earnings/expense/mileage logging, real-time tax estimate + set-aside number.
+- ✅ Full **50 states + DC** tax coverage (+ state credits, PA/NY local tax).
+- ✅ **W2 + 1099** combined modeling (rebuilt + re-enabled) and every filing status incl.
+  Head of Household / Married Filing Separately.
+- ✅ True hourly-rate calculator, quarterly due-date reminders, year switcher.
+- ✅ Encrypted local storage, optional biometric app lock, CSV export, backup/restore.
+
+</details>
+
+---
+
+## Earlier (v0.1–v0.3)  ✅ Internal only
+
+Pre-public milestones that de-risked the tax engine and core loop; never released to users. See
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the history.

@@ -23,6 +23,7 @@ import { AddEntryScreen } from "./src/screens/AddEntryScreen";
 import { WhatIfScreen } from "./src/screens/WhatIfScreen";
 import { PlatformComparisonScreen } from "./src/screens/PlatformComparisonScreen";
 import { EditTaxProfileScreen } from "./src/screens/EditTaxProfileScreen";
+import { PaywallScreen } from "./src/screens/PaywallScreen";
 import { LockScreen } from "./src/screens/LockScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { ErrorBoundary } from "./src/components/ErrorBoundary";
@@ -30,12 +31,15 @@ import { isAppLockAvailable, unlockWithDeviceAuth } from "./src/security/appLock
 import { cancelQuarterlyReminders, scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
 import { trackEvent, ANALYTICS_EVENTS } from "./src/analytics";
 import { initAnalytics } from "./src/analyticsClient";
+import { initPurchases } from "./src/premium/purchasesClient";
+import { PremiumProvider } from "./src/premium/PremiumContext";
 import { maybeRequestReview } from "./src/appReview";
 import { initErrorReporting, reportError } from "./src/errorReporting";
 import { ThemeProvider, useTheme, type ColorSchemePreference } from "./src/ThemeContext";
 
 initErrorReporting();
 initAnalytics();
+initPurchases();
 
 type Screen =
   | "loading"
@@ -45,7 +49,8 @@ type Screen =
   | "settings"
   | "editTaxProfile"
   | "whatIf"
-  | "platformComparison";
+  | "platformComparison"
+  | "paywall";
 
 export default function App() {
   // Lifted above AppContent (rather than state inside it) so ThemeProvider can wrap AppContent
@@ -56,9 +61,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider scheme={colorScheme}>
-        <ErrorBoundary>
-          <AppContent colorScheme={colorScheme} setColorScheme={setColorScheme} />
-        </ErrorBoundary>
+        <PremiumProvider>
+          <ErrorBoundary>
+            <AppContent colorScheme={colorScheme} setColorScheme={setColorScheme} />
+          </ErrorBoundary>
+        </PremiumProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
@@ -423,6 +430,15 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
     );
   }
 
+  if (screen === "paywall") {
+    return (
+      <View style={styles.container}>
+        <PaywallScreen onClose={() => setScreen("settings")} />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
   if (screen === "settings") {
     return (
       <View style={styles.container}>
@@ -431,6 +447,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
           onSaveProfile={handleSaveProfile}
           taxProfile={taxProfile as TaxProfile}
           onEditTaxProfile={() => setScreen("editTaxProfile")}
+          onOpenPaywall={() => setScreen("paywall")}
           entries={entries}
           appLockEnabled={appLockEnabled}
           onToggleAppLock={handleToggleAppLock}

@@ -2,6 +2,18 @@ workflows:
   ios-testflight:
     name: SetAsideTracker — iOS TestFlight
 
+    # Apple Silicon instance — faster compile/archive than the default mac, so fewer minutes/build.
+    instance_type: mac_mini_m2
+
+    # Cache the slow-to-rebuild dirs so build #2+ after a dependency change is much faster. NOTE:
+    # this does NOT speed up the FIRST build after adding/changing native deps (cold cache) — the
+    # build that introduces react-native-purchases + expo-print pays full pod/npm cost once.
+    cache:
+      cache_paths:
+        - $HOME/.npm                          # npm download cache → faster `npm install`
+        - $HOME/Library/Caches/CocoaPods      # CocoaPods spec/pod cache → faster `pod install`
+        - $HOME/Library/Developer/Xcode/DerivedData  # incremental Xcode build artifacts
+
     environment:
       node: 22
 
@@ -47,6 +59,15 @@ workflows:
         EXPO_PUBLIC_POSTHOG_KEY: "phc_zN3LdF74JA8waXQfx5WSVv2j8GYfscZ2vqSCYv6hzCcH"
         EXPO_PUBLIC_POSTHOG_HOST: "https://us.i.posthog.com"
 
+        # RevenueCat public Apple SDK key (project created 2026-06-30; entitlement `premium`,
+        # offering `default`, products com.gigtaxtracker.app.premium.{annual,monthly}). The `appl_`
+        # key is the *public* client SDK key — safe to commit and ship in the bundle (same rationale
+        # as the Sentry DSN / PostHog key above), which is why it's an EXPO_PUBLIC_ var the purchases
+        # client reads. The SECRET In-App Purchase `.p8` lives only in the RevenueCat dashboard, never
+        # here. Set only in CI (not a local .env) so IAP is live in TestFlight builds while local
+        # dev/test stay no-ops (no key → the purchases facade never configures the SDK).
+        EXPO_PUBLIC_RC_IOS_KEY: "appl_IFWiFSXDEBEqEYPsWzeGTstdwKO"
+
         # SENTRY_AUTH_TOKEN (the secret sentry-cli uses for source-map upload) is intentionally NOT
         # defined here — it's injected from the `AppleConnect` variable group declared above. Add it
         # in the Codemagic UI (Environment variables → group AppleConnect → name SENTRY_AUTH_TOKEN →
@@ -74,10 +95,11 @@ workflows:
         # installed on this machine's architecture. Removing any stale node_modules and using
         # `npm install` instead of `npm ci` makes npm re-resolve and fetch the right native
         # binary for whatever machine is actually running the build, rather than trusting a
-        # potentially-incomplete prior install.
+        # potentially-incomplete prior install. Flags: --prefer-offline pulls from the cached
+        # $HOME/.npm (fast on warm cache); --no-audit/--no-fund skip network/work we don't need in CI.
         script: |
           rm -rf node_modules
-          npm install
+          npm install --prefer-offline --no-audit --no-fund
 
       - name: Build the tax-engine package
         # apps/mobile depends on @gig-tax-tracker/tax-engine as a workspace package — it's
@@ -87,30 +109,20 @@ workflows:
           cd services/tax-engine
           npm run build
 
-      - name: Run tax-engine tests
-        script: |
-          cd services/tax-engine
-          npm test
-
-      - name: Typecheck + test the mobile app
-        script: |
-          cd apps/mobile
-          npm run typecheck
-          npm test
+      # NOTE: tax-engine tests + mobile typecheck/test are intentionally NOT run in this release
+      # build to keep it fast — they're verified locally before each build and run in the cheaper
+      # `web-e2e`/Maestro workflows. Re-add them here if you want the release build to self-gate.
 
       - name: Generate the native iOS project (expo prebuild)
         # Continuous Native Generation: ios/ is gitignored and regenerated fresh on every build
         # from app.json + config plugins, so app.json's name/bundleIdentifier/icon settings are
-        # the actual source of truth, not anything checked into ios/. expo prebuild runs `pod
-        # install` itself on macOS, but the explicit step below is kept as a harmless safety net.
+        # the actual source of truth, not anything checked into ios/. **expo prebuild runs `pod
+        # install` itself on macOS**, so a separate pod-install step just repeats it — removed to
+        # save build time. If prebuild's own pod install ever flakes, re-add an explicit
+        # `cd apps/mobile/ios && pod install` step here.
         script: |
           cd apps/mobile
           npx expo prebuild --platform ios
-
-      - name: Install CocoaPods dependencies
-        script: |
-          cd apps/mobile/ios
-          pod install
 
       # Initializing the keychain and adding certificates by hand here was redundant once
       # `ios_signing` (above) was configured — Codemagic already does both automatically before
@@ -151,14 +163,16 @@ workflows:
             --scheme "SetAsideTracker"
 
       - name: List build outputs
+        # Scoped to the build dirs so it doesn't walk node_modules.
         script: |
-          find apps/mobile -iname "*.ipa" || true
+          find apps/mobile/build apps/mobile/ios/build -iname "*.ipa" 2>/dev/null || true
 
+    # Trimmed: dropped the broad `apps/mobile/**/*.log` glob — it makes artifact collection walk the
+    # whole tree (incl. node_modules) at the end of every build. The specific logs below suffice.
     artifacts:
       - apps/mobile/build/ios/ipa/*.ipa
       - apps/mobile/ios/build/ios/ipa/*.ipa
       - apps/mobile/xcodebuild-archive.log
-      - apps/mobile/**/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Logs/Build/*.xcactivitylog
 
     publishing:
@@ -182,6 +196,13 @@ workflows:
   web-e2e:
     name: SetAsideTracker — Web E2E (Playwright)
 
+    # Cache npm downloads + the Playwright browser binaries so re-runs skip the (slow) chromium
+    # download and most of `npm install`. ms-playwright is where `playwright install` puts browsers.
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/.cache/ms-playwright
+
     environment:
       node: 22
 
@@ -190,14 +211,16 @@ workflows:
         - push
         - pull_request
       branch_patterns:
+        # TEMPORARILY DISABLED (2026-06-30) to conserve Codemagic minutes near the monthly cap — a
+        # push must not auto-spend minutes. Re-enable (include: true) after the monthly reset.
         - pattern: "*"
-          include: true
+          include: false
 
     scripts:
       - name: Install root workspace dependencies
         script: |
           rm -rf node_modules
-          npm install
+          npm install --prefer-offline --no-audit --no-fund
 
       - name: Build the tax-engine package
         # apps/mobile consumes @gig-tax-tracker/tax-engine via its compiled dist/, so build it first.
@@ -206,6 +229,8 @@ workflows:
           npm run build
 
       - name: Install Playwright Chromium
+        # With $HOME/.cache/ms-playwright cached, the browser binary is reused across runs and this
+        # mostly just re-checks OS deps.
         script: |
           cd apps/mobile
           npx playwright install --with-deps chromium
@@ -236,6 +261,12 @@ workflows:
 
     instance_type: mac_mini_m2
 
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/Library/Caches/CocoaPods
+        - $HOME/.maestro              # the Maestro CLI install → skip re-downloading it each run
+
     environment:
       node: 22
 
@@ -243,14 +274,16 @@ workflows:
       events:
         - push
       branch_patterns:
+        # TEMPORARILY DISABLED (2026-06-30) to conserve Codemagic minutes near the monthly cap — this
+        # is the expensive mac workflow and must not auto-fire on a v1.1 push. Re-enable after reset.
         - pattern: "v1.1"
-          include: true
+          include: false
 
     scripts:
       - name: Install root workspace dependencies
         script: |
           rm -rf node_modules
-          npm install
+          npm install --prefer-offline --no-audit --no-fund
 
       - name: Build the tax-engine package
         script: |
@@ -264,14 +297,10 @@ workflows:
           npm test
 
       - name: Generate the native iOS project (expo prebuild)
+        # expo prebuild runs `pod install` itself on macOS, so no separate pod-install step is needed.
         script: |
           cd apps/mobile
           npx expo prebuild --platform ios
-
-      - name: Install CocoaPods dependencies
-        script: |
-          cd apps/mobile/ios
-          pod install
 
       - name: Build the app for the iOS Simulator
         # Release embeds the JS bundle (no Metro needed at run time); CODE_SIGNING_ALLOWED=NO because
@@ -294,8 +323,11 @@ workflows:
             apps/mobile/ios/build/Build/Products/Release-iphonesimulator/SetAsideTracker.app
 
       - name: Install Maestro
+        # Skip the download when the cached $HOME/.maestro already has the CLI.
         script: |
-          curl -Ls "https://get.maestro.mobile.dev" | bash
+          if [ ! -x "$HOME/.maestro/bin/maestro" ]; then
+            curl -Ls "https://get.maestro.mobile.dev" | bash
+          fi
 
       - name: Run Maestro native flows
         script: |

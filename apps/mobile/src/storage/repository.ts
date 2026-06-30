@@ -8,6 +8,8 @@ const KEYS = {
   taxProfile: "gigTaxTracker:taxProfile",
   entries: "gigTaxTracker:entries",
   appSettings: "gigTaxTracker:appSettings",
+  /** Locally cached RevenueCat premium entitlement, for offline trust — see getCachedPremium. */
+  cachedPremium: "gigTaxTracker:cachedPremium",
 } as const;
 
 const DEFAULT_APP_SETTINGS: AppSettings = { appLockEnabled: false };
@@ -101,7 +103,23 @@ export async function saveAppSettings(settings: AppSettings): Promise<void> {
   await writeJson(KEYS.appSettings, settings);
 }
 
-/** Clears all locally stored data — there's no real backend/account, so this is the app's reset. */
+/**
+ * Last-known RevenueCat premium entitlement, cached so the gate can trust it offline — a failed
+ * network call must never lock a paying user out of premium features. Defaults to false (free) when
+ * never written. Stored through the same encrypted path as everything else.
+ */
+export async function getCachedPremium(): Promise<boolean> {
+  const cached = await readJson<boolean>(KEYS.cachedPremium);
+  return cached ?? false;
+}
+
+export async function saveCachedPremium(isPremium: boolean): Promise<void> {
+  await writeJson(KEYS.cachedPremium, isPremium);
+}
+
+/** Clears all locally stored data — there's no real backend/account, so this is the app's reset.
+ * The cached entitlement is deliberately NOT cleared here: premium is tied to the user's Apple ID
+ * (restored via RevenueCat), not to their local data, so wiping local data shouldn't drop premium. */
 export async function clearAllLocalData(): Promise<void> {
   await AsyncStorage.removeMany([KEYS.localUserProfile, KEYS.taxProfile, KEYS.entries]);
 }

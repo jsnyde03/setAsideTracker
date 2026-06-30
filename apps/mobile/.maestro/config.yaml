@@ -4,3 +4,4 @@ flows:
   - onboarding.yaml
   - onboarding-validation.yaml
   - log-and-delete-entry.yaml
+  - premium-paywall.yaml

@@ -125,43 +125,71 @@ paywall needs (`paywall_viewed`, `purchase_started`, `purchase_completed`, `rest
 
 ---
 
-## Task 3 — App Store Connect: the subscription product  ⬜
+## Task 3 — App Store Connect: the subscription product  🔄 PRODUCTS + LOCALIZATION DONE
 
 This is the actual thing users buy. RevenueCat (Task 4) wraps it; it has to exist first.
 
+> **✅ Pricing decided 2026-06-30** (full rationale in [PREMIUM_PRICING_STRATEGY.md](PREMIUM_PRICING_STRATEGY.md)):
+> **one tier ("Premium"), two SKUs — Annual $29.99 + Monthly $4.99, no free trial.** Create exactly
+> the two products below; do **not** create a second/Premium+ tier (that's a v2.0 thing).
+>
+> **Status (2026-06-30): ✅ Both subscriptions created + localized display names/descriptions added.**
+> Remaining in this task: ⬜ review screenshot (deferred — needs the built paywall) · ⬜ sandbox tester account.
+
 ### Steps
-1. [ ] **https://appstoreconnect.apple.com** → **My Apps** → your app → **Subscriptions**
+1. [x] **https://appstoreconnect.apple.com** → **My Apps** → your app → **Subscriptions**
        (under "Monetization" / "In-App Purchases & Subscriptions").
-2. [ ] Create a **Subscription Group** (e.g. `Premium`). All your premium tiers live in one group.
-3. [ ] **Create an auto-renewing subscription**:
-   - [ ] **Reference Name** (internal): e.g. `Premium Annual`
-   - [ ] **Product ID**: pick a stable, namespaced ID you won't change, e.g.
-         `com.gigtaxtracker.app.premium.annual`. **Write it down exactly** — I hard-code it nowhere,
-         but RevenueCat maps to it and I reference the *entitlement*, not this, so accuracy matters at the dashboard.
-   - [ ] **Duration**: 1 year (recommended primary) — and optionally also a monthly
-         `...premium.monthly` if you want a monthly option.
-   - [ ] **Price**: set your tier (you're in the Apple Small Business Program → 15% cut).
-4. [ ] Add **localized display name + description** (required, or it stays in "Missing Metadata").
-5. [ ] Add a **review screenshot** + notes (Apple requires this to approve the IAP; can be a mock
-       of the paywall — I'll generate a paywall screenshot once that screen is built, so you may
-       circle back here).
-6. [ ] Create a **Sandbox tester account**: **Users and Access → Sandbox → Testers → +**.
+2. [x] Create the **Subscription Group**: name it **`Premium`**. Both SKUs below live in this one
+       group (this is also where the future Premium+/AI tier will go at v2.0 — same group enables
+       clean upgrade/downgrade).
+3. [x] **Create auto-renewing subscription #1 — the hero:**
+   - [x] **Reference Name** (internal): `Premium Annual`
+   - [x] **Product ID**: `com.gigtaxtracker.app.premium.annual` — **type it exactly.** I reference
+         the *entitlement*, not this string, but RevenueCat maps to it, so accuracy matters at the dashboard.
+   - [x] **Duration**: 1 year
+   - [x] **Price**: **$29.99**
+4. [x] **Create auto-renewing subscription #2:**
+   - [x] **Reference Name** (internal): `Premium Monthly`
+   - [x] **Product ID**: `com.gigtaxtracker.app.premium.monthly` — **type it exactly.**
+   - [x] **Duration**: 1 month
+   - [x] **Price**: **$4.99**
+   - [x] **No introductory offer / free trial** on either product — we launch trial-free and
+         A/B-test an intro offer later from the RevenueCat dashboard (no app change needed).
+
+   > 💸 **On the commission:** your Small Business Program enrollment is **applied but not yet
+   > approved** — so assume Apple's **30%** on year-1 revenue until it lands (the 15% rate isn't
+   > retroactive and starts 15 days after the fiscal month of approval). $29.99 nets ~$20.99 at 30%,
+   > which is fine at near-zero COGS. Don't hold the launch for SBP. See [PREMIUM_PRICING_STRATEGY.md §6](PREMIUM_PRICING_STRATEGY.md).
+5. [x] Add **localized display name + description** to **both** products (required, or they stay in "Missing Metadata").
+6. [ ] Add a **review screenshot** + notes to **both** products (Apple requires this to approve the
+       IAP; can be a mock of the paywall — I'll generate a paywall screenshot once that screen is
+       built, so you may circle back here). *(Deferred — comes after the Paywall screen is built.)*
+7. [ ] Create a **Sandbox tester account**: **Users and Access → Sandbox → Testers → +**.
        Use an email you control that is **not** a real Apple ID. You'll sign in with this on a
-       device to test purchases without being charged.
+       device to test purchases without being charged. *(Needed for the on-device purchase test, not for me to start coding.)*
 
 > The product can sit in "Ready to Submit" / "Missing Metadata" while we build — it does **not**
 > need to be approved to test in sandbox. It only needs approval when v1.1 itself goes to review.
 
 ### ➡️ Hand back to Claude
-| Value | Example | Notes |
+| Value | Decided value | Notes |
 |---|---|---|
-| **Product ID(s)** | `com.gigtaxtracker.app.premium.annual` | Exact string(s) |
+| **Annual Product ID** | `com.gigtaxtracker.app.premium.annual` | $29.99/yr — confirm created exactly |
+| **Monthly Product ID** | `com.gigtaxtracker.app.premium.monthly` | $4.99/mo — confirm created exactly |
 | **Subscription group name** | `Premium` | — |
 | **Sandbox tester email** | *you keep this* | You'll use it on-device; I just need to know one exists |
 
 ---
 
-## Task 4 — RevenueCat dashboard  ⬜
+## Task 4 — RevenueCat dashboard  ✅ DONE (2026-06-30)
+
+> **✅ Decided 2026-06-30:** entitlement **`premium`**, offering **`default`** with **two packages**
+> (Annual featured + Monthly), both products attached to the one entitlement. One tier only.
+>
+> **✅ Built & handed back (2026-06-30):** project created, App Store app (bundle `com.gigtaxtracker.app`)
+> added, In-App Purchase `.p8` uploaded to RevenueCat (secret — dashboard only), both products attached
+> to entitlement `premium`, offering `default` live. **Public SDK key `appl_IFWiFSXDEBEqEYPsWzeGTstdwKO`
+> wired into [codemagic.yaml](codemagic.yaml) as `EXPO_PUBLIC_RC_IOS_KEY`.** Unblocks Step 1 (IAP spine).
 
 RevenueCat is the layer the app actually talks to. It maps your App Store product → a named
 **entitlement** the code checks. (Bonus: same SDK unifies Google Play later in v1.2.)
@@ -177,11 +205,12 @@ RevenueCat is the layer the app actually talks to. It maps your App Store produc
          **Users and Access → Integrations → In-App Purchase** → generate, download the `.p8`,
          note the **Key ID** and **Issuer ID**. Upload to RevenueCat. *The .p8 is a SECRET — it
          goes only into RevenueCat, never the repo/chat.*
-4. [ ] **Products**: add the Product ID(s) from Task 3.
-5. [ ] **Entitlements**: create one named exactly **`premium`** (lowercase). Attach your product(s)
+4. [ ] **Products**: add **both** Product IDs from Task 3 (`...premium.annual` and `...premium.monthly`).
+5. [ ] **Entitlements**: create one named exactly **`premium`** (lowercase). Attach **both** products
        to it. *This is the string my `usePremium()` gate checks — keep it `premium`.*
-6. [ ] **Offerings**: create the default offering (call it `default`) and add a package pointing at
-       your product(s). The paywall reads the offering to display prices.
+6. [ ] **Offerings**: create the default offering (call it **`default`**) with **two packages** — an
+       **Annual** package (mark it as the **default/featured** package) and a **Monthly** package,
+       pointing at the two products. The paywall reads this offering to display prices, with annual featured.
 7. [ ] **API Keys**: **Project Settings → API Keys** → copy the **Apple/Public SDK key**
        (starts with `appl_...`). *Safe to embed in the client — goes in `EXPO_PUBLIC_RC_IOS_KEY`.*
 
@@ -220,7 +249,7 @@ You don't have to finish all of this at once. The work splits cleanly:
 | 1 | Sentry org + project slug | no | `app.json` plugin |
 | 1 | Sentry auth token | **yes** | Codemagic group (you add it) |
 | 2 | Analytics vendor + project key + host | no | Codemagic `EXPO_PUBLIC_POSTHOG_*` |
-| 3 | App Store product ID(s) | no | RevenueCat dashboard (you) |
+| 3 | App Store product IDs — `...premium.annual` ($29.99) + `...premium.monthly` ($4.99) | no | RevenueCat dashboard (you) |
 | 3 | Sandbox tester email | keep private | on-device testing (you) |
 | 4 | RevenueCat public SDK key | no | Codemagic `EXPO_PUBLIC_RC_IOS_KEY` |
 | 4 | entitlement id (`premium`) + offering id (`default`) | no | confirm to Claude |
