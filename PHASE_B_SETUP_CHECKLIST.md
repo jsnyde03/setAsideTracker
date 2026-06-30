@@ -34,7 +34,7 @@ Companion to [PHASE_B_EXECUTION_PLAN.md](PHASE_B_EXECUTION_PLAN.md) (the *how/wh
 
 ---
 
-## Task 1 — Sentry (crash reporting)  ✅ CODE DONE — pending one verification build
+## Task 1 — Sentry (crash reporting)  ✅ DONE & VERIFIED
 
 The code scaffold already exists ([errorReporting.ts](apps/mobile/src/errorReporting.ts)) and
 no-ops until a real DSN is set. You're creating the project and handing me three values.
@@ -49,13 +49,10 @@ no-ops until a real DSN is set. You're creating the project and handing me three
 >   `@sentry/react-native` config plugin in app.json is configured with org `jason-snyder` /
 >   project `react-native`; `SENTRY_DISABLE_AUTO_UPLOAD` flipped to `false`. Pre-build check passed
 >   (`expo config --type introspect` applies the plugin cleanly; typecheck + 83 tests green).
-> - ⏳ **Your one remaining action: trigger a manual v1.1 Codemagic build and confirm it's green.**
->   This is the only real check for a config-plugin/cred change. Watch the "Bundle React Native code
->   and images" phase: success = source maps uploaded. If it fails on `sentry-cli`, paste me the
->   error — likely the token's scope/value or a slug typo — and we revert one flag
->   (`SENTRY_DISABLE_AUTO_UPLOAD` → `true`) to get green again while we fix it. ⚠️ In Sentry RN
->   7.11.0 an upload failure *does* fail the archive (no allow-failure), but v1.1 builds are manual
->   and master is untouched, so nothing automatic can break.
+> - ✅ **Verified on a real build (2026-06-30):** a manual v1.1 Codemagic build proceeded past the
+>   "Bundle React Native code and images" phase to IPA creation. Since a source-map upload failure
+>   would have failed that phase (Sentry RN 7.11.0 has no allow-failure), reaching IPA == upload
+>   succeeded. **Sentry is fully live: crashes reported + stack traces symbolicated.** Task 1 closed.
 
 ### Steps
 1. [x] Go to **https://sentry.io** → sign up / log in (free "Developer" tier is fine to start).
