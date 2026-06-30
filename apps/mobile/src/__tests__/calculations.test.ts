@@ -78,6 +78,24 @@ describe("aggregateEntries", () => {
     // Mileage isn't a dollar expense here — it's handled separately via the standard mileage rate.
     expect(result.businessMiles).toBe(10);
   });
+
+  it("includes custom expense categories in the non-mileage expense total", () => {
+    const entries = [
+      makeEntry({
+        grossPay: 200,
+        tips: 0,
+        expenses: { parking: 5, tolls: 0, supplies: 0, phone: 0 },
+        customExpenses: [
+          { label: "Car wash", amount: 10 },
+          { label: "Hot bags", amount: 15 },
+        ],
+      }),
+    ];
+
+    const result = aggregateEntries(entries);
+    expect(result.totalExpenses).toBe(30); // 5 parking + 10 + 15 custom
+    expect(result.netSelfEmploymentProfit).toBe(200 - 30);
+  });
 });
 
 describe("computeTaxEstimate", () => {

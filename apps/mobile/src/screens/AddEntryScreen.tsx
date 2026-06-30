@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import type { Entry, GigPlatform, MileageLog } from "../types";
+import type { CustomExpense, Entry, GigPlatform, MileageLog } from "../types";
 import { Chip } from "../components/Chip";
 import { DateField } from "../components/DateField";
 import { PrimaryButton } from "../components/PrimaryButton";
@@ -24,7 +24,8 @@ import { useTheme } from "../ThemeContext";
 interface AddEntryScreenProps {
   onSave: (entry: Entry) => void;
   onCancel: () => void;
-  /** Opens the paywall — invoked when a free user taps the locked IRS mileage-log section. */
+  /** Opens the paywall — invoked when a free user taps a locked Premium section (IRS mileage log
+   * or custom expense categories). */
   onOpenPaywall: () => void;
   /** Entry being edited, if any. Omitted (or undefined) means "log a new entry." */
   entry?: Entry;
@@ -72,6 +73,25 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
   const [tripPurpose, setTripPurpose] = useState(entry?.mileageLog?.purpose ?? "");
   const [startLocation, setStartLocation] = useState(entry?.mileageLog?.startLocation ?? "");
   const [endLocation, setEndLocation] = useState(entry?.mileageLog?.endLocation ?? "");
+  const [showCustomExpenses, setShowCustomExpenses] = useState(
+    (entry?.customExpenses?.length ?? 0) > 0
+  );
+  // Amounts are held as strings while editing (the raw TextField value), parsed on save.
+  const [customRows, setCustomRows] = useState<{ label: string; amount: string }[]>(
+    entry?.customExpenses?.map((c) => ({ label: c.label, amount: String(c.amount) })) ?? []
+  );
+
+  function updateCustomRow(index: number, field: "label" | "amount", value: string) {
+    setCustomRows((rows) => rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
+  }
+
+  function addCustomRow() {
+    setCustomRows((rows) => [...rows, { label: "", amount: "" }]);
+  }
+
+  function removeCustomRow(index: number) {
+    setCustomRows((rows) => rows.filter((_, i) => i !== index));
+  }
 
   function handleSave() {
     const grossPayValue = parseFloat(grossPay);
@@ -101,6 +121,14 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
         ? { purpose, startLocation: start, endLocation: end }
         : undefined;
 
+    // Custom categories are Premium-only too. Keep only rows with both a label and a positive
+    // amount; same preserve-existing-data rule as the mileage log for a now-free user editing.
+    const cleanedCustom: CustomExpense[] = customRows
+      .map((r) => ({ label: r.label.trim(), amount: Math.max(0, parseFloat(r.amount) || 0) }))
+      .filter((r) => r.label !== "" && r.amount > 0);
+    const customExpenses: CustomExpense[] | undefined =
+      (isPremium || entry?.customExpenses) && cleanedCustom.length > 0 ? cleanedCustom : undefined;
+
     const savedEntry: Entry = {
       id: entry?.id ?? `entry-${Date.now()}`,
       platform,
@@ -116,6 +144,7 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
         phone: Math.max(0, parseFloat(phone) || 0),
       },
       mileageLog,
+      customExpenses,
       createdAt: entry?.createdAt ?? new Date().toISOString(),
     };
 
@@ -132,6 +161,28 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
       "Premium adds an audit-ready mileage log: record each trip's business purpose and start/end " +
         "location alongside the miles — the substantiation the IRS requires for the standard " +
         "mileage deduction.",
+      [
+        { text: "Not now", style: "cancel" },
+        { text: "See Premium", onPress: onOpenPaywall },
+      ]
+    );
+  }
+
+  function handleCustomExpensesPress() {
+    if (isPremium) {
+      setShowCustomExpenses((shown) => {
+        const next = !shown;
+        // Seed a first empty row when opening an empty section so there's somewhere to type.
+        if (next && customRows.length === 0) addCustomRow();
+        return next;
+      });
+      return;
+    }
+    Alert.alert(
+      "Custom expense categories",
+      "Premium lets you track expenses beyond parking, tolls, supplies, and phone — health " +
+        "insurance, car washes, hot bags, and anything else. They flow into your tax estimate and " +
+        'map to Schedule C "Other expenses" in your tax-ready export.',
       [
         { text: "Not now", style: "cancel" },
         { text: "See Premium", onPress: onOpenPaywall },
@@ -306,6 +357,79 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
             </>
           )}
 
+          <Pressable
+            style={styles.expensesToggle}
+            onPress={handleCustomExpensesPress}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: isPremium ? showCustomExpenses : undefined }}
+            accessibilityLabel={isPremium ? undefined : "Custom expense categories (Premium)"}
+          >
+            <Ionicons
+              name={
+                !isPremium
+                  ? "lock-closed-outline"
+                  : showCustomExpenses
+                    ? "chevron-up"
+                    : "add-circle-outline"
+              }
+              size={16}
+              color={colors.primary}
+            />
+            <Text style={styles.expensesToggleText}>
+              {!isPremium
+                ? "Custom expense categories  ·  Premium"
+                : showCustomExpenses
+                  ? "Hide custom categories"
+                  : "Add custom expense categories"}
+            </Text>
+          </Pressable>
+
+          {isPremium && showCustomExpenses && (
+            <>
+              <Text style={styles.mileageLogHint}>
+                Track expenses beyond the four buckets — health insurance, car washes, hot bags, and
+                more. Each maps to Schedule C &ldquo;Other expenses&rdquo; in your tax-ready export.
+              </Text>
+              {customRows.map((row, index) => (
+                <View key={index} style={styles.customRow}>
+                  <TextField
+                    label={`Category ${index + 1}`}
+                    value={row.label}
+                    onChangeText={(value) => updateCustomRow(index, "label", value)}
+                    placeholder="e.g. Health insurance"
+                    autoCapitalize="sentences"
+                  />
+                  <TextField
+                    label="Amount"
+                    value={row.amount}
+                    onChangeText={(value) => updateCustomRow(index, "amount", value)}
+                    placeholder="0.00"
+                    keyboardType="decimal-pad"
+                  />
+                  <Pressable
+                    onPress={() => removeCustomRow(index)}
+                    style={styles.removeRow}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove category ${index + 1}`}
+                  >
+                    <Ionicons name="trash-outline" size={14} color={colors.danger} />
+                    <Text style={styles.removeRowText}>Remove</Text>
+                  </Pressable>
+                </View>
+              ))}
+              <Pressable
+                onPress={addCustomRow}
+                style={styles.expensesToggle}
+                accessibilityRole="button"
+                accessibilityLabel="Add another category"
+              >
+                <Ionicons name="add-circle-outline" size={16} color={colors.primary} />
+                <Text style={styles.expensesToggleText}>Add another category</Text>
+              </Pressable>
+            </>
+          )}
+
           <View style={styles.buttonGroup}>
             <PrimaryButton label={isEditing ? "Save Changes" : "Save Entry"} onPress={handleSave} />
             <PrimaryButton label="Cancel" onPress={onCancel} variant="ghost" />
@@ -341,6 +465,14 @@ function createStyles(colors: Colors) {
     },
     expensesToggleText: { color: colors.primary, ...type.label },
     mileageLogHint: { ...type.micro, color: colors.inkSubtle, lineHeight: 16, marginBottom: 2 },
+    customRow: {
+      marginTop: spacing.sm,
+      paddingBottom: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    removeRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: spacing.sm, alignSelf: "flex-start" },
+    removeRowText: { ...type.micro, color: colors.danger },
     buttonGroup: { marginTop: spacing.xl, gap: spacing.sm },
   });
 }

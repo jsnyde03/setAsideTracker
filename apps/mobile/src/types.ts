@@ -57,6 +57,20 @@ export interface EntryExpenses {
 }
 
 /**
+ * A user-defined business expense beyond the four fixed buckets — e.g. "Car wash", "Hot bags",
+ * "Health insurance". Authoring these is a Premium feature; like {@link MileageLog} they're additive
+ * and optional (older entries and free users won't have them), and they round-trip through backup
+ * for free. The label is trimmed free text and the amount is a non-negative dollar figure. These sum
+ * into the same non-mileage expense total as the fixed buckets (reducing net SE profit) and map onto
+ * IRS Schedule C Line 27 "Other expenses", aggregated by label in the tax-summary export. */
+export interface CustomExpense {
+  /** User-entered category name, trimmed (e.g. "Car wash"). */
+  label: string;
+  /** Dollar amount for this category on this entry; always ≥ 0. */
+  amount: number;
+}
+
+/**
  * IRS-compliant mileage-log substantiation for the business miles in an entry. To claim the
  * standard mileage deduction the IRS requires a contemporaneous log recording, for each trip, the
  * business purpose and where it went — the raw `Entry.mileage` number alone isn't enough on audit.
@@ -87,6 +101,9 @@ export interface Entry {
   /** IRS mileage-log details substantiating this entry's business miles. Optional and
    * Premium-authored; absent on older entries and for free users. See {@link MileageLog}. */
   mileageLog?: MileageLog;
+  /** User-defined expense categories beyond the four fixed buckets. Optional and Premium-authored;
+   * absent on older entries and for free users. See {@link CustomExpense}. */
+  customExpenses?: CustomExpense[];
   createdAt: string;
 }
 

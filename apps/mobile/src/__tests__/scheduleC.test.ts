@@ -54,4 +54,49 @@ describe("buildScheduleCSummary", () => {
     const summary = buildScheduleCSummary(entries, 20);
     expect(summary.netProfit).toBe(50 - (20 + 80)); // -50
   });
+
+  it("rolls custom categories into Line 27, aggregating by label and sorting by amount", () => {
+    const entries = [
+      entry({ grossPay: 100, customExpenses: [{ label: "Car wash", amount: 10 }, { label: "Hot bags", amount: 40 }] }),
+      entry({ grossPay: 100, customExpenses: [{ label: "Car wash", amount: 5 }] }),
+    ];
+    const summary = buildScheduleCSummary(entries, 0);
+
+    // Line 27 appears with the combined total, after the three fixed lines.
+    expect(summary.expenseLines.map((l) => l.line)).toEqual(["9", "22", "25", "27"]);
+    const line27 = summary.expenseLines.find((l) => l.line === "27")!;
+    expect(line27.amount).toBe(55); // 10 + 40 + 5
+
+    // Breakdown is aggregated by label (Car wash 10+5=15) and sorted by amount descending.
+    expect(summary.otherExpenses).toEqual([
+      { label: "Hot bags", amount: 40 },
+      { label: "Car wash", amount: 15 },
+    ]);
+
+    expect(summary.totalExpenses).toBe(55);
+    expect(summary.netProfit).toBe(200 - 55);
+  });
+
+  it("omits Line 27 entirely when there are no custom categories", () => {
+    const summary = buildScheduleCSummary([entry({ grossPay: 100 })], 0);
+    expect(summary.expenseLines.some((l) => l.line === "27")).toBe(false);
+    expect(summary.otherExpenses).toEqual([]);
+  });
+
+  it("ignores blank labels and zero/negative amounts in custom categories", () => {
+    const entries = [
+      entry({
+        grossPay: 100,
+        customExpenses: [
+          { label: "  ", amount: 50 }, // blank label dropped
+          { label: "Refund", amount: -20 }, // negative floored to 0 → dropped
+          { label: "Supplies extra", amount: 0 }, // zero dropped
+          { label: "  Tolls extra  ", amount: 12 }, // trimmed and kept
+        ],
+      }),
+    ];
+    const summary = buildScheduleCSummary(entries, 0);
+    expect(summary.otherExpenses).toEqual([{ label: "Tolls extra", amount: 12 }]);
+    expect(summary.expenseLines.find((l) => l.line === "27")!.amount).toBe(12);
+  });
 });

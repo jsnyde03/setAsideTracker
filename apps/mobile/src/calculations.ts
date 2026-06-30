@@ -149,8 +149,23 @@ export function computeCatchUpStatus(
   };
 }
 
-function totalEntryExpenses(entry: Entry): number {
-  return entry.expenses.parking + entry.expenses.tolls + entry.expenses.supplies + entry.expenses.phone;
+/** Sum of an entry's user-defined custom expense categories (Premium). Zero for entries without
+ * any — older entries and free users. Negative amounts can't be entered, but we floor defensively. */
+export function totalCustomExpenses(entry: Entry): number {
+  return (entry.customExpenses ?? []).reduce((sum, item) => sum + Math.max(0, item.amount), 0);
+}
+
+/** All non-mileage business expenses for an entry: the four fixed buckets plus any custom
+ * categories. Mileage is handled separately by the tax engine via the standard mileage rate, not as
+ * a dollar expense here. Exported so the dashboard and platform comparison share one definition. */
+export function totalEntryExpenses(entry: Entry): number {
+  return (
+    entry.expenses.parking +
+    entry.expenses.tolls +
+    entry.expenses.supplies +
+    entry.expenses.phone +
+    totalCustomExpenses(entry)
+  );
 }
 
 /** Entries whose date falls within the given calendar year. Dates are stored as YYYY-MM-DD. */
@@ -167,8 +182,8 @@ export function yearsWithEntries(entries: Entry[]): number[] {
 
 /**
  * Net SE profit is gross pay + tips, minus non-mileage business expenses (parking, tolls,
- * supplies, phone). Mileage is handled separately by the tax engine via the standard mileage
- * rate, not as a dollar expense here.
+ * supplies, phone, and any custom categories). Mileage is handled separately by the tax engine via
+ * the standard mileage rate, not as a dollar expense here.
  */
 export function aggregateEntries(entries: Entry[]): EntryAggregate {
   return entries.reduce<EntryAggregate>(

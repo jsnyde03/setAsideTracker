@@ -10,6 +10,7 @@ import {
   computeTaxEstimate,
   effectiveHourlyRate,
   entriesForYear,
+  totalEntryExpenses,
   yearsWithEntries,
 } from "../calculations";
 import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates";
@@ -35,10 +36,6 @@ interface DashboardScreenProps {
 
 function formatCurrency(amount: number): string {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
-}
-
-function totalEntryExpenses(entry: Entry): number {
-  return entry.expenses.parking + entry.expenses.tolls + entry.expenses.supplies + entry.expenses.phone;
 }
 
 function formatDate(date: Date): string {

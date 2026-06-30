@@ -70,6 +70,33 @@ describe("buildTaxSummaryHtml", () => {
     expect(html).not.toContain("<b>Jo</b>");
   });
 
+  it("renders Line 27 with an escaped per-category breakdown when custom expenses exist", () => {
+    const withCustom: Entry[] = [
+      { ...entries[0], customExpenses: [{ label: "Car wash", amount: 30 }, { label: "Hot bags <x>", amount: 50 }] },
+      entries[1],
+    ];
+    const estimate = computeTaxEstimate(withCustom, profile, YEAR);
+    const scheduleC = buildScheduleCSummary(withCustom, estimate.estimate.mileageDeduction.deductionAmount);
+    const html = buildTaxSummaryHtml({
+      preparedFor: "Jordan",
+      year: YEAR,
+      filingStatusLabel: "Single",
+      locationLabel: "TX",
+      generatedOn: "June 30, 2026",
+      scheduleC,
+      estimate,
+    });
+    expect(html).toContain("Line 27 — Other expenses");
+    expect(html).toContain("Car wash");
+    // The category label is user-provided free text, so it must be HTML-escaped in the breakdown.
+    expect(html).toContain("Hot bags &lt;x&gt;");
+    expect(html).not.toContain("Hot bags <x>");
+  });
+
+  it("omits Line 27 when there are no custom expenses", () => {
+    expect(buildHtml()).not.toContain("Line 27");
+  });
+
   it("shows the fallback-config warning only when the estimate used a fallback year", () => {
     const real = buildHtml();
     expect(real).not.toContain("weren't finalized");

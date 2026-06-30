@@ -1,0 +1,27 @@
+# Custom expense categories are Premium. For a free account the entry form shows a locked row whose
+# tap opens a native Alert offering the paywall — a NATIVE-ONLY path (react-native-web's Alert is a
+# no-op, so the web Playwright suite can only assert the locked row renders, not this hop). The
+# premium authoring + Schedule C / CSV mapping is covered by unit tests.
+appId: com.gigtaxtracker.app
+name: Custom expense categories gating (native Alert → paywall)
+---
+# Precondition: a fresh onboarded (free) session on the dashboard.
+- runFlow: onboarding.yaml
+
+- tapOn: "Log Earnings"
+- assertVisible: "Platform"
+
+# Scroll the locked Premium row into view and open the upsell Alert.
+- scrollUntilVisible:
+    element:
+      text: "Custom expense categories.*Premium"
+    direction: DOWN
+- tapOn:
+    text: "Custom expense categories.*Premium"
+- assertVisible: "Custom expense categories"
+- assertVisible: "See Premium"
+
+# Take the upsell → land on the paywall, then back out.
+- tapOn: "See Premium"
+- assertVisible: "SetAside Premium"
+- tapOn: "Close"

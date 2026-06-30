@@ -11,6 +11,9 @@ const HEADER = [
   "Tolls",
   "Supplies",
   "Phone",
+  // Custom expense categories (Premium-authored), serialized into one column since the set is
+  // user-defined and variable-length; the per-category breakdown lives in the Schedule C PDF.
+  "Other Expenses",
   // IRS mileage-log fields (Premium-authored; blank for entries without a log).
   "Trip Purpose",
   "Start Location",
@@ -38,6 +41,16 @@ function csvField(value: string | number): string {
   return str;
 }
 
+/** Serializes an entry's custom expense categories into a single CSV cell as
+ * "Label: 12.00; Other label: 40.00". Blank for entries without any. Amounts are fixed to two
+ * decimals; embedded commas/quotes in labels are handled by the field-level RFC-4180 escaping. */
+function formatCustomExpenses(entry: Entry): string {
+  return (entry.customExpenses ?? [])
+    .filter((item) => item.label.trim() !== "")
+    .map((item) => `${item.label.trim()}: ${item.amount.toFixed(2)}`)
+    .join("; ");
+}
+
 /**
  * Converts entries to CSV text, sorted oldest-first (the natural order for a tax-time export, as
  * opposed to the dashboard's newest-first list). Pure and platform-agnostic — the actual
@@ -57,6 +70,7 @@ export function entriesToCsv(entries: Entry[]): string {
       entry.expenses.tolls,
       entry.expenses.supplies,
       entry.expenses.phone,
+      formatCustomExpenses(entry),
       entry.mileageLog?.purpose ?? "",
       entry.mileageLog?.startLocation ?? "",
       entry.mileageLog?.endLocation ?? "",

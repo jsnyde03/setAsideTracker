@@ -35,6 +35,11 @@ function row(label: string, amount: number, opts: { strong?: boolean; negative?:
   return `<tr class="${cls}"><td>${label}</td><td class="num">${value}</td></tr>`;
 }
 
+/** Indented breakdown row under Line 27 — the label is user-provided free text, so it's escaped. */
+function subRow(label: string, amount: number): string {
+  return `<tr class="sub"><td>${escapeHtml(label)}</td><td class="num">${formatCurrency(amount)}</td></tr>`;
+}
+
 /**
  * Builds the self-contained HTML for the tax-ready summary PDF. Pure (string in, string out) so it's
  * unit-testable without expo-print; the native render/share lives in taxSummaryPdf.ts. The estimate
@@ -49,8 +54,14 @@ export function buildTaxSummaryHtml(data: TaxSummaryData): string {
   const withholdingCredit = estimate.w2WithholdingYtdEstimate;
   const mileage = e.mileageDeduction;
 
+  // Render the Line 27 "Other expenses" per-category breakdown as indented sub-rows directly under
+  // that line — the audit-ready substantiation of what the lumped Line 27 total is made of.
   const expenseRows = scheduleC.expenseLines
-    .map((line) => row(`Line ${line.line} — ${line.label}`, line.amount))
+    .map((line) => {
+      const lineRow = row(`Line ${line.line} — ${line.label}`, line.amount);
+      if (line.line !== "27") return lineRow;
+      return lineRow + scheduleC.otherExpenses.map((o) => subRow(o.label, o.amount)).join("");
+    })
     .join("");
 
   const taxRows = [
@@ -82,6 +93,8 @@ export function buildTaxSummaryHtml(data: TaxSummaryData): string {
   td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   tr.strong td { font-weight: 700; border-bottom: 2px solid #E4E7EC; }
   tr.neg td.num { color: #0E8F5E; }
+  tr.sub td { padding: 3px 0; border-bottom: none; color: #5B6270; font-size: 12px; }
+  tr.sub td:first-child { padding-left: 18px; }
   .setaside { margin-top: 16px; background: #E8F0FE; border-radius: 10px; padding: 16px; }
   .setaside .label { font-size: 12px; color: #5B6270; }
   .setaside .value { font-size: 26px; font-weight: 800; color: #0F5FE0; }

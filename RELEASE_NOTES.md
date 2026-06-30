@@ -34,6 +34,8 @@ Premium:
 • Tax-ready PDF export with a Schedule C breakdown.
 • IRS-compliant mileage log — record each trip's purpose and start/end location for an
   audit-ready record of your business miles.
+• Custom expense categories — track write-offs beyond parking, tolls, supplies, and phone
+  (health insurance, car washes, hot bags, and more), mapped to Schedule C "Other expenses."
 ```
 *(Premium features are added to this list as each one ships — see "Remaining" below. The free-tier
 line items above are live on the branch.)*
@@ -84,9 +86,16 @@ line items above are live on the branch.)*
   Premium row that routes to the paywall); the fields flow into the existing CSV export so the log
   is actually usable at tax time. Unit tests (CSV columns + escaping) + a Playwright gate test pass;
   the native locked-row → Alert → paywall hop is covered by a new Maestro flow.
+- ✅ **Custom expense categories** — premium-authored named expense lines per entry (e.g. health
+  insurance, car washes, hot bags) beyond the four fixed buckets. Additive `Entry.customExpenses`
+  schema; a premium-gated "Custom expense categories" section in the entry form (free users see a
+  locked Premium row that routes to the paywall) with an add/remove list of label+amount rows. They
+  reduce net SE profit in the estimate, roll into **Schedule C Line 27 "Other expenses"** with a
+  per-category breakdown in the PDF, and serialize into a new CSV column. Unit tests (Schedule C
+  aggregation + calculations + CSV + PDF) + a Playwright gate test pass; the native locked-row →
+  Alert → paywall hop is covered by a new Maestro flow.
 - ⬜ W-4 withholding optimizer
 - ⬜ Safe-harbor / Form 2210 underpayment calculator
-- ⬜ Custom expense categories
 - ⬜ Year-over-year insights
 - ⬜ Multi-state support (design pass first)
 
