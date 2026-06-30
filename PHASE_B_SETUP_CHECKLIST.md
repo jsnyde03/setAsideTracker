@@ -34,17 +34,28 @@ Companion to [PHASE_B_EXECUTION_PLAN.md](PHASE_B_EXECUTION_PLAN.md) (the *how/wh
 
 ---
 
-## Task 1 — Sentry (crash reporting)  ⬜
+## Task 1 — Sentry (crash reporting)  🔄 DSN DONE — source-maps pending
 
 The code scaffold already exists ([errorReporting.ts](apps/mobile/src/errorReporting.ts)) and
 no-ops until a real DSN is set. You're creating the project and handing me three values.
 
+> **Status (2026-06-30):**
+> - ✅ **DSN received and wired.** `EXPO_PUBLIC_SENTRY_DSN` committed to
+>   [codemagic.yaml](codemagic.yaml) (`ios-testflight` vars). Runtime crash capture is already
+>   fully coded (`initErrorReporting()` at App.tsx:36 + `reportError` across every handler and the
+>   ErrorBoundary), so the **next TestFlight build will report crashes** — no further code needed
+>   for basic crash reporting.
+> - ⬜ **Source-map upload still pending** — needs org slug + project slug + auth token (steps 4–5
+>   below). Until then stack traces in Sentry won't be symbolicated. Optional/nice-to-have; not a
+>   blocker for the rest of Phase B.
+
 ### Steps
-1. [ ] Go to **https://sentry.io** → sign up / log in (free "Developer" tier is fine to start).
-2. [ ] **Create a new project** → platform: **React Native**. Name it e.g. `setasidetracker`.
-3. [ ] After creation, Sentry shows a **DSN** (looks like
+1. [x] Go to **https://sentry.io** → sign up / log in (free "Developer" tier is fine to start).
+2. [x] **Create a new project** → platform: **React Native**. Name it e.g. `setasidetracker`.
+3. [x] After creation, Sentry shows a **DSN** (looks like
        `https://abc123@o456.ingest.sentry.io/789`). Copy it. *This is safe to be public — it's a
        write-only ingestion endpoint, which is why it lives in a `EXPO_PUBLIC_` env var.*
+       ✅ **Done — wired into codemagic.yaml.**
 4. [ ] Note your **org slug** and **project slug** (visible in the URL:
        `sentry.io/organizations/<ORG-SLUG>/projects/<PROJECT-SLUG>/`).
 5. [ ] Create an **auth token** for source-map upload: **Settings → Auth Tokens →

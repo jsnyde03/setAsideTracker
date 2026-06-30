@@ -26,6 +26,16 @@ workflows:
         # project/DSN/auth-token exists and source-map upload is actually wanted.
         SENTRY_DISABLE_AUTO_UPLOAD: "true"
 
+        # Real Sentry DSN for the SetAsideTracker project (created 2026-06-30). A DSN is a
+        # write-only ingestion endpoint, not a secret — safe to commit and to ship in the client
+        # bundle (that's why it's an EXPO_PUBLIC_ var; errorReporting.ts reads it). Setting it here
+        # (rather than committing a local .env) means crash reporting is live in CI/TestFlight
+        # builds only, while local dev/test stay no-ops — matching errorReporting.ts's intent.
+        # NOTE: SENTRY_DISABLE_AUTO_UPLOAD above stays "true" until the @sentry/react-native/expo
+        # config plugin + auth token are wired (needs org/project slug + SENTRY_AUTH_TOKEN); until
+        # then crashes are captured at runtime but stack traces aren't source-map-symbolicated.
+        EXPO_PUBLIC_SENTRY_DSN: "https://bfa5a6ff551cb53be6703730bec9adbf@o4511649294450688.ingest.us.sentry.io/4511654601424896"
+
     # Auto-builds only on master (the release branch). To live-test an in-progress feature branch
     # like v1.1 on TestFlight WITHOUT merging to master, start this workflow manually from the
     # Codemagic UI ("Start new build" → pick this workflow → pick the branch). Manual builds ignore
