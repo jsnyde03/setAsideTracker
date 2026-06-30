@@ -21,6 +21,7 @@ import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { AddEntryScreen } from "./src/screens/AddEntryScreen";
 import { WhatIfScreen } from "./src/screens/WhatIfScreen";
+import { PlatformComparisonScreen } from "./src/screens/PlatformComparisonScreen";
 import { EditTaxProfileScreen } from "./src/screens/EditTaxProfileScreen";
 import { LockScreen } from "./src/screens/LockScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
@@ -33,7 +34,15 @@ import { ThemeProvider, useTheme, type ColorSchemePreference } from "./src/Theme
 
 initErrorReporting();
 
-type Screen = "loading" | "onboarding" | "dashboard" | "addEntry" | "settings" | "editTaxProfile" | "whatIf";
+type Screen =
+  | "loading"
+  | "onboarding"
+  | "dashboard"
+  | "addEntry"
+  | "settings"
+  | "editTaxProfile"
+  | "whatIf"
+  | "platformComparison";
 
 export default function App() {
   // Lifted above AppContent (rather than state inside it) so ThemeProvider can wrap AppContent
@@ -392,6 +401,15 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
     );
   }
 
+  if (screen === "platformComparison") {
+    return (
+      <View style={styles.container}>
+        <PlatformComparisonScreen entries={entries} onClose={() => setScreen("dashboard")} />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
   if (screen === "settings") {
     return (
       <View style={styles.container}>
@@ -439,6 +457,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
         onEditEntry={handleEditEntry}
         onOpenSettings={() => setScreen("settings")}
         onOpenWhatIf={() => setScreen("whatIf")}
+        onOpenPlatforms={() => setScreen("platformComparison")}
         onUpdateAmountSetAside={handleUpdateAmountSetAside}
       />
       <StatusBar style={isDark ? "light" : "dark"} />

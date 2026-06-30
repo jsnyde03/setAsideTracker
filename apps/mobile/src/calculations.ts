@@ -4,7 +4,7 @@ import {
   taxYearConfigs,
   type TaxEstimateResult,
 } from "@gig-tax-tracker/tax-engine";
-import type { Entry, PayFrequency, TaxProfile } from "./types";
+import type { Entry, GigPlatform, PayFrequency, TaxProfile } from "./types";
 import type { QuarterlyDueDate } from "./notifications/quarterlyDueDates";
 
 export interface EntryAggregate {
@@ -296,6 +296,63 @@ export function estimateFromAggregate(
     w2WithholdingYtdEstimate,
     netAmountToSetAside,
   };
+}
+
+/** Per-platform earnings summary for the platform-comparison view. */
+export interface PlatformStat {
+  platform: GigPlatform;
+  /** Gross pay + tips across this platform's entries. */
+  totalEarnings: number;
+  /** Non-mileage business expenses logged against this platform. */
+  totalExpenses: number;
+  /** totalEarnings − totalExpenses (can't go below earnings; expenses are always ≥ 0). */
+  netEarnings: number;
+  /** Hours worked across entries that have it set (entries without it contribute 0). */
+  totalHours: number;
+  entryCount: number;
+  /** netEarnings / totalHours, or undefined when no hours are logged for this platform — the
+   * headline "which platform pays better per hour" number. Pre-tax (taxes aren't platform-specific). */
+  hourlyRate?: number;
+}
+
+/**
+ * Aggregates a year's entries by platform into a ranked comparison — the data behind "is my
+ * DoorDash hour worth more than my Uber hour?". Pure aggregation over existing Entry fields; no tax
+ * math. Sorted by total earnings descending; only platforms with at least one entry appear.
+ */
+export function comparePlatforms(
+  entries: Entry[],
+  year: number = new Date().getFullYear()
+): PlatformStat[] {
+  const byPlatform = new Map<GigPlatform, PlatformStat>();
+
+  for (const entry of entriesForYear(entries, year)) {
+    const earnings = entry.grossPay + entry.tips;
+    const expenses = totalEntryExpenses(entry);
+    const existing = byPlatform.get(entry.platform);
+    if (existing) {
+      existing.totalEarnings += earnings;
+      existing.totalExpenses += expenses;
+      existing.netEarnings += earnings - expenses;
+      existing.totalHours += entry.hoursWorked ?? 0;
+      existing.entryCount += 1;
+    } else {
+      byPlatform.set(entry.platform, {
+        platform: entry.platform,
+        totalEarnings: earnings,
+        totalExpenses: expenses,
+        netEarnings: earnings - expenses,
+        totalHours: entry.hoursWorked ?? 0,
+        entryCount: 1,
+      });
+    }
+  }
+
+  const stats = Array.from(byPlatform.values());
+  for (const stat of stats) {
+    stat.hourlyRate = stat.totalHours > 0 ? stat.netEarnings / stat.totalHours : undefined;
+  }
+  return stats.sort((a, b) => b.totalEarnings - a.totalEarnings);
 }
 
 /**

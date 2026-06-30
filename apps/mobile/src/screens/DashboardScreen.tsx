@@ -5,6 +5,7 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-na
 import type { Entry, TaxProfile } from "../types";
 import {
   aggregateEntries,
+  comparePlatforms,
   computeCatchUpStatus,
   computeTaxEstimate,
   effectiveHourlyRate,
@@ -16,6 +17,7 @@ import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { BreakdownDetailSheet } from "../components/BreakdownDetailSheet";
 import { buildBreakdownDetail, type BreakdownRowKey } from "../breakdownDetails";
+import { PLATFORM_ICONS, PLATFORM_LABELS } from "../platforms";
 import { radius, shadow, shadowSm, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
 
@@ -26,26 +28,9 @@ interface DashboardScreenProps {
   onEditEntry: (entry: Entry) => void;
   onOpenSettings: () => void;
   onOpenWhatIf: () => void;
+  onOpenPlatforms: () => void;
   onUpdateAmountSetAside: (year: number, amount: number) => void;
 }
-
-const PLATFORM_LABELS: Record<Entry["platform"], string> = {
-  amazonFlex: "Amazon Flex",
-  spark: "Spark",
-  doordash: "DoorDash",
-  uber: "Uber",
-  instacart: "Instacart",
-  other: "Other",
-};
-
-const PLATFORM_ICONS: Record<Entry["platform"], keyof typeof Ionicons.glyphMap> = {
-  amazonFlex: "cube-outline",
-  spark: "flash-outline",
-  doordash: "fast-food-outline",
-  uber: "car-outline",
-  instacart: "basket-outline",
-  other: "ellipsis-horizontal-circle-outline",
-};
 
 function formatCurrency(amount: number): string {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -93,6 +78,7 @@ export function DashboardScreen({
   onEditEntry,
   onOpenSettings,
   onOpenWhatIf,
+  onOpenPlatforms,
   onUpdateAmountSetAside,
 }: DashboardScreenProps) {
   const { colors } = useTheme();
@@ -120,6 +106,10 @@ export function DashboardScreen({
         w2WithholdingYtd: w2WithholdingYtdEstimate,
       })
     : null;
+
+  // Platform comparison is only meaningful once the user has worked 2+ platforms this year.
+  const platformStats = comparePlatforms(entries, year);
+  const topPlatform = platformStats[0];
 
   function handlePreviousYear() {
     // Years are sorted descending, so "previous" (older) is the next index.
@@ -423,6 +413,30 @@ export function DashboardScreen({
               </Pressable>
             </View>
 
+            {platformStats.length >= 2 && topPlatform && (
+              <Pressable
+                onPress={onOpenPlatforms}
+                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Compare your platforms"
+              >
+                <View style={styles.insightIconWrap}>
+                  <Ionicons name="podium-outline" size={18} color={colors.primary} />
+                </View>
+                <View style={styles.insightInfo}>
+                  <Text style={styles.insightTitle}>Compare your platforms</Text>
+                  <Text style={styles.insightSub}>
+                    {PLATFORM_LABELS[topPlatform.platform]} leads with{" "}
+                    {formatCurrency(topPlatform.totalEarnings)}
+                    {topPlatform.hourlyRate !== undefined
+                      ? ` · ${formatCurrency(topPlatform.hourlyRate)}/hr`
+                      : ""}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
+            )}
+
             <Text style={styles.sectionHeader}>Recent entries</Text>
           </View>
         }
@@ -599,6 +613,28 @@ function createStyles(colors: Colors) {
   },
   whatIfButtonPressed: { opacity: 0.7 },
   whatIfButtonText: { ...type.label, color: colors.primary },
+  insightCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginTop: spacing.md,
+    ...shadowSm,
+  },
+  insightCardPressed: { opacity: 0.7 },
+  insightIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  insightInfo: { flex: 1 },
+  insightTitle: { ...type.subtitle, color: colors.ink },
+  insightSub: { ...type.caption, color: colors.inkSubtle, marginTop: 1 },
   sectionHeader: { ...type.title, fontSize: 18, color: colors.ink, marginTop: spacing.lg, marginBottom: spacing.sm },
   emptyState: { alignItems: "center", paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyText: { ...type.body, color: colors.inkFaint, textAlign: "center" },

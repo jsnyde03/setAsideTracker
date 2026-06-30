@@ -3,6 +3,7 @@ import { estimateTax, currentTaxYear } from "@gig-tax-tracker/tax-engine";
 import {
   aggregateEntries,
   annualIncomeFromPaycheck,
+  comparePlatforms,
   computeCatchUpStatus,
   computeTaxEstimate,
   computeWhatIfEstimate,
@@ -595,6 +596,58 @@ describe("computeWhatIfEstimate", () => {
     const aggregate = whatIfAggregate({ grossEarnings: 1000, businessExpenses: 1500, businessMiles: 0, hoursWorked: 0 });
     expect(aggregate.netSelfEmploymentProfit).toBe(-500);
     expect(aggregate.totalExpenses).toBe(1500);
+  });
+});
+
+describe("comparePlatforms", () => {
+  it("returns an empty list when there are no entries for the year", () => {
+    expect(comparePlatforms([], thisYear)).toEqual([]);
+  });
+
+  it("groups entries by platform, summing earnings/expenses/hours/count", () => {
+    const entries = [
+      makeEntry({ id: "a", platform: "doordash", grossPay: 100, tips: 20, hoursWorked: 4, expenses: { parking: 5, tolls: 0, supplies: 0, phone: 0 } }),
+      makeEntry({ id: "b", platform: "doordash", grossPay: 80, tips: 0, hoursWorked: 2 }),
+      makeEntry({ id: "c", platform: "uber", grossPay: 200, tips: 0, hoursWorked: 5 }),
+    ];
+    const stats = comparePlatforms(entries, thisYear);
+    const doordash = stats.find((s) => s.platform === "doordash")!;
+    expect(doordash.entryCount).toBe(2);
+    expect(doordash.totalEarnings).toBe(200); // 120 + 80
+    expect(doordash.totalExpenses).toBe(5);
+    expect(doordash.netEarnings).toBe(195);
+    expect(doordash.totalHours).toBe(6);
+  });
+
+  it("ranks platforms by total earnings, highest first", () => {
+    const entries = [
+      makeEntry({ id: "a", platform: "uber", grossPay: 50 }),
+      makeEntry({ id: "b", platform: "doordash", grossPay: 300 }),
+      makeEntry({ id: "c", platform: "spark", grossPay: 150 }),
+    ];
+    expect(comparePlatforms(entries, thisYear).map((s) => s.platform)).toEqual(["doordash", "spark", "uber"]);
+  });
+
+  it("computes hourly rate from net earnings only when hours are logged", () => {
+    const entries = [
+      makeEntry({ id: "a", platform: "doordash", grossPay: 120, tips: 0, hoursWorked: 4, expenses: { parking: 20, tolls: 0, supplies: 0, phone: 0 } }),
+      makeEntry({ id: "b", platform: "uber", grossPay: 100, tips: 0 }), // no hours
+    ];
+    const stats = comparePlatforms(entries, thisYear);
+    const doordash = stats.find((s) => s.platform === "doordash")!;
+    const uber = stats.find((s) => s.platform === "uber")!;
+    expect(doordash.hourlyRate).toBeCloseTo((120 - 20) / 4, 2); // net 100 over 4 hrs = 25
+    expect(uber.hourlyRate).toBeUndefined();
+  });
+
+  it("scopes to the requested year", () => {
+    const entries = [
+      makeEntry({ id: "a", platform: "uber", date: `${thisYear}-03-01`, grossPay: 100 }),
+      makeEntry({ id: "b", platform: "doordash", date: `${thisYear - 1}-03-01`, grossPay: 999 }),
+    ];
+    const stats = comparePlatforms(entries, thisYear);
+    expect(stats).toHaveLength(1);
+    expect(stats[0].platform).toBe("uber");
   });
 });
 
