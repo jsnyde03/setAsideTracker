@@ -17,17 +17,20 @@ Companion to [PHASE_B_EXECUTION_PLAN.md](PHASE_B_EXECUTION_PLAN.md) (the *how/wh
 
 ---
 
-## Task 0 — Confirm v1.0 status (gates *merging*, not building)
+## Task 0 — Confirm v1.0 status (gates *merging*, not building)  🔄 IN REVIEW
 
 > ℹ️ This does **not** block building/testing Phase B on the `v1.1` branch. It only blocks
 > merging Phase B to `master`. You can do everything below and TestFlight-test it before v1.0
 > is live. Just don't let me merge to master until v1.0 is approved.
 
-- [ ] v1.0 submitted to App Store review
-- [ ] v1.0 **approved and live**
+- [x] v1.0 submitted to App Store review
+- [ ] v1.0 **approved and live** ← *in review as of 2026-06-30; tell me when it flips to live*
 
 **➡️ Hand back to Claude:** just tell me the current state ("submitted" / "in review" /
 "live as of <date>"). I'll record it in memory so I don't try to merge early.
+
+> **Status: 🔄 In App Store review as of 2026-06-30.** Keep working on `v1.1`; no merge to
+> master until this is live.
 
 ---
 
