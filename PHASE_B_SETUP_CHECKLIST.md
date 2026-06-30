@@ -45,9 +45,13 @@ no-ops until a real DSN is set. You're creating the project and handing me three
 >   fully coded (`initErrorReporting()` at App.tsx:36 + `reportError` across every handler and the
 >   ErrorBoundary), so the **next TestFlight build will report crashes** — no further code needed
 >   for basic crash reporting.
-> - ⬜ **Source-map upload still pending** — needs org slug + project slug + auth token (steps 4–5
->   below). Until then stack traces in Sentry won't be symbolicated. Optional/nice-to-have; not a
->   blocker for the rest of Phase B.
+> - 🔄 **Source-map upload — only the auth token is left.** org slug `jason-snyder` + project slug
+>   `react-native` received. **Last step: create a Sentry auth token and add it to Codemagic as
+>   `SENTRY_AUTH_TOKEN` (step 5 below), then tell me.** The moment that's confirmed I add the
+>   `@sentry/react-native/expo` config plugin to app.json + flip `SENTRY_DISABLE_AUTO_UPLOAD` to
+>   `false` in one commit, and we run a Codemagic build to verify CI stays green (this plugin is the
+>   change-class that has broken CI before, so it's verified on a real build, not committed blind).
+>   Optional/nice-to-have; not a blocker for the rest of Phase B.
 
 ### Steps
 1. [x] Go to **https://sentry.io** → sign up / log in (free "Developer" tier is fine to start).
@@ -56,9 +60,9 @@ no-ops until a real DSN is set. You're creating the project and handing me three
        `https://abc123@o456.ingest.sentry.io/789`). Copy it. *This is safe to be public — it's a
        write-only ingestion endpoint, which is why it lives in a `EXPO_PUBLIC_` env var.*
        ✅ **Done — wired into codemagic.yaml.**
-4. [~] Note your **org slug** and **project slug** (visible in the URL:
+4. [x] Note your **org slug** and **project slug** (visible in the URL:
        `sentry.io/organizations/<ORG-SLUG>/projects/<PROJECT-SLUG>/`).
-       ✅ org slug = `jason-snyder` (received 2026-06-30). ⬜ **project slug still needed.**
+       ✅ org slug = `jason-snyder`, project slug = `react-native` (received 2026-06-30).
 5. [ ] Create an **auth token** for source-map upload: **Settings → Auth Tokens →
        Create New Token**, scopes: `project:releases` and `org:read`. *This one IS a secret —
        do not paste it into chat. You'll add it to Codemagic yourself (Step 7 below tells you when).*
