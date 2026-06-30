@@ -264,6 +264,8 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 ### Premium features (IAP via RevenueCat)
 
+> Sequencing, prerequisites, code-audit, and testing strategy for everything below: **[PHASE_B_EXECUTION_PLAN.md](PHASE_B_EXECUTION_PLAN.md)**.
+
 - **Payment infrastructure.** Apple IAP via RevenueCat (`react-native-purchases` SDK). Entitlement check at cold start; offline fallback must trust RevenueCat's locally cached entitlement rather than blocking premium features on a failed network call — this is the first real network dependency in an otherwise local-first app. Already decided over Stripe web checkout (App Review Guideline 3.1.1 requires IAP for in-app digital feature unlocking). Already enrolled in Apple Small Business Program (15% rate). RevenueCat also unifies with Google Play Billing once Android ships (v1.2) via the same SDK — no second integration. Per [ROADMAP §8.4](ROADMAP.md).
 - **PDF tax-ready summary export.** Structured annual report: earnings, deductions, expense breakdown by Schedule C category, tax estimate. Suitable for handing to a CPA or uploading to TurboTax/FreeTaxUSA. Natural premium anchor, especially in filing season.
 - **Schedule C category alignment.** Existing expense categories remapped to actual Schedule C line items (Line 9 car/truck, Line 13 depreciation, Line 17 insurance, Line 22 supplies, Line 25 phone/utilities) so PDF and CSV exports are usable at filing time. Pulled forward from v1.5 as a natural companion to the PDF export. Per [ROADMAP §8.1](ROADMAP.md).
