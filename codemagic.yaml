@@ -36,6 +36,19 @@ workflows:
         # then crashes are captured at runtime but stack traces aren't source-map-symbolicated.
         EXPO_PUBLIC_SENTRY_DSN: "https://bfa5a6ff551cb53be6703730bec9adbf@o4511649294450688.ingest.us.sentry.io/4511654601424896"
 
+        # Sentry auth token for source-map upload (sentry-cli reads SENTRY_AUTH_TOKEN during the
+        # archive). This IS a secret. Do NOT paste the raw token here — codemagic.yaml is committed,
+        # so a plaintext token would leak into git history.
+        # To fill it in safely (paste-friendly, stays in this file):
+        #   1. Codemagic UI → this app → Environment variables.
+        #   2. Variable name: SENTRY_AUTH_TOKEN · value: <your token> · check "Secure" → Add.
+        #   3. Click the variable → "Copy as Encrypted" → you get an `Encrypted(...)` string.
+        #   4. Replace the placeholder below with that string (no quotes), e.g.
+        #        SENTRY_AUTH_TOKEN: Encrypted(Z0FBQ...long-blob...==)
+        # Until a real Encrypted(...) value is in place AND SENTRY_DISABLE_AUTO_UPLOAD is flipped to
+        # "false", this is unused (no plugin invokes sentry-cli yet), so the placeholder is harmless.
+        SENTRY_AUTH_TOKEN: REPLACE_WITH_Encrypted_TOKEN
+
     # Auto-builds only on master (the release branch). To live-test an in-progress feature branch
     # like v1.1 on TestFlight WITHOUT merging to master, start this workflow manually from the
     # Codemagic UI ("Start new build" → pick this workflow → pick the branch). Manual builds ignore

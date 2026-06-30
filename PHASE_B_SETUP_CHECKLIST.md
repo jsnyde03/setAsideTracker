@@ -66,7 +66,9 @@ no-ops until a real DSN is set. You're creating the project and handing me three
 5. [ ] Create an **auth token** for source-map upload: **Settings → Auth Tokens →
        Create New Token**, scopes: `project:releases` and `org:read`. *This one IS a secret —
        do not paste it into chat. You'll add it to Codemagic yourself (Step 7 below tells you when).*
-       ⬜ **not yet confirmed in Codemagic as `SENTRY_AUTH_TOKEN`.**
+       🔄 A placeholder `SENTRY_AUTH_TOKEN` line is **already in codemagic.yaml** with paste
+       instructions. Encrypt the token in the Codemagic UI ("Copy as Encrypted") and replace
+       `REPLACE_WITH_Encrypted_TOKEN` with the `Encrypted(...)` string. Then tell me.
 
 ### ➡️ Hand back to Claude
 | Value | Example | Where it goes |
