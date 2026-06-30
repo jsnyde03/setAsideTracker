@@ -125,7 +125,7 @@ paywall needs (`paywall_viewed`, `purchase_started`, `purchase_completed`, `rest
 
 ---
 
-## Task 3 — App Store Connect: the subscription product  🔄 PRODUCTS + LOCALIZATION DONE
+## Task 3 — App Store Connect: the subscription product  ✅ CORE DONE (2 sub-items for TestFlight)
 
 This is the actual thing users buy. RevenueCat (Task 4) wraps it; it has to exist first.
 
@@ -133,8 +133,10 @@ This is the actual thing users buy. RevenueCat (Task 4) wraps it; it has to exis
 > **one tier ("Premium"), two SKUs — Annual $29.99 + Monthly $4.99, no free trial.** Create exactly
 > the two products below; do **not** create a second/Premium+ tier (that's a v2.0 thing).
 >
-> **Status (2026-06-30): ✅ Both subscriptions created + localized display names/descriptions added.**
-> Remaining in this task: ⬜ review screenshot (deferred — needs the built paywall) · ⬜ sandbox tester account.
+> **Status (2026-06-30): ✅ Both subscriptions created + localized display names/descriptions added; RevenueCat (Task 4) wired. Core IAP setup is complete.**
+> Two sub-items remain, both needed for the batched TestFlight pass (not for coding):
+> - ⬜ **#6 review screenshot** — now **unblocked**: the Paywall screen is built, so I can generate a paywall screenshot for you to attach to both products.
+> - ⬜ **#7 sandbox tester account** — required to run the on-device purchase → unlock → restore loop. Create it before the TestFlight pass.
 
 ### Steps
 1. [x] **https://appstoreconnect.apple.com** → **My Apps** → your app → **Subscriptions**

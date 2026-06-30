@@ -17,8 +17,8 @@ These are the manual, account-level prerequisites. Claude can write all the code
 |---|---|---|---|
 | ⛔ Sentry project + DSN | User | Observability (Step 0) | Set `EXPO_PUBLIC_SENTRY_DSN`; separately add the `@sentry/react-native/expo` config plugin (org/project/auth token) to app.json **only when real creds exist** — placeholder creds break CI. See [errorReporting.ts](apps/mobile/src/errorReporting.ts). |
 | ⛔ Analytics vendor account (PostHog or Amplitude) | User | Observability (Step 0) | Both have Expo support. Wire into the existing [analytics.ts](apps/mobile/src/analytics.ts) `trackEvent` shim. |
-| ⛔ App Store Connect IAP product(s) | User | IAP (Step 1) → everything paid | Auto-renewing subscription product(s); pricing tiers; the app is already in the Apple Small Business Program (15%). |
-| ⛔ RevenueCat dashboard config | User | IAP (Step 1) → everything paid | Project + entitlement + offering wired to the App Store Connect product and API key. |
+| ✅ App Store Connect IAP product(s) | User | IAP (Step 1) → everything paid | **Done 2026-06-30.** Auto-renewing subscription product(s); pricing tiers; the app is already in the Apple Small Business Program (15%). |
+| ✅ RevenueCat dashboard config | User | IAP (Step 1) → everything paid | **Done 2026-06-30.** Project + entitlement + offering wired to the App Store Connect product and API key. |
 | ⛔ v1.0 live on the App Store | User | Merging any of this to `master` | Phase B can be **built and TestFlight-tested** on `v1.1` before this, but must not merge to master until v1.0 is approved and live. |
 
 **Why observability comes before paid features:** you need real crash data and usage patterns before making confident feature-prioritization and funnel decisions — this is operational work, not a separate version, and should land immediately post–App Store approval.
