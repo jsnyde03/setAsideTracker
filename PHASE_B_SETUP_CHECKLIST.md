@@ -108,10 +108,9 @@ the fine alternative if you already have an account.
 > `initAnalytics()` wired at App startup. Premium-funnel event names defined now
 > (`paywall_viewed` / `purchase_started` / `purchase_completed` / `restore_completed`) for Step 1's
 > paywall. Verified: typecheck clean, 88 unit tests (incl. new analytics suite), `expo config`
-> introspects, web bundle compiles WITH posthog + app mounts in real Chromium with no page errors.
-> Live in CI/TestFlight builds only (key unset locally → facade no-ops). Full Playwright e2e runs in
-> CI's `web-e2e` (the local Playwright runner can't fork workers in this sandbox — environment, not
-> code).
+> introspects, web bundle compiles WITH posthog + app mounts in real Chromium with no page errors,
+> and the **full local Playwright e2e suite passes 6/6** (see recipe at the bottom of this doc).
+> Live in CI/TestFlight builds only (key unset locally → facade no-ops).
 
 ### ➡️ Hand back to Claude
 | Value | Example | Where it goes |
@@ -226,3 +225,31 @@ You don't have to finish all of this at once. The work splits cleanly:
 | 4 | RevenueCat public SDK key | no | Codemagic `EXPO_PUBLIC_RC_IOS_KEY` |
 | 4 | entitlement id (`premium`) + offering id (`default`) | no | confirm to Claude |
 | 3/4 | In-App Purchase `.p8` key | **yes** | RevenueCat only |
+
+---
+
+## Appendix — running the Playwright e2e locally (verification recipe)
+
+Playwright works fine on this Windows machine; the trick is **don't collide with your own
+running Expo server on :8081**, and make sure the web server is fully up before the runner hits it.
+
+```bash
+cd apps/mobile
+
+# 1. Start a DEDICATED web server on 8090 (leaves your :8081 dev server alone). System CA is
+#    required for Expo's TLS on this machine. Leave it running in another terminal.
+NODE_OPTIONS=--use-system-ca npx expo start --web --port 8090
+
+# 2. Wait until it actually responds (first compile is slow), then run the suite against it:
+E2E_PORT=8090 npx playwright test --config e2e/playwright.config.ts
+```
+
+- The config has `reuseExistingServer: true`, so it attaches to the 8090 server you started rather
+  than spawning its own.
+- If a competing/stale server gets in the way, just kill it (you confirmed you won't be using your
+  own dev server while we work) — but a flaky run is usually a not-yet-finished first compile, so
+  poll `curl localhost:8090` for a 200 before running the suite.
+- In CI, the `web-e2e` Codemagic workflow starts and stops the server itself on Linux — no recipe
+  needed there.
+- Earlier "worker exited / spawn UNKNOWN" errors were transient (a broad node kill mid-run + a
+  competing server), not a real tooling problem. Verified 6/6 specs green with the recipe above.
