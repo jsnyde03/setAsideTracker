@@ -36,6 +36,8 @@ Premium:
   audit-ready record of your business miles.
 • Custom expense categories — track write-offs beyond parking, tolls, supplies, and phone
   (health insurance, car washes, hot bags, and more), mapped to Schedule C "Other expenses."
+• W-4 withholding optimizer — if you also have a W2 job, see the exact extra withholding to put
+  on a new W-4 so your paycheck covers your gig taxes, skipping quarterly estimated payments.
 ```
 *(Premium features are added to this list as each one ships — see "Remaining" below. The free-tier
 line items above are live on the branch.)*
@@ -94,7 +96,16 @@ line items above are live on the branch.)*
   per-category breakdown in the PDF, and serialize into a new CSV column. Unit tests (Schedule C
   aggregation + calculations + CSV + PDF) + a Playwright gate test pass; the native locked-row →
   Alert → paywall hop is covered by a new Maestro flow.
-- ⬜ W-4 withholding optimizer
+- ✅ **W-4 withholding optimizer** — for users with both a W2 job and gig income, turns the
+  estimated 1099 tax into one number: the extra per-paycheck withholding to enter on a new W-4's
+  Line 4(c) so the employer covers it, potentially replacing quarterly estimated payments. Pure
+  `computeW4Optimization` engine surface (isolates gig tax = total − W2-only withholding, spread
+  over the year's paychecks; plus a date-aware catch-up figure for the paychecks left this year);
+  a read-only premium result screen reached from a dashboard "Skip quarterly payments" card shown
+  only to W2 users (free users tap straight through to the paywall — no Alert, so the full hop is
+  web-testable). Hand-verified unit tests (gig-tax isolation, pay-frequency periods, already-covered,
+  catch-up math, divide-by-zero floor) + a Playwright gate test pass; a new Maestro flow covers the
+  native card → paywall hop.
 - ⬜ Safe-harbor / Form 2210 underpayment calculator
 - ⬜ Year-over-year insights
 - ⬜ Multi-state support (design pass first)

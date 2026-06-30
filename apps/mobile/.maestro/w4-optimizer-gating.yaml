@@ -1,0 +1,45 @@
+# The W-4 withholding optimizer is Premium. It surfaces on the dashboard as a "Skip quarterly
+# payments · Premium" card, but only for a user who has BOTH a W2 job and gig tax to cover — so this
+# flow onboards with the "I also have a W2 job" switch on (the shared onboarding.yaml is the no-W2
+# path) and logs an entry first. Unlike the entry-form locked rows, this card navigates straight to
+# the paywall (no native Alert), but the hop is still worth exercising on a real simulator. The
+# recommendation math is covered by the computeW4Optimization unit tests.
+appId: com.gigtaxtracker.app
+name: W-4 optimizer gating (locked card → paywall)
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Welcome"
+- tapOn: "Your name"
+- inputText: "Maestro Tester"
+- tapOn: "Single"
+- tapOn: "e.g. CA"
+- inputText: "TX"
+- hideKeyboard
+# Flip on the W2 job (no paycheck details needed to surface the card).
+- tapOn: "I also have a W2 job"
+- tapOn: "I understand this app provides estimates, not tax advice"
+- tapOn: "Continue"
+- assertVisible: "Set aside for taxes"
+
+# Log gig income so there's tax to cover.
+- tapOn: "Log Earnings"
+- assertVisible: "Platform"
+- tapOn: "DoorDash"
+- tapOn:
+    text: "0.00"
+    index: 0
+- inputText: "4000"
+- hideKeyboard
+- tapOn: "Save Entry"
+- assertVisible: "Set aside for taxes"
+
+# The optimizer card is present but locked behind Premium; tapping it opens the paywall directly.
+- scrollUntilVisible:
+    element:
+      text: "Skip quarterly payments.*Premium"
+    direction: DOWN
+- tapOn:
+    text: "Skip quarterly payments.*Premium"
+- assertVisible: "SetAside Premium"
+- tapOn: "Close"

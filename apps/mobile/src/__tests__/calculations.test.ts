@@ -6,6 +6,7 @@ import {
   comparePlatforms,
   computeCatchUpStatus,
   computeTaxEstimate,
+  computeW4Optimization,
   computeWhatIfEstimate,
   effectiveHourlyRate,
   entriesForYear,
@@ -567,6 +568,93 @@ describe("computeCatchUpStatus", () => {
     expect(status.gap).toBe(700);
     expect(status.weeklyCatchUpAmount).toBeUndefined();
     expect(status.nextDueDate).toBeUndefined();
+  });
+});
+
+describe("computeW4Optimization", () => {
+  const baseTaxProfile: TaxProfile = {
+    filingStatus: "single",
+    dependents: 0,
+    hasW2Job: false,
+    state: "CA",
+  };
+  const w2Profile: TaxProfile = {
+    ...baseTaxProfile,
+    hasW2Job: true,
+    w2GrossPayPerPeriod: 2000,
+    w2PayFrequency: "biweekly",
+  };
+
+  it("is not applicable when there's no W2 job to adjust withholding on", () => {
+    const estimate = computeTaxEstimate([makeEntry({ date: "2026-02-01", grossPay: 40000 })], baseTaxProfile, 2026);
+    const result = computeW4Optimization(estimate, baseTaxProfile);
+    expect(result.applicable).toBe(false);
+    expect(result.extraPerPaycheck).toBe(0);
+  });
+
+  it("isolates the gig tax (total minus W2-only withholding) and spreads it over a full year of paychecks", () => {
+    const entries = [makeEntry({ date: "2026-02-01", grossPay: 40000, tips: 0, mileage: 0 })];
+    const estimate = computeTaxEstimate(entries, w2Profile, 2026);
+    const result = computeW4Optimization(estimate, w2Profile);
+
+    expect(result.applicable).toBe(true);
+    expect(result.payPeriodsPerYear).toBe(26); // biweekly
+    // annualGigTax = total tax − what the W2 job's withholding already targets
+    expect(result.annualGigTax).toBeCloseTo(
+      estimate.estimate.totalEstimatedTax - estimate.estimate.w2WithholdingEstimate.annualTotalEstimate,
+      6
+    );
+    expect(result.annualGigTax).toBeGreaterThan(0);
+    // The headline: that gig tax spread across the year's paychecks → W-4 Line 4(c) amount
+    expect(result.extraPerPaycheck).toBeCloseTo(result.annualGigTax / 26, 6);
+  });
+
+  it("uses the W2 pay frequency for the per-period count (monthly = 12), defaulting to biweekly when unset", () => {
+    const entries = [makeEntry({ date: "2026-02-01", grossPay: 40000 })];
+
+    const monthly = computeW4Optimization(
+      computeTaxEstimate(entries, { ...w2Profile, w2PayFrequency: "monthly" }, 2026),
+      { ...w2Profile, w2PayFrequency: "monthly" }
+    );
+    expect(monthly.payPeriodsPerYear).toBe(12);
+
+    const { w2PayFrequency, ...noFrequency } = w2Profile;
+    const defaulted = computeW4Optimization(computeTaxEstimate(entries, noFrequency, 2026), noFrequency);
+    expect(defaulted.payPeriodsPerYear).toBe(26); // biweekly fallback
+  });
+
+  it("reports 'already covered' (no W-4 change) when the W2 job has no gig income to cover", () => {
+    // hasW2Job but zero gig entries → total tax equals W2-only withholding → nothing extra to withhold.
+    const estimate = computeTaxEstimate([], w2Profile, 2026);
+    const result = computeW4Optimization(estimate, w2Profile);
+    expect(result.applicable).toBe(true);
+    expect(result.alreadyCovered).toBe(true);
+    expect(result.annualGigTax).toBe(0);
+    expect(result.extraPerPaycheck).toBe(0);
+  });
+
+  it("steady-state per-paycheck is date-independent, but the catch-up amount rises as the year elapses", () => {
+    const entries = [makeEntry({ date: "2026-02-01", grossPay: 40000, tips: 0, mileage: 0 })];
+    const estimate = computeTaxEstimate(entries, w2Profile, 2026);
+
+    const earlyYear = computeW4Optimization(estimate, w2Profile, new Date(2026, 0, 2));
+    const midYear = computeW4Optimization(estimate, w2Profile, new Date(2026, 6, 2));
+
+    // The standing W-4 amount doesn't depend on when you ask.
+    expect(midYear.extraPerPaycheck).toBeCloseTo(earlyYear.extraPerPaycheck, 6);
+    // But fewer paychecks remain mid-year, so catching this year up costs more per check.
+    expect(earlyYear.remainingPayPeriods).toBe(26);
+    expect(midYear.remainingPayPeriods).toBe(13);
+    expect(midYear.catchUpPerPaycheck).toBeGreaterThan(earlyYear.catchUpPerPaycheck);
+    expect(midYear.catchUpPerPaycheck).toBeCloseTo(estimate.netAmountToSetAside / 13, 6);
+  });
+
+  it("floors remaining paychecks at 1 once the year (or the job) has ended, so catch-up never divides by zero", () => {
+    const entries = [makeEntry({ date: "2026-02-01", grossPay: 40000 })];
+    const estimate = computeTaxEstimate(entries, w2Profile, 2026);
+    const afterYearEnd = computeW4Optimization(estimate, w2Profile, new Date(2027, 0, 5));
+    expect(afterYearEnd.remainingPayPeriods).toBe(1);
+    expect(afterYearEnd.catchUpPerPaycheck).toBeCloseTo(afterYearEnd.remainingGigTaxThisYear, 6);
   });
 });
 

@@ -21,6 +21,7 @@ import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { AddEntryScreen } from "./src/screens/AddEntryScreen";
 import { WhatIfScreen } from "./src/screens/WhatIfScreen";
+import { W4OptimizerScreen } from "./src/screens/W4OptimizerScreen";
 import { PlatformComparisonScreen } from "./src/screens/PlatformComparisonScreen";
 import { EditTaxProfileScreen } from "./src/screens/EditTaxProfileScreen";
 import { PaywallScreen } from "./src/screens/PaywallScreen";
@@ -49,6 +50,7 @@ type Screen =
   | "settings"
   | "editTaxProfile"
   | "whatIf"
+  | "w4Optimizer"
   | "platformComparison"
   | "paywall";
 
@@ -428,6 +430,19 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
     );
   }
 
+  if (screen === "w4Optimizer") {
+    return (
+      <View style={styles.container}>
+        <W4OptimizerScreen
+          entries={entries}
+          taxProfile={taxProfile as TaxProfile}
+          onClose={() => setScreen("dashboard")}
+        />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
   if (screen === "platformComparison") {
     return (
       <View style={styles.container}>
@@ -498,6 +513,11 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
         onOpenSettings={() => setScreen("settings")}
         onOpenWhatIf={() => setScreen("whatIf")}
         onOpenPlatforms={() => setScreen("platformComparison")}
+        onOpenW4Optimizer={() => setScreen("w4Optimizer")}
+        onOpenPaywall={() => {
+          setPaywallOrigin("dashboard");
+          setScreen("paywall");
+        }}
         onUpdateAmountSetAside={handleUpdateAmountSetAside}
       />
       <StatusBar style={isDark ? "light" : "dark"} />

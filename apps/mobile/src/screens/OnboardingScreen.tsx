@@ -212,6 +212,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 value={hasW2Job}
                 onValueChange={setHasW2Job}
                 trackColor={{ true: colors.primary, false: colors.border }}
+                accessibilityLabel="I also have a W2 job"
               />
             </View>
           )}

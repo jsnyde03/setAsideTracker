@@ -313,6 +313,96 @@ export function estimateFromAggregate(
   };
 }
 
+/**
+ * Recommendation for covering the tax on gig/1099 income through a W2 employer's payroll
+ * withholding — by entering an "extra withholding" amount on a new W-4 (Form W-4 Line 4(c), a flat
+ * per-paycheck dollar add) — so the user may not have to make quarterly estimated payments at all.
+ * This is the headline value of the optimizer: turning a lump-sum quarterly chore into an automatic
+ * paycheck deduction the employer handles.
+ */
+export interface W4OptimizationResult {
+  /** False when there's no W2 job to adjust withholding on — the whole tool is N/A. */
+  applicable: boolean;
+  /** Pay periods per year implied by the W2 pay frequency (biweekly when unset), e.g. 26. */
+  payPeriodsPerYear: number;
+  /**
+   * Gig tax not covered by a normally-withholding W2 job, for a full year:
+   * max(0, totalEstimatedTax − full-year W2 withholding estimate). This isolates the tax caused by
+   * gig income (its SE tax plus the extra income tax from stacking gig income on top of W2 wages),
+   * which is exactly what the extra withholding needs to cover. Date-independent — the steady-state
+   * amount a standing W-4 instruction targets.
+   */
+  annualGigTax: number;
+  /** Steady-state extra withholding to enter on W-4 Line 4(c): annualGigTax / payPeriodsPerYear.
+   *  The headline recommendation. 0 when not applicable or already covered. */
+  extraPerPaycheck: number;
+  /** True when there's a W2 job but no gig tax to cover (existing withholding already handles the
+   *  whole bill) — the screen shows a "no change needed" state rather than a $0 recommendation. */
+  alreadyCovered: boolean;
+  /** Paychecks left in the tax year as of `now` (accounts for a mid-year job end date), floored
+   *  at 1 so the catch-up figure never divides by zero. */
+  remainingPayPeriods: number;
+  /** What's left to cover for THIS year specifically (date- and YTD-aware): the estimate's
+   *  netAmountToSetAside. Differs from annualGigTax once YTD withholding actuals are entered or the
+   *  year is partly elapsed. */
+  remainingGigTaxThisYear: number;
+  /** Extra per *remaining* paycheck to fully cover this year before year-end:
+   *  remainingGigTaxThisYear / remainingPayPeriods. Higher than extraPerPaycheck mid-year, since
+   *  fewer paychecks are left to spread the catch-up across. */
+  catchUpPerPaycheck: number;
+}
+
+/**
+ * Computes the W-4 "extra withholding" recommendation from an already-computed tax estimate and the
+ * user's W2 pay details. Pure (takes `now` as a parameter, same convention as computeCatchUpStatus)
+ * and reuses the estimate rather than re-running the engine. Two figures, both correct for their
+ * framing: `extraPerPaycheck` is the steady-state amount for a standing W-4 (annual gig tax spread
+ * over a full year of checks); `catchUpPerPaycheck` is what it takes to cover *this* year's
+ * still-uncovered tax across only the paychecks left, which is higher once the year is underway.
+ */
+export function computeW4Optimization(
+  taxEstimate: TaxEstimateForYear,
+  taxProfile: TaxProfile,
+  now: Date = new Date()
+): W4OptimizationResult {
+  const payPeriodsPerYear = PAY_PERIODS_PER_YEAR[taxProfile.w2PayFrequency ?? "biweekly"];
+
+  if (!taxProfile.hasW2Job) {
+    return {
+      applicable: false,
+      payPeriodsPerYear,
+      annualGigTax: 0,
+      extraPerPaycheck: 0,
+      alreadyCovered: false,
+      remainingPayPeriods: payPeriodsPerYear,
+      remainingGigTaxThisYear: 0,
+      catchUpPerPaycheck: 0,
+    };
+  }
+
+  const { estimate, year, netAmountToSetAside } = taxEstimate;
+  const annualGigTax = Math.max(
+    0,
+    estimate.totalEstimatedTax - estimate.w2WithholdingEstimate.annualTotalEstimate
+  );
+  const extraPerPaycheck = annualGigTax / payPeriodsPerYear;
+
+  const elapsedFraction = w2WithholdingYearFraction(year, taxProfile.w2EndDate, now);
+  const remainingPayPeriods = Math.max(1, Math.round(payPeriodsPerYear * (1 - elapsedFraction)));
+  const catchUpPerPaycheck = netAmountToSetAside / remainingPayPeriods;
+
+  return {
+    applicable: true,
+    payPeriodsPerYear,
+    annualGigTax,
+    extraPerPaycheck,
+    alreadyCovered: annualGigTax <= 0,
+    remainingPayPeriods,
+    remainingGigTaxThisYear: netAmountToSetAside,
+    catchUpPerPaycheck,
+  };
+}
+
 /** Per-platform earnings summary for the platform-comparison view. */
 export interface PlatformStat {
   platform: GigPlatform;

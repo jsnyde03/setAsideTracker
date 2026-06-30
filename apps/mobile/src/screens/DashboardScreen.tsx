@@ -20,6 +20,7 @@ import { BreakdownDetailSheet } from "../components/BreakdownDetailSheet";
 import { ShareEarningsModal } from "../components/ShareEarningsModal";
 import { buildBreakdownDetail, type BreakdownRowKey } from "../breakdownDetails";
 import { PLATFORM_ICONS, PLATFORM_LABELS } from "../platforms";
+import { usePremium } from "../premium/PremiumContext";
 import { radius, shadow, shadowSm, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
 
@@ -31,6 +32,10 @@ interface DashboardScreenProps {
   onOpenSettings: () => void;
   onOpenWhatIf: () => void;
   onOpenPlatforms: () => void;
+  /** Opens the W-4 optimizer (Premium). Only reached by premium users — free users hit the paywall. */
+  onOpenW4Optimizer: () => void;
+  /** Opens the paywall — invoked when a free user taps the locked W-4 optimizer card. */
+  onOpenPaywall: () => void;
   onUpdateAmountSetAside: (year: number, amount: number) => void;
 }
 
@@ -77,10 +82,13 @@ export function DashboardScreen({
   onOpenSettings,
   onOpenWhatIf,
   onOpenPlatforms,
+  onOpenW4Optimizer,
+  onOpenPaywall,
   onUpdateAmountSetAside,
 }: DashboardScreenProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const { isPremium } = usePremium();
 
   // The current calendar year is always selectable, even before any entry exists for it yet —
   // otherwise a brand-new year would have no way to be picked until an entry is logged for it.
@@ -443,6 +451,28 @@ export function DashboardScreen({
                     {topPlatform.hourlyRate !== undefined
                       ? ` · ${formatCurrency(topPlatform.hourlyRate)}/hr`
                       : ""}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
+            )}
+
+            {taxProfile.hasW2Job && netAmountToSetAside > 0 && (
+              <Pressable
+                onPress={isPremium ? onOpenW4Optimizer : onOpenPaywall}
+                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={isPremium ? "Open the W-4 withholding optimizer" : "W-4 withholding optimizer (Premium)"}
+              >
+                <View style={styles.insightIconWrap}>
+                  <Ionicons name={isPremium ? "options-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                </View>
+                <View style={styles.insightInfo}>
+                  <Text style={styles.insightTitle}>
+                    Skip quarterly payments{isPremium ? "" : "  ·  Premium"}
+                  </Text>
+                  <Text style={styles.insightSub}>
+                    Cover your gig taxes through your W2 paycheck instead — see the W-4 amount.
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />

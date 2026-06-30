@@ -6,3 +6,5 @@ flows:
   - log-and-delete-entry.yaml
   - premium-paywall.yaml
   - mileage-log-gating.yaml
+  - custom-expenses-gating.yaml
+  - w4-optimizer-gating.yaml

@@ -32,14 +32,18 @@ export interface OnboardingInput {
   state?: string;
   filingStatus?: "Single" | "Married Filing Jointly" | "Head of Household" | "Married Filing Separately";
   dependents?: string;
+  /** Toggle on "I also have a W2 job" (no paycheck details needed) — used to surface W2-gated UI
+   *  like the W-4 optimizer card. */
+  hasW2Job?: boolean;
 }
 
 /**
- * Drive the onboarding form to completion and land on the dashboard. Covers only the no-W2,
- * no-local-county happy path — the validation Alert dialogs are native-only and verified in Maestro.
+ * Drive the onboarding form to completion and land on the dashboard. Covers the no-local-county
+ * happy path; the validation Alert dialogs are native-only and verified in Maestro. Optionally
+ * flips the "I also have a W2 job" switch on (without paycheck details, which aren't required).
  */
 export async function completeOnboarding(page: Page, input: OnboardingInput = {}): Promise<void> {
-  const { name = "E2E Tester", state = "TX", filingStatus = "Single", dependents } = input;
+  const { name = "E2E Tester", state = "TX", filingStatus = "Single", dependents, hasW2Job } = input;
 
   await expect(page.getByText("Welcome")).toBeVisible();
   await page.getByPlaceholder("Your name").fill(name);
@@ -48,6 +52,9 @@ export async function completeOnboarding(page: Page, input: OnboardingInput = {}
     await page.getByPlaceholder("0").first().fill(dependents);
   }
   await page.getByPlaceholder("e.g. CA").fill(state);
+  if (hasW2Job) {
+    await page.getByLabel("I also have a W2 job").click();
+  }
   // Disclaimer checkbox (aria-label from the Pressable's accessibilityLabel).
   await page.getByLabel("I understand this app provides estimates, not tax advice").click();
   await page.getByText("Continue", { exact: true }).click();
