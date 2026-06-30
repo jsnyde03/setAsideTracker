@@ -56,11 +56,13 @@ no-ops until a real DSN is set. You're creating the project and handing me three
        `https://abc123@o456.ingest.sentry.io/789`). Copy it. *This is safe to be public — it's a
        write-only ingestion endpoint, which is why it lives in a `EXPO_PUBLIC_` env var.*
        ✅ **Done — wired into codemagic.yaml.**
-4. [ ] Note your **org slug** and **project slug** (visible in the URL:
+4. [~] Note your **org slug** and **project slug** (visible in the URL:
        `sentry.io/organizations/<ORG-SLUG>/projects/<PROJECT-SLUG>/`).
+       ✅ org slug = `jason-snyder` (received 2026-06-30). ⬜ **project slug still needed.**
 5. [ ] Create an **auth token** for source-map upload: **Settings → Auth Tokens →
        Create New Token**, scopes: `project:releases` and `org:read`. *This one IS a secret —
        do not paste it into chat. You'll add it to Codemagic yourself (Step 7 below tells you when).*
+       ⬜ **not yet confirmed in Codemagic as `SENTRY_AUTH_TOKEN`.**
 
 ### ➡️ Hand back to Claude
 | Value | Example | Where it goes |
