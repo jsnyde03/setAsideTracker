@@ -85,7 +85,7 @@ no-ops until a real DSN is set. You're creating the project and handing me three
 
 ---
 
-## Task 2 — Analytics vendor  ⬜
+## Task 2 — Analytics vendor  ✅ DONE (PostHog US)
 
 Pick one vendor. The scaffold ([analytics.ts](apps/mobile/src/analytics.ts)) is vendor-agnostic;
 only that one file changes when you choose.
@@ -95,11 +95,23 @@ analytics + funnels in one tool (good for the paywall funnel we're about to buil
 the fine alternative if you already have an account.
 
 ### Steps (PostHog)
-1. [ ] Go to **https://posthog.com** → sign up (free "Totally free" tier).
-2. [ ] Pick the **US** or **EU** cloud (EU if you want EU data residency). Note which.
-3. [ ] **Project Settings → Project API Key** — copy the key (starts with `phc_...`).
-       *Safe to be public — it's a write-only client key, goes in `EXPO_PUBLIC_POSTHOG_KEY`.*
-4. [ ] Note the **host** (`https://us.i.posthog.com` or `https://eu.i.posthog.com`).
+1. [x] Go to **https://posthog.com** → sign up (free "Totally free" tier).
+2. [x] Pick the **US** or **EU** cloud (EU if you want EU data residency). ✅ **US chosen.**
+3. [x] **Project Settings → Project API Key** — copy the key (starts with `phc_...`).
+       ✅ Received + wired into codemagic.yaml as `EXPO_PUBLIC_POSTHOG_KEY` (public client key).
+4. [x] Note the **host**. ✅ `https://us.i.posthog.com` → `EXPO_PUBLIC_POSTHOG_HOST`.
+
+> **Status (2026-06-30): code complete.** `posthog-react-native@4.53.3` installed (pure-JS, no
+> native module/podspec → no autolinking/CI risk; all peer deps optional). Implemented `trackEvent`
+> behind the existing facade ([analytics.ts](apps/mobile/src/analytics.ts), kept import-light) with
+> the real SDK in a separate native wrapper ([analyticsClient.ts](apps/mobile/src/analyticsClient.ts)),
+> `initAnalytics()` wired at App startup. Premium-funnel event names defined now
+> (`paywall_viewed` / `purchase_started` / `purchase_completed` / `restore_completed`) for Step 1's
+> paywall. Verified: typecheck clean, 88 unit tests (incl. new analytics suite), `expo config`
+> introspects, web bundle compiles WITH posthog + app mounts in real Chromium with no page errors.
+> Live in CI/TestFlight builds only (key unset locally → facade no-ops). Full Playwright e2e runs in
+> CI's `web-e2e` (the local Playwright runner can't fork workers in this sandbox — environment, not
+> code).
 
 ### ➡️ Hand back to Claude
 | Value | Example | Where it goes |

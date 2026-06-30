@@ -28,12 +28,14 @@ import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { isAppLockAvailable, unlockWithDeviceAuth } from "./src/security/appLock";
 import { cancelQuarterlyReminders, scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
-import { trackEvent } from "./src/analytics";
+import { trackEvent, ANALYTICS_EVENTS } from "./src/analytics";
+import { initAnalytics } from "./src/analyticsClient";
 import { maybeRequestReview } from "./src/appReview";
 import { initErrorReporting, reportError } from "./src/errorReporting";
 import { ThemeProvider, useTheme, type ColorSchemePreference } from "./src/ThemeContext";
 
 initErrorReporting();
+initAnalytics();
 
 type Screen =
   | "loading"
@@ -171,7 +173,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
       setTaxProfile(newTaxProfile);
       setScreen("dashboard");
       if (remindersEnabled) scheduleQuarterlyReminders();
-      trackEvent("onboarding_completed", {
+      trackEvent(ANALYTICS_EVENTS.onboardingCompleted, {
         state: newTaxProfile.state,
         hasW2Job: newTaxProfile.hasW2Job,
       });
@@ -193,7 +195,9 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
       setEntries(updated);
       setEditingEntry(null);
       setScreen("dashboard");
-      trackEvent(isEditing ? "entry_updated" : "entry_logged", { platform: entry.platform });
+      trackEvent(isEditing ? ANALYTICS_EVENTS.entryUpdated : ANALYTICS_EVENTS.entryLogged, {
+        platform: entry.platform,
+      });
       // After logging (not editing) a new entry, see if the user has hit the rating-prompt
       // milestone. Fire-and-forget: a failed/declined prompt must never block returning to the
       // dashboard. catchUpMet is left to the dashboard's own trigger (this is the 5th-entry path).

@@ -39,6 +39,14 @@ workflows:
         # then crashes are captured at runtime but stack traces aren't source-map-symbolicated.
         EXPO_PUBLIC_SENTRY_DSN: "https://bfa5a6ff551cb53be6703730bec9adbf@o4511649294450688.ingest.us.sentry.io/4511654601424896"
 
+        # PostHog analytics (US cloud). A PostHog *project API key* is a write-only client key, not
+        # a secret — safe to commit and ship in the bundle (same rationale as the Sentry DSN above),
+        # which is why it's an EXPO_PUBLIC_ var that analyticsClient.ts reads. Setting it here (not a
+        # local .env) means analytics is live in CI/TestFlight builds only, while local dev/test stay
+        # no-ops (no key → the analytics facade never attaches a backend).
+        EXPO_PUBLIC_POSTHOG_KEY: "phc_zN3LdF74JA8waXQfx5WSVv2j8GYfscZ2vqSCYv6hzCcH"
+        EXPO_PUBLIC_POSTHOG_HOST: "https://us.i.posthog.com"
+
         # SENTRY_AUTH_TOKEN (the secret sentry-cli uses for source-map upload) is intentionally NOT
         # defined here — it's injected from the `AppleConnect` variable group declared above. Add it
         # in the Codemagic UI (Environment variables → group AppleConnect → name SENTRY_AUTH_TOKEN →
