@@ -29,6 +29,7 @@ import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { isAppLockAvailable, unlockWithDeviceAuth } from "./src/security/appLock";
 import { cancelQuarterlyReminders, scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
 import { trackEvent } from "./src/analytics";
+import { maybeRequestReview } from "./src/appReview";
 import { initErrorReporting, reportError } from "./src/errorReporting";
 import { ThemeProvider, useTheme, type ColorSchemePreference } from "./src/ThemeContext";
 
@@ -193,6 +194,14 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
       setEditingEntry(null);
       setScreen("dashboard");
       trackEvent(isEditing ? "entry_updated" : "entry_logged", { platform: entry.platform });
+      // After logging (not editing) a new entry, see if the user has hit the rating-prompt
+      // milestone. Fire-and-forget: a failed/declined prompt must never block returning to the
+      // dashboard. catchUpMet is left to the dashboard's own trigger (this is the 5th-entry path).
+      if (!isEditing) {
+        maybeRequestReview({ entryCount: updated.length, catchUpMet: false }).catch((error) =>
+          reportError(error, { where: "maybeRequestReview" })
+        );
+      }
     } catch (error) {
       reportError(error, { where: "handleSaveEntry" });
       Alert.alert(

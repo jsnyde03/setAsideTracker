@@ -16,6 +16,7 @@ import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { BreakdownDetailSheet } from "../components/BreakdownDetailSheet";
+import { ShareEarningsModal } from "../components/ShareEarningsModal";
 import { buildBreakdownDetail, type BreakdownRowKey } from "../breakdownDetails";
 import { PLATFORM_ICONS, PLATFORM_LABELS } from "../platforms";
 import { radius, shadow, shadowSm, spacing, type, type Colors } from "../theme";
@@ -111,6 +112,8 @@ export function DashboardScreen({
   const platformStats = comparePlatforms(entries, year);
   const topPlatform = platformStats[0];
 
+  const [showShare, setShowShare] = useState(false);
+
   function handlePreviousYear() {
     // Years are sorted descending, so "previous" (older) is the next index.
     if (selectedYearIndex < availableYears.length - 1) setSelectedYear(availableYears[selectedYearIndex + 1]);
@@ -199,14 +202,26 @@ export function DashboardScreen({
                   </View>
                 )}
               </View>
-              <Pressable
-                onPress={onOpenSettings}
-                hitSlop={8}
-                accessibilityLabel="Settings"
-                accessibilityRole="button"
-              >
-                <Ionicons name="settings-outline" size={22} color={colors.inkSubtle} />
-              </Pressable>
+              <View style={styles.headerActions}>
+                {totalEarnings > 0 && (
+                  <Pressable
+                    onPress={() => setShowShare(true)}
+                    hitSlop={8}
+                    accessibilityLabel="Share earnings"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="share-outline" size={22} color={colors.inkSubtle} />
+                  </Pressable>
+                )}
+                <Pressable
+                  onPress={onOpenSettings}
+                  hitSlop={8}
+                  accessibilityLabel="Settings"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="settings-outline" size={22} color={colors.inkSubtle} />
+                </Pressable>
+              </View>
             </View>
             {usedFallbackConfig && (
               <View style={[styles.warningBox, styles.warningBoxLight]}>
@@ -475,6 +490,17 @@ export function DashboardScreen({
         }
       />
       <BreakdownDetailSheet detail={activeDetail} onClose={() => setActiveDetailKey(null)} />
+      <ShareEarningsModal
+        visible={showShare}
+        onClose={() => setShowShare(false)}
+        data={{
+          year,
+          totalEarnings,
+          setAside: netAmountToSetAside,
+          hourlyRate,
+          topPlatformLabel: topPlatform ? PLATFORM_LABELS[topPlatform.platform] : undefined,
+        }}
+      />
     </Screen>
   );
 }
@@ -489,6 +515,7 @@ function createStyles(colors: Colors) {
     marginBottom: spacing.lg,
   },
   greetingTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
   greeting: { ...type.display, color: colors.ink },
   yearBadge: {
     backgroundColor: colors.surfaceAlt,
