@@ -11,7 +11,7 @@ Companion to [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)'s v1.1 premium sec
 <details>
 <summary>None of the paid features can go live before the accounts/products they depend on are stood up.</summary>
 
-These are the manual, account-level prerequisites. Claude can write all the code, but it can't create accounts, App Store Connect products, or dashboards.
+These are the manual, account-level prerequisites. Claude can write all the code, but it can't create accounts, App Store Connect products, or dashboards. **Step-by-step directions for these live in [PHASE_B_SETUP_CHECKLIST.md](PHASE_B_SETUP_CHECKLIST.md) (the user's to-do list).**
 
 | Prerequisite | Owner | Blocks | Notes |
 |---|---|---|---|
