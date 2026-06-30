@@ -16,15 +16,18 @@ workflows:
         bundle_identifier: com.gigtaxtracker.app
 
       vars:
-        # @sentry/react-native's Expo config plugin injects an "Upload Debug Symbols to Sentry"
-        # Xcode build phase that runs sentry-cli during archive — this app deliberately has no
-        # real Sentry project/DSN/org/auth-token configured yet (see errorReporting.ts: it's
-        # scaffolded but intentionally not live), so that upload has nothing valid to authenticate
-        # against and fails the whole archive step with a nonzero exit code. This explicitly
-        # disables the auto-upload to match that "not live yet" intent, rather than letting the
-        # build fail on a feature that isn't even active. Remove once a real Sentry
-        # project/DSN/auth-token exists and source-map upload is actually wanted.
-        SENTRY_DISABLE_AUTO_UPLOAD: "true"
+        # Source-map upload is now ENABLED (2026-06-30): the @sentry/react-native config plugin in
+        # app.json is configured with org `jason-snyder` / project `react-native`, and the secret
+        # SENTRY_AUTH_TOKEN is injected from the AppleConnect group above. With this "false", the
+        # plugin's sentry-cli step in the "Bundle React Native code and images" phase uploads source
+        # maps during archive so Sentry stack traces are symbolicated.
+        # ⚠️ In @sentry/react-native 7.11.0, a source-map upload FAILURE makes that phase exit 1 and
+        # fails the whole archive (SENTRY_ALLOW_FAILURE is named in the error text but NOT honored in
+        # this version). If a manual v1.1 build fails on "sentry-cli", the cause is almost always the
+        # auth token (wrong/expired/insufficient scope) or org/project slug — to recover instantly,
+        # set this back to "true" (source maps off, build green) and we diagnose. v1.1 builds are
+        # manual and master is untouched, so this can't break an automatic/release build.
+        SENTRY_DISABLE_AUTO_UPLOAD: "false"
 
         # Real Sentry DSN for the SetAsideTracker project (created 2026-06-30). A DSN is a
         # write-only ingestion endpoint, not a secret — safe to commit and to ship in the client

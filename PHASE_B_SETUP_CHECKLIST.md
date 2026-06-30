@@ -34,7 +34,7 @@ Companion to [PHASE_B_EXECUTION_PLAN.md](PHASE_B_EXECUTION_PLAN.md) (the *how/wh
 
 ---
 
-## Task 1 — Sentry (crash reporting)  🔄 DSN DONE — source-maps pending
+## Task 1 — Sentry (crash reporting)  ✅ CODE DONE — pending one verification build
 
 The code scaffold already exists ([errorReporting.ts](apps/mobile/src/errorReporting.ts)) and
 no-ops until a real DSN is set. You're creating the project and handing me three values.
@@ -45,13 +45,17 @@ no-ops until a real DSN is set. You're creating the project and handing me three
 >   fully coded (`initErrorReporting()` at App.tsx:36 + `reportError` across every handler and the
 >   ErrorBoundary), so the **next TestFlight build will report crashes** — no further code needed
 >   for basic crash reporting.
-> - 🔄 **Source-map upload — only the auth token is left.** org slug `jason-snyder` + project slug
->   `react-native` received. **Last step: create a Sentry auth token and add it to Codemagic as
->   `SENTRY_AUTH_TOKEN` (step 5 below), then tell me.** The moment that's confirmed I add the
->   `@sentry/react-native/expo` config plugin to app.json + flip `SENTRY_DISABLE_AUTO_UPLOAD` to
->   `false` in one commit, and we run a Codemagic build to verify CI stays green (this plugin is the
->   change-class that has broken CI before, so it's verified on a real build, not committed blind).
->   Optional/nice-to-have; not a blocker for the rest of Phase B.
+> - ✅ **Source-map upload wired.** Auth token in Codemagic (`AppleConnect` group); the
+>   `@sentry/react-native` config plugin in app.json is configured with org `jason-snyder` /
+>   project `react-native`; `SENTRY_DISABLE_AUTO_UPLOAD` flipped to `false`. Pre-build check passed
+>   (`expo config --type introspect` applies the plugin cleanly; typecheck + 83 tests green).
+> - ⏳ **Your one remaining action: trigger a manual v1.1 Codemagic build and confirm it's green.**
+>   This is the only real check for a config-plugin/cred change. Watch the "Bundle React Native code
+>   and images" phase: success = source maps uploaded. If it fails on `sentry-cli`, paste me the
+>   error — likely the token's scope/value or a slug typo — and we revert one flag
+>   (`SENTRY_DISABLE_AUTO_UPLOAD` → `true`) to get green again while we fix it. ⚠️ In Sentry RN
+>   7.11.0 an upload failure *does* fail the archive (no allow-failure), but v1.1 builds are manual
+>   and master is untouched, so nothing automatic can break.
 
 ### Steps
 1. [x] Go to **https://sentry.io** → sign up / log in (free "Developer" tier is fine to start).
