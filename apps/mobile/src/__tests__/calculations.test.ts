@@ -9,9 +9,12 @@ import {
   computeTaxEstimate,
   computeW4Optimization,
   computeWhatIfEstimate,
+  computeYearOverYear,
   effectiveHourlyRate,
   entriesForYear,
   getCountiesForState,
+  metricDelta,
+  summarizeYear,
   w2WithholdingYearFraction,
   whatIfAggregate,
   yearsWithEntries,
@@ -511,6 +514,94 @@ describe("yearsWithEntries", () => {
 
   it("returns an empty array for no entries", () => {
     expect(yearsWithEntries([])).toEqual([]);
+  });
+});
+
+describe("metricDelta", () => {
+  it("computes absolute and percent change", () => {
+    const delta = metricDelta(1250, 1000);
+    expect(delta.change).toBe(250);
+    expect(delta.percentChange).toBeCloseTo(0.25);
+  });
+
+  it("reports a negative change for a decrease", () => {
+    const delta = metricDelta(800, 1000);
+    expect(delta.change).toBe(-200);
+    expect(delta.percentChange).toBeCloseTo(-0.2);
+  });
+
+  it("leaves percentChange undefined when the prior value is 0 (no dividing by nothing)", () => {
+    const delta = metricDelta(500, 0);
+    expect(delta.change).toBe(500);
+    expect(delta.percentChange).toBeUndefined();
+  });
+});
+
+describe("summarizeYear", () => {
+  const profile: TaxProfile = { filingStatus: "single", dependents: 0, hasW2Job: false, state: "TX" };
+
+  it("scopes to the year and derives gross earnings, profit, and expenses", () => {
+    const entries = [
+      makeEntry({
+        id: "a",
+        date: "2025-04-01",
+        grossPay: 1000,
+        tips: 200,
+        mileage: 50,
+        hoursWorked: 10,
+        expenses: { parking: 100, tolls: 0, supplies: 0, phone: 0 },
+      }),
+      makeEntry({ id: "b", date: "2026-04-01", grossPay: 9999, tips: 0, mileage: 0 }), // other year — excluded
+    ];
+
+    const summary = summarizeYear(entries, profile, 2025);
+    expect(summary.year).toBe(2025);
+    expect(summary.entryCount).toBe(1);
+    expect(summary.grossEarnings).toBe(1200); // gross + tips
+    expect(summary.netProfit).toBe(1100); // minus $100 expenses
+    expect(summary.totalExpenses).toBe(100);
+    expect(summary.businessMiles).toBe(50);
+    expect(summary.totalHoursWorked).toBe(10);
+    expect(summary.effectiveHourlyRate).toBeGreaterThan(0);
+  });
+
+  it("leaves the hourly rate undefined when no hours were logged", () => {
+    const entries = [makeEntry({ date: "2025-04-01", grossPay: 1000, tips: 0, mileage: 0 })];
+    expect(summarizeYear(entries, profile, 2025).effectiveHourlyRate).toBeUndefined();
+  });
+});
+
+describe("computeYearOverYear", () => {
+  const profile: TaxProfile = { filingStatus: "single", dependents: 0, hasW2Job: false, state: "TX" };
+
+  it("is not enough data with a single year", () => {
+    const entries = [
+      makeEntry({ id: "a", date: "2026-01-01", grossPay: 500 }),
+      makeEntry({ id: "b", date: "2026-06-01", grossPay: 500 }),
+    ];
+    const result = computeYearOverYear(entries, profile);
+    expect(result.hasEnoughData).toBe(false);
+    expect(result.yearsTracked).toBe(1);
+    expect(result.summaries).toHaveLength(1);
+  });
+
+  it("has enough data and orders summaries most-recent-first once 2+ years exist", () => {
+    const entries = [
+      makeEntry({ id: "a", date: "2024-05-01", grossPay: 400, tips: 0 }),
+      makeEntry({ id: "b", date: "2025-05-01", grossPay: 600, tips: 0 }),
+      makeEntry({ id: "c", date: "2026-05-01", grossPay: 800, tips: 0 }),
+    ];
+    const result = computeYearOverYear(entries, profile);
+    expect(result.hasEnoughData).toBe(true);
+    expect(result.yearsTracked).toBe(3);
+    expect(result.summaries.map((s) => s.year)).toEqual([2026, 2025, 2024]);
+    expect(result.summaries[0].grossEarnings).toBe(800);
+  });
+
+  it("returns no summaries and not-enough-data for an empty history", () => {
+    const result = computeYearOverYear([], profile);
+    expect(result.hasEnoughData).toBe(false);
+    expect(result.summaries).toEqual([]);
   });
 });
 

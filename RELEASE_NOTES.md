@@ -40,6 +40,8 @@ Premium:
   on a new W-4 so your paycheck covers your gig taxes, skipping quarterly estimated payments.
 • Safe-harbor calculator — see the minimum you can pay in to avoid the IRS underpayment penalty.
   If your income jumped, the prior-year safe harbor is often far less than this year's full bill.
+• Year-over-year insights — once you've tracked two tax years, see how your earnings, profit,
+  miles, hours, and tax compare, so you can tell whether your gig work is trending up.
 ```
 *(Premium features are added to this list as each one ships — see "Remaining" below. The free-tier
 line items above are live on the branch.)*
@@ -120,7 +122,19 @@ line items above are live on the branch.)*
   derived from logged prior-year data when present. Hand-verified unit tests (prior-year vs.
   current-year binding, 110%/MFS thresholds, de-minimis, withholding-covers, federal-vs-combined
   split) + a Playwright gate test pass; a new Maestro flow covers the native card → paywall hop.
-- ⬜ Year-over-year insights
+- ✅ **Year-over-year insights** — once a user has logged 2+ tax years, a premium screen compares
+  the latest year against the previous one across gross earnings, net profit, expenses, business
+  miles, hours, estimated tax, and take-home-per-hour — each with a colored delta (earnings-style
+  metrics read good/bad by direction; expenses/miles/tax stay neutral so a bigger number isn't
+  moralized), plus an all-years table. **Soft-gated on data**: with only one year it shows a friendly
+  "come back next year" state rather than a near-empty screen, and the dashboard card that opens it
+  only appears once entries span 2+ years. Built on the multi-year entry history the app already
+  retains (`computeYearOverYear` — no new storage). A read-only premium screen reached from a
+  dashboard "Year-over-year insights" card (free users tap straight through to the paywall — no
+  Alert, fully web-testable). Unit tests (`summarizeYear` scoping/hourly-rate, `computeYearOverYear`
+  soft-gate + ordering, `metricDelta` incl. divide-by-zero) + a Playwright gate test pass; a new
+  Maestro flow drives the native date picker back a year to seed the second year (native-only) and
+  covers the card → paywall hop.
 - ⬜ Multi-state support (design pass first)
 
 </details>

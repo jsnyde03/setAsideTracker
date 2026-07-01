@@ -627,3 +627,106 @@ export function computeWhatIfEstimate(
 ): TaxEstimateForYear {
   return estimateFromAggregate(whatIfAggregate(scenario), taxProfile, year);
 }
+
+/** A single tax year's headline figures, the row behind the year-over-year comparison. */
+export interface YearSummary {
+  year: number;
+  /** Gross gig earnings (grossPay + tips) before expenses, across the year's entries. */
+  grossEarnings: number;
+  /** Net self-employment profit — grossEarnings minus non-mileage business expenses. */
+  netProfit: number;
+  /** Non-mileage business expenses (the four buckets + custom categories). */
+  totalExpenses: number;
+  businessMiles: number;
+  /** Hours worked across entries that logged them (entries without hours contribute 0). */
+  totalHoursWorked: number;
+  entryCount: number;
+  /** Total estimated tax for the year (the engine's combined federal + state figure, before the
+   *  W2-withholding credit — the comparable "what this year's gig work generated" number). */
+  estimatedTax: number;
+  /** Take-home per hour, or undefined when no hours were logged for the year (matches
+   *  effectiveHourlyRate's contract — no hours means no rate, not zero). */
+  effectiveHourlyRate?: number;
+}
+
+/**
+ * Summarizes one calendar year's logged entries into the figures the year-over-year view compares.
+ * Reuses the same aggregate → estimate pipeline as the dashboard (via estimateFromAggregate) so a
+ * year's numbers here match what that year's dashboard showed, rather than a drift-prone parallel.
+ */
+export function summarizeYear(
+  entries: Entry[],
+  taxProfile: TaxProfile,
+  year: number
+): YearSummary {
+  const yearEntries = entriesForYear(entries, year);
+  const aggregate = aggregateEntries(yearEntries);
+  const grossEarnings = aggregate.netSelfEmploymentProfit + aggregate.totalExpenses;
+  const { estimate, netAmountToSetAside } = estimateFromAggregate(aggregate, taxProfile, year);
+  return {
+    year,
+    grossEarnings,
+    netProfit: aggregate.netSelfEmploymentProfit,
+    totalExpenses: aggregate.totalExpenses,
+    businessMiles: aggregate.businessMiles,
+    totalHoursWorked: aggregate.totalHoursWorked,
+    entryCount: yearEntries.length,
+    estimatedTax: estimate.totalEstimatedTax,
+    effectiveHourlyRate: effectiveHourlyRate(
+      grossEarnings,
+      aggregate.totalExpenses,
+      netAmountToSetAside,
+      aggregate.totalHoursWorked
+    ),
+  };
+}
+
+/** Year-over-year insights: a per-year summary for every year with logged data, most recent first. */
+export interface YearOverYearInsights {
+  /** True once there are 2+ tax years of logged data — the soft gate. Below that a comparison is
+   *  meaningless, so the UI shows a "come back next year" state rather than a near-empty screen. */
+  hasEnoughData: boolean;
+  yearsTracked: number;
+  /** One summary per year with entries, sorted descending (summaries[0] is the most recent). */
+  summaries: YearSummary[];
+}
+
+/**
+ * Builds the year-over-year comparison from all logged entries. Pure aggregation over the existing
+ * multi-year entry history — the app already retains entries across tax years, so no new storage is
+ * needed. Soft-gated at 2+ years (hasEnoughData): with a single year there's nothing to compare to.
+ */
+export function computeYearOverYear(
+  entries: Entry[],
+  taxProfile: TaxProfile
+): YearOverYearInsights {
+  const years = yearsWithEntries(entries); // descending, distinct
+  const summaries = years.map((year) => summarizeYear(entries, taxProfile, year));
+  return {
+    hasEnoughData: years.length >= 2,
+    yearsTracked: years.length,
+    summaries,
+  };
+}
+
+/** The change in one metric between two years, for the year-over-year comparison rows. */
+export interface MetricDelta {
+  current: number;
+  prior: number;
+  /** current − prior. */
+  change: number;
+  /** Fractional change (0.25 = +25%), or undefined when prior is 0 — you can't take a percentage of
+   *  nothing, so the UI shows a "new" treatment instead of a divide-by-zero infinity. */
+  percentChange?: number;
+}
+
+/** Computes the delta between a current- and prior-year metric value. Pure. */
+export function metricDelta(current: number, prior: number): MetricDelta {
+  const change = current - prior;
+  return {
+    current,
+    prior,
+    change,
+    percentChange: prior !== 0 ? change / prior : undefined,
+  };
+}

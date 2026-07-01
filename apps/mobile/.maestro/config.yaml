@@ -9,3 +9,4 @@ flows:
   - custom-expenses-gating.yaml
   - w4-optimizer-gating.yaml
   - safe-harbor-gating.yaml
+  - year-over-year-gating.yaml

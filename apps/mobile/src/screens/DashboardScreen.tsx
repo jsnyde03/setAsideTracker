@@ -36,6 +36,8 @@ interface DashboardScreenProps {
   onOpenW4Optimizer: () => void;
   /** Opens the safe-harbor / Form 2210 calculator (Premium). Premium users only — free → paywall. */
   onOpenSafeHarbor: () => void;
+  /** Opens year-over-year insights (Premium). Premium users only — free users hit the paywall. */
+  onOpenYearOverYear: () => void;
   /** Opens the paywall — invoked when a free user taps a locked Premium card (W-4, safe harbor). */
   onOpenPaywall: () => void;
   onUpdateAmountSetAside: (year: number, amount: number) => void;
@@ -86,6 +88,7 @@ export function DashboardScreen({
   onOpenPlatforms,
   onOpenW4Optimizer,
   onOpenSafeHarbor,
+  onOpenYearOverYear,
   onOpenPaywall,
   onUpdateAmountSetAside,
 }: DashboardScreenProps) {
@@ -119,6 +122,9 @@ export function DashboardScreen({
   // Platform comparison is only meaningful once the user has worked 2+ platforms this year.
   const platformStats = comparePlatforms(entries, year);
   const topPlatform = platformStats[0];
+
+  // Year-over-year insights soft-gate: only meaningful once entries span 2+ distinct tax years.
+  const yearsTracked = yearsWithEntries(entries).length;
 
   const [showShare, setShowShare] = useState(false);
 
@@ -498,6 +504,28 @@ export function DashboardScreen({
                   </Text>
                   <Text style={styles.insightSub}>
                     See the safe-harbor minimum to pay in — often less than your full bill.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
+            )}
+
+            {yearsTracked >= 2 && (
+              <Pressable
+                onPress={isPremium ? onOpenYearOverYear : onOpenPaywall}
+                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={isPremium ? "Open year-over-year insights" : "Year-over-year insights (Premium)"}
+              >
+                <View style={styles.insightIconWrap}>
+                  <Ionicons name={isPremium ? "trending-up-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                </View>
+                <View style={styles.insightInfo}>
+                  <Text style={styles.insightTitle}>
+                    Year-over-year insights{isPremium ? "" : "  ·  Premium"}
+                  </Text>
+                  <Text style={styles.insightSub}>
+                    See how this year compares to last — earnings, miles, and tax.
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
