@@ -37,6 +37,8 @@ Premium:
   Schedule C Line 9 substantiation appendix.
 • Custom expense categories — track write-offs beyond parking, tolls, supplies, and phone
   (health insurance, car washes, hot bags, and more), mapped to Schedule C "Other expenses."
+• Expense breakdown — see all your write-offs for the year grouped by the IRS Schedule C line
+  they map to, with your custom categories broken out, right on screen before you export a PDF.
 • W-4 withholding optimizer — if you also have a W2 job, see the exact extra withholding to put
   on a new W-4 so your paycheck covers your gig taxes, skipping quarterly estimated payments.
 • Safe-harbor calculator — see the minimum you can pay in to avoid the IRS underpayment penalty.
@@ -108,6 +110,15 @@ line items above are live on the branch.)*
   per-category breakdown in the PDF, and serialize into a new CSV column. Unit tests (Schedule C
   aggregation + calculations + CSV + PDF) + a Playwright gate test pass; the native locked-row →
   Alert → paywall hop is covered by a new Maestro flow.
+  - ↳ **Follow-on: on-screen expense breakdown.** A premium `ExpenseBreakdownScreen` shows the
+    year's deductible expenses grouped onto their Schedule C lines (9 car/truck with the mileage +
+    parking/tolls composition, 22 supplies, 25 phone, 27 other with the per-category breakdown) plus
+    a Line 28 total and the resulting net profit — the same mapping as the PDF, but on-screen so the
+    value of custom categories is visible before exporting. Reached from a dashboard "Expense
+    breakdown · Premium" card soft-gated on the year having a deductible expense (a bucket cost or
+    business mileage); free users tap straight to the paywall (no Alert, web-testable). A thin view
+    over the existing `buildScheduleCSummary` — no new engine code. Playwright gate test (2) +
+    Maestro flow; browser-screenshot verified.
 - ✅ **W-4 withholding optimizer** — for users with both a W2 job and gig income, turns the
   estimated 1099 tax into one number: the extra per-paycheck withholding to enter on a new W-4's
   Line 4(c) so the employer covers it, potentially replacing quarterly estimated payments. Pure

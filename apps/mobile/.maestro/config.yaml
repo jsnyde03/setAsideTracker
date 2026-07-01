@@ -10,3 +10,4 @@ flows:
   - w4-optimizer-gating.yaml
   - safe-harbor-gating.yaml
   - year-over-year-gating.yaml
+  - expense-breakdown-gating.yaml

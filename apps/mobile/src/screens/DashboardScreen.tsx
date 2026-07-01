@@ -38,6 +38,8 @@ interface DashboardScreenProps {
   onOpenSafeHarbor: () => void;
   /** Opens year-over-year insights (Premium). Premium users only — free users hit the paywall. */
   onOpenYearOverYear: () => void;
+  /** Opens the Schedule C expense breakdown (Premium). Premium users only — free → paywall. */
+  onOpenExpenseBreakdown: () => void;
   /** Opens the paywall — invoked when a free user taps a locked Premium card (W-4, safe harbor). */
   onOpenPaywall: () => void;
   onUpdateAmountSetAside: (year: number, amount: number) => void;
@@ -89,6 +91,7 @@ export function DashboardScreen({
   onOpenW4Optimizer,
   onOpenSafeHarbor,
   onOpenYearOverYear,
+  onOpenExpenseBreakdown,
   onOpenPaywall,
   onUpdateAmountSetAside,
 }: DashboardScreenProps) {
@@ -526,6 +529,28 @@ export function DashboardScreen({
                   </Text>
                   <Text style={styles.insightSub}>
                     See how this year compares to last — earnings, miles, and tax.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
+            )}
+
+            {(aggregate.totalExpenses > 0 || estimate.mileageDeduction.deductionAmount > 0) && (
+              <Pressable
+                onPress={isPremium ? onOpenExpenseBreakdown : onOpenPaywall}
+                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={isPremium ? "Open the expense breakdown" : "Expense breakdown (Premium)"}
+              >
+                <View style={styles.insightIconWrap}>
+                  <Ionicons name={isPremium ? "receipt-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                </View>
+                <View style={styles.insightInfo}>
+                  <Text style={styles.insightTitle}>
+                    Expense breakdown{isPremium ? "" : "  ·  Premium"}
+                  </Text>
+                  <Text style={styles.insightSub}>
+                    See your write-offs grouped by Schedule C line — including custom categories.
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
