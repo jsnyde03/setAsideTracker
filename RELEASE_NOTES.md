@@ -12,10 +12,13 @@ clean **What's New** block (the draft for the App Store "What's New" field) plus
 
 ---
 
-## v1.1 — Premium Tier Launch + Free Tier Growth  🔄 In progress
+## v1.1 — Premium Tier Launch + Free Tier Growth  🔄 Feature-locked on branch — awaiting v1.0 go-live
 
-> Branch `v1.1`; not merged to `master` until v1.0 is live. Phase A (free additions) is complete;
-> Phase B (premium) is in progress. Full plan: [V1.1_EXECUTION_PLAN.md](V1.1_EXECUTION_PLAN.md) /
+> Branch `v1.1`; **feature-complete and release-ready**, held on the branch (not merged to `master`)
+> until v1.0 is live, then merge + submit. Phase A (free additions) **complete**; Phase B (premium)
+> **complete**; the ASO/store-metadata pass **complete** (`STORE_LISTING.md`, `SCREENSHOT_PLAN.md`).
+> Multi-state support was deferred to the v1.3 backlog (not a v1.1 show-stopper — a real engine
+> extension needing its own version). Full plan: [V1.1_EXECUTION_PLAN.md](V1.1_EXECUTION_PLAN.md) /
 > [PHASE_B_EXECUTION_PLAN.md](PHASE_B_EXECUTION_PLAN.md). Pricing: [PREMIUM_PRICING_STRATEGY.md](PREMIUM_PRICING_STRATEGY.md).
 
 ### What's New (draft for the App Store "What's New")
@@ -171,7 +174,8 @@ line items above are live on the branch.)*
     + state, so folding them together would mislead; a footnote makes the distinction explicit.
     Additive `YearSummary.filedFederalTax`; unit tests cover the year-scoping (a figure keyed to a
     different year doesn't leak).
-- ⬜ Multi-state support (design pass first)
+- ⏸️ Multi-state support — **deferred to the v1.3 backlog** (design pass first; a real engine
+  extension — apportionment, credits, reciprocity — that earns its own version, not a rushed v1.1 add).
 
 </details>
 
