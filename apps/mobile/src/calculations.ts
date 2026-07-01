@@ -647,6 +647,12 @@ export interface YearSummary {
   /** Take-home per hour, or undefined when no hours were logged for the year (matches
    *  effectiveHourlyRate's contract — no hours means no rate, not zero). */
   effectiveHourlyRate?: number;
+  /** The user's actual filed FEDERAL total tax for this year (Form 1040 "total tax"), if they
+   *  entered it via the safe-harbor screen's prior-year input. Undefined when not provided. Kept
+   *  separate from `estimatedTax` (which is the app's combined federal+state estimate) rather than
+   *  folded into it — comparing a federal-only filed figure against a federal+state estimate would
+   *  mislead, so the UI surfaces this as a labeled "actual outcome" line, not a delta. */
+  filedFederalTax?: number;
 }
 
 /**
@@ -678,6 +684,7 @@ export function summarizeYear(
       netAmountToSetAside,
       aggregate.totalHoursWorked
     ),
+    filedFederalTax: taxProfile.filedTaxByYear?.[year]?.totalTax,
   };
 }
 

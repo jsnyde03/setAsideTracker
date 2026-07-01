@@ -118,6 +118,32 @@ export function YearOverYearScreen({ entries, taxProfile, onClose }: YearOverYea
                 )}
             </View>
 
+            {summaries.some((s) => s.filedFederalTax !== undefined) && (
+              <>
+                <Text style={styles.sectionHeader}>Filed federal tax on record</Text>
+                <View style={styles.metricsCard}>
+                  {summaries
+                    .filter((s) => s.filedFederalTax !== undefined)
+                    .map((summary, index) => (
+                      <View key={summary.year} style={[styles.metricRow, index > 0 && styles.metricRowDivider]}>
+                        <Text style={styles.metricLabel}>{summary.year}</Text>
+                        <View style={styles.metricRight}>
+                          <Text style={styles.metricValue}>{formatCurrency(summary.filedFederalTax!)}</Text>
+                          <View style={styles.pill}>
+                            <Text style={[styles.pillText, { color: colors.inkSubtle }]}>filed</Text>
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                </View>
+                <Text style={styles.footnote}>
+                  The federal total tax you entered from your filed returns — the actual outcome, shown
+                  next to the app's own estimates above. (Those estimates include state tax and are
+                  before W-2 withholding, so they won't match this federal-only figure dollar for dollar.)
+                </Text>
+              </>
+            )}
+
             {summaries.length > 2 && (
               <>
                 <Text style={styles.sectionHeader}>All tracked years</Text>
@@ -305,5 +331,6 @@ function createStyles(colors: Colors) {
     tableHeadCell: { ...type.micro, color: colors.inkSubtle, fontWeight: "700" },
 
     disclaimer: { ...type.micro, color: colors.inkFaint, textAlign: "center", marginTop: spacing.xl, lineHeight: 15 },
+    footnote: { ...type.micro, color: colors.inkFaint, marginTop: spacing.sm, lineHeight: 15 },
   });
 }

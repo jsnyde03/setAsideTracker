@@ -163,6 +163,14 @@ line items above are live on the branch.)*
   soft-gate + ordering, `metricDelta` incl. divide-by-zero) + a Playwright gate test pass; a new
   Maestro flow drives the native date picker back a year to seed the second year (native-only) and
   covers the card → paywall hop.
+  - ↳ **Follow-on: filed federal tax on record.** For any tracked year where the user entered their
+    real filed federal total tax (via the safe-harbor screen's prior-year input), the year-over-year
+    screen now surfaces it in a labeled "Filed federal tax on record" card — the actual outcome shown
+    next to the app's own estimates. Deliberately kept *separate* from the combined estimated-tax
+    delta rather than swapped into it: the filed figure is federal-only while the estimate is federal
+    + state, so folding them together would mislead; a footnote makes the distinction explicit.
+    Additive `YearSummary.filedFederalTax`; unit tests cover the year-scoping (a figure keyed to a
+    different year doesn't leak).
 - ⬜ Multi-state support (design pass first)
 
 </details>

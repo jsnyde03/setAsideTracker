@@ -569,6 +569,18 @@ describe("summarizeYear", () => {
     const entries = [makeEntry({ date: "2025-04-01", grossPay: 1000, tips: 0, mileage: 0 })];
     expect(summarizeYear(entries, profile, 2025).effectiveHourlyRate).toBeUndefined();
   });
+
+  it("surfaces the filed federal tax for the year when the user entered it, else undefined", () => {
+    const entries = [makeEntry({ date: "2025-04-01", grossPay: 1000, tips: 0, mileage: 0 })];
+    // No filed figure on record → undefined (not folded into the combined estimatedTax).
+    expect(summarizeYear(entries, profile, 2025).filedFederalTax).toBeUndefined();
+
+    const withFiled: TaxProfile = { ...profile, filedTaxByYear: { 2025: { totalTax: 3400 } } };
+    const summary = summarizeYear(entries, withFiled, 2025);
+    expect(summary.filedFederalTax).toBe(3400);
+    // A filed figure keyed to a different year must not leak into this one.
+    expect(summarizeYear(entries, { ...profile, filedTaxByYear: { 2024: { totalTax: 999 } } }, 2025).filedFederalTax).toBeUndefined();
+  });
 });
 
 describe("computeYearOverYear", () => {
