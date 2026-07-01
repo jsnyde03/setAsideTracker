@@ -1,4 +1,5 @@
 import { totalCustomExpenses } from "./calculations";
+import { PLATFORM_LABELS } from "./platforms";
 import type { Entry } from "./types";
 
 /** A single IRS Schedule C line the app's tracked data maps onto. */
@@ -108,4 +109,51 @@ export function buildScheduleCSummary(
     totalExpenses,
     netProfit: grossReceipts - totalExpenses,
   };
+}
+
+/**
+ * One trip in the mileage-log substantiation appendix backing Schedule C Line 9. The IRS requires a
+ * contemporaneous record of the date, business purpose, and route for each trip claimed under the
+ * standard mileage rate; this row is what the PDF renders. The free-text fields are optional (see
+ * {@link import("./types").MileageLog}) — when the user hasn't recorded a purpose the platform label
+ * stands in for context, and an unrecorded route renders as a placeholder.
+ */
+export interface MileageLogRow {
+  /** ISO date of the trip (the entry's date). */
+  date: string;
+  /** Display label for the entry's platform (e.g. "DoorDash") — trip context when purpose is blank. */
+  platformLabel: string;
+  /** Business purpose of the trip, if the user recorded one (trimmed; undefined when blank). */
+  purpose?: string;
+  /** Where the trip started, if recorded (trimmed; undefined when blank). */
+  startLocation?: string;
+  /** Where the trip ended, if recorded (trimmed; undefined when blank). */
+  endLocation?: string;
+  /** Business miles claimed for this trip. Always > 0 (zero-mile entries are excluded). */
+  miles: number;
+}
+
+/**
+ * Builds the Schedule C Line 9 mileage-log appendix from a year's entries: one row per trip that
+ * claims business miles, sorted oldest-first (the natural order for a log). Entries with no mileage
+ * are excluded so the row total reconciles with the Line 9 standard-mileage figure. Pass entries
+ * already scoped to the target year. Pure — the PDF render lives in taxSummaryHtml.ts.
+ */
+export function buildMileageLog(entries: Entry[]): MileageLogRow[] {
+  return entries
+    .filter((entry) => entry.mileage > 0)
+    .map((entry) => {
+      const purpose = entry.mileageLog?.purpose?.trim();
+      const startLocation = entry.mileageLog?.startLocation?.trim();
+      const endLocation = entry.mileageLog?.endLocation?.trim();
+      return {
+        date: entry.date,
+        platformLabel: PLATFORM_LABELS[entry.platform],
+        purpose: purpose || undefined,
+        startLocation: startLocation || undefined,
+        endLocation: endLocation || undefined,
+        miles: entry.mileage,
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
 }

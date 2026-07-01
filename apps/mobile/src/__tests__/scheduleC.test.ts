@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildScheduleCSummary } from "../scheduleC";
+import { buildMileageLog, buildScheduleCSummary } from "../scheduleC";
 import type { Entry } from "../types";
 
 let idCounter = 0;
@@ -98,5 +98,40 @@ describe("buildScheduleCSummary", () => {
     const summary = buildScheduleCSummary(entries, 0);
     expect(summary.otherExpenses).toEqual([{ label: "Tolls extra", amount: 12 }]);
     expect(summary.expenseLines.find((l) => l.line === "27")!.amount).toBe(12);
+  });
+});
+
+describe("buildMileageLog", () => {
+  it("builds one row per trip with miles, oldest-first, carrying trimmed log details", () => {
+    const rows = buildMileageLog([
+      entry({
+        date: "2026-05-01",
+        platform: "uber",
+        mileage: 40,
+        mileageLog: { purpose: "  Rides  ", startLocation: " Home ", endLocation: " Airport " },
+      }),
+      entry({ date: "2026-02-10", platform: "doordash", mileage: 25 }),
+    ]);
+
+    expect(rows).toEqual([
+      { date: "2026-02-10", platformLabel: "DoorDash", purpose: undefined, startLocation: undefined, endLocation: undefined, miles: 25 },
+      { date: "2026-05-01", platformLabel: "Uber", purpose: "Rides", startLocation: "Home", endLocation: "Airport", miles: 40 },
+    ]);
+  });
+
+  it("excludes entries without business miles so the total reconciles with Line 9", () => {
+    const rows = buildMileageLog([
+      entry({ mileage: 0, mileageLog: { purpose: "No driving" } }),
+      entry({ mileage: 15 }),
+    ]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].miles).toBe(15);
+  });
+
+  it("treats blank/whitespace-only log fields as absent", () => {
+    const rows = buildMileageLog([
+      entry({ mileage: 10, mileageLog: { purpose: "   ", startLocation: "", endLocation: "  " } }),
+    ]);
+    expect(rows[0]).toMatchObject({ purpose: undefined, startLocation: undefined, endLocation: undefined });
   });
 });

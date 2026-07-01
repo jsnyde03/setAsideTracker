@@ -33,7 +33,8 @@ What's new in 1.1:
 Premium:
 • Tax-ready PDF export with a Schedule C breakdown.
 • IRS-compliant mileage log — record each trip's purpose and start/end location for an
-  audit-ready record of your business miles.
+  audit-ready record of your business miles, printed right in your tax-ready PDF as a
+  Schedule C Line 9 substantiation appendix.
 • Custom expense categories — track write-offs beyond parking, tolls, supplies, and phone
   (health insurance, car washes, hot bags, and more), mapped to Schedule C "Other expenses."
 • W-4 withholding optimizer — if you also have a W2 job, see the exact extra withholding to put
@@ -92,6 +93,13 @@ line items above are live on the branch.)*
   Premium row that routes to the paywall); the fields flow into the existing CSV export so the log
   is actually usable at tax time. Unit tests (CSV columns + escaping) + a Playwright gate test pass;
   the native locked-row → Alert → paywall hop is covered by a new Maestro flow.
+  - ↳ **Follow-on: mileage log in the premium PDF.** The tax-ready PDF now closes with a "Mileage
+    Log — Schedule C Line 9 Substantiation" appendix: one row per trip (date · purpose · route ·
+    miles) sorted oldest-first, with a total that reconciles to the Line 9 mileage figure. Missing
+    detail degrades gracefully (platform label stands in for a blank purpose, a dash for an unrecorded
+    route); the section is omitted when no entry has business miles. So the audit-ready log lives in
+    the tax-ready *document*, not just the CSV. Pure `buildMileageLog` builder + HTML render, covered
+    by new Schedule C + HTML-builder unit tests (free-text HTML-escaping included).
 - ✅ **Custom expense categories** — premium-authored named expense lines per entry (e.g. health
   insurance, car washes, hot bags) beyond the four fixed buckets. Additive `Entry.customExpenses`
   schema; a premium-gated "Custom expense categories" section in the entry form (free users see a

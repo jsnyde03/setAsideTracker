@@ -11,7 +11,7 @@ import { TextField } from "../components/TextField";
 import { exportEntriesAsCsv } from "../exportEntriesAsCsv";
 import { exportTaxSummaryPdf } from "../taxSummaryPdf";
 import { buildTaxSummaryHtml } from "../taxSummaryHtml";
-import { buildScheduleCSummary } from "../scheduleC";
+import { buildMileageLog, buildScheduleCSummary } from "../scheduleC";
 import { computeTaxEstimate, entriesForYear } from "../calculations";
 import { reportError } from "../errorReporting";
 import { isAppLockAvailable } from "../security/appLock";
@@ -126,6 +126,7 @@ export function SettingsScreen({
     try {
       const estimate = computeTaxEstimate(entries, taxProfile, year);
       const scheduleC = buildScheduleCSummary(yearEntries, estimate.estimate.mileageDeduction.deductionAmount);
+      const mileageLog = buildMileageLog(yearEntries);
       const html = buildTaxSummaryHtml({
         preparedFor: localUserProfile.displayName,
         year,
@@ -134,6 +135,7 @@ export function SettingsScreen({
         generatedOn: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
         scheduleC,
         estimate,
+        mileageLog,
       });
       await exportTaxSummaryPdf(html, `tax-summary-${year}.pdf`);
     } catch (error) {

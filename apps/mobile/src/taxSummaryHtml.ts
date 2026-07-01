@@ -1,5 +1,5 @@
 import type { TaxEstimateForYear } from "./calculations";
-import type { ScheduleCSummary } from "./scheduleC";
+import type { MileageLogRow, ScheduleCSummary } from "./scheduleC";
 
 export interface TaxSummaryData {
   /** Who the report is for (the user's display name). */
@@ -13,6 +13,9 @@ export interface TaxSummaryData {
   generatedOn: string;
   scheduleC: ScheduleCSummary;
   estimate: TaxEstimateForYear;
+  /** Per-trip mileage log substantiating Schedule C Line 9. Empty when no entry has business miles;
+   * rendered as an audit-ready appendix. */
+  mileageLog: MileageLogRow[];
 }
 
 function formatCurrency(amount: number): string {
@@ -38,6 +41,23 @@ function row(label: string, amount: number, opts: { strong?: boolean; negative?:
 /** Indented breakdown row under Line 27 — the label is user-provided free text, so it's escaped. */
 function subRow(label: string, amount: number): string {
   return `<tr class="sub"><td>${escapeHtml(label)}</td><td class="num">${formatCurrency(amount)}</td></tr>`;
+}
+
+/** Formats the miles count with thousands separators (no decimals — mileage is tracked whole). */
+function formatMiles(miles: number): string {
+  return miles.toLocaleString("en-US");
+}
+
+/** Renders one trip row of the mileage-log appendix. Purpose/route are user free text, so escaped;
+ * a missing purpose falls back to the (muted) platform label and a missing route to a dash so the
+ * row is never blank. */
+function mileageRow(trip: MileageLogRow): string {
+  const purpose = trip.purpose
+    ? escapeHtml(trip.purpose)
+    : `<span class="muted">${escapeHtml(trip.platformLabel)}</span>`;
+  const routeParts = [trip.startLocation, trip.endLocation].filter((p): p is string => Boolean(p)).map(escapeHtml);
+  const route = routeParts.length > 0 ? routeParts.join(" &rarr; ") : `<span class="muted">&mdash;</span>`;
+  return `<tr><td class="nowrap">${escapeHtml(trip.date)}</td><td>${purpose}</td><td>${route}</td><td class="num">${formatMiles(trip.miles)}</td></tr>`;
 }
 
 /**
@@ -73,6 +93,21 @@ export function buildTaxSummaryHtml(data: TaxSummaryData): string {
     withholdingCredit > 0 ? row("Less: estimated W-2 withholding credit", withholdingCredit, { negative: true }) : "",
   ].join("");
 
+  // Mileage-log appendix (Schedule C Line 9 substantiation) — one row per trip claiming business
+  // miles, with a total that reconciles to the Line 9 mileage figure. Omitted when no trips exist.
+  const totalLoggedMiles = data.mileageLog.reduce((sum, trip) => sum + trip.miles, 0);
+  const mileageAppendix =
+    data.mileageLog.length > 0
+      ? `
+  <h2>Mileage Log — Schedule C Line 9 Substantiation</h2>
+  <p class="note">The IRS requires a contemporaneous record of each business trip's date, purpose, and route to claim the standard mileage deduction. These are the trips backing the ${formatMiles(mileage.miles)} business miles on Line 9.</p>
+  <table>
+    <tr class="head"><td>Date</td><td>Purpose</td><td>Route</td><td class="num">Miles</td></tr>
+    ${data.mileageLog.map(mileageRow).join("")}
+    <tr class="strong"><td colspan="3">Total business miles</td><td class="num">${formatMiles(totalLoggedMiles)}</td></tr>
+  </table>`
+      : "";
+
   const fallbackWarning = estimate.usedFallbackConfig
     ? `<p class="warn">Note: official ${data.year} tax figures weren't finalized when this was generated, so the nearest available tax-year rates were used. Treat as an estimate.</p>`
     : "";
@@ -95,6 +130,9 @@ export function buildTaxSummaryHtml(data: TaxSummaryData): string {
   tr.neg td.num { color: #0E8F5E; }
   tr.sub td { padding: 3px 0; border-bottom: none; color: #5B6270; font-size: 12px; }
   tr.sub td:first-child { padding-left: 18px; }
+  tr.head td { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #5B6270; border-bottom: 1px solid #E4E7EC; }
+  td.nowrap { white-space: nowrap; }
+  .muted { color: #9AA1AC; }
   .setaside { margin-top: 16px; background: #E8F0FE; border-radius: 10px; padding: 16px; }
   .setaside .label { font-size: 12px; color: #5B6270; }
   .setaside .value { font-size: 26px; font-weight: 800; color: #0F5FE0; }
@@ -130,6 +168,7 @@ export function buildTaxSummaryHtml(data: TaxSummaryData): string {
     <div class="value">${formatCurrency(estimate.netAmountToSetAside)}</div>
     <div class="note">Total estimated tax${withholdingCredit > 0 ? ", net of estimated W-2 withholding already covering part of it" : ""}.</div>
   </div>
+  ${mileageAppendix}
 
   <p class="disclaimer">
     This summary is generated from the entries you logged in SetAside Tracker and is an estimate to

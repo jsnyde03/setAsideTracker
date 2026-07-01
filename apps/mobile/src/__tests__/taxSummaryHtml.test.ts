@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildTaxSummaryHtml } from "../taxSummaryHtml";
-import { buildScheduleCSummary } from "../scheduleC";
+import { buildMileageLog, buildScheduleCSummary } from "../scheduleC";
 import { computeTaxEstimate } from "../calculations";
 import type { Entry, TaxProfile } from "../types";
 
@@ -47,6 +47,7 @@ function buildHtml(over: Partial<Parameters<typeof buildTaxSummaryHtml>[0]> = {}
     generatedOn: "June 30, 2026",
     scheduleC,
     estimate,
+    mileageLog: buildMileageLog(entries),
     ...over,
   });
 }
@@ -85,6 +86,7 @@ describe("buildTaxSummaryHtml", () => {
       generatedOn: "June 30, 2026",
       scheduleC,
       estimate,
+      mileageLog: buildMileageLog(withCustom),
     });
     expect(html).toContain("Line 27 — Other expenses");
     expect(html).toContain("Car wash");
@@ -95,6 +97,59 @@ describe("buildTaxSummaryHtml", () => {
 
   it("omits Line 27 when there are no custom expenses", () => {
     expect(buildHtml()).not.toContain("Line 27");
+  });
+
+  it("renders a mileage-log appendix listing each trip, escaping user free text", () => {
+    const withLog: Entry[] = [
+      {
+        ...entries[0],
+        mileageLog: {
+          purpose: "Deliveries, downtown <zone>",
+          startLocation: "Home",
+          endLocation: "Warehouse",
+        },
+      },
+      entries[1], // no log details — should still appear, with platform fallback + dash route
+    ];
+    const estimate = computeTaxEstimate(withLog, profile, YEAR);
+    const scheduleC = buildScheduleCSummary(withLog, estimate.estimate.mileageDeduction.deductionAmount);
+    const html = buildTaxSummaryHtml({
+      preparedFor: "Jordan",
+      year: YEAR,
+      filingStatusLabel: "Single",
+      locationLabel: "TX",
+      generatedOn: "June 30, 2026",
+      scheduleC,
+      estimate,
+      mileageLog: buildMileageLog(withLog),
+    });
+    expect(html).toContain("Mileage Log — Schedule C Line 9 Substantiation");
+    // Free text is HTML-escaped.
+    expect(html).toContain("Deliveries, downtown &lt;zone&gt;");
+    expect(html).not.toContain("downtown <zone>");
+    expect(html).toContain("Home &rarr; Warehouse");
+    // The detail-less trip still appears with its platform label as context.
+    expect(html).toContain("Uber");
+    // Total reconciles with the two entries' miles (1200 + 800).
+    expect(html).toContain("Total business miles");
+    expect(html).toContain("2,000");
+  });
+
+  it("omits the mileage-log appendix when no entry has business miles", () => {
+    const noMiles: Entry[] = [{ ...entries[0], mileage: 0 }, { ...entries[1], mileage: 0 }];
+    const estimate = computeTaxEstimate(noMiles, profile, YEAR);
+    const scheduleC = buildScheduleCSummary(noMiles, estimate.estimate.mileageDeduction.deductionAmount);
+    const html = buildTaxSummaryHtml({
+      preparedFor: "Jordan",
+      year: YEAR,
+      filingStatusLabel: "Single",
+      locationLabel: "TX",
+      generatedOn: "June 30, 2026",
+      scheduleC,
+      estimate,
+      mileageLog: buildMileageLog(noMiles),
+    });
+    expect(html).not.toContain("Mileage Log");
   });
 
   it("shows the fallback-config warning only when the estimate used a fallback year", () => {
@@ -112,6 +167,7 @@ describe("buildTaxSummaryHtml", () => {
       generatedOn: "June 30, 2099",
       scheduleC,
       estimate: estimate2099,
+      mileageLog: buildMileageLog(entries),
     });
     expect(html).toContain("weren't finalized");
   });
