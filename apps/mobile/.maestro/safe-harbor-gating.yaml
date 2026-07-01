@@ -1,0 +1,42 @@
+# The safe-harbor / Form 2210 calculator is Premium. It surfaces on the dashboard as an "Avoid the
+# IRS penalty · Premium" card whenever there's gig tax to set aside (no W2 job required, unlike the
+# W-4 card). Like the W-4 card it navigates a free user straight to the paywall (no native Alert),
+# but the hop is still worth exercising on a real simulator. The safe-harbor math is covered by the
+# computeSafeHarbor unit tests.
+appId: com.gigtaxtracker.app
+name: Safe-harbor gating (locked card → paywall)
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Welcome"
+- tapOn: "Your name"
+- inputText: "Maestro Tester"
+- tapOn: "Single"
+- tapOn: "e.g. CA"
+- inputText: "TX"
+- hideKeyboard
+- tapOn: "I understand this app provides estimates, not tax advice"
+- tapOn: "Continue"
+- assertVisible: "Set aside for taxes"
+
+# Log gig income so there's tax to set aside (and the safe-harbor card appears).
+- tapOn: "Log Earnings"
+- assertVisible: "Platform"
+- tapOn: "DoorDash"
+- tapOn:
+    text: "0.00"
+    index: 0
+- inputText: "4000"
+- hideKeyboard
+- tapOn: "Save Entry"
+- assertVisible: "Set aside for taxes"
+
+# The safe-harbor card is present but locked behind Premium; tapping it opens the paywall directly.
+- scrollUntilVisible:
+    element:
+      text: "Avoid the IRS penalty.*Premium"
+    direction: DOWN
+- tapOn:
+    text: "Avoid the IRS penalty.*Premium"
+- assertVisible: "SetAside Premium"
+- tapOn: "Close"

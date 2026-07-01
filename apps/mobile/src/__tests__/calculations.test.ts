@@ -5,6 +5,7 @@ import {
   annualIncomeFromPaycheck,
   comparePlatforms,
   computeCatchUpStatus,
+  computeSafeHarbor,
   computeTaxEstimate,
   computeW4Optimization,
   computeWhatIfEstimate,
@@ -655,6 +656,126 @@ describe("computeW4Optimization", () => {
     const afterYearEnd = computeW4Optimization(estimate, w2Profile, new Date(2027, 0, 5));
     expect(afterYearEnd.remainingPayPeriods).toBe(1);
     expect(afterYearEnd.catchUpPerPaycheck).toBeCloseTo(afterYearEnd.remainingGigTaxThisYear, 6);
+  });
+});
+
+describe("computeSafeHarbor", () => {
+  // TX has no state income tax, so federal == combined — keeps the safe-harbor math easy to reason
+  // about. The federal-vs-combined split is exercised separately with a CA profile below.
+  const txSingle: TaxProfile = { filingStatus: "single", dependents: 0, hasW2Job: false, state: "TX" };
+  const txW2: TaxProfile = {
+    ...txSingle,
+    hasW2Job: true,
+    w2GrossPayPerPeriod: 2000,
+    w2PayFrequency: "biweekly",
+  };
+  const gigEntries = [makeEntry({ date: "2026-02-01", grossPay: 40000, tips: 0, mileage: 0 })];
+
+  it("falls back to the 90%-current requirement (and flags no prior year) when last year's tax is unknown", () => {
+    const estimate = computeTaxEstimate(gigEntries, txSingle, 2026);
+    const result = computeSafeHarbor(estimate, txSingle);
+
+    expect(result.hasPriorYear).toBe(false);
+    expect(result.currentYearFederalTax).toBeCloseTo(estimate.estimate.totalEstimatedTax, 6); // TX: no state tax
+    expect(result.ninetyPctCurrent).toBeCloseTo(result.currentYearFederalTax * 0.9, 6);
+    expect(result.requiredAnnualPayment).toBeCloseTo(result.ninetyPctCurrent, 6);
+    expect(result.bindingTest).toBe("currentYear");
+    expect(result.federalWithholding).toBe(0); // no W2 job
+  });
+
+  it("uses the (smaller) prior-year safe harbor when income jumped — the headline benefit", () => {
+    const profile: TaxProfile = { ...txSingle, filedTaxByYear: { 2025: { totalTax: 1000 } } };
+    const estimate = computeTaxEstimate(gigEntries, profile, 2026);
+    const result = computeSafeHarbor(estimate, profile);
+
+    expect(result.hasPriorYear).toBe(true);
+    expect(result.priorYearMultiplier).toBe(1.0);
+    expect(result.priorYearSafeHarbor).toBe(1000);
+    // 100% of last year's $1,000 is far below 90% of this (much larger) year — so it's binding.
+    expect(result.priorYearSafeHarbor).toBeLessThan(result.ninetyPctCurrent);
+    expect(result.requiredAnnualPayment).toBe(1000);
+    expect(result.bindingTest).toBe("priorYear");
+    expect(result.estimatedPaymentsNeeded).toBe(1000); // no W2 withholding to offset it
+    expect(result.perQuarter).toBe(250);
+  });
+
+  it("stays on the 90%-current requirement when last year's tax was higher than this year's", () => {
+    const profile: TaxProfile = { ...txSingle, filedTaxByYear: { 2025: { totalTax: 999999 } } };
+    const estimate = computeTaxEstimate(gigEntries, profile, 2026);
+    const result = computeSafeHarbor(estimate, profile);
+
+    expect(result.requiredAnnualPayment).toBeCloseTo(result.ninetyPctCurrent, 6);
+    expect(result.bindingTest).toBe("currentYear");
+  });
+
+  it("applies the 110% prior-year multiplier above the high-income AGI line ($150k, $75k if MFS)", () => {
+    const highEarner: TaxProfile = { ...txSingle, filedTaxByYear: { 2025: { totalTax: 1000, agi: 200000 } } };
+    const estimate = computeTaxEstimate(gigEntries, highEarner, 2026);
+    const result = computeSafeHarbor(estimate, highEarner);
+    expect(result.priorYearMultiplier).toBe(1.1);
+    expect(result.priorYearSafeHarbor).toBeCloseTo(1100, 6);
+
+    // Married-filing-separately uses the halved $75k threshold.
+    const mfs: TaxProfile = {
+      ...txSingle,
+      filingStatus: "marriedFilingSeparately",
+      filedTaxByYear: { 2025: { totalTax: 1000, agi: 80000 } },
+    };
+    const mfsResult = computeSafeHarbor(computeTaxEstimate(gigEntries, mfs, 2026), mfs);
+    expect(mfsResult.priorYearMultiplier).toBe(1.1);
+
+    // Same $80k AGI for a single filer is under $150k → stays at 100%.
+    const single: TaxProfile = { ...txSingle, filedTaxByYear: { 2025: { totalTax: 1000, agi: 80000 } } };
+    const singleResult = computeSafeHarbor(computeTaxEstimate(gigEntries, single, 2026), single);
+    expect(singleResult.priorYearMultiplier).toBe(1.0);
+  });
+
+  it("reports no penalty under the $1,000 de-minimis floor (tax after withholding < $1,000)", () => {
+    // Small gig income → SE tax only, well under $1,000, no withholding to subtract.
+    const smallGig = [makeEntry({ date: "2026-02-01", grossPay: 5000, tips: 0, mileage: 0 })];
+    const estimate = computeTaxEstimate(smallGig, txSingle, 2026);
+    const result = computeSafeHarbor(estimate, txSingle);
+
+    expect(result.currentYearFederalTax).toBeLessThan(1000);
+    expect(result.underDeMinimis).toBe(true);
+    expect(result.noPenaltyExpected).toBe(true);
+  });
+
+  it("reports no penalty when W2 withholding alone already meets the (low prior-year) requirement", () => {
+    // Tiny prior-year tax → required = $100; a real W2 job withholds far more than that.
+    const profile: TaxProfile = { ...txW2, filedTaxByYear: { 2025: { totalTax: 100 } } };
+    const estimate = computeTaxEstimate(gigEntries, profile, 2026);
+    const result = computeSafeHarbor(estimate, profile);
+
+    expect(result.requiredAnnualPayment).toBe(100);
+    expect(result.federalWithholding).toBeGreaterThan(100);
+    expect(result.estimatedPaymentsNeeded).toBe(0);
+    expect(result.perQuarter).toBe(0);
+    expect(result.underDeMinimis).toBe(false); // big gig tax means the balance due is well over $1,000
+    expect(result.noPenaltyExpected).toBe(true); // ...but withholding already satisfies the harbor
+  });
+
+  it("is federal-only: state tax is excluded from the current-year figure", () => {
+    const caSingle: TaxProfile = { ...txSingle, state: "CA" };
+    const estimate = computeTaxEstimate(gigEntries, caSingle, 2026);
+    const result = computeSafeHarbor(estimate, caSingle);
+
+    expect(estimate.estimate.stateTax.stateTax).toBeGreaterThan(0); // CA does tax this income
+    expect(result.currentYearFederalTax).toBeCloseTo(
+      estimate.estimate.totalEstimatedTax - estimate.estimate.stateTax.stateTax,
+      6
+    );
+    expect(result.currentYearFederalTax).toBeLessThan(estimate.estimate.totalEstimatedTax);
+  });
+
+  it("subtracts federal withholding (not the combined federal+state figure) from the requirement", () => {
+    const caW2: TaxProfile = { ...txW2, state: "CA", filedTaxByYear: { 2025: { totalTax: 100 } } };
+    const estimate = computeTaxEstimate(gigEntries, caW2, 2026);
+    const result = computeSafeHarbor(estimate, caW2);
+    // The federal-only withholding the safe harbor uses must be the federal slice, below the
+    // combined federal+state withholding the rest of the app credits.
+    expect(result.federalWithholding).toBeCloseTo(estimate.w2FederalWithholdingYtdEstimate, 6);
+    expect(result.federalWithholding).toBeLessThan(estimate.w2WithholdingYtdEstimate);
   });
 });
 

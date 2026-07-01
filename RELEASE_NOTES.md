@@ -38,6 +38,8 @@ Premium:
   (health insurance, car washes, hot bags, and more), mapped to Schedule C "Other expenses."
 • W-4 withholding optimizer — if you also have a W2 job, see the exact extra withholding to put
   on a new W-4 so your paycheck covers your gig taxes, skipping quarterly estimated payments.
+• Safe-harbor calculator — see the minimum you can pay in to avoid the IRS underpayment penalty.
+  If your income jumped, the prior-year safe harbor is often far less than this year's full bill.
 ```
 *(Premium features are added to this list as each one ships — see "Remaining" below. The free-tier
 line items above are live on the branch.)*
@@ -106,7 +108,18 @@ line items above are live on the branch.)*
   web-testable). Hand-verified unit tests (gig-tax isolation, pay-frequency periods, already-covered,
   catch-up math, divide-by-zero floor) + a Playwright gate test pass; a new Maestro flow covers the
   native card → paywall hop.
-- ⬜ Safe-harbor / Form 2210 underpayment calculator
+- ✅ **Safe-harbor / Form 2210 underpayment calculator** — shows the minimum a user can pay in
+  (withholding + estimated payments) to avoid the federal underpayment penalty: the smaller of 90%
+  of this year's tax or 100%/110% of last year's. When income jumps, the prior-year leg is often far
+  below this year's bill — the headline value. Pure `computeSafeHarbor` engine surface (federal-only,
+  since Form 2210 is a federal rule — strips the engine's state-tax slice and uses a new
+  federal-only W2-withholding figure; the $1,000 de-minimis floor; the 110% high-income multiplier
+  with the $75k MFS threshold). A premium result screen reached from a dashboard "Avoid the IRS
+  penalty" card (free users tap straight through to the paywall — no Alert, fully web-testable); it
+  carries the one input only the user can supply — last year's filed total tax — with a suggestion
+  derived from logged prior-year data when present. Hand-verified unit tests (prior-year vs.
+  current-year binding, 110%/MFS thresholds, de-minimis, withholding-covers, federal-vs-combined
+  split) + a Playwright gate test pass; a new Maestro flow covers the native card → paywall hop.
 - ⬜ Year-over-year insights
 - ⬜ Multi-state support (design pass first)
 

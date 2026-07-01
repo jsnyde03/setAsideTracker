@@ -28,6 +28,11 @@ export interface TaxEstimateForYear {
    * much of the job's active period (Jan 1 through w2EndDate, or year-end if none) has elapsed.
    * 0 whenever there's no W2 job or it wasn't active at all during this year. */
   w2WithholdingYtdEstimate: number;
+  /** The FEDERAL-only slice of w2WithholdingYtdEstimate (excludes state withholding). Needed by the
+   * safe-harbor / Form 2210 calculator, which is a federal rule and must compare against federal
+   * tax and federal withholding only — not the combined figure the rest of the app uses. 0 when
+   * there's no active W2 job this year. */
+  w2FederalWithholdingYtdEstimate: number;
   /** estimate.totalEstimatedTax minus w2WithholdingYtdEstimate, floored at 0 — what's actually
    * left to set aside after crediting back tax already withheld from W2 paychecks. This is the
    * number that should be shown as the headline "set aside" figure, not the raw gross total. */
@@ -289,16 +294,22 @@ export function estimateFromAggregate(
   // - Otherwise: credit the full annual estimate — the gap between gig income tax and $0 is
   //   what the user actually needs to set aside, not a partial-year proration.
   let w2WithholdingYtdEstimate = 0;
+  let w2FederalWithholdingYtdEstimate = 0;
   if (w2Active) {
     const annualEstimate = estimate.w2WithholdingEstimate.annualTotalEstimate;
+    const annualFederalEstimate = estimate.w2WithholdingEstimate.annualFederalEstimate;
     const hasYtdActuals =
       taxProfile.w2YtdFederalWithheld !== undefined || taxProfile.w2YtdStateWithheld !== undefined;
     if (hasYtdActuals) {
       const ytdActual = (taxProfile.w2YtdFederalWithheld ?? 0) + (taxProfile.w2YtdStateWithheld ?? 0);
       const elapsedFraction = w2WithholdingYearFraction(year, taxProfile.w2EndDate);
-      w2WithholdingYtdEstimate = ytdActual + annualEstimate * Math.max(0, 1 - elapsedFraction);
+      const remainingFraction = Math.max(0, 1 - elapsedFraction);
+      w2WithholdingYtdEstimate = ytdActual + annualEstimate * remainingFraction;
+      w2FederalWithholdingYtdEstimate =
+        (taxProfile.w2YtdFederalWithheld ?? 0) + annualFederalEstimate * remainingFraction;
     } else {
       w2WithholdingYtdEstimate = annualEstimate;
+      w2FederalWithholdingYtdEstimate = annualFederalEstimate;
     }
   }
 
@@ -309,6 +320,7 @@ export function estimateFromAggregate(
     year,
     usedFallbackConfig: !taxYearConfigs[year],
     w2WithholdingYtdEstimate,
+    w2FederalWithholdingYtdEstimate,
     netAmountToSetAside,
   };
 }
@@ -400,6 +412,122 @@ export function computeW4Optimization(
     remainingPayPeriods,
     remainingGigTaxThisYear: netAmountToSetAside,
     catchUpPerPaycheck,
+  };
+}
+
+/**
+ * Result of the safe-harbor (Form 2210) underpayment-penalty check. Everything here is FEDERAL
+ * only — Form 2210, the $1,000 floor, and the 90%/100%/110% thresholds are federal rules; state
+ * underpayment rules differ and aren't modeled. The headline output is `requiredAnnualPayment`:
+ * the least a taxpayer can pay in (through withholding + estimated payments) and still avoid the
+ * penalty — which, when income has jumped, is often far below this year's actual tax.
+ */
+export interface SafeHarborResult {
+  /** Estimated current-year federal tax (the engine's total estimate minus its state-tax slice). */
+  currentYearFederalTax: number;
+  /** 90% of currentYearFederalTax — the current-year leg of the safe harbor. */
+  ninetyPctCurrent: number;
+  /** True when the user supplied a prior-year filed total tax (so the prior-year leg is real). */
+  hasPriorYear: boolean;
+  /** Prior-year federal total tax the user entered from their filed return. 0 when not supplied. */
+  priorYearTax: number;
+  /** 1.0, or 1.1 when prior-year AGI exceeded the high-income threshold ($150k, or $75k if married
+   *  filing separately). 1.0 whenever AGI wasn't supplied (the common, lower-income case). */
+  priorYearMultiplier: number;
+  /** priorYearMultiplier × priorYearTax — the prior-year leg of the safe harbor. 0 when no prior
+   *  year was supplied. */
+  priorYearSafeHarbor: number;
+  /** The required annual payment to avoid the penalty: the SMALLER of the two legs, or just the
+   *  90%-current leg when no prior-year figure is available (we can't claim the prior-year leg
+   *  without the number, so we fall back to the conservative current-year one). */
+  requiredAnnualPayment: number;
+  /** Which leg is binding (the smaller one). "currentYear" also when no prior-year figure exists. */
+  bindingTest: "currentYear" | "priorYear";
+  /** Expected full-year federal W2 withholding — counts toward the requirement automatically. */
+  federalWithholding: number;
+  /** Estimated federal payments still needed beyond withholding: max(0, required − withholding).
+   *  This is the actionable number — the minimum to pay across the year's quarterly installments. */
+  estimatedPaymentsNeeded: number;
+  /** estimatedPaymentsNeeded spread over 4 equal quarterly installments (the default 1040-ES
+   *  schedule). 0 when nothing extra is needed. */
+  perQuarter: number;
+  /** True when current-year federal tax after withholding is under the $1,000 de-minimis floor —
+   *  no penalty applies regardless of estimated payments (Form 2210's first stop). */
+  underDeMinimis: boolean;
+  /** True when no underpayment penalty is expected at all: de-minimis, OR withholding by itself
+   *  already meets the required annual payment (no estimated payments needed). */
+  noPenaltyExpected: boolean;
+}
+
+/** Tax under this balance-due (after withholding) carries no underpayment penalty (Form 2210). */
+const SAFE_HARBOR_DE_MINIMIS = 1000;
+/** Current-year safe harbor: pay at least 90% of this year's tax. */
+const SAFE_HARBOR_CURRENT_PCT = 0.9;
+/** Prior-year safe harbor: 100% of last year's tax, bumped to 110% above the high-income AGI line. */
+const SAFE_HARBOR_PRIOR_HIGH_INCOME_MULTIPLIER = 1.1;
+/** AGI above which the prior-year safe harbor is 110% rather than 100% (half that for MFS). */
+const SAFE_HARBOR_HIGH_INCOME_AGI = 150000;
+const SAFE_HARBOR_HIGH_INCOME_AGI_MFS = 75000;
+
+/**
+ * Computes the federal safe-harbor / Form 2210 underpayment-penalty picture from an already-computed
+ * tax estimate and the user's prior-year filed figures. Pure (reuses the estimate; reads prior-year
+ * data from the profile rather than re-running anything). The prior-year leg only exists if the user
+ * entered last year's total tax — the app can't know a return it didn't compute — so when it's
+ * absent we report the conservative 90%-current requirement and the UI should prompt for the figure
+ * (entering it can only lower the requirement, never raise it).
+ */
+export function computeSafeHarbor(
+  taxEstimate: TaxEstimateForYear,
+  taxProfile: TaxProfile
+): SafeHarborResult {
+  const { estimate, year, w2FederalWithholdingYtdEstimate: federalWithholding } = taxEstimate;
+
+  // Form 2210 is federal: strip the engine's state-tax slice off the combined total.
+  const currentYearFederalTax = Math.max(0, estimate.totalEstimatedTax - estimate.stateTax.stateTax);
+  const ninetyPctCurrent = currentYearFederalTax * SAFE_HARBOR_CURRENT_PCT;
+
+  const priorFiled = taxProfile.filedTaxByYear?.[year - 1];
+  const hasPriorYear = priorFiled !== undefined && priorFiled.totalTax > 0;
+  const priorYearTax = hasPriorYear ? priorFiled!.totalTax : 0;
+
+  const highIncomeThreshold =
+    taxProfile.filingStatus === "marriedFilingSeparately"
+      ? SAFE_HARBOR_HIGH_INCOME_AGI_MFS
+      : SAFE_HARBOR_HIGH_INCOME_AGI;
+  const priorYearMultiplier =
+    hasPriorYear && priorFiled!.agi !== undefined && priorFiled!.agi > highIncomeThreshold
+      ? SAFE_HARBOR_PRIOR_HIGH_INCOME_MULTIPLIER
+      : 1.0;
+  const priorYearSafeHarbor = hasPriorYear ? priorYearTax * priorYearMultiplier : 0;
+
+  // The taxpayer can pay the SMALLER of the two legs. Without the prior-year figure we can't claim
+  // its (often lower) leg, so we fall back to the current-year one rather than guessing.
+  const requiredAnnualPayment =
+    hasPriorYear ? Math.min(ninetyPctCurrent, priorYearSafeHarbor) : ninetyPctCurrent;
+  const bindingTest: "currentYear" | "priorYear" =
+    hasPriorYear && priorYearSafeHarbor < ninetyPctCurrent ? "priorYear" : "currentYear";
+
+  const estimatedPaymentsNeeded = Math.max(0, requiredAnnualPayment - federalWithholding);
+  const perQuarter = estimatedPaymentsNeeded / 4;
+
+  const underDeMinimis = currentYearFederalTax - federalWithholding < SAFE_HARBOR_DE_MINIMIS;
+  const noPenaltyExpected = underDeMinimis || estimatedPaymentsNeeded === 0;
+
+  return {
+    currentYearFederalTax,
+    ninetyPctCurrent,
+    hasPriorYear,
+    priorYearTax,
+    priorYearMultiplier,
+    priorYearSafeHarbor,
+    requiredAnnualPayment,
+    bindingTest,
+    federalWithholding,
+    estimatedPaymentsNeeded,
+    perQuarter,
+    underDeMinimis,
+    noPenaltyExpected,
   };
 }
 

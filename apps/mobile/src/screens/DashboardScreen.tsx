@@ -34,7 +34,9 @@ interface DashboardScreenProps {
   onOpenPlatforms: () => void;
   /** Opens the W-4 optimizer (Premium). Only reached by premium users — free users hit the paywall. */
   onOpenW4Optimizer: () => void;
-  /** Opens the paywall — invoked when a free user taps the locked W-4 optimizer card. */
+  /** Opens the safe-harbor / Form 2210 calculator (Premium). Premium users only — free → paywall. */
+  onOpenSafeHarbor: () => void;
+  /** Opens the paywall — invoked when a free user taps a locked Premium card (W-4, safe harbor). */
   onOpenPaywall: () => void;
   onUpdateAmountSetAside: (year: number, amount: number) => void;
 }
@@ -83,6 +85,7 @@ export function DashboardScreen({
   onOpenWhatIf,
   onOpenPlatforms,
   onOpenW4Optimizer,
+  onOpenSafeHarbor,
   onOpenPaywall,
   onUpdateAmountSetAside,
 }: DashboardScreenProps) {
@@ -473,6 +476,28 @@ export function DashboardScreen({
                   </Text>
                   <Text style={styles.insightSub}>
                     Cover your gig taxes through your W2 paycheck instead — see the W-4 amount.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
+            )}
+
+            {netAmountToSetAside > 0 && (
+              <Pressable
+                onPress={isPremium ? onOpenSafeHarbor : onOpenPaywall}
+                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={isPremium ? "Open the safe-harbor calculator" : "Safe-harbor calculator (Premium)"}
+              >
+                <View style={styles.insightIconWrap}>
+                  <Ionicons name={isPremium ? "shield-checkmark-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                </View>
+                <View style={styles.insightInfo}>
+                  <Text style={styles.insightTitle}>
+                    Avoid the IRS penalty{isPremium ? "" : "  ·  Premium"}
+                  </Text>
+                  <Text style={styles.insightSub}>
+                    See the safe-harbor minimum to pay in — often less than your full bill.
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />

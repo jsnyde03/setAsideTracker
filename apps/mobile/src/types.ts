@@ -38,6 +38,25 @@ export interface TaxProfile {
   /** Self-reported running total of how much the user has actually set aside this tax year,
    * keyed by year. Manually entered — the app has no real visibility into a savings account. */
   amountSetAsideByYear?: Record<number, number>;
+  /** Federal figures from a completed tax year's filed return, keyed by the year they describe
+   * (e.g. the 2025 entry powers the prior-year safe-harbor test for 2026). Entered by the user —
+   * the app can't know a return it didn't compute. Used only by the safe-harbor (Form 2210)
+   * calculator. See {@link FiledYearTax}. */
+  filedTaxByYear?: Record<number, FiledYearTax>;
+}
+
+/**
+ * Federal figures the user copies from a completed tax year's filed Form 1040, used for the
+ * prior-year leg of the safe-harbor (Form 2210) test. The total tax is required; AGI is optional
+ * and only changes the result when it crosses the high-income threshold that bumps the prior-year
+ * safe harbor from 100% to 110%. */
+export interface FiledYearTax {
+  /** Total federal tax for the year (Form 1040 "total tax" line), as actually filed. ≥ 0. */
+  totalTax: number;
+  /** Adjusted gross income for the year (Form 1040 AGI line). Optional — supply it only if it was
+   * high enough to matter (over $150k, or $75k if married filing separately), which selects the
+   * 110% prior-year multiplier. */
+  agi?: number;
 }
 
 export type GigPlatform =

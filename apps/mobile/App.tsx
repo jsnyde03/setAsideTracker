@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, Alert, AppState, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import type { Entry, LocalUserProfile, TaxProfile } from "./src/types";
+import type { Entry, FiledYearTax, LocalUserProfile, TaxProfile } from "./src/types";
 import {
   addEntry,
   clearAllLocalData,
@@ -22,6 +22,7 @@ import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { AddEntryScreen } from "./src/screens/AddEntryScreen";
 import { WhatIfScreen } from "./src/screens/WhatIfScreen";
 import { W4OptimizerScreen } from "./src/screens/W4OptimizerScreen";
+import { SafeHarborScreen } from "./src/screens/SafeHarborScreen";
 import { PlatformComparisonScreen } from "./src/screens/PlatformComparisonScreen";
 import { EditTaxProfileScreen } from "./src/screens/EditTaxProfileScreen";
 import { PaywallScreen } from "./src/screens/PaywallScreen";
@@ -51,6 +52,7 @@ type Screen =
   | "editTaxProfile"
   | "whatIf"
   | "w4Optimizer"
+  | "safeHarbor"
   | "platformComparison"
   | "paywall";
 
@@ -345,6 +347,24 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
     }
   }
 
+  async function handleUpdateFiledTax(year: number, filed: FiledYearTax) {
+    if (!taxProfile) return;
+    const updated: TaxProfile = {
+      ...taxProfile,
+      filedTaxByYear: { ...taxProfile.filedTaxByYear, [year]: filed },
+    };
+    try {
+      await saveTaxProfile(updated);
+      setTaxProfile(updated);
+    } catch (error) {
+      reportError(error, { where: "handleUpdateFiledTax" });
+      Alert.alert(
+        "Couldn't save",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
+  }
+
   async function handleClearAllData() {
     try {
       await clearAllLocalData();
@@ -443,6 +463,20 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
     );
   }
 
+  if (screen === "safeHarbor") {
+    return (
+      <View style={styles.container}>
+        <SafeHarborScreen
+          entries={entries}
+          taxProfile={taxProfile as TaxProfile}
+          onClose={() => setScreen("dashboard")}
+          onUpdateFiledTax={handleUpdateFiledTax}
+        />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
   if (screen === "platformComparison") {
     return (
       <View style={styles.container}>
@@ -514,6 +548,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
         onOpenWhatIf={() => setScreen("whatIf")}
         onOpenPlatforms={() => setScreen("platformComparison")}
         onOpenW4Optimizer={() => setScreen("w4Optimizer")}
+        onOpenSafeHarbor={() => setScreen("safeHarbor")}
         onOpenPaywall={() => {
           setPaywallOrigin("dashboard");
           setScreen("paywall");
