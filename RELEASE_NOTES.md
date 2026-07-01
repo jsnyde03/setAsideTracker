@@ -31,7 +31,8 @@ What's new in 1.1:
 • Plain-language explanations of tax terms throughout.
 
 Premium:
-• Tax-ready PDF export with a Schedule C breakdown.
+• Tax-ready PDF export — a Schedule C breakdown, your mileage log, and a safe-harbor payment
+  summary in one document you can hand to a preparer.
 • IRS-compliant mileage log — record each trip's purpose and start/end location for an
   audit-ready record of your business miles, printed right in your tax-ready PDF as a
   Schedule C Line 9 substantiation appendix.
@@ -141,6 +142,14 @@ line items above are live on the branch.)*
   derived from logged prior-year data when present. Hand-verified unit tests (prior-year vs.
   current-year binding, 110%/MFS thresholds, de-minimis, withholding-covers, federal-vs-combined
   split) + a Playwright gate test pass; a new Maestro flow covers the native card → paywall hop.
+  - ↳ **Follow-on: safe harbor in the premium PDF.** The tax-ready PDF now carries a "Safe Harbor —
+    Federal Underpayment Penalty" section: the two safe-harbor legs (90% of this year's federal tax
+    vs. 100/110% of last year's) with the binding one marked, the required annual payment, W-2
+    withholding credited, the estimated payments to make, and the ≈ per-quarter 1040-ES figure — or,
+    when no penalty applies (under the $1,000 floor or withholding already covers it), a plain
+    no-penalty note. So the planning number lives in the document, not just on-screen. Pure
+    `buildSafeHarborSection` render over the existing `computeSafeHarbor`; 3 new HTML-builder unit
+    tests (penalty table + prior-year-binding + de-minimis note).
 - ✅ **Year-over-year insights** — once a user has logged 2+ tax years, a premium screen compares
   the latest year against the previous one across gross earnings, net profit, expenses, business
   miles, hours, estimated tax, and take-home-per-hour — each with a colored delta (earnings-style

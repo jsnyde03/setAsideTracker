@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildTaxSummaryHtml } from "../taxSummaryHtml";
 import { buildMileageLog, buildScheduleCSummary } from "../scheduleC";
-import { computeTaxEstimate } from "../calculations";
+import { computeSafeHarbor, computeTaxEstimate } from "../calculations";
 import type { Entry, TaxProfile } from "../types";
 
 const YEAR = 2026;
@@ -48,6 +48,7 @@ function buildHtml(over: Partial<Parameters<typeof buildTaxSummaryHtml>[0]> = {}
     scheduleC,
     estimate,
     mileageLog: buildMileageLog(entries),
+    safeHarbor: computeSafeHarbor(estimate, profile),
     ...over,
   });
 }
@@ -87,6 +88,7 @@ describe("buildTaxSummaryHtml", () => {
       scheduleC,
       estimate,
       mileageLog: buildMileageLog(withCustom),
+      safeHarbor: computeSafeHarbor(estimate, profile),
     });
     expect(html).toContain("Line 27 — Other expenses");
     expect(html).toContain("Car wash");
@@ -122,6 +124,7 @@ describe("buildTaxSummaryHtml", () => {
       scheduleC,
       estimate,
       mileageLog: buildMileageLog(withLog),
+      safeHarbor: computeSafeHarbor(estimate, profile),
     });
     expect(html).toContain("Mileage Log — Schedule C Line 9 Substantiation");
     // Free text is HTML-escaped.
@@ -148,6 +151,7 @@ describe("buildTaxSummaryHtml", () => {
       scheduleC,
       estimate,
       mileageLog: buildMileageLog(noMiles),
+      safeHarbor: computeSafeHarbor(estimate, profile),
     });
     expect(html).not.toContain("Mileage Log");
   });
@@ -168,7 +172,66 @@ describe("buildTaxSummaryHtml", () => {
       scheduleC,
       estimate: estimate2099,
       mileageLog: buildMileageLog(entries),
+      safeHarbor: computeSafeHarbor(estimate2099, profile),
     });
     expect(html).toContain("weren't finalized");
+  });
+});
+
+describe("buildTaxSummaryHtml — safe-harbor section", () => {
+  function htmlFor(testEntries: Entry[], testProfile: TaxProfile) {
+    const estimate = computeTaxEstimate(testEntries, testProfile, YEAR);
+    const scheduleC = buildScheduleCSummary(testEntries, estimate.estimate.mileageDeduction.deductionAmount);
+    return buildTaxSummaryHtml({
+      preparedFor: "Jordan",
+      year: YEAR,
+      filingStatusLabel: "Single",
+      locationLabel: "TX",
+      generatedOn: "June 30, 2026",
+      scheduleC,
+      estimate,
+      mileageLog: buildMileageLog(testEntries),
+      safeHarbor: computeSafeHarbor(estimate, testProfile),
+    });
+  }
+
+  const bigEntry: Entry = {
+    id: "big",
+    platform: "doordash",
+    date: "2026-02-10",
+    grossPay: 60000,
+    tips: 0,
+    mileage: 0,
+    expenses: { parking: 0, tolls: 0, supplies: 0, phone: 0 },
+    createdAt: "2026-02-10T00:00:00.000Z",
+  };
+
+  it("renders the pay-in table, quarterly figure, and prior-year prompt when a penalty is possible", () => {
+    const html = htmlFor([bigEntry], profile); // no prior-year figure, no W2 withholding
+    expect(html).toContain("Safe Harbor — Federal Underpayment Penalty");
+    expect(html).toContain("90% of this year's federal tax — binding"); // current-year leg binds
+    expect(html).toContain("Required annual payment");
+    expect(html).toContain("Estimated payments to make");
+    expect(html).toContain("per quarter");
+    // With no prior-year figure the prior-year leg is unknown and the section prompts for it.
+    expect(html).toContain("— not provided");
+    expect(html).toContain("Enter last year's federal total tax");
+  });
+
+  it("marks the prior-year leg as binding when it's the smaller one", () => {
+    const withPrior: TaxProfile = { ...profile, filedTaxByYear: { [YEAR - 1]: { totalTax: 500 } } };
+    const html = htmlFor([bigEntry], withPrior);
+    // 100% of last year's $500 is far below 90% of this year's tax, so it binds.
+    expect(html).toContain("100% of last year's federal tax — binding");
+    expect(html).toContain("$500");
+    expect(html).not.toContain("— not provided");
+  });
+
+  it("shows the de-minimis no-penalty note instead of the table for a small tax bill", () => {
+    const smallEntry: Entry = { ...bigEntry, grossPay: 2000 }; // federal tax under the $1,000 floor
+    const html = htmlFor([smallEntry], profile);
+    expect(html).toContain("Safe Harbor — Federal Underpayment Penalty");
+    expect(html).toContain("no underpayment penalty applies");
+    expect(html).not.toContain("Required annual payment");
   });
 });

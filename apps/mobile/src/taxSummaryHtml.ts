@@ -1,4 +1,4 @@
-import type { TaxEstimateForYear } from "./calculations";
+import type { SafeHarborResult, TaxEstimateForYear } from "./calculations";
 import type { MileageLogRow, ScheduleCSummary } from "./scheduleC";
 
 export interface TaxSummaryData {
@@ -16,6 +16,9 @@ export interface TaxSummaryData {
   /** Per-trip mileage log substantiating Schedule C Line 9. Empty when no entry has business miles;
    * rendered as an audit-ready appendix. */
   mileageLog: MileageLogRow[];
+  /** Federal safe-harbor / Form 2210 picture — the minimum to pay in to avoid the underpayment
+   * penalty, and the quarterly estimated-payment figure. Rendered as its own planning section. */
+  safeHarbor: SafeHarborResult;
 }
 
 function formatCurrency(amount: number): string {
@@ -58,6 +61,51 @@ function mileageRow(trip: MileageLogRow): string {
   const routeParts = [trip.startLocation, trip.endLocation].filter((p): p is string => Boolean(p)).map(escapeHtml);
   const route = routeParts.length > 0 ? routeParts.join(" &rarr; ") : `<span class="muted">&mdash;</span>`;
   return `<tr><td class="nowrap">${escapeHtml(trip.date)}</td><td>${purpose}</td><td>${route}</td><td class="num">${formatMiles(trip.miles)}</td></tr>`;
+}
+
+/**
+ * Builds the federal safe-harbor / Form 2210 planning section — the minimum to pay in to avoid the
+ * underpayment penalty, which leg (this year's 90% vs. last year's 100/110%) binds, the withholding
+ * credited, and the quarterly estimated-payment figure. Mirrors the SafeHarborScreen. No user free
+ * text, so nothing to escape. Returns "" when the estimate carries no federal tax to plan around.
+ */
+function buildSafeHarborSection(sh: SafeHarborResult): string {
+  const heading = `<h2>Safe Harbor — Federal Underpayment Penalty</h2>`;
+
+  if (sh.noPenaltyExpected) {
+    const msg = sh.underDeMinimis
+      ? `You're expected to owe less than ${formatCurrency(1000)} in federal tax after withholding, so no underpayment penalty applies this year.`
+      : `Your expected W-2 withholding alone is on track to meet the safe harbor — no separate estimated payments are needed to avoid the penalty.`;
+    return `${heading}
+  <p class="note">${msg}</p>`;
+  }
+
+  const priorPct = sh.priorYearMultiplier === 1.1 ? "110%" : "100%";
+  const currentBinding = sh.bindingTest === "currentYear";
+  const priorRow = sh.hasPriorYear
+    ? row(`${priorPct} of last year's federal tax${currentBinding ? "" : " — binding"}`, sh.priorYearSafeHarbor)
+    : `<tr><td>${priorPct} of last year's federal tax</td><td class="num">— not provided</td></tr>`;
+  const withholdingRow =
+    sh.federalWithholding > 0 ? row("Less: expected W-2 withholding", sh.federalWithholding, { negative: true }) : "";
+  const perQuarterNote =
+    sh.estimatedPaymentsNeeded > 0
+      ? `<p class="note">≈ ${formatCurrency(sh.perQuarter)} per quarter across the four 1040-ES estimated-payment due dates.</p>`
+      : "";
+  const priorYearPrompt = !sh.hasPriorYear
+    ? `<p class="note">Enter last year's federal total tax in the app's Safe Harbor screen to check the prior-year safe harbor — if your income rose this year, it can lower the required amount.</p>`
+    : "";
+
+  return `${heading}
+  <p class="note">To avoid the federal underpayment penalty, pay in — through withholding plus estimated payments — at least the smaller of these two safe-harbor amounts:</p>
+  <table>
+    ${row(`90% of this year's federal tax${currentBinding ? " — binding" : ""}`, sh.ninetyPctCurrent)}
+    ${priorRow}
+    ${row("Required annual payment", sh.requiredAnnualPayment, { strong: true })}
+    ${withholdingRow}
+    ${row("Estimated payments to make", sh.estimatedPaymentsNeeded, { strong: true })}
+  </table>
+  ${perQuarterNote}
+  ${priorYearPrompt}`;
 }
 
 /**
@@ -107,6 +155,8 @@ export function buildTaxSummaryHtml(data: TaxSummaryData): string {
     <tr class="strong"><td colspan="3">Total business miles</td><td class="num">${formatMiles(totalLoggedMiles)}</td></tr>
   </table>`
       : "";
+
+  const safeHarborSection = buildSafeHarborSection(data.safeHarbor);
 
   const fallbackWarning = estimate.usedFallbackConfig
     ? `<p class="warn">Note: official ${data.year} tax figures weren't finalized when this was generated, so the nearest available tax-year rates were used. Treat as an estimate.</p>`
@@ -168,6 +218,8 @@ export function buildTaxSummaryHtml(data: TaxSummaryData): string {
     <div class="value">${formatCurrency(estimate.netAmountToSetAside)}</div>
     <div class="note">Total estimated tax${withholdingCredit > 0 ? ", net of estimated W-2 withholding already covering part of it" : ""}.</div>
   </div>
+
+  ${safeHarborSection}
   ${mileageAppendix}
 
   <p class="disclaimer">

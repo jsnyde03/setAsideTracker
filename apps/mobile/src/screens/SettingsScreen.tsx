@@ -12,7 +12,7 @@ import { exportEntriesAsCsv } from "../exportEntriesAsCsv";
 import { exportTaxSummaryPdf } from "../taxSummaryPdf";
 import { buildTaxSummaryHtml } from "../taxSummaryHtml";
 import { buildMileageLog, buildScheduleCSummary } from "../scheduleC";
-import { computeTaxEstimate, entriesForYear } from "../calculations";
+import { computeSafeHarbor, computeTaxEstimate, entriesForYear } from "../calculations";
 import { reportError } from "../errorReporting";
 import { isAppLockAvailable } from "../security/appLock";
 import { usePremium } from "../premium/PremiumContext";
@@ -127,6 +127,7 @@ export function SettingsScreen({
       const estimate = computeTaxEstimate(entries, taxProfile, year);
       const scheduleC = buildScheduleCSummary(yearEntries, estimate.estimate.mileageDeduction.deductionAmount);
       const mileageLog = buildMileageLog(yearEntries);
+      const safeHarbor = computeSafeHarbor(estimate, taxProfile);
       const html = buildTaxSummaryHtml({
         preparedFor: localUserProfile.displayName,
         year,
@@ -136,6 +137,7 @@ export function SettingsScreen({
         scheduleC,
         estimate,
         mileageLog,
+        safeHarbor,
       });
       await exportTaxSummaryPdf(html, `tax-summary-${year}.pdf`);
     } catch (error) {
