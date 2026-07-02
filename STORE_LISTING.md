@@ -245,7 +245,7 @@ apply to the captions:
 
 - **Everything else (earnings, tax profile, entries, name, email) = NOT collected** — it never leaves the device (on-device encrypted storage). Answer "No" for Contact Info, Financial Info, User Content, Location, etc.
 - **App Tracking Transparency (ATT):** **not required** — none of the above is used to track across other companies' apps/websites, and there are no ad SDKs. Do not add the ATT prompt.
-- **If PostHog geo/IP capture is later confirmed on:** add Coarse Location (Not Linked, Analytics). Left off pending confirmation; PostHog can derive coarse geo from request IP.
+- **Location: NOT collected — do not declare any Location type.** IP data capture is disabled at the PostHog project level (*Settings → Project → Privacy → IP data capture*), so no IP is stored and no coarse geo is derived. ⚠️ **Pre-submit action (Jason):** confirm that toggle is set in the PostHog dashboard before submitting — this is what keeps the "no location" label accurate (decided 2026-07-01).
 
 ## Pricing / IAP
 
