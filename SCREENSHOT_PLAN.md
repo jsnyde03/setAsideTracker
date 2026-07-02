@@ -141,10 +141,10 @@ not final assets — reshoot on the real device per the capture workflow above._
 
 ## Screenshots to capture, in this order
 
-**Final set = 8 shots (Jason, 2026-07-01): #1, #2, #4, #5, #6, #7, #8, #9 — #3 dropped.** On a 6.9"
-screen the "Amount set aside so far / on-track" card is already visible inside the hero (#1), so #3 was
-a near-duplicate; the three most important lead slots go to **#1, #2, #4**. Numbers below keep their
-original IDs for continuity (upload order is 1, 2, 4, 5, 6, 7, 8, 9).
+**Final set = 7 shots (Jason, 2026-07-01): #1, #2, #4, #5, #6, #7, #8.** Dropped **#3** (near-duplicate
+of the hero on a 6.9" screen) and **#9 + the optional 10th** (privacy/dark + data-export — the weakest
+converters; 7 high-signal shots is plenty). The three lead slots go to **#1, #2, #4**. Numbers below
+keep their original IDs for continuity (upload order: 1, 2, 4, 5, 6, 7, 8).
 
 ---
 
@@ -216,22 +216,14 @@ your full bill" story). The other unique year-round hook.
 
 > **Title:** Avoid the IRS underpayment penalty
 > **Subtitle:** See the minimum to pay in to stay penalty-free. If your income jumped, it's often far less — Premium.
+> _(#8 is the last shot in the final 7-shot set.)_
 
 ---
 
-**9. Privacy + dark mode.**
-Settings → Security (Face ID / Touch ID app lock) with dark mode on — one shot covering the privacy
-trust signal and the dark-mode feature.
+**9. ~~Privacy + dark mode.~~ DROPPED (2026-07-01)** — privacy/dark is a weak converter versus the
+value/premium shots; the on-device-data trust story still lives in the description + privacy policy.
 
-> **Title:** Private by design, day or night
-> **Subtitle:** Your data stays on your device, encrypted, with optional Face ID lock. Light and dark mode built in.
-
----
-
-**Optional 10th (data control):** Settings → Backup & Restore / Export Data — the CSV/backup control,
-a real trust signal for a finance app ("your data, your terms — export a full CSV or backup in one
-tap, no cloud account"). Add if you want to fill the 10th slot; otherwise the 9 above tell a complete
-story.
+**~~Optional 10th (data control).~~ NOT INCLUDED** — same reasoning; 7 shots is the final set.
 
 ## Required sizes
 
