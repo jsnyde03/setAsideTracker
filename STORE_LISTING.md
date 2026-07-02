@@ -148,9 +148,16 @@ WHO IT'S FOR
 Anyone earning 1099 / gig / self-employed income — your only income or a side hustle next to a W2 job — who wants a clear, real-time answer to "how much should I actually be setting aside?"
 
 SetAsideTracker provides estimates for planning purposes only — not tax advice. Always consult a tax professional or filing software when it's time to file.
+
+Premium is an auto-renewing subscription (Annual $29.99 / Monthly $4.99). Payment is charged to your Apple Account at purchase; it renews automatically unless canceled at least 24 hours before the period ends, and you can manage or cancel it anytime in your App Store account settings.
+
+Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://jsnyde03.github.io/Set_Aside_Tracker/privacy.html
 ```
 
-*(~2,650 chars — comfortably under the 4,000 limit, with room to add seasonal copy.)*
+*(~3,050 chars — comfortably under the 4,000 limit. The Terms of Use + Privacy Policy links at the end
+are a **Guideline 3.1.2 requirement** for subscription apps: Apple requires them in the app metadata,
+and since App Store Connect has no dedicated EULA field, the EULA link must live in the description.)*
 
 ---
 
@@ -248,6 +255,36 @@ apply to the captions:
   - **Premium Monthly** — `com.gigtaxtracker.app.premium.monthly` — **$4.99/mo**
   - No introductory offer at launch (per `PREMIUM_PRICING_STRATEGY.md` §5).
 - Each IAP needs its own localized display name + description + a paywall review screenshot in ASC.
+
+## Guideline compliance — pre-submit sign-off (verified 2026-07-01 against Apple's live guidance)
+
+Comprehensive pass for the v1.1 Premium launch. Verified against the App Store Review Guidelines and
+Apple's auto-renewable-subscription documentation (not memory).
+
+**Guideline 3.1.2 (auto-renewable subscriptions):**
+- ✅ **On the paywall (binary):** subscription name + duration + what it unlocks; the **billed renewal
+  price is the most prominent element**; full auto-renew disclosure; tappable Terms of Use (EULA) +
+  Privacy Policy links; Restore Purchases. (No free trial → no subordinate-trial-pricing rule to meet.)
+- ⚠️→✅ **In the metadata (the fix):** Apple requires the Terms of Use + Privacy Policy links in the app
+  **metadata too**. Privacy Policy has a dedicated ASC field (set it); **the EULA has no ASC field**, so
+  its link is placed at the **end of the App Store Description** (done above). Also set **App Information
+  → License Agreement → Standard Apple License Agreement** in ASC (the app uses Apple's standard EULA).
+- ✅ Subscription **length + price** are in the metadata (Pricing / IAP section) and the description.
+- **Support URL is NOT required on the paywall.** Apple's required sign-up-screen elements are only
+  name/duration/content, the prominent price, and sign-in/restore. Customer support is required in
+  **ASC metadata** (Support URL field — set, Guideline 1.5), not on the paywall. Adding it on the
+  paywall (as some apps do) is optional, not required — the Gig paywall correctly omits it.
+
+**Related guidelines:**
+- ✅ **3.1.1** — all premium content unlocks via Apple IAP; no external purchase links or alternative payment.
+- ✅ **5.1.1(i) privacy** — privacy policy accurate for v1.1's Sentry+PostHog (updated 2026-07-01), linked
+  in ASC + in-app; App Privacy questionnaire set per the table above.
+- ✅ **5.1.1(v) account deletion — N/A** — the app has no account system / login (all data is local,
+  onboarding creates no server account), so the in-app account-deletion mandate doesn't apply; "Clear
+  All Data" in Settings covers local deletion.
+- ✅ **App Tracking Transparency — N/A** — no cross-app/website tracking, no ad SDKs → no ATT prompt.
+- ✅ **2.3.x metadata accuracy** — no competitor/platform trademarks in indexed fields (see AVOID list);
+  screenshots reflect the real app; "estimates, not tax advice" disclaimer present.
 
 ## Age rating
 
