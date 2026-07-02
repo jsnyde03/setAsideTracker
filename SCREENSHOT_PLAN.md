@@ -129,7 +129,7 @@ reads green **"on track."**
 
 ### Data → which shot each piece powers
 - **#1 hero / #2 show-your-math** — CA profile + all 20 entries + W2 drive the SE / federal / state breakdown.
-- **#3 on-track** — amount-set-aside vs. computed target (step 5); visible within the hero on a 6.9" screen.
+- **#3 on-track** — DROPPED (the on-track card is already inside the hero #1 on a 6.9" screen); the amount-set-aside step (step 5) still matters for how #1 reads.
 - **#5 multi-platform** — the four platforms across 20 entries (scroll to the entry list).
 - **#6 PDF** — Settings → Data → **Tax Summary (PDF)**; the real PDF is device-only (the reference proxies it with the on-screen expense breakdown). Mileage-log + custom expenses + prior-year feed the Schedule C / mileage / safe-harbor sections.
 - **#7 W-4 optimizer** — needs the W2 toggle on (step 2) + the under-withholding.
@@ -141,7 +141,10 @@ not final assets — reshoot on the real device per the capture workflow above._
 
 ## Screenshots to capture, in this order
 
-Target 9 (Apple allows 10; leaves room for an app-preview poster frame or a 10th later).
+**Final set = 8 shots (Jason, 2026-07-01): #1, #2, #4, #5, #6, #7, #8, #9 — #3 dropped.** On a 6.9"
+screen the "Amount set aside so far / on-track" card is already visible inside the hero (#1), so #3 was
+a near-duplicate; the three most important lead slots go to **#1, #2, #4**. Numbers below keep their
+original IDs for continuity (upload order is 1, 2, 4, 5, 6, 7, 8, 9).
 
 ---
 
@@ -165,12 +168,10 @@ guess.
 
 ---
 
-**3. Quarterly due date + catch-up status.**
-The "Amount set aside so far" card with the next due date and the green "you're on track" message.
-Shows the app keeps you ahead of quarterly taxes, not just shows a scary number.
-
-> **Title:** Stay ahead of quarterly taxes
-> **Subtitle:** Your next estimated-tax due date, and exactly how much to save each week to hit it on time.
+**3. ~~Quarterly due date + catch-up status.~~ DROPPED (2026-07-01).**
+The "Amount set aside so far" card + due date + green "on track" message is already visible inside the
+hero (#1) on a 6.9" screen, so this was a near-duplicate. Not submitted. _(The reference capture
+`03-catchup-status.png` is retained but identical to `01-dashboard-hero.png`.)_
 
 ---
 
