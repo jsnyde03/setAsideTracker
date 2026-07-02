@@ -50,80 +50,94 @@ set it up by hand.)
 - **Premium:** capture the Premium shots (#6–#8) with the entitlement **unlocked** so the real screens
   show, not the paywall. Leave dark mode off for the main set; one dark shot at the end (#9).
 
-## Seed data — exact values to enter (addendum, 2026-07-01)
+## Seed data — exact values to enter (addendum, revised 2026-07-01)
 
-The concrete version of the persona above. One coherent story: **Maya Rodriguez**, a Los Angeles
-full-time gig worker (rideshare + delivery) who *also* keeps a part-time W2 café job — which is what
-makes the **W-4 optimizer** (#7) valid, and her gig income **jumped this year** vs. last, which is the
-**safe-harbor** headline (#8). California gives a federal **+ state** breakdown with no county field to
-fill. Enter it by hand once (until v1.2 demo mode makes it one tap). All names/emails are fictional.
+One coherent story: **Maya Rodriguez**, a Los Angeles full-time gig worker (rideshare + delivery) who
+*also* keeps a small part-time W2 café job **that under-withholds** — which is exactly why she needs
+both the **W-4 optimizer** (#7) and **safe-harbor** (#8) tools, and why her gig tax shows up as a real
+set-aside. California gives a federal **+ state** breakdown. All names/emails are fictional.
+
+> **⚡ Fastest path — import, don't type.** A ready-made backup file
+> `store-assets/reference-screenshots/maya-persona-backup.json` contains this whole persona (profile +
+> 20 entries + tax profile, dark mode). On the device: **Settings → Backup & Restore → Restore from
+> Backup → choose that file.** It replaces local data with the seeded persona in one step — no manual
+> entry. (Get the file onto the device via AirDrop / Files / iCloud Drive.) The tables below are the
+> manual fallback + the sanity-check reference. **Premium** isn't in the backup (it's tied to your
+> Apple ID) — make sure your sandbox/test account has the Premium entitlement active so #6–#8 show the
+> real screens. These reference shots were captured in **dark mode** (your preference).
 
 ### 1) Profile / onboarding
 | Field | Value |
 |---|---|
 | Name | `Maya Rodriguez` |
 | Email | `maya.rodriguez@example.com` |
-| Filing status | **Single** |
-| Dependents | `0` |
+| Filing status | **Single** · Dependents `0` |
 | State | **California** (no county needed) |
+| Appearance | **Dark** |
 
-### 2) W2 job (turn the "I also have a W2 job" toggle ON — enter from a recent pay stub)
+### 2) W2 job (turn the "I also have a W2 job" toggle ON)
+A genuinely small, **under-withheld** part-time job — this is what leaves an uncovered gig-tax gap and
+a real safe-harbor requirement (a large/over-withheld W2 zeroes the set-aside and hides #7/#8).
 | Field | Value |
 |---|---|
-| Gross pay per paycheck | `1500` |
+| Gross pay per paycheck | `900` |
 | Pay frequency | **Biweekly** |
-| Pretax 401(k) per paycheck | `0` (leave blank) |
-| Pretax benefits (health/HSA) per paycheck | `0` (leave blank) |
-| YTD federal income tax withheld | `1700` |
-| YTD state income tax withheld | `520` |
-| W2 end date | *(leave empty — job runs through year-end)* |
+| Pretax 401(k) / benefits per paycheck | `0` (leave blank) |
+| YTD federal income tax withheld | `250` |
+| YTD state income tax withheld | `60` |
+| W2 end date | *(leave empty)* |
 
-### 3) Earnings entries — log these 9 via "Log Earnings" (dates in June 2026)
-`Miles`, `Hours`, and the four expense buckets are per entry. **Mileage-log** + **Custom expense**
-columns are the **Premium-authored** fields — enter them so the PDF (#6) and expense breakdown are rich.
+### 3) Earnings entries — 20 full-day totals, late May–June 2026
+`Miles`, `Hours`, and the four expense buckets are per entry. **Mileage-log** + **Custom expense** are
+the **Premium-authored** fields (enter them so the PDF #6 and expense breakdown are rich).
 
-| # | Date | Platform | Gross | Tips | Miles | Parking | Tolls | Supplies | Phone | Hours | Mileage-log (Premium) | Custom expense (Premium) |
-|---|------|----------|-------|------|-------|---------|-------|----------|-------|-------|----------------------|--------------------------|
-| 1 | Jun 2 | DoorDash | 88 | 24 | 46 | – | – | – | 2 | 5.0 | — | — |
-| 2 | Jun 4 | Uber | 126 | 21 | 68 | – | 6 | – | 2 | 6.0 | — | — |
-| 3 | Jun 6 | Amazon Flex | 144 | 0 | 61 | 5 | – | – | 2 | 4.5 | — | **Car wash** `12` |
-| 4 | Jun 10 | Instacart | 92 | 34 | 31 | – | – | 8 | 2 | 3.5 | — | — |
-| 5 | Jun 13 | DoorDash | 104 | 29 | 52 | – | – | – | 2 | 5.0 | Purpose: `DoorDash dinner rush — Downtown LA` · From: `Home — Echo Park` · To: `Downtown LA` | **Hot bags** `18` |
-| 6 | Jun 17 | Uber | 138 | 19 | 72 | – | 6 | – | 3 | 6.5 | — | — |
-| 7 | Jun 20 | Amazon Flex | 132 | 0 | 57 | 4 | – | – | 2 | 4.0 | — | — |
-| 8 | Jun 24 | DoorDash | 96 | 27 | 48 | – | – | – | 2 | 4.5 | Purpose: `DoorDash weekend deliveries — Silver Lake / Los Feliz` · From: `Home — Echo Park` · To: `Silver Lake` | **Hot bags** `16` |
-| 9 | Jun 27 | Instacart | 110 | 38 | 36 | – | – | 6 | 2 | 4.0 | — | — |
+| # | Date | Platform | Gross | Tips | Miles | Park | Toll | Supp | Phone | Hours | Premium extras |
+|---|------|----------|-------|------|-------|------|------|------|-------|-------|----------------|
+| 1 | May 6 | DoorDash | 244 | 52 | 80 | – | – | – | 3 | 6.5 | — |
+| 2 | May 8 | Uber | 296 | 43 | 98 | – | 6 | – | 3 | 8.0 | — |
+| 3 | May 11 | Instacart | 208 | 66 | 56 | – | – | 8 | 2 | 5.5 | — |
+| 4 | May 15 | Amazon Flex | 288 | 0 | 84 | 5 | – | – | 3 | 6.5 | — |
+| 5 | May 18 | DoorDash | 262 | 57 | 85 | – | – | – | 3 | 7.0 | **Hot bags** `17` |
+| 6 | May 20 | Uber | 288 | 42 | 96 | – | 6 | – | 3 | 8.0 | — |
+| 7 | May 22 | DoorDash | 224 | 58 | 74 | – | – | – | 3 | 6.5 | Mileage-log: `DoorDash dinner rush — Downtown LA` / `Home — Echo Park` → `Downtown LA`; **Hot bags** `18` |
+| 8 | May 24 | Amazon Flex | 312 | 0 | 90 | 6 | – | – | 3 | 7.0 | **Car wash** `14` |
+| 9 | May 27 | Instacart | 196 | 68 | 54 | – | – | 10 | 2 | 5.5 | — |
+| 10 | May 29 | DoorDash | 252 | 51 | 82 | – | – | – | 3 | 7.0 | — |
+| 11 | May 31 | Uber | 338 | 39 | 110 | – | 6 | – | 3 | 8.5 | — |
+| 12 | Jun 3 | DoorDash | 214 | 55 | 70 | – | – | – | 2 | 6.0 | **Hot bags** `16` |
+| 13 | Jun 5 | Amazon Flex | 296 | 0 | 86 | 5 | – | – | 3 | 6.5 | — |
+| 14 | Jun 7 | Instacart | 222 | 74 | 60 | – | – | 8 | 2 | 5.5 | — |
+| 15 | Jun 10 | Uber | 324 | 44 | 104 | – | 6 | – | 3 | 8.0 | — |
+| 16 | Jun 13 | DoorDash | 268 | 59 | 86 | – | – | – | 3 | 7.0 | Mileage-log: `DoorDash weekend deliveries — Silver Lake / Los Feliz` / `Home — Echo Park` → `Silver Lake` |
+| 17 | Jun 17 | Amazon Flex | 305 | 0 | 92 | 6 | – | – | 3 | 7.0 | — |
+| 18 | Jun 20 | Instacart | 198 | 57 | 51 | – | – | 6 | 2 | 5.0 | — |
+| 19 | Jun 24 | DoorDash | 279 | 48 | 90 | – | – | – | 3 | 7.5 | **Hot bags** `20` |
+| 20 | Jun 27 | Uber | 345 | 41 | 114 | – | 6 | – | 3 | 9.0 | — |
 
-**Expected totals (sanity-check after entry):** total earnings logged **≈ $1,222** (gross $1,030 + tips
-$192) · **471 business miles** (→ standard-mileage deduction auto-computed) · **43.0 hours** (so the
-effective-hourly-rate line appears) · fixed expenses **$54** (parking 9 · tolls 12 · supplies 14 · phone
-19) · custom expenses **$46** → Schedule C Line 27 (**Hot bags $34** across 2 entries — shows
-aggregation — **Car wash $12**).
+**Expected totals (sanity-check):** total earnings **≈ $6,213** · set-aside **≈ $1,384** (~28.9% of net)
+· effective rate **≈ $33/hr** · **1,662 business miles** · **~137 hours** · deductible expenses
+**≈ $1,429** (Line 9 car/truck incl. mileage, Line 22/25 buckets, Line 27 **Hot bags $71 + Car wash $14**).
 
 ### 4) Prior-year filed tax — for the safe-harbor shot (#8)
-On the **Safe-harbor** screen's "last year's filed federal tax" input, enter **2025 total federal tax =
-`2150`** (leave AGI blank — she's not high-income, so the 100% test applies). Because her gig income
-jumped this year, 90% of this year's bill is well above $2,150, so the **prior-year leg binds** — the
-"if your income jumped, pay far less" story.
+On the **Safe-harbor** screen, enter **2025 total federal tax = `1200`** (leave AGI blank). This year's
+federal tax jumped well above that, so the **prior-year leg ($1,200) binds** below 90%-of-this-year
+(~$1,666) — the "your income jumped, pay far less" story, with a real per-quarter estimated payment.
 
 ### 5) Amount set aside so far — for the green "on track" shot (#3)
-Log all 9 entries first, then read the dashboard's **"Set aside for taxes"** target. In the **"Amount
-set aside so far"** card, enter a figure **~10–15% above** that target so the status reads green **"on
-track"** (reassurance sells better than a red warning in a marketing shot). E.g. if it shows ≈ $540 to
-set aside, enter ≈ `620`.
+In the **"Amount set aside so far"** card enter **`1400`** (just above the ~$1,384 target) so the status
+reads green **"on track."**
 
 ### Data → which shot each piece powers
-- **#1 hero / #2 show-your-math** — CA profile + all 9 entries + W2 drive the SE / federal / state breakdown.
-- **#3 on-track** — the amount-set-aside vs. computed target (step 5).
-- **#5 multi-platform** — the four platforms (DoorDash, Uber, Amazon Flex, Instacart) across the 9 entries.
-- **#6 PDF** — mileage-log detail + custom expenses + prior-year tax → Schedule C + mileage appendix + safe-harbor section.
-- **#7 W-4 optimizer** — needs the W2 toggle on (step 2).
-- **#8 safe-harbor** — the $2,150 prior-year figure (step 4).
+- **#1 hero / #2 show-your-math** — CA profile + all 20 entries + W2 drive the SE / federal / state breakdown.
+- **#3 on-track** — amount-set-aside vs. computed target (step 5); visible within the hero on a 6.9" screen.
+- **#5 multi-platform** — the four platforms across 20 entries (scroll to the entry list).
+- **#6 PDF** — Settings → Data → **Tax Summary (PDF)**; the real PDF is device-only (the reference proxies it with the on-screen expense breakdown). Mileage-log + custom expenses + prior-year feed the Schedule C / mileage / safe-harbor sections.
+- **#7 W-4 optimizer** — needs the W2 toggle on (step 2) + the under-withholding.
+- **#8 safe-harbor** — the `1200` prior-year figure (step 4).
 
-**Want a punchier hero number?** These 9 entries ≈ 3–4 weeks. To roughly double the "set aside" total,
-log a second similar batch dated in May (or bump each `Gross` ~50%); keep the W2 + prior-year figures
-as-is and the story stays coherent. **Optional YoY 10th shot:** add 3–4 entries dated in **2025** so the
-app has two tax years (the Year-over-year screen unlocks at 2+ years) — not needed for the core 9.
+_Reference captures live in `store-assets/reference-screenshots/` (01–09 + three bonus screens:
+expense-breakdown, platform-comparison, what-if). They are the visual target for the on-device capture,
+not final assets — reshoot on the real device per the capture workflow above._
 
 ## Screenshots to capture, in this order
 

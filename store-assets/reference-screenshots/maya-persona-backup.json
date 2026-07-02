@@ -1,0 +1,395 @@
+{
+  "version": 1,
+  "exportedAt": "2026-07-01T12:00:00.000Z",
+  "localUserProfile": {
+    "id": "maya",
+    "displayName": "Maya Rodriguez",
+    "email": "maya.rodriguez@example.com",
+    "createdAt": "2026-01-05T10:00:00.000Z"
+  },
+  "taxProfile": {
+    "filingStatus": "single",
+    "dependents": 0,
+    "hasW2Job": true,
+    "w2GrossPayPerPeriod": 900,
+    "w2PayFrequency": "biweekly",
+    "w2YtdFederalWithheld": 250,
+    "w2YtdStateWithheld": 60,
+    "state": "CA",
+    "amountSetAsideByYear": {
+      "2026": 1400
+    },
+    "filedTaxByYear": {
+      "2025": {
+        "totalTax": 1200
+      }
+    }
+  },
+  "entries": [
+    {
+      "id": "e16",
+      "platform": "doordash",
+      "date": "2026-05-06",
+      "grossPay": 244,
+      "tips": 52,
+      "mileage": 80,
+      "expenses": {
+        "parking": 0,
+        "tolls": 0,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 6.5,
+      "createdAt": "2026-05-06T20:00:00.000Z"
+    },
+    {
+      "id": "e17",
+      "platform": "uber",
+      "date": "2026-05-08",
+      "grossPay": 296,
+      "tips": 43,
+      "mileage": 98,
+      "expenses": {
+        "parking": 0,
+        "tolls": 6,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 8,
+      "createdAt": "2026-05-08T20:00:00.000Z"
+    },
+    {
+      "id": "e18",
+      "platform": "instacart",
+      "date": "2026-05-11",
+      "grossPay": 208,
+      "tips": 66,
+      "mileage": 56,
+      "expenses": {
+        "parking": 0,
+        "tolls": 0,
+        "supplies": 8,
+        "phone": 2
+      },
+      "hoursWorked": 5.5,
+      "createdAt": "2026-05-11T20:00:00.000Z"
+    },
+    {
+      "id": "e19",
+      "platform": "amazonFlex",
+      "date": "2026-05-15",
+      "grossPay": 288,
+      "tips": 0,
+      "mileage": 84,
+      "expenses": {
+        "parking": 5,
+        "tolls": 0,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 6.5,
+      "createdAt": "2026-05-15T20:00:00.000Z"
+    },
+    {
+      "id": "e20",
+      "platform": "doordash",
+      "date": "2026-05-18",
+      "grossPay": 262,
+      "tips": 57,
+      "mileage": 85,
+      "expenses": {
+        "parking": 0,
+        "tolls": 0,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 7,
+      "createdAt": "2026-05-18T20:00:00.000Z",
+      "customExpenses": [
+        {
+          "label": "Hot bags",
+          "amount": 17
+        }
+      ]
+    },
+    {
+      "id": "e1",
+      "platform": "uber",
+      "date": "2026-05-20",
+      "grossPay": 288,
+      "tips": 42,
+      "mileage": 96,
+      "expenses": {
+        "parking": 0,
+        "tolls": 6,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 8,
+      "createdAt": "2026-05-20T20:00:00.000Z"
+    },
+    {
+      "id": "e2",
+      "platform": "doordash",
+      "date": "2026-05-22",
+      "grossPay": 224,
+      "tips": 58,
+      "mileage": 74,
+      "expenses": {
+        "parking": 0,
+        "tolls": 0,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 6.5,
+      "createdAt": "2026-05-22T20:00:00.000Z",
+      "mileageLog": {
+        "purpose": "DoorDash dinner rush — Downtown LA",
+        "startLocation": "Home — Echo Park",
+        "endLocation": "Downtown LA"
+      },
+      "customExpenses": [
+        {
+          "label": "Hot bags",
+          "amount": 18
+        }
+      ]
+    },
+    {
+      "id": "e3",
+      "platform": "amazonFlex",
+      "date": "2026-05-24",
+      "grossPay": 312,
+      "tips": 0,
+      "mileage": 90,
+      "expenses": {
+        "parking": 6,
+        "tolls": 0,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 7,
+      "createdAt": "2026-05-24T20:00:00.000Z",
+      "customExpenses": [
+        {
+          "label": "Car wash",
+          "amount": 14
+        }
+      ]
+    },
+    {
+      "id": "e4",
+      "platform": "instacart",
+      "date": "2026-05-27",
+      "grossPay": 196,
+      "tips": 68,
+      "mileage": 54,
+      "expenses": {
+        "parking": 0,
+        "tolls": 0,
+        "supplies": 10,
+        "phone": 2
+      },
+      "hoursWorked": 5.5,
+      "createdAt": "2026-05-27T20:00:00.000Z"
+    },
+    {
+      "id": "e5",
+      "platform": "doordash",
+      "date": "2026-05-29",
+      "grossPay": 252,
+      "tips": 51,
+      "mileage": 82,
+      "expenses": {
+        "parking": 0,
+        "tolls": 0,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 7,
+      "createdAt": "2026-05-29T20:00:00.000Z"
+    },
+    {
+      "id": "e6",
+      "platform": "uber",
+      "date": "2026-05-31",
+      "grossPay": 338,
+      "tips": 39,
+      "mileage": 110,
+      "expenses": {
+        "parking": 0,
+        "tolls": 6,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 8.5,
+      "createdAt": "2026-05-31T20:00:00.000Z"
+    },
+    {
+      "id": "e7",
+      "platform": "doordash",
+      "date": "2026-06-03",
+      "grossPay": 214,
+      "tips": 55,
+      "mileage": 70,
+      "expenses": {
+        "parking": 0,
+        "tolls": 0,
+        "supplies": 0,
+        "phone": 2
+      },
+      "hoursWorked": 6,
+      "createdAt": "2026-06-03T20:00:00.000Z",
+      "customExpenses": [
+        {
+          "label": "Hot bags",
+          "amount": 16
+        }
+      ]
+    },
+    {
+      "id": "e8",
+      "platform": "amazonFlex",
+      "date": "2026-06-05",
+      "grossPay": 296,
+      "tips": 0,
+      "mileage": 86,
+      "expenses": {
+        "parking": 5,
+        "tolls": 0,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 6.5,
+      "createdAt": "2026-06-05T20:00:00.000Z"
+    },
+    {
+      "id": "e9",
+      "platform": "instacart",
+      "date": "2026-06-07",
+      "grossPay": 222,
+      "tips": 74,
+      "mileage": 60,
+      "expenses": {
+        "parking": 0,
+        "tolls": 0,
+        "supplies": 8,
+        "phone": 2
+      },
+      "hoursWorked": 5.5,
+      "createdAt": "2026-06-07T20:00:00.000Z"
+    },
+    {
+      "id": "e10",
+      "platform": "uber",
+      "date": "2026-06-10",
+      "grossPay": 324,
+      "tips": 44,
+      "mileage": 104,
+      "expenses": {
+        "parking": 0,
+        "tolls": 6,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 8,
+      "createdAt": "2026-06-10T20:00:00.000Z"
+    },
+    {
+      "id": "e11",
+      "platform": "doordash",
+      "date": "2026-06-13",
+      "grossPay": 268,
+      "tips": 59,
+      "mileage": 86,
+      "expenses": {
+        "parking": 0,
+        "tolls": 0,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 7,
+      "createdAt": "2026-06-13T20:00:00.000Z",
+      "mileageLog": {
+        "purpose": "DoorDash weekend deliveries — Silver Lake / Los Feliz",
+        "startLocation": "Home — Echo Park",
+        "endLocation": "Silver Lake"
+      }
+    },
+    {
+      "id": "e12",
+      "platform": "amazonFlex",
+      "date": "2026-06-17",
+      "grossPay": 305,
+      "tips": 0,
+      "mileage": 92,
+      "expenses": {
+        "parking": 6,
+        "tolls": 0,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 7,
+      "createdAt": "2026-06-17T20:00:00.000Z"
+    },
+    {
+      "id": "e13",
+      "platform": "instacart",
+      "date": "2026-06-20",
+      "grossPay": 198,
+      "tips": 57,
+      "mileage": 51,
+      "expenses": {
+        "parking": 0,
+        "tolls": 0,
+        "supplies": 6,
+        "phone": 2
+      },
+      "hoursWorked": 5,
+      "createdAt": "2026-06-20T20:00:00.000Z"
+    },
+    {
+      "id": "e14",
+      "platform": "doordash",
+      "date": "2026-06-24",
+      "grossPay": 279,
+      "tips": 48,
+      "mileage": 90,
+      "expenses": {
+        "parking": 0,
+        "tolls": 0,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 7.5,
+      "createdAt": "2026-06-24T20:00:00.000Z",
+      "customExpenses": [
+        {
+          "label": "Hot bags",
+          "amount": 20
+        }
+      ]
+    },
+    {
+      "id": "e15",
+      "platform": "uber",
+      "date": "2026-06-27",
+      "grossPay": 345,
+      "tips": 41,
+      "mileage": 114,
+      "expenses": {
+        "parking": 0,
+        "tolls": 6,
+        "supplies": 0,
+        "phone": 3
+      },
+      "hoursWorked": 9,
+      "createdAt": "2026-06-27T20:00:00.000Z"
+    }
+  ],
+  "appSettings": {
+    "appLockEnabled": false,
+    "colorScheme": "dark",
+    "remindersEnabled": true
+  }
+}
