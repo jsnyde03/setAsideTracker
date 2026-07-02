@@ -288,6 +288,43 @@ Apple's auto-renewable-subscription documentation (not memory).
 - ✅ **2.3.x metadata accuracy** — no competitor/platform trademarks in indexed fields (see AVOID list);
   screenshots reflect the real app; "estimates, not tax advice" disclaimer present.
 
+## App Review notes (paste into ASC → App Review Information → Notes)
+
+Written to leave the reviewer zero doubt about what the app is, that no login is needed, and exactly
+how to reach and test the Premium subscription. Paste verbatim:
+
+```
+REVIEWER NOTES — SetAsideTracker v1.1
+
+Thanks for reviewing! Quick orientation:
+
+WHAT IT DOES
+SetAsideTracker helps self-employed / gig workers estimate how much of their income to set aside for taxes. All figures are estimates for planning only — this is NOT tax-filing software and NOT tax advice.
+
+NO ACCOUNT / NO LOGIN
+There are no user accounts and no sign-in — no demo credentials are needed. All data is stored locally on the device. Just launch the app and complete the brief one-time onboarding (name, filing status, state).
+
+HOW TO ACCESS & TEST PREMIUM (auto-renewable subscription)
+Premium is an auto-renewable subscription: Annual $29.99 / Monthly $4.99 (subscription group "Premium"). To open the paywall and test a purchase:
+  1. On the dashboard, tap the gear icon (top-right) to open Settings.
+  2. Under "Data," tap "Tax Summary (PDF)." For a non-subscriber this opens the Premium paywall.
+     (Alternatively, on the dashboard tap any card marked "· Premium" — e.g. "Skip quarterly payments," "Avoid the IRS penalty," or "Expense breakdown.")
+  3. On the paywall, choose Annual or Monthly and tap Subscribe to complete the (sandbox) purchase.
+  4. "Restore Purchases" is on that same paywall screen.
+
+WHAT PREMIUM UNLOCKS
+Tax-ready PDF export (Schedule C + mileage log + safe-harbor summary), IRS-compliant mileage log, custom expense categories, on-screen expense breakdown, W-4 withholding optimizer, safe-harbor / Form 2210 calculator, and year-over-year insights. The core tax estimate and "set aside" number are always free.
+
+TO SEE THE APP POPULATED (optional)
+Tap "Log Earnings," pick a platform, enter a pay amount, and Save — the dashboard's "Set aside for taxes" updates instantly. Note: the W-4 optimizer and safe-harbor cards appear once gig income is logged (and, for the W-4 card, with the "I also have a W2 job" toggle enabled in the tax profile).
+
+PRIVACY
+No account; your financial data never leaves the device. Only anonymous crash reports (Sentry) and anonymous product-usage analytics (PostHog) are collected — no personal data, no tracking, no ads.
+Privacy policy: https://jsnyde03.github.io/Set_Aside_Tracker/privacy.html
+
+Questions during review: setasidetrackersupport@gmail.com
+```
+
 ## Age rating
 
 No objectionable content; standard "Finance" questionnaire answers (no gambling, no shared

@@ -54,7 +54,7 @@ Answer the questionnaire to match [STORE_LISTING.md → App Privacy table](STORE
 - [ ] **Screenshots:** upload the 6.9" set (1320×2868) in value-led order.
 - [ ] **Build:** select the **1.1.0** build (from Phase 1).
 - [ ] **Age rating:** run the questionnaire → should land **4+** (no objectionable content, no gambling, no unrestricted web, no UGC).
-- [ ] **App Review Information:** no login required (no accounts) — add a note: *"All features work without an account; data is local. Premium unlocks via the in-app subscription; the paywall is reachable from any Premium card or Settings → Tax Summary (PDF)."* No demo account needed.
+- [ ] **App Review Information → Notes:** paste the **Reviewer Notes block** from [STORE_LISTING.md → App Review notes](STORE_LISTING.md) verbatim (what it does · no login/no demo account · exact taps to open the paywall + test the subscription · what Premium unlocks · privacy). No demo account needed.
 - [ ] ⚠️ **Contact email/phone** for the review team (App Review Information) — use `setasidetrackersupport@gmail.com`.
 
 ## Phase 5 — Attach the IAP subscriptions for first review  ⚠️
