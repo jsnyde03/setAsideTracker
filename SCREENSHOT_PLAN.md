@@ -4,9 +4,12 @@
 strongest value shots, and expanded to include the **Premium screens** (PDF export, W-4 optimizer,
 safe-harbor) that now exist as of v1.1 — the reason the ASO audit was sequenced *after* Phase B.
 
-Capture from the **iOS Simulator** (or a real device / TestFlight build), not the web/browser dev
-build — Simulator screenshots are pixel-perfect at the exact required resolutions and show real native
-chrome (status bar, safe areas) the web build doesn't replicate.
+**Capture workflow (Jason, 2026-07-01):** shoot on the **real device** (the 1.1.0 TestFlight build) and
+frame/caption in **AppScreens** — same pipeline that produced the polished v1.0 set. A real iPhone 16/17
+Pro Max captures at the exact 6.9" resolution (1320 × 2868), shows real native chrome, and AppScreens
+adds the device frame + gradient background + headline/subtitle overlay in one pass (so the "iOS
+Simulator" + "Figma/Canva" notes below are superseded — the shot list, seed data, captions, and sizes
+still apply verbatim). Do **not** shoot the web/browser dev build.
 
 ## Two ASO rules that shape every caption
 
