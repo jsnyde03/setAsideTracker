@@ -206,6 +206,8 @@ apply to the captions:
 
 ## App Store Connect — field-by-field checklist
 
+> **Submitting?** Follow the ordered click-path in [ASC_SUBMISSION_CHECKLIST.md](ASC_SUBMISSION_CHECKLIST.md) (this table is the value source; that doc is the step order + the easy-to-miss toggles).
+
 | Field | Value | Notes |
 |---|---|---|
 | **Name** | `SetAsideTracker: Gig Taxes` | 26/30. Lands with the v1.1 submission (can't change while v1.0 is in review). |
