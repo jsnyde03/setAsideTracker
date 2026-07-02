@@ -5,18 +5,21 @@
  * pulling the native SDK into the Vitest/node environment — the same pure-logic-vs-native split as
  * appReviewPolicy.ts vs appReview.ts. With no sink attached it logs to the console in dev and
  * no-ops everywhere else, so nothing leaves the device before/without a configured backend.
+ *
+ * Privacy note: in release builds a PostHog sink IS attached (see analyticsClient.ts), so these
+ * events transmit. They carry no PII — only low-cardinality context (state code, platform label,
+ * plan) — which is disclosed in docs/privacy.html and the App Store Connect App Privacy labels.
  */
 
 /**
- * Canonical event names, in one place so the call sites and the future paywall agree on spelling.
- * The premium-funnel events are defined now (Phase B Step 0) so Step 1's paywall can fire them
- * without re-deciding names later.
+ * Canonical event names, in one place so the call sites and the paywall agree on spelling. The
+ * premium-funnel events are fired by the PaywallScreen (screens/PaywallScreen.tsx).
  */
 export const ANALYTICS_EVENTS = {
   onboardingCompleted: "onboarding_completed",
   entryLogged: "entry_logged",
   entryUpdated: "entry_updated",
-  // Premium funnel — fired by the Phase B paywall (Step 1, not built yet).
+  // Premium funnel — fired by the paywall (screens/PaywallScreen.tsx).
   paywallViewed: "paywall_viewed",
   purchaseStarted: "purchase_started",
   purchaseCompleted: "purchase_completed",

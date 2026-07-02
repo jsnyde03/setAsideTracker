@@ -133,9 +133,9 @@
 <main>
 
   <section>
-    <p style="font-size:14px; color:#9aa1ac; margin-bottom:16px;">Last updated: June 27, 2026</p>
+    <p style="font-size:14px; color:#9aa1ac; margin-bottom:16px;">Last updated: July 1, 2026</p>
     <div class="summary-box">
-      <p>SetAsideTracker stores everything you enter <strong>only on your own device</strong>. We don't have a server, we don't have user accounts, and nothing you enter is transmitted anywhere. If that ever changes, we'll update this policy and the in-app disclosure before it does.</p>
+      <p>SetAsideTracker stores everything you enter — your earnings, tax profile, and settings — <strong>only on your own device</strong>. We don't have a server or user accounts, and your financial data is never transmitted anywhere. To keep the app reliable and understand which features are used, we do collect <strong>anonymous crash reports and basic usage analytics</strong> — this never includes the contents of your entries, your earnings, your name, or your email. The details are below.</p>
     </div>
   </section>
 
@@ -147,7 +147,7 @@
       <li><strong>Earnings entries</strong> (platform, date, pay, tips, mileage, expenses, hours worked): the core data you log. Stored locally on-device only.</li>
       <li><strong>App settings</strong> (app lock on/off, light/dark mode preference): stored locally on-device only.</li>
     </ul>
-    <p>None of the above is sent to us, to any server, or to any third party. There is no backend — the app works the same whether or not your device has an internet connection.</p>
+    <p>None of the above — your profile, tax details, or earnings entries — is ever sent to us or to any third party. It stays on your device, and the app's tax calculations run entirely on-device, whether or not you have an internet connection. The one exception is the anonymous crash-report and usage-analytics data described below, which never includes any of the information listed above.</p>
   </section>
 
   <section>
@@ -163,12 +163,17 @@
 
   <section>
     <h2>Crash reporting and analytics</h2>
-    <p>The app has crash-reporting and basic analytics instrumentation built in, but <strong>neither is currently active</strong> — no crash reports or analytics events are being sent anywhere. If we enable either in the future, we will update this policy first to describe exactly what's collected and update the app's data-collection disclosures with Apple/Google accordingly.</p>
+    <p>To keep the app stable and understand which features are useful, we collect two kinds of anonymous, non-identifying data through trusted third-party providers:</p>
+    <ul>
+      <li><strong>Crash and error reports</strong> (via <a href="https://sentry.io/privacy/">Sentry</a>): when the app crashes or hits an error, we receive a diagnostic report — a stack trace plus your device model, operating system version, and app version — so we can find and fix the problem. These reports do not contain the contents of your entries, your earnings, your name, or your email.</li>
+      <li><strong>Usage analytics</strong> (via <a href="https://posthog.com/privacy">PostHog</a>): we record which features are used — for example, that an entry was logged, that the paywall was viewed, or that a subscription was purchased — along with a small amount of non-identifying context (your state code, the earning platform's name, and which plan you chose) and a randomly generated, anonymous app identifier. We never send the amounts you enter, your tax figures, your name, or your email.</li>
+    </ul>
+    <p>This data is anonymous — it is not linked to your name, email, or account (the app has no accounts) — and is used only to keep the app working and improve it. We do not use it for advertising, and we do not sell it. If we ever change what's collected, we'll update this policy and the app's data-collection disclosures with Apple accordingly.</p>
   </section>
 
   <section>
     <h2>Third parties</h2>
-    <p>We don't share, sell, or transmit your data to any third party, because we don't transmit your data anywhere at all. The app doesn't include third-party advertising SDKs.</p>
+    <p>We never sell your data, and we never share your personal or financial data with anyone — it stays on your device. The only data that leaves your device is the anonymous crash-report and usage-analytics data described above, which is processed on our behalf by two service providers: <strong>Sentry</strong> (crash reporting) and <strong>PostHog</strong> (analytics). They process that anonymous data only to provide those services to us. The app does not include any third-party advertising SDKs and does not track you across other apps or websites.</p>
   </section>
 
   <section>
@@ -198,7 +203,7 @@
   <section>
     <h2>Contact</h2>
     <p>Questions about this policy:</p>
-    <a class="contact-email" href="mailto:[YOUR SUPPORT EMAIL]">[YOUR SUPPORT EMAIL]</a>
+    <a class="contact-email" href="mailto:setasidetrackersupport@gmail.com">setasidetrackersupport@gmail.com</a>
   </section>
 
 </main>

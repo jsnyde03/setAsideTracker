@@ -1,14 +1,16 @@
 import * as Sentry from "@sentry/react-native";
 
 /**
- * Crash reporting, scaffolded but not yet live — there's no real Sentry project/DSN for this app
- * yet. Reads the DSN from EXPO_PUBLIC_SENTRY_DSN (Expo's convention for client-readable env vars,
- * safe to be public since a DSN is a write-only ingestion endpoint, not a secret) and no-ops
- * entirely when it's unset, so nothing here can throw or "phone home" anywhere in dev/test/CI.
- * Once a real Sentry project exists: set EXPO_PUBLIC_SENTRY_DSN, and separately add the
- * `@sentry/react-native/expo` config plugin (org/project/auth token) to app.json for source-map
- * upload during the Codemagic build — deliberately not added yet, since misconfiguring it with
- * placeholder credentials could break the existing working CI build.
+ * Crash reporting via Sentry. LIVE in release builds: the DSN is set as EXPO_PUBLIC_SENTRY_DSN in
+ * codemagic.yaml (Expo's convention for client-readable env vars — safe to be public since a DSN is
+ * a write-only ingestion endpoint, not a secret) and the `@sentry/react-native/expo` config plugin
+ * (org/project/auth token) is wired in app.json for source-map upload during the Codemagic build.
+ * When the DSN is unset (local dev, unit tests, CI without the var) this no-ops entirely, so nothing
+ * here can throw or "phone home" in those environments.
+ *
+ * Privacy note: what this transmits (crash/error diagnostics + reportError context, no PII) is
+ * disclosed in the app's privacy policy and must stay reflected in the App Store Connect App Privacy
+ * labels. See docs/privacy.html and STORE_LISTING.md.
  */
 const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 let initialized = false;

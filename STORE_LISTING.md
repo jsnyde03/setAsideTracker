@@ -215,9 +215,30 @@ apply to the captions:
 ## Support / contact / URLs
 
 - Support URL: **https://jsnyde03.github.io/Set_Aside_Tracker/support.html**
-- Support email: **[FILL IN — must match the email in support.html and privacy.html]**
+- Support email: **setasidetrackersupport@gmail.com** (matches support.html + privacy.html — verified live 2026-07-01)
 - Marketing URL (optional): **[FILL IN, if any]**
 - Privacy Policy URL: **https://jsnyde03.github.io/Set_Aside_Tracker/privacy.html**
+
+## App Privacy — data-collection labels (ASC "App Privacy" questionnaire)
+
+> ⚠️ **v1.1 change — must be set before submission.** v1.0 collected nothing off-device. v1.1
+> activates **Sentry** (crash reporting) + **PostHog** (analytics) in release builds, so the App
+> Privacy questionnaire and the hosted privacy policy must both reflect that. The privacy policy was
+> updated 2026-07-01 (see `docs/privacy.html` — deploy the same to the live host); set these ASC
+> answers to match. All collection is **anonymous / Not Linked to identity** (the app has no accounts;
+> events carry no name/email/earnings — only a state code, platform label, plan, and an anonymous
+> app-generated id).
+
+| Data type | Collected? | Category → type | Linked to identity? | Used for tracking? | Purpose | Source |
+|---|---|---|---|---|---|---|
+| **Crash Data** | Yes | Diagnostics → Crash Data | No | No | App Functionality, Analytics | Sentry |
+| **Performance Data** | Yes | Diagnostics → Performance Data | No | No | App Functionality, Analytics | Sentry (`tracesSampleRate` 0.2) |
+| **Product Interaction** | Yes | Usage Data → Product Interaction | No | No | Analytics | PostHog events |
+| **Device ID** | Yes | Identifiers → Device ID | No | No | Analytics | PostHog anonymous `distinct_id` |
+
+- **Everything else (earnings, tax profile, entries, name, email) = NOT collected** — it never leaves the device (on-device encrypted storage). Answer "No" for Contact Info, Financial Info, User Content, Location, etc.
+- **App Tracking Transparency (ATT):** **not required** — none of the above is used to track across other companies' apps/websites, and there are no ad SDKs. Do not add the ATT prompt.
+- **If PostHog geo/IP capture is later confirmed on:** add Coarse Location (Not Linked, Analytics). Left off pending confirmation; PostHog can derive coarse geo from request IP.
 
 ## Pricing / IAP
 
