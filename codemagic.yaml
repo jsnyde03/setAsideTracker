@@ -84,8 +84,12 @@ workflows:
       events:
         - push
       branch_patterns:
+        # AUTO-TESTFLIGHT DISABLED (2026-07-03, Jason): merging v1.1 -> master to close out the 1.1.0
+        # release must NOT auto-fire a redundant TestFlight build (v1.1 is already approved + live).
+        # TestFlight/release builds are now MANUAL-only from the Codemagic UI ("Start new build" ->
+        # this workflow -> pick the branch). Re-enable per-release if a push-to-build flow is wanted.
         - pattern: master
-          include: true
+          include: false
 
     scripts:
       - name: Install root workspace dependencies
