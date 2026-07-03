@@ -1,0 +1,20 @@
+# Native onboarding → dashboard smoke. The web Playwright suite covers the same logical flow, but
+# this runs the actual React Native app on a simulator, exercising real native text inputs and
+# navigation that react-native-web can't represent.
+appId: com.gigtaxtracker.app
+name: Onboarding → Dashboard
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Welcome"
+- tapOn: "Your name"
+- inputText: "Maestro Tester"
+- tapOn: "Single"
+- tapOn: "e.g. CA"
+- inputText: "TX"
+- hideKeyboard
+# Disclaimer checkbox — matched by the Pressable's accessibilityLabel.
+- tapOn: "I understand this app provides estimates, not tax advice"
+- tapOn: "Continue"
+- assertVisible: "Your earnings"
+- assertVisible: "Set aside for taxes"

@@ -1,0 +1,27 @@
+# IRS mileage-log fields are Premium. For a free account the entry form shows a locked row whose
+# tap opens a native Alert offering the paywall — a NATIVE-ONLY path (react-native-web's Alert is a
+# no-op, so the web Playwright suite can only assert the locked row renders, not this hop). The
+# premium authoring/CSV round-trip is covered by unit tests.
+appId: com.gigtaxtracker.app
+name: IRS mileage log gating (native Alert → paywall)
+---
+# Precondition: a fresh onboarded (free) session on the dashboard.
+- runFlow: onboarding.yaml
+
+- tapOn: "Log Earnings"
+- assertVisible: "Platform"
+
+# Scroll the locked Premium row into view and open the upsell Alert.
+- scrollUntilVisible:
+    element:
+      text: "IRS mileage log.*Premium"
+    direction: DOWN
+- tapOn:
+    text: "IRS mileage log.*Premium"
+- assertVisible: "IRS mileage log"
+- assertVisible: "See Premium"
+
+# Take the upsell → land on the paywall, then back out.
+- tapOn: "See Premium"
+- assertVisible: "SetAside Premium"
+- tapOn: "Close"

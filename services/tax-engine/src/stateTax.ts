@@ -1,4 +1,5 @@
 import type {
+  AppliedBracket,
   FilingStatus,
   LocalTaxConfig,
   StandardDeductionPhaseout,
@@ -6,7 +7,7 @@ import type {
   StateTaxResult,
   TaxYearConfig,
 } from "./types";
-import { applyBrackets } from "./bracketMath";
+import { applyBrackets, applyBracketsDetailed } from "./bracketMath";
 
 /** Reduces a standard deduction above its phaseout threshold, per the state's own worksheet formula. */
 function applyStandardDeductionPhaseout(
@@ -107,6 +108,8 @@ export function calculateStateTax(
       localTaxSupported: true,
       stateTax: 0,
       creditApplied: 0,
+      standardDeductionUsed: 0,
+      bracketsApplied: [],
     };
   }
 
@@ -125,26 +128,38 @@ export function calculateStateTax(
       localTaxSupported: true,
       stateTax: 0,
       creditApplied: 0,
+      standardDeductionUsed: 0,
+      bracketsApplied: [],
     };
   }
 
   let taxableIncome: number;
   let stateLevelTax: number;
+  let standardDeductionUsed: number;
+  let bracketsApplied: AppliedBracket[];
 
   if (stateConfig.type === "flat") {
-    const standardDeduction = stateConfig.standardDeduction?.[filingStatus] ?? 0;
-    taxableIncome = Math.max(0, stateAdjustedGrossIncome - standardDeduction);
+    standardDeductionUsed = stateConfig.standardDeduction?.[filingStatus] ?? 0;
+    taxableIncome = Math.max(0, stateAdjustedGrossIncome - standardDeductionUsed);
     stateLevelTax = taxableIncome * stateConfig.rate;
+    // A flat tax has no brackets, but exposing it as a single synthetic "applied bracket" lets the
+    // show-your-math UI render flat and progressive states through the same code path.
+    bracketsApplied =
+      taxableIncome > 0
+        ? [{ min: 0, max: null, rate: stateConfig.rate, amountInBracket: taxableIncome, taxFromBracket: stateLevelTax }]
+        : [];
   } else {
     // stateConfig.type === "bracket"
-    const standardDeduction = applyStandardDeductionPhaseout(
+    standardDeductionUsed = applyStandardDeductionPhaseout(
       stateConfig.standardDeduction[filingStatus],
       stateConfig.standardDeductionPhaseout,
       filingStatus,
       stateAdjustedGrossIncome
     );
-    taxableIncome = Math.max(0, stateAdjustedGrossIncome - standardDeduction);
-    stateLevelTax = applyBrackets(taxableIncome, stateConfig.brackets[filingStatus]);
+    taxableIncome = Math.max(0, stateAdjustedGrossIncome - standardDeductionUsed);
+    const detailed = applyBracketsDetailed(taxableIncome, stateConfig.brackets[filingStatus]);
+    stateLevelTax = detailed.tax;
+    bracketsApplied = detailed.applied;
   }
 
   const local = resolveLocalTax(stateConfig.localTaxJurisdictions, county, taxableIncome, filingStatus);
@@ -165,5 +180,7 @@ export function calculateStateTax(
     localTax: local.localTax,
     localTaxSupported: local.localTaxSupported,
     stateTax: stateLevelTax - creditApplied + local.localTax,
+    standardDeductionUsed,
+    bracketsApplied,
   };
 }

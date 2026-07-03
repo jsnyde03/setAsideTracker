@@ -11,6 +11,13 @@ const HEADER = [
   "Tolls",
   "Supplies",
   "Phone",
+  // Custom expense categories (Premium-authored), serialized into one column since the set is
+  // user-defined and variable-length; the per-category breakdown lives in the Schedule C PDF.
+  "Other Expenses",
+  // IRS mileage-log fields (Premium-authored; blank for entries without a log).
+  "Trip Purpose",
+  "Start Location",
+  "End Location",
 ];
 
 const PLATFORM_LABELS: Record<Entry["platform"], string> = {
@@ -23,15 +30,25 @@ const PLATFORM_LABELS: Record<Entry["platform"], string> = {
 };
 
 /** Escapes a CSV field per RFC 4180 — wraps in quotes and doubles any embedded quotes whenever
- * the value contains a comma, quote, or newline. Every value here is a plain number/date/platform
- * label today, none of which need escaping, but entries are partly user-influenced data (platform
- * is a fixed enum, but this keeps the function correct if a free-text field is ever added). */
+ * the value contains a comma, quote, or newline. Most columns are plain numbers/dates/enum labels,
+ * but the IRS mileage-log columns (purpose, start/end location) are free text, so escaping is now
+ * load-bearing: a purpose like "Deliveries, downtown" would otherwise split a row. */
 function csvField(value: string | number): string {
   const str = String(value);
   if (/[",\n]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
+}
+
+/** Serializes an entry's custom expense categories into a single CSV cell as
+ * "Label: 12.00; Other label: 40.00". Blank for entries without any. Amounts are fixed to two
+ * decimals; embedded commas/quotes in labels are handled by the field-level RFC-4180 escaping. */
+function formatCustomExpenses(entry: Entry): string {
+  return (entry.customExpenses ?? [])
+    .filter((item) => item.label.trim() !== "")
+    .map((item) => `${item.label.trim()}: ${item.amount.toFixed(2)}`)
+    .join("; ");
 }
 
 /**
@@ -53,6 +70,10 @@ export function entriesToCsv(entries: Entry[]): string {
       entry.expenses.tolls,
       entry.expenses.supplies,
       entry.expenses.phone,
+      formatCustomExpenses(entry),
+      entry.mileageLog?.purpose ?? "",
+      entry.mileageLog?.startLocation ?? "",
+      entry.mileageLog?.endLocation ?? "",
     ]
       .map(csvField)
       .join(",")

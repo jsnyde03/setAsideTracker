@@ -25,7 +25,8 @@ describe("entriesToCsv", () => {
     const lines = csv.split("\n");
 
     expect(lines[0]).toBe(
-      "Date,Platform,Gross Pay,Tips,Mileage,Hours Worked,Parking,Tolls,Supplies,Phone"
+      "Date,Platform,Gross Pay,Tips,Mileage,Hours Worked,Parking,Tolls,Supplies,Phone," +
+        "Other Expenses,Trip Purpose,Start Location,End Location"
     );
     expect(lines).toHaveLength(3);
     expect(lines[1]).toContain("2026-03-10");
@@ -40,6 +41,47 @@ describe("entriesToCsv", () => {
 
     expect(row1.split(",")[5]).toBe(""); // Hours Worked column, blank
     expect(row2.split(",")[5]).toBe("5.5");
+  });
+
+  it("leaves the custom-expense and mileage-log columns blank when none are set", () => {
+    const csv = entriesToCsv([makeEntry()]);
+    const cols = csv.split("\n")[1].split(",");
+    // Other Expenses, then Trip Purpose, Start Location, End Location.
+    expect(cols.slice(10)).toEqual(["", "", "", ""]);
+  });
+
+  it("serializes custom expense categories into the Other Expenses column", () => {
+    const csv = entriesToCsv([
+      makeEntry({
+        customExpenses: [
+          { label: "Car wash", amount: 12 },
+          { label: "Hot bags", amount: 40 },
+        ],
+      }),
+    ]);
+    const cols = csv.split("\n")[1].split(",");
+    // Semicolon-joined "label: amount" pairs; no comma in this value, so it's left unquoted.
+    expect(cols[10]).toBe("Car wash: 12.00; Hot bags: 40.00");
+  });
+
+  it("CSV-escapes a comma inside a custom category label", () => {
+    const csv = entriesToCsv([
+      makeEntry({ customExpenses: [{ label: "Insurance, health", amount: 100 }] }),
+    ]);
+    const row = csv.split("\n")[1];
+    expect(row).toContain('"Insurance, health: 100.00"'); // comma forces RFC-4180 quoting
+  });
+
+  it("emits the mileage-log fields and CSV-escapes commas in free text", () => {
+    const csv = entriesToCsv([
+      makeEntry({
+        mileageLog: { purpose: "Deliveries, downtown", startLocation: "Home", endLocation: "Mesa" },
+      }),
+    ]);
+    const row = csv.split("\n")[1];
+    expect(row).toContain('"Deliveries, downtown"'); // comma forces RFC-4180 quoting
+    expect(row).toContain("Home");
+    expect(row).toContain("Mesa");
   });
 
   it("returns just the header row for an empty entry list", () => {

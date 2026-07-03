@@ -5,15 +5,22 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-na
 import type { Entry, TaxProfile } from "../types";
 import {
   aggregateEntries,
+  comparePlatforms,
   computeCatchUpStatus,
   computeTaxEstimate,
   effectiveHourlyRate,
   entriesForYear,
+  totalEntryExpenses,
   yearsWithEntries,
 } from "../calculations";
 import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
+import { BreakdownDetailSheet } from "../components/BreakdownDetailSheet";
+import { ShareEarningsModal } from "../components/ShareEarningsModal";
+import { buildBreakdownDetail, type BreakdownRowKey } from "../breakdownDetails";
+import { PLATFORM_ICONS, PLATFORM_LABELS } from "../platforms";
+import { usePremium } from "../premium/PremiumContext";
 import { radius, shadow, shadowSm, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
 
@@ -23,37 +30,54 @@ interface DashboardScreenProps {
   onAddEntry: () => void;
   onEditEntry: (entry: Entry) => void;
   onOpenSettings: () => void;
+  onOpenWhatIf: () => void;
+  onOpenPlatforms: () => void;
+  /** Opens the W-4 optimizer (Premium). Only reached by premium users — free users hit the paywall. */
+  onOpenW4Optimizer: () => void;
+  /** Opens the safe-harbor / Form 2210 calculator (Premium). Premium users only — free → paywall. */
+  onOpenSafeHarbor: () => void;
+  /** Opens year-over-year insights (Premium). Premium users only — free users hit the paywall. */
+  onOpenYearOverYear: () => void;
+  /** Opens the Schedule C expense breakdown (Premium). Premium users only — free → paywall. */
+  onOpenExpenseBreakdown: () => void;
+  /** Opens the paywall — invoked when a free user taps a locked Premium card (W-4, safe harbor). */
+  onOpenPaywall: () => void;
   onUpdateAmountSetAside: (year: number, amount: number) => void;
 }
-
-const PLATFORM_LABELS: Record<Entry["platform"], string> = {
-  amazonFlex: "Amazon Flex",
-  spark: "Spark",
-  doordash: "DoorDash",
-  uber: "Uber",
-  instacart: "Instacart",
-  other: "Other",
-};
-
-const PLATFORM_ICONS: Record<Entry["platform"], keyof typeof Ionicons.glyphMap> = {
-  amazonFlex: "cube-outline",
-  spark: "flash-outline",
-  doordash: "fast-food-outline",
-  uber: "car-outline",
-  instacart: "basket-outline",
-  other: "ellipsis-horizontal-circle-outline",
-};
 
 function formatCurrency(amount: number): string {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
-function totalEntryExpenses(entry: Entry): number {
-  return entry.expenses.parking + entry.expenses.tolls + entry.expenses.supplies + entry.expenses.phone;
-}
-
 function formatDate(date: Date): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+interface MathBreakdownRowProps {
+  label: string;
+  value: string;
+  /** Renders the value in the green "credit" treatment (for reductions like the W2 credit). */
+  credit?: boolean;
+  onPress: () => void;
+  styles: ReturnType<typeof createStyles>;
+}
+
+/** A tappable line in the tax breakdown card that opens its "show your math" detail sheet. */
+function MathBreakdownRow({ label, value, credit, onPress, styles }: MathBreakdownRowProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.breakdownRow, pressed && styles.breakdownRowPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}. Tap to see how this is calculated.`}
+    >
+      <Text style={styles.breakdownLabel}>{label}</Text>
+      <View style={styles.breakdownValueWrap}>
+        <Text style={[styles.breakdownValue, credit && styles.creditValue]}>{value}</Text>
+        <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.4)" />
+      </View>
+    </Pressable>
+  );
 }
 
 export function DashboardScreen({
@@ -62,10 +86,18 @@ export function DashboardScreen({
   onAddEntry,
   onEditEntry,
   onOpenSettings,
+  onOpenWhatIf,
+  onOpenPlatforms,
+  onOpenW4Optimizer,
+  onOpenSafeHarbor,
+  onOpenYearOverYear,
+  onOpenExpenseBreakdown,
+  onOpenPaywall,
   onUpdateAmountSetAside,
 }: DashboardScreenProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const { isPremium } = usePremium();
 
   // The current calendar year is always selectable, even before any entry exists for it yet —
   // otherwise a brand-new year would have no way to be picked until an entry is logged for it.
@@ -79,6 +111,25 @@ export function DashboardScreen({
   const taxEstimate = computeTaxEstimate(entries, taxProfile, selectedYear);
   const { estimate, year, usedFallbackConfig, w2WithholdingYtdEstimate, netAmountToSetAside } =
     taxEstimate;
+
+  // "Show your math" — which breakdown row's detail sheet is open (null = closed).
+  const [activeDetailKey, setActiveDetailKey] = useState<BreakdownRowKey | null>(null);
+  const activeDetail = activeDetailKey
+    ? buildBreakdownDetail(activeDetailKey, {
+        estimate,
+        stateLabel: taxProfile.state,
+        w2WithholdingYtd: w2WithholdingYtdEstimate,
+      })
+    : null;
+
+  // Platform comparison is only meaningful once the user has worked 2+ platforms this year.
+  const platformStats = comparePlatforms(entries, year);
+  const topPlatform = platformStats[0];
+
+  // Year-over-year insights soft-gate: only meaningful once entries span 2+ distinct tax years.
+  const yearsTracked = yearsWithEntries(entries).length;
+
+  const [showShare, setShowShare] = useState(false);
 
   function handlePreviousYear() {
     // Years are sorted descending, so "previous" (older) is the next index.
@@ -168,14 +219,26 @@ export function DashboardScreen({
                   </View>
                 )}
               </View>
-              <Pressable
-                onPress={onOpenSettings}
-                hitSlop={8}
-                accessibilityLabel="Settings"
-                accessibilityRole="button"
-              >
-                <Ionicons name="settings-outline" size={22} color={colors.inkSubtle} />
-              </Pressable>
+              <View style={styles.headerActions}>
+                {totalEarnings > 0 && (
+                  <Pressable
+                    onPress={() => setShowShare(true)}
+                    hitSlop={8}
+                    accessibilityLabel="Share earnings"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="share-outline" size={22} color={colors.inkSubtle} />
+                  </Pressable>
+                )}
+                <Pressable
+                  onPress={onOpenSettings}
+                  hitSlop={8}
+                  accessibilityLabel="Settings"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="settings-outline" size={22} color={colors.inkSubtle} />
+                </Pressable>
+              </View>
             </View>
             {usedFallbackConfig && (
               <View style={[styles.warningBox, styles.warningBoxLight]}>
@@ -226,54 +289,62 @@ export function DashboardScreen({
                 ).toFixed(1)}
                 % of net earnings, tax year {estimate.taxYear}
               </Text>
+              <Text style={styles.breakdownHint}>Tap any line to see how it's calculated.</Text>
 
-              <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>Self-employment tax</Text>
-                <Text style={styles.breakdownValue}>{formatCurrency(estimate.seTax.totalSeTax)}</Text>
-              </View>
-              <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>Federal income tax</Text>
-                <Text style={styles.breakdownValue}>
-                  {formatCurrency(estimate.federalIncomeTax.incomeTax)}
-                </Text>
-              </View>
+              <MathBreakdownRow
+                label="Self-employment tax"
+                value={formatCurrency(estimate.seTax.totalSeTax)}
+                onPress={() => setActiveDetailKey("seTax")}
+                styles={styles}
+              />
+              <MathBreakdownRow
+                label="Federal income tax"
+                value={formatCurrency(estimate.federalIncomeTax.incomeTax)}
+                onPress={() => setActiveDetailKey("federalIncomeTax")}
+                styles={styles}
+              />
               {estimate.childTaxCredit.totalCredit > 0 && (
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>
-                    Child Tax Credit ({estimate.childTaxCredit.numberOfChildren})
-                  </Text>
-                  <Text style={[styles.breakdownValue, styles.creditValue]}>
-                    −{formatCurrency(estimate.childTaxCredit.totalCredit)}
-                  </Text>
-                </View>
+                <MathBreakdownRow
+                  label={`Child Tax Credit (${estimate.childTaxCredit.numberOfChildren})`}
+                  value={`−${formatCurrency(estimate.childTaxCredit.totalCredit)}`}
+                  credit
+                  onPress={() => setActiveDetailKey("childTaxCredit")}
+                  styles={styles}
+                />
               )}
-              <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>{taxProfile.state} state income tax</Text>
-                <Text style={styles.breakdownValue}>{formatCurrency(estimate.stateTax.stateLevelTax)}</Text>
-              </View>
+              <MathBreakdownRow
+                label={`${taxProfile.state} state income tax`}
+                value={formatCurrency(estimate.stateTax.stateLevelTax)}
+                onPress={() => setActiveDetailKey("stateTax")}
+                styles={styles}
+              />
               {estimate.stateTax.creditApplied > 0 && (
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>{taxProfile.state} state tax credit</Text>
-                  <Text style={[styles.breakdownValue, styles.creditValue]}>
-                    −{formatCurrency(estimate.stateTax.creditApplied)}
-                  </Text>
-                </View>
+                <MathBreakdownRow
+                  label={`${taxProfile.state} state tax credit`}
+                  value={`−${formatCurrency(estimate.stateTax.creditApplied)}`}
+                  credit
+                  onPress={() => setActiveDetailKey("stateTax")}
+                  styles={styles}
+                />
               )}
               {w2WithholdingYtdEstimate > 0 && (
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>W2 withholding so far (est.)</Text>
-                  <Text style={[styles.breakdownValue, styles.creditValue]}>
-                    −{formatCurrency(w2WithholdingYtdEstimate)}
-                  </Text>
-                </View>
+                <MathBreakdownRow
+                  label="W2 withholding so far (est.)"
+                  value={`−${formatCurrency(w2WithholdingYtdEstimate)}`}
+                  credit
+                  onPress={() => setActiveDetailKey("w2Withholding")}
+                  styles={styles}
+                />
               )}
               {estimate.stateTax.supported &&
                 estimate.stateTax.localTaxSupported &&
                 estimate.stateTax.county && (
-                  <View style={styles.breakdownRow}>
-                    <Text style={styles.breakdownLabel}>{estimate.stateTax.county} local tax</Text>
-                    <Text style={styles.breakdownValue}>{formatCurrency(estimate.stateTax.localTax)}</Text>
-                  </View>
+                  <MathBreakdownRow
+                    label={`${estimate.stateTax.county} local tax`}
+                    value={formatCurrency(estimate.stateTax.localTax)}
+                    onPress={() => setActiveDetailKey("stateTax")}
+                    styles={styles}
+                  />
                 )}
               {!estimate.stateTax.supported && (
                 <View style={styles.warningBox}>
@@ -363,7 +434,128 @@ export function DashboardScreen({
                 onPress={onAddEntry}
                 icon={<Ionicons name="add" size={20} color="#fff" />}
               />
+              <Pressable
+                onPress={onOpenWhatIf}
+                style={({ pressed }) => [styles.whatIfButton, pressed && styles.whatIfButtonPressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Try a what-if scenario"
+              >
+                <Ionicons name="calculator-outline" size={18} color={colors.primary} />
+                <Text style={styles.whatIfButtonText}>What if I earned more?</Text>
+              </Pressable>
             </View>
+
+            {platformStats.length >= 2 && topPlatform && (
+              <Pressable
+                onPress={onOpenPlatforms}
+                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Compare your platforms"
+              >
+                <View style={styles.insightIconWrap}>
+                  <Ionicons name="podium-outline" size={18} color={colors.primary} />
+                </View>
+                <View style={styles.insightInfo}>
+                  <Text style={styles.insightTitle}>Compare your platforms</Text>
+                  <Text style={styles.insightSub}>
+                    {PLATFORM_LABELS[topPlatform.platform]} leads with{" "}
+                    {formatCurrency(topPlatform.totalEarnings)}
+                    {topPlatform.hourlyRate !== undefined
+                      ? ` · ${formatCurrency(topPlatform.hourlyRate)}/hr`
+                      : ""}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
+            )}
+
+            {taxProfile.hasW2Job && netAmountToSetAside > 0 && (
+              <Pressable
+                onPress={isPremium ? onOpenW4Optimizer : onOpenPaywall}
+                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={isPremium ? "Open the W-4 withholding optimizer" : "W-4 withholding optimizer (Premium)"}
+              >
+                <View style={styles.insightIconWrap}>
+                  <Ionicons name={isPremium ? "options-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                </View>
+                <View style={styles.insightInfo}>
+                  <Text style={styles.insightTitle}>
+                    Skip quarterly payments{isPremium ? "" : "  ·  Premium"}
+                  </Text>
+                  <Text style={styles.insightSub}>
+                    Cover your gig taxes through your W2 paycheck instead — see the W-4 amount.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
+            )}
+
+            {netAmountToSetAside > 0 && (
+              <Pressable
+                onPress={isPremium ? onOpenSafeHarbor : onOpenPaywall}
+                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={isPremium ? "Open the safe-harbor calculator" : "Safe-harbor calculator (Premium)"}
+              >
+                <View style={styles.insightIconWrap}>
+                  <Ionicons name={isPremium ? "shield-checkmark-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                </View>
+                <View style={styles.insightInfo}>
+                  <Text style={styles.insightTitle}>
+                    Avoid the IRS penalty{isPremium ? "" : "  ·  Premium"}
+                  </Text>
+                  <Text style={styles.insightSub}>
+                    See the safe-harbor minimum to pay in — often less than your full bill.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
+            )}
+
+            {yearsTracked >= 2 && (
+              <Pressable
+                onPress={isPremium ? onOpenYearOverYear : onOpenPaywall}
+                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={isPremium ? "Open year-over-year insights" : "Year-over-year insights (Premium)"}
+              >
+                <View style={styles.insightIconWrap}>
+                  <Ionicons name={isPremium ? "trending-up-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                </View>
+                <View style={styles.insightInfo}>
+                  <Text style={styles.insightTitle}>
+                    Year-over-year insights{isPremium ? "" : "  ·  Premium"}
+                  </Text>
+                  <Text style={styles.insightSub}>
+                    See how this year compares to last — earnings, miles, and tax.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
+            )}
+
+            {(aggregate.totalExpenses > 0 || estimate.mileageDeduction.deductionAmount > 0) && (
+              <Pressable
+                onPress={isPremium ? onOpenExpenseBreakdown : onOpenPaywall}
+                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={isPremium ? "Open the expense breakdown" : "Expense breakdown (Premium)"}
+              >
+                <View style={styles.insightIconWrap}>
+                  <Ionicons name={isPremium ? "receipt-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                </View>
+                <View style={styles.insightInfo}>
+                  <Text style={styles.insightTitle}>
+                    Expense breakdown{isPremium ? "" : "  ·  Premium"}
+                  </Text>
+                  <Text style={styles.insightSub}>
+                    See your write-offs grouped by Schedule C line — including custom categories.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
+            )}
 
             <Text style={styles.sectionHeader}>Recent entries</Text>
           </View>
@@ -402,6 +594,18 @@ export function DashboardScreen({
           <Text style={styles.disclaimer}>Estimates for planning purposes only — not tax advice.</Text>
         }
       />
+      <BreakdownDetailSheet detail={activeDetail} onClose={() => setActiveDetailKey(null)} />
+      <ShareEarningsModal
+        visible={showShare}
+        onClose={() => setShowShare(false)}
+        data={{
+          year,
+          totalEarnings,
+          setAside: netAmountToSetAside,
+          hourlyRate,
+          topPlatformLabel: topPlatform ? PLATFORM_LABELS[topPlatform.platform] : undefined,
+        }}
+      />
     </Screen>
   );
 }
@@ -416,6 +620,7 @@ function createStyles(colors: Colors) {
     marginBottom: spacing.lg,
   },
   greetingTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
   greeting: { ...type.display, color: colors.ink },
   yearBadge: {
     backgroundColor: colors.surfaceAlt,
@@ -466,6 +671,9 @@ function createStyles(colors: Colors) {
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.1)",
   },
+  breakdownRowPressed: { opacity: 0.6 },
+  breakdownValueWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
+  breakdownHint: { ...type.micro, color: "#9CA3AF", marginTop: spacing.md, fontStyle: "italic" },
   breakdownLabel: { ...type.caption, color: "#D1D5DB" },
   breakdownValue: { ...type.caption, color: "#fff", fontWeight: "600" },
   creditValue: { color: "#86EFAC" },
@@ -523,6 +731,42 @@ function createStyles(colors: Colors) {
   },
   stateWarning: { flex: 1, ...type.micro, color: "#FECACA", lineHeight: 15 },
   addButtonWrap: { marginVertical: spacing.sm },
+  whatIfButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  whatIfButtonPressed: { opacity: 0.7 },
+  whatIfButtonText: { ...type.label, color: colors.primary },
+  insightCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginTop: spacing.md,
+    ...shadowSm,
+  },
+  insightCardPressed: { opacity: 0.7 },
+  insightIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  insightInfo: { flex: 1 },
+  insightTitle: { ...type.subtitle, color: colors.ink },
+  insightSub: { ...type.caption, color: colors.inkSubtle, marginTop: 1 },
   sectionHeader: { ...type.title, fontSize: 18, color: colors.ink, marginTop: spacing.lg, marginBottom: spacing.sm },
   emptyState: { alignItems: "center", paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyText: { ...type.body, color: colors.inkFaint, textAlign: "center" },

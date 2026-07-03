@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Support — SetAsideTracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f7fa;
+      color: #13161b;
+      line-height: 1.6;
+    }
+
+    header {
+      background: #0f5fe0;
+      color: #fff;
+      padding: 40px 24px 32px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      margin-top: 6px;
+      font-size: 16px;
+      opacity: 0.85;
+    }
+
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f5fe0;
+      margin-bottom: 16px;
+    }
+
+    p { font-size: 15px; color: #333; margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+
+    a { color: #0f5fe0; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .contact-email {
+      display: inline-block;
+      margin-top: 8px;
+      background: #e8f0fe;
+      color: #0f5fe0;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    details {
+      border-top: 1px solid #eef0f3;
+      padding: 14px 0;
+    }
+
+    details:first-of-type { border-top: none; padding-top: 0; }
+    details:last-of-type { padding-bottom: 0; }
+
+    summary {
+      font-size: 15px;
+      font-weight: 600;
+      color: #13161b;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::after {
+      content: "+";
+      font-size: 20px;
+      font-weight: 300;
+      color: #9aa1ac;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    details[open] summary::after { content: "−"; }
+
+    details p {
+      margin-top: 10px;
+      color: #5b6270;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+      color: #9aa1ac;
+    }
+
+    footer a { color: #9aa1ac; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>SetAsideTracker</h1>
+  <p>Support</p>
+</header>
+
+<main>
+
+  <section>
+    <h2>Contact</h2>
+    <p>Have a question, found a bug, or want to share feedback? Email us — we read and reply to every message.</p>
+    <a class="contact-email" href="mailto:[YOUR SUPPORT EMAIL]">[YOUR SUPPORT EMAIL]</a>
+  </section>
+
+  <section>
+    <h2>Frequently asked questions</h2>
+
+    <details>
+      <summary>Is my data safe? Where is it stored?</summary>
+      <p>Everything you enter stays on your device — there is no server, no account, and no backend. Your data is encrypted at rest using a key stored in your device's secure hardware storage (iOS Keychain). We never see it.</p>
+    </details>
+
+    <details>
+      <summary>How accurate are the tax estimates?</summary>
+      <p>SetAsideTracker uses current IRS rates (self-employment tax, federal income tax brackets, standard deductions) and per-state tax rules for all 50 states + DC, updated for each tax year. The estimates are designed to be conservative planning figures — not a substitute for a CPA or tax filing software. Always verify with a professional before filing.</p>
+    </details>
+
+    <details>
+      <summary>Which states are supported?</summary>
+      <p>All 50 U.S. states and Washington, D.C. Local/county income tax is also modeled for Maryland (all 24 counties + Baltimore City), New York (New York City), and Pennsylvania (Philadelphia and Pittsburgh). U.S. territories (Puerto Rico, etc.) are not yet supported.</p>
+    </details>
+
+    <details>
+      <summary>Does the app work without an internet connection?</summary>
+      <p>Yes — completely. SetAsideTracker is fully offline. All calculations happen on your device and no internet connection is required for any feature.</p>
+    </details>
+
+    <details>
+      <summary>I have a W2 job as well as gig income. Does the app handle that?</summary>
+      <p>Yes. Toggle "I also have a W2 job" in your tax profile and enter your gross pay per paycheck and pay frequency. SetAsideTracker estimates what your employer is already withholding and subtracts it from your set-aside — so you're only setting aside what isn't already covered.</p>
+      <p>You can also enter your YTD withholding from your most recent pay stub for a more precise estimate, and 401k / pretax benefit amounts if you have them.</p>
+    </details>
+
+    <details>
+      <summary>How do I back up or restore my data?</summary>
+      <p>Go to Settings → Backup &amp; Restore. "Create Backup File" saves a snapshot of all your entries, tax profile, and settings to a file you can store wherever you like (Files app, iCloud Drive, email to yourself, etc.). "Restore from Backup" lets you pick that file later to recover everything — on the same device or a new one.</p>
+    </details>
+
+    <details>
+      <summary>How do I export my earnings for tax filing?</summary>
+      <p>Go to Settings → Export Data (CSV). This downloads a spreadsheet with all your logged entries, sorted oldest-first, covering every field — platform, date, gross pay, tips, mileage, expenses, and hours worked.</p>
+    </details>
+
+    <details>
+      <summary>How do I delete all my data?</summary>
+      <p>Go to Settings → Clear All Data. This permanently deletes everything stored on the device — entries, tax profile, and settings. This cannot be undone, so create a backup first if you want to keep a copy.</p>
+    </details>
+
+    <details>
+      <summary>What does "estimates for planning purposes only" mean?</summary>
+      <p>SetAsideTracker calculates estimates based on standard IRS rules and the income you log. It cannot account for every individual tax situation — deductions, credits, or circumstances beyond what you've entered. Think of it as a planning guide to help you set money aside throughout the year, not a substitute for actual tax preparation software or a CPA when it's time to file.</p>
+    </details>
+
+  </section>
+
+  <section>
+    <h2>Privacy</h2>
+    <p>SetAsideTracker stores all data locally on your device. There is no account system, no cloud storage, and no third-party data sharing. Read the full <a href="privacy.html">Privacy Policy</a>.</p>
+  </section>
+
+</main>
+
+<footer>
+  <p>SetAsideTracker &copy; 2026 &nbsp;·&nbsp; <a href="privacy.html">Privacy Policy</a></p>
+</footer>
+
+</body>
+</html>

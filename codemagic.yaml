@@ -2,6 +2,18 @@ workflows:
   ios-testflight:
     name: SetAsideTracker — iOS TestFlight
 
+    # Apple Silicon instance — faster compile/archive than the default mac, so fewer minutes/build.
+    instance_type: mac_mini_m2
+
+    # Cache the slow-to-rebuild dirs so build #2+ after a dependency change is much faster. NOTE:
+    # this does NOT speed up the FIRST build after adding/changing native deps (cold cache) — the
+    # build that introduces react-native-purchases + expo-print pays full pod/npm cost once.
+    cache:
+      cache_paths:
+        - $HOME/.npm                          # npm download cache → faster `npm install`
+        - $HOME/Library/Caches/CocoaPods      # CocoaPods spec/pod cache → faster `pod install`
+        - $HOME/Library/Developer/Xcode/DerivedData  # incremental Xcode build artifacts
+
     environment:
       node: 22
 
@@ -16,22 +28,68 @@ workflows:
         bundle_identifier: com.gigtaxtracker.app
 
       vars:
-        # @sentry/react-native's Expo config plugin injects an "Upload Debug Symbols to Sentry"
-        # Xcode build phase that runs sentry-cli during archive — this app deliberately has no
-        # real Sentry project/DSN/org/auth-token configured yet (see errorReporting.ts: it's
-        # scaffolded but intentionally not live), so that upload has nothing valid to authenticate
-        # against and fails the whole archive step with a nonzero exit code. This explicitly
-        # disables the auto-upload to match that "not live yet" intent, rather than letting the
-        # build fail on a feature that isn't even active. Remove once a real Sentry
-        # project/DSN/auth-token exists and source-map upload is actually wanted.
-        SENTRY_DISABLE_AUTO_UPLOAD: "true"
+        # Source-map upload is now ENABLED (2026-06-30): the @sentry/react-native config plugin in
+        # app.json is configured with org `jason-snyder` / project `react-native`, and the secret
+        # SENTRY_AUTH_TOKEN is injected from the AppleConnect group above. With this "false", the
+        # plugin's sentry-cli step in the "Bundle React Native code and images" phase uploads source
+        # maps during archive so Sentry stack traces are symbolicated.
+        # ⚠️ In @sentry/react-native 7.11.0, a source-map upload FAILURE makes that phase exit 1 and
+        # fails the whole archive (SENTRY_ALLOW_FAILURE is named in the error text but NOT honored in
+        # this version). If a manual v1.1 build fails on "sentry-cli", the cause is almost always the
+        # auth token (wrong/expired/insufficient scope) or org/project slug — to recover instantly,
+        # set this back to "true" (source maps off, build green) and we diagnose. v1.1 builds are
+        # manual and master is untouched, so this can't break an automatic/release build.
+        SENTRY_DISABLE_AUTO_UPLOAD: "false"
 
+        # Real Sentry DSN for the SetAsideTracker project (created 2026-06-30). A DSN is a
+        # write-only ingestion endpoint, not a secret — safe to commit and to ship in the client
+        # bundle (that's why it's an EXPO_PUBLIC_ var; errorReporting.ts reads it). Setting it here
+        # (rather than committing a local .env) means crash reporting is live in CI/TestFlight
+        # builds only, while local dev/test stay no-ops — matching errorReporting.ts's intent.
+        # NOTE: SENTRY_DISABLE_AUTO_UPLOAD above stays "true" until the @sentry/react-native/expo
+        # config plugin + auth token are wired (needs org/project slug + SENTRY_AUTH_TOKEN); until
+        # then crashes are captured at runtime but stack traces aren't source-map-symbolicated.
+        EXPO_PUBLIC_SENTRY_DSN: "https://bfa5a6ff551cb53be6703730bec9adbf@o4511649294450688.ingest.us.sentry.io/4511654601424896"
+
+        # PostHog analytics (US cloud). A PostHog *project API key* is a write-only client key, not
+        # a secret — safe to commit and ship in the bundle (same rationale as the Sentry DSN above),
+        # which is why it's an EXPO_PUBLIC_ var that analyticsClient.ts reads. Setting it here (not a
+        # local .env) means analytics is live in CI/TestFlight builds only, while local dev/test stay
+        # no-ops (no key → the analytics facade never attaches a backend).
+        EXPO_PUBLIC_POSTHOG_KEY: "phc_zN3LdF74JA8waXQfx5WSVv2j8GYfscZ2vqSCYv6hzCcH"
+        EXPO_PUBLIC_POSTHOG_HOST: "https://us.i.posthog.com"
+
+        # RevenueCat public Apple SDK key (project created 2026-06-30; entitlement `premium`,
+        # offering `default`, products com.gigtaxtracker.app.premium.{annual,monthly}). The `appl_`
+        # key is the *public* client SDK key — safe to commit and ship in the bundle (same rationale
+        # as the Sentry DSN / PostHog key above), which is why it's an EXPO_PUBLIC_ var the purchases
+        # client reads. The SECRET In-App Purchase `.p8` lives only in the RevenueCat dashboard, never
+        # here. Set only in CI (not a local .env) so IAP is live in TestFlight builds while local
+        # dev/test stay no-ops (no key → the purchases facade never configures the SDK).
+        EXPO_PUBLIC_RC_IOS_KEY: "appl_IFWiFSXDEBEqEYPsWzeGTstdwKO"
+
+        # SENTRY_AUTH_TOKEN (the secret sentry-cli uses for source-map upload) is intentionally NOT
+        # defined here — it's injected from the `AppleConnect` variable group declared above. Add it
+        # in the Codemagic UI (Environment variables → group AppleConnect → name SENTRY_AUTH_TOKEN →
+        # check Secure → Add). Keeping the secret out of this committed file avoids leaking it into
+        # git history, and a group var needs no YAML edit at all. Unused until the
+        # @sentry/react-native/expo config plugin lands AND SENTRY_DISABLE_AUTO_UPLOAD flips to "false".
+
+    # Auto-builds only on master (the release branch). To live-test an in-progress feature branch
+    # like v1.1 on TestFlight WITHOUT merging to master, start this workflow manually from the
+    # Codemagic UI ("Start new build" → pick this workflow → pick the branch). Manual builds ignore
+    # the branch_patterns filter, so no change here is needed; the branch carries its own app.json
+    # version (e.g. v1.1 is bumped to 1.1.0) so its TestFlight builds stay distinct from 1.0.0.
     triggering:
       events:
         - push
       branch_patterns:
+        # AUTO-TESTFLIGHT DISABLED (2026-07-03, Jason): merging v1.1 -> master to close out the 1.1.0
+        # release must NOT auto-fire a redundant TestFlight build (v1.1 is already approved + live).
+        # TestFlight/release builds are now MANUAL-only from the Codemagic UI ("Start new build" ->
+        # this workflow -> pick the branch). Re-enable per-release if a push-to-build flow is wanted.
         - pattern: master
-          include: true
+          include: false
 
     scripts:
       - name: Install root workspace dependencies
@@ -41,10 +99,11 @@ workflows:
         # installed on this machine's architecture. Removing any stale node_modules and using
         # `npm install` instead of `npm ci` makes npm re-resolve and fetch the right native
         # binary for whatever machine is actually running the build, rather than trusting a
-        # potentially-incomplete prior install.
+        # potentially-incomplete prior install. Flags: --prefer-offline pulls from the cached
+        # $HOME/.npm (fast on warm cache); --no-audit/--no-fund skip network/work we don't need in CI.
         script: |
           rm -rf node_modules
-          npm install
+          npm install --prefer-offline --no-audit --no-fund
 
       - name: Build the tax-engine package
         # apps/mobile depends on @gig-tax-tracker/tax-engine as a workspace package — it's
@@ -54,30 +113,20 @@ workflows:
           cd services/tax-engine
           npm run build
 
-      - name: Run tax-engine tests
-        script: |
-          cd services/tax-engine
-          npm test
-
-      - name: Typecheck + test the mobile app
-        script: |
-          cd apps/mobile
-          npm run typecheck
-          npm test
+      # NOTE: tax-engine tests + mobile typecheck/test are intentionally NOT run in this release
+      # build to keep it fast — they're verified locally before each build and run in the cheaper
+      # `web-e2e`/Maestro workflows. Re-add them here if you want the release build to self-gate.
 
       - name: Generate the native iOS project (expo prebuild)
         # Continuous Native Generation: ios/ is gitignored and regenerated fresh on every build
         # from app.json + config plugins, so app.json's name/bundleIdentifier/icon settings are
-        # the actual source of truth, not anything checked into ios/. expo prebuild runs `pod
-        # install` itself on macOS, but the explicit step below is kept as a harmless safety net.
+        # the actual source of truth, not anything checked into ios/. **expo prebuild runs `pod
+        # install` itself on macOS**, so a separate pod-install step just repeats it — removed to
+        # save build time. If prebuild's own pod install ever flakes, re-add an explicit
+        # `cd apps/mobile/ios && pod install` step here.
         script: |
           cd apps/mobile
           npx expo prebuild --platform ios
-
-      - name: Install CocoaPods dependencies
-        script: |
-          cd apps/mobile/ios
-          pod install
 
       # Initializing the keychain and adding certificates by hand here was redundant once
       # `ios_signing` (above) was configured — Codemagic already does both automatically before
@@ -118,14 +167,16 @@ workflows:
             --scheme "SetAsideTracker"
 
       - name: List build outputs
+        # Scoped to the build dirs so it doesn't walk node_modules.
         script: |
-          find apps/mobile -iname "*.ipa" || true
+          find apps/mobile/build apps/mobile/ios/build -iname "*.ipa" 2>/dev/null || true
 
+    # Trimmed: dropped the broad `apps/mobile/**/*.log` glob — it makes artifact collection walk the
+    # whole tree (incl. node_modules) at the end of every build. The specific logs below suffice.
     artifacts:
       - apps/mobile/build/ios/ipa/*.ipa
       - apps/mobile/ios/build/ios/ipa/*.ipa
       - apps/mobile/xcodebuild-archive.log
-      - apps/mobile/**/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Logs/Build/*.xcactivitylog
 
     publishing:
@@ -140,6 +191,157 @@ workflows:
         notify:
           success: true
           failure: true
+
+  # ─────────────────────────────────────────────────────────────────────────────────────────────
+  # web-e2e — Playwright against the Expo-web build. Cheap and fast (Linux/Node, no Xcode), so it
+  # runs on every branch incl. PRs. Catches UI-logic regressions across whole flows that the Vitest
+  # unit suite can't. See apps/mobile/e2e/. Validated locally before landing.
+  # ─────────────────────────────────────────────────────────────────────────────────────────────
+  web-e2e:
+    name: SetAsideTracker — Web E2E (Playwright)
+
+    # Cache npm downloads + the Playwright browser binaries so re-runs skip the (slow) chromium
+    # download and most of `npm install`. ms-playwright is where `playwright install` puts browsers.
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/.cache/ms-playwright
+
+    environment:
+      node: 22
+
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        # TEMPORARILY DISABLED (2026-06-30) to conserve Codemagic minutes near the monthly cap — a
+        # push must not auto-spend minutes. Re-enable (include: true) after the monthly reset.
+        - pattern: "*"
+          include: false
+
+    scripts:
+      - name: Install root workspace dependencies
+        script: |
+          rm -rf node_modules
+          npm install --prefer-offline --no-audit --no-fund
+
+      - name: Build the tax-engine package
+        # apps/mobile consumes @gig-tax-tracker/tax-engine via its compiled dist/, so build it first.
+        script: |
+          cd services/tax-engine
+          npm run build
+
+      - name: Install Playwright Chromium
+        # With $HOME/.cache/ms-playwright cached, the browser binary is reused across runs and this
+        # mostly just re-checks OS deps.
+        script: |
+          cd apps/mobile
+          npx playwright install --with-deps chromium
+
+      - name: Run web E2E (Playwright boots Expo web itself)
+        # The playwright.config.ts webServer block starts `npm run web` and waits for :8081, so no
+        # separate server step is needed. CI=true makes Expo non-interactive and turns on retries.
+        script: |
+          cd apps/mobile
+          CI=true npm run e2e
+
+    artifacts:
+      - apps/mobile/playwright-report/**
+      - apps/mobile/e2e/.results/**
+
+  # ─────────────────────────────────────────────────────────────────────────────────────────────
+  # maestro-ios — Maestro native flows on an iOS Simulator. This is the forcing function for the
+  # long-deferred "needs a real device" coverage (Alert dialogs, native date picker, etc.). Heavier
+  # (mac instance + Xcode build), so it's scoped to the v1.1 branch for now.
+  #
+  # FIRST-RUN CAVEAT: like ios-testflight before it, this build recipe is expected to need a round
+  # of tuning on a real Codemagic mac runner (simulator name/runtime, build-products path). Treat
+  # the first run as the validation pass. A Release simulator build is used so the JS bundle is
+  # embedded and no Metro server is required during the Maestro run.
+  # ─────────────────────────────────────────────────────────────────────────────────────────────
+  maestro-ios:
+    name: SetAsideTracker — iOS Maestro (native flows)
+
+    instance_type: mac_mini_m2
+
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/Library/Caches/CocoaPods
+        - $HOME/.maestro              # the Maestro CLI install → skip re-downloading it each run
+
+    environment:
+      node: 22
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        # TEMPORARILY DISABLED (2026-06-30) to conserve Codemagic minutes near the monthly cap — this
+        # is the expensive mac workflow and must not auto-fire on a v1.1 push. Re-enable after reset.
+        - pattern: "v1.1"
+          include: false
+
+    scripts:
+      - name: Install root workspace dependencies
+        script: |
+          rm -rf node_modules
+          npm install --prefer-offline --no-audit --no-fund
+
+      - name: Build the tax-engine package
+        script: |
+          cd services/tax-engine
+          npm run build
+
+      - name: Typecheck + unit test (fail fast before the slow native build)
+        script: |
+          cd apps/mobile
+          npm run typecheck
+          npm test
+
+      - name: Generate the native iOS project (expo prebuild)
+        # expo prebuild runs `pod install` itself on macOS, so no separate pod-install step is needed.
+        script: |
+          cd apps/mobile
+          npx expo prebuild --platform ios
+
+      - name: Build the app for the iOS Simulator
+        # Release embeds the JS bundle (no Metro needed at run time); CODE_SIGNING_ALLOWED=NO because
+        # simulator builds don't need signing.
+        script: |
+          cd apps/mobile
+          xcodebuild \
+            -workspace ios/SetAsideTracker.xcworkspace \
+            -scheme SetAsideTracker \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -derivedDataPath ios/build \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build
+
+      - name: Boot a simulator and install the app
+        script: |
+          xcrun simctl boot "iPhone 15" || true
+          xcrun simctl install booted \
+            apps/mobile/ios/build/Build/Products/Release-iphonesimulator/SetAsideTracker.app
+
+      - name: Install Maestro
+        # Skip the download when the cached $HOME/.maestro already has the CLI.
+        script: |
+          if [ ! -x "$HOME/.maestro/bin/maestro" ]; then
+            curl -Ls "https://get.maestro.mobile.dev" | bash
+          fi
+
+      - name: Run Maestro native flows
+        script: |
+          export PATH="$PATH:$HOME/.maestro/bin"
+          cd apps/mobile
+          maestro test .maestro
+
+    artifacts:
+      - apps/mobile/.maestro/**/*.png
+      - $HOME/.maestro/tests/**
 
 # Android isn't configured yet — no Google Play Console credentials/signing set up at the time
 # this file was written. Once those exist, add an "android-internal-track" workflow following

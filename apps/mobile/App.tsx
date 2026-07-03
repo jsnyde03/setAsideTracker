@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, Alert, AppState, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import type { Entry, LocalUserProfile, TaxProfile } from "./src/types";
+import type { Entry, FiledYearTax, LocalUserProfile, TaxProfile } from "./src/types";
 import {
   addEntry,
   clearAllLocalData,
@@ -20,19 +20,45 @@ import {
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { AddEntryScreen } from "./src/screens/AddEntryScreen";
+import { WhatIfScreen } from "./src/screens/WhatIfScreen";
+import { W4OptimizerScreen } from "./src/screens/W4OptimizerScreen";
+import { SafeHarborScreen } from "./src/screens/SafeHarborScreen";
+import { YearOverYearScreen } from "./src/screens/YearOverYearScreen";
+import { ExpenseBreakdownScreen } from "./src/screens/ExpenseBreakdownScreen";
+import { PlatformComparisonScreen } from "./src/screens/PlatformComparisonScreen";
 import { EditTaxProfileScreen } from "./src/screens/EditTaxProfileScreen";
+import { PaywallScreen } from "./src/screens/PaywallScreen";
 import { LockScreen } from "./src/screens/LockScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { isAppLockAvailable, unlockWithDeviceAuth } from "./src/security/appLock";
 import { cancelQuarterlyReminders, scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
-import { trackEvent } from "./src/analytics";
+import { trackEvent, ANALYTICS_EVENTS } from "./src/analytics";
+import { initAnalytics } from "./src/analyticsClient";
+import { initPurchases } from "./src/premium/purchasesClient";
+import { PremiumProvider } from "./src/premium/PremiumContext";
+import { maybeRequestReview } from "./src/appReview";
 import { initErrorReporting, reportError } from "./src/errorReporting";
 import { ThemeProvider, useTheme, type ColorSchemePreference } from "./src/ThemeContext";
 
 initErrorReporting();
+initAnalytics();
+initPurchases();
 
-type Screen = "loading" | "onboarding" | "dashboard" | "addEntry" | "settings" | "editTaxProfile";
+type Screen =
+  | "loading"
+  | "onboarding"
+  | "dashboard"
+  | "addEntry"
+  | "settings"
+  | "editTaxProfile"
+  | "whatIf"
+  | "w4Optimizer"
+  | "safeHarbor"
+  | "yearOverYear"
+  | "expenseBreakdown"
+  | "platformComparison"
+  | "paywall";
 
 export default function App() {
   // Lifted above AppContent (rather than state inside it) so ThemeProvider can wrap AppContent
@@ -43,9 +69,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider scheme={colorScheme}>
-        <ErrorBoundary>
-          <AppContent colorScheme={colorScheme} setColorScheme={setColorScheme} />
-        </ErrorBoundary>
+        <PremiumProvider>
+          <ErrorBoundary>
+            <AppContent colorScheme={colorScheme} setColorScheme={setColorScheme} />
+          </ErrorBoundary>
+        </PremiumProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
@@ -68,6 +96,9 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
   const [entries, setEntries] = useState<Entry[]>([]);
   // Non-null means AddEntryScreen is showing in edit mode for this entry.
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
+  // Where the paywall returns to when closed — the paywall is reachable from more than one screen
+  // (Settings' PDF export, the entry form's locked mileage log), so it remembers its origin.
+  const [paywallOrigin, setPaywallOrigin] = useState<Screen>("settings");
 
   // null = still checking whether a lock can be enforced on this device.
   const [lockAvailable, setLockAvailable] = useState<boolean | null>(null);
@@ -160,7 +191,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
       setTaxProfile(newTaxProfile);
       setScreen("dashboard");
       if (remindersEnabled) scheduleQuarterlyReminders();
-      trackEvent("onboarding_completed", {
+      trackEvent(ANALYTICS_EVENTS.onboardingCompleted, {
         state: newTaxProfile.state,
         hasW2Job: newTaxProfile.hasW2Job,
       });
@@ -182,7 +213,17 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
       setEntries(updated);
       setEditingEntry(null);
       setScreen("dashboard");
-      trackEvent(isEditing ? "entry_updated" : "entry_logged", { platform: entry.platform });
+      trackEvent(isEditing ? ANALYTICS_EVENTS.entryUpdated : ANALYTICS_EVENTS.entryLogged, {
+        platform: entry.platform,
+      });
+      // After logging (not editing) a new entry, see if the user has hit the rating-prompt
+      // milestone. Fire-and-forget: a failed/declined prompt must never block returning to the
+      // dashboard. catchUpMet is left to the dashboard's own trigger (this is the 5th-entry path).
+      if (!isEditing) {
+        maybeRequestReview({ entryCount: updated.length, catchUpMet: false }).catch((error) =>
+          reportError(error, { where: "maybeRequestReview" })
+        );
+      }
     } catch (error) {
       reportError(error, { where: "handleSaveEntry" });
       Alert.alert(
@@ -310,6 +351,24 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
     }
   }
 
+  async function handleUpdateFiledTax(year: number, filed: FiledYearTax) {
+    if (!taxProfile) return;
+    const updated: TaxProfile = {
+      ...taxProfile,
+      filedTaxByYear: { ...taxProfile.filedTaxByYear, [year]: filed },
+    };
+    try {
+      await saveTaxProfile(updated);
+      setTaxProfile(updated);
+    } catch (error) {
+      reportError(error, { where: "handleUpdateFiledTax" });
+      Alert.alert(
+        "Couldn't save",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
+  }
+
   async function handleClearAllData() {
     try {
       await clearAllLocalData();
@@ -372,7 +431,95 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
           onSave={handleSaveEntry}
           onCancel={handleCancelEntry}
           onDelete={handleDeleteEntry}
+          onOpenPaywall={() => {
+            setPaywallOrigin("addEntry");
+            setScreen("paywall");
+          }}
         />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
+  if (screen === "whatIf") {
+    return (
+      <View style={styles.container}>
+        <WhatIfScreen
+          entries={entries}
+          taxProfile={taxProfile as TaxProfile}
+          onClose={() => setScreen("dashboard")}
+        />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
+  if (screen === "w4Optimizer") {
+    return (
+      <View style={styles.container}>
+        <W4OptimizerScreen
+          entries={entries}
+          taxProfile={taxProfile as TaxProfile}
+          onClose={() => setScreen("dashboard")}
+        />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
+  if (screen === "safeHarbor") {
+    return (
+      <View style={styles.container}>
+        <SafeHarborScreen
+          entries={entries}
+          taxProfile={taxProfile as TaxProfile}
+          onClose={() => setScreen("dashboard")}
+          onUpdateFiledTax={handleUpdateFiledTax}
+        />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
+  if (screen === "yearOverYear") {
+    return (
+      <View style={styles.container}>
+        <YearOverYearScreen
+          entries={entries}
+          taxProfile={taxProfile as TaxProfile}
+          onClose={() => setScreen("dashboard")}
+        />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
+  if (screen === "expenseBreakdown") {
+    return (
+      <View style={styles.container}>
+        <ExpenseBreakdownScreen
+          entries={entries}
+          taxProfile={taxProfile as TaxProfile}
+          onClose={() => setScreen("dashboard")}
+        />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
+  if (screen === "platformComparison") {
+    return (
+      <View style={styles.container}>
+        <PlatformComparisonScreen entries={entries} onClose={() => setScreen("dashboard")} />
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </View>
+    );
+  }
+
+  if (screen === "paywall") {
+    return (
+      <View style={styles.container}>
+        <PaywallScreen onClose={() => setScreen(paywallOrigin)} />
         <StatusBar style={isDark ? "light" : "dark"} />
       </View>
     );
@@ -386,6 +533,10 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
           onSaveProfile={handleSaveProfile}
           taxProfile={taxProfile as TaxProfile}
           onEditTaxProfile={() => setScreen("editTaxProfile")}
+          onOpenPaywall={() => {
+            setPaywallOrigin("settings");
+            setScreen("paywall");
+          }}
           entries={entries}
           appLockEnabled={appLockEnabled}
           onToggleAppLock={handleToggleAppLock}
@@ -424,6 +575,16 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
         onAddEntry={() => setScreen("addEntry")}
         onEditEntry={handleEditEntry}
         onOpenSettings={() => setScreen("settings")}
+        onOpenWhatIf={() => setScreen("whatIf")}
+        onOpenPlatforms={() => setScreen("platformComparison")}
+        onOpenW4Optimizer={() => setScreen("w4Optimizer")}
+        onOpenSafeHarbor={() => setScreen("safeHarbor")}
+        onOpenYearOverYear={() => setScreen("yearOverYear")}
+        onOpenExpenseBreakdown={() => setScreen("expenseBreakdown")}
+        onOpenPaywall={() => {
+          setPaywallOrigin("dashboard");
+          setScreen("paywall");
+        }}
         onUpdateAmountSetAside={handleUpdateAmountSetAside}
       />
       <StatusBar style={isDark ? "light" : "dark"} />

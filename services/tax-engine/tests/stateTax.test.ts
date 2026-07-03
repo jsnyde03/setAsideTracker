@@ -26,6 +26,31 @@ describe("calculateStateTax (2026)", () => {
     // PA taxable income = 50000 - 3000 (no standard deduction)
     expect(result.taxableIncome).toBeCloseTo(47000, 2);
     expect(result.stateTax).toBeCloseTo(47000 * 0.0307, 2);
+
+    // Show-your-math detail: no standard deduction, and the flat rate as a single synthetic bracket.
+    expect(result.standardDeductionUsed).toBe(0);
+    expect(result.bracketsApplied).toHaveLength(1);
+    expect(result.bracketsApplied[0]).toMatchObject({ min: 0, max: null, rate: 0.0307 });
+    expect(result.bracketsApplied[0].amountInBracket).toBeCloseTo(47000, 2);
+    expect(result.bracketsApplied[0].taxFromBracket).toBeCloseTo(47000 * 0.0307, 2);
+  });
+
+  it("exposes per-bracket detail and the standard deduction used for a progressive state (CA)", () => {
+    const result = calculateStateTax(120000, 8000, 0, "single", "CA", taxYear2026);
+    expect(result.supported).toBe(true);
+    expect(result.standardDeductionUsed).toBeGreaterThan(0);
+    expect(result.bracketsApplied.length).toBeGreaterThan(1);
+    // Detail must reconcile: per-bracket tax sums to stateLevelTax, and slices net to taxableIncome.
+    const summedTax = result.bracketsApplied.reduce((acc, b) => acc + b.taxFromBracket, 0);
+    expect(summedTax).toBeCloseTo(result.stateLevelTax, 4);
+    const summedIncome = result.bracketsApplied.reduce((acc, b) => acc + b.amountInBracket, 0);
+    expect(summedIncome).toBeCloseTo(result.taxableIncome, 4);
+  });
+
+  it("reports no standard deduction and no brackets for a no-income-tax state", () => {
+    const tx = calculateStateTax(50000, 3000, 0, "single", "TX", taxYear2026);
+    expect(tx.standardDeductionUsed).toBe(0);
+    expect(tx.bracketsApplied).toEqual([]);
   });
 
   it("applies UT's flat 4.50% rate with no standard deduction but its approximated $966 credit", () => {

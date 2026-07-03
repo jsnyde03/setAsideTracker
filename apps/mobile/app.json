@@ -2,7 +2,7 @@
   "expo": {
     "name": "SetAsideTracker",
     "slug": "setasidetracker",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -31,7 +31,14 @@
     "plugins": [
       "@react-native-community/datetimepicker",
       "expo-sharing",
-      "@sentry/react-native"
+      [
+        "@sentry/react-native",
+        {
+          "organization": "jason-snyder",
+          "project": "react-native",
+          "url": "https://sentry.io/"
+        }
+      ]
     ]
   }
 }

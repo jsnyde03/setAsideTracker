@@ -1,6 +1,10 @@
 # Gig Tax Tracker — Roadmap & Implementation Plan
 
 ## 1. Product Vision
+
+<details>
+<summary>A mobile-first app for gig workers (Amazon Flex, Spark, DoorDash, Uber, Instacart, etc.)…</summary>
+
 A mobile-first app for gig workers (Amazon Flex, Spark, DoorDash, Uber, Instacart, etc.) that:
 - Logs earnings and mileage/expenses per shift/platform with minimal friction
 - Calculates real-time estimated tax liability (self-employment tax + income tax) so users know what to set aside
@@ -9,9 +13,12 @@ A mobile-first app for gig workers (Amazon Flex, Spark, DoorDash, Uber, Instacar
 
 Target user: someone driving between deliveries, glancing at their phone for 5–10 seconds. Every core flow must work one-handed, with minimal typing.
 
----
+</details>
 
 ## 2. Core Domain Logic (the part that must be correct)
+
+<details>
+<summary>2.1 Income tracking</summary>
 
 ### 2.1 Income tracking
 - Per-entry: platform, date, gross pay, tips, bonuses, mileage (manual or GPS-assisted), other deductible expenses (phone, parking, tolls, supplies)
@@ -37,9 +44,12 @@ Design this as a **rules engine with versioned tax-year configs** (JSON/YAML per
 ### 2.3 Why correctness matters
 Tax calculations are estimates, not filings — the app must be explicit that it provides *estimates for planning purposes*, not tax advice, and should recommend a CPA/tax software for actual filing. This needs to be in onboarding, ToS, and persistently visible near tax figures (small disclaimer), to manage liability.
 
----
+</details>
 
 ## 3. Architecture (built for extensibility)
+
+<details>
+<summary>/apps</summary>
 
 ```
 /apps
@@ -75,9 +85,12 @@ Key extensibility decisions:
 - Object storage (S3-compatible) for receipt photos / imported statements
 - Keep PII and financial data encrypted at rest; this app touches sensitive financial info, so treat it like fintech from day one (see Security section)
 
----
+</details>
 
 ## 3.5 Gig Platform API Integration (cutting down manual entry)
+
+<details>
+<summary>Reality check first: Amazon Flex, Spark, DoorDash, Uber, and Instacart do not offer publi…</summary>
 
 **Reality check first**: Amazon Flex, Spark, DoorDash, Uber, and Instacart do **not** offer public, driver-facing APIs for pulling your own earnings history. There's no "official" `GET /my-earnings` endpoint you can register an app for, the way Plaid works for bank accounts. Any integration plan needs to account for that constraint rather than assume it away. There are three realistic paths, roughly in order of how much you'd want to build yourself:
 
@@ -103,9 +116,12 @@ Building and maintaining your own authenticated scrapers or reverse-engineered p
 3. Use email-parsing (Option B) as the fallback for platforms an aggregator doesn't cover (Spark coverage varies by provider — verify before committing)
 4. Avoid Option C unless a specific high-value platform has no other path and you've cleared it legally
 
----
+</details>
 
 ## 4. Phased Implementation Plan
+
+<details>
+<summary>Phase 0 — Foundation (2–3 weeks)</summary>
 
 ### Phase 0 — Foundation (2–3 weeks)
 - Repo scaffolding per architecture above
@@ -140,9 +156,12 @@ This is where the long-term differentiation lives. Don't bolt these on — desig
 
 Each of these is a separate microservice behind a feature flag, callable from the core app — this is exactly why the event-driven/plugin architecture in section 3 matters early.
 
----
+</details>
 
 ## 5. Monetization Strategy
+
+<details>
+<summary>Philosophy</summary>
 
 ### Philosophy
 Free tier must independently solve the core anxiety ("how much should I set aside, and will I get hit with a surprise tax bill") — that's the trust-builder and the viral/word-of-mouth driver in gig worker communities (Reddit, Facebook groups). Premium should be about **scale, automation, and intelligence**, not gating core safety.
@@ -153,12 +172,13 @@ Free tier must independently solve the core anxiety ("how much should I set asid
 - Quarterly due-date reminders
 - "Set aside this week" number
 - CSV export
-- Single platform tracking at a time (or limited to e.g. 2 platforms) — a soft nudge, not a core feature gate
 - Dark mode
 - Local backup/restore (export/import a data snapshot) — a client-side safety net against data loss, distinct from real account-based multi-device sync (premium-tier, later)
 - "Show your math" audit-trail view on every tax figure — trust/safety feature, never paywalled per the tier-gating principle below
-- In-app tax literacy content (glossary, "why this number" explainers) — most users are first-time self-employed
+- In-app tax literacy content (glossary, "why this number" explainers inline with the tax breakdown) — most users are first-time self-employed
 - "What-if" earnings simulator (no AI cost — just reruns the existing tax engine with hypothetical numbers)
+- **Platform earnings comparison** — per-platform breakdown of earnings and effective hourly rate from logged history; organic sharing driver in gig-worker communities
+- **Earnings share card** — one-tap shareable summary image for Reddit/Facebook gig-worker groups; near-zero build cost, high viral potential
 - Year-end "Tax Wrapped" recap and light milestone celebrations/streaks — retention and organic-sharing drivers
 - "Catch-up" calculator for users behind on saving — self-reported amount-set-aside vs. owed, with a concrete weekly top-up plan to close the gap by the next due date
 
@@ -192,25 +212,36 @@ Free tier must independently solve the core anxiety ("how much should I set asid
 ### Tier-gating principle
 Gate on **automation/time-saved and scale**, not on **financial safety**. Never put the core "what should I set aside" number behind a paywall — that's the thing that builds the trust that sells everything else.
 
----
+</details>
 
 ## 6. Compliance & Trust Considerations
+
+<details>
+<summary>Add a clear, persistent "estimates only, not tax advice" disclaimer</summary>
+
 - Add a clear, persistent "estimates only, not tax advice" disclaimer
 - If you add bank/Plaid integration, you'll need to handle this with the same rigor as a fintech app (SOC 2 eventually, encryption at rest/in transit, data retention policy)
 - Tax rate configs must be reviewed/updated annually (have a process, not just code — IRS brackets/mileage rates change every year) — see [TAX_CONFIG_REVIEW.md](TAX_CONFIG_REVIEW.md) for the runbook
 - Consider an audit trail / "show your math" view for every tax estimate — builds trust and is good practice for a financial tool
 
----
+</details>
 
 ## 7. Suggested First Sprint (concrete starting point)
+
+<details>
+<summary>1. Scaffold mobile app (Expo/React Native) + basic API</summary>
+
 1. Scaffold mobile app (Expo/React Native) + basic API
 2. Build the tax-engine package standalone, with unit tests against 2-3 known IRS scenarios (single filer, various income levels)
 3. Build manual entry screen + dashboard showing live "estimated tax owed" and "set aside this week"
 4. Ship a bare-bones TestFlight/internal build to validate the core loop before adding any platform-specific import logic
 
----
+</details>
 
 ## 8. Additional Gaps to Close
+
+<details>
+<summary>8.1 Tax accuracy gaps</summary>
 
 ### 8.1 Tax accuracy gaps
 - **No tax profile/onboarding flow.** Need filing status, dependents, whether the user also has a W2 job (very common combo — W2 withholding already covers part of their tax bill, so the "set aside" math is wrong without this), and home state vs. state(s) actually worked in. Add this as a first-run wizard feeding the tax engine, not an afterthought. *(Onboarding wizard itself shipped in v0.2 — see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — but see the Head of Household gap immediately below, found during a v1 audit.)* *(The W2-withholding-credit half of this gap is now fixed too — see IMPLEMENTATION_PLAN.md's v1.0 section.)*
@@ -236,18 +267,23 @@ Gate on **automation/time-saved and scale**, not on **financial safety**. Never 
 - **Tax engine validation process.** Beyond unit tests, have an actual review process (ideally a CPA) each tax year and before launch — this is a liability surface as much as a code-quality one.
 - **AI tier cost model.** LLM API calls have real variable cost; Premium+/AI pricing needs to be checked against actual per-user inference cost, with usage caps or rate limiting so it doesn't erode margin.
 
----
+</details>
 
 ## 9. Differentiating Features ("kickass app" ideas)
+
+<details>
+<summary>These go beyond core tax tracking — they're what would make the app stand out and drive o…</summary>
 
 These go beyond core tax tracking — they're what would make the app stand out and drive organic growth in gig-worker communities, not just function as a mileage log.
 
 ### 9.1 High-leverage, differentiating
-- **True hourly rate calculator.** Net earnings minus gas, real vehicle wear/depreciation, and tax set-aside, divided by actual hours worked. Most drivers overestimate what they're really making — this single number ("you're actually earning $11.40/hr after costs") is the kind of insight that gets shared in Reddit/Facebook gig-worker groups and drives organic growth. **Pulled forward into v1.0** (see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)) — it's free-tier insight, not automation, and cheap to add now. **Currently blocked on a real data-model gap:** `Entry` has no field for hours worked at all (`apps/mobile/src/types.ts`) — there's no "true hourly rate" without that, so adding a simple manual `hoursWorked` field per entry is a prerequisite, not a detail.
-- **Voice/hands-free logging.** Siri Shortcuts / Google Assistant integration — "log $45 from DoorDash" — solves the core friction (driving, can't type) better than UI polish alone.
-- **Home-screen/lock-screen widget** showing today's earnings and current tax set-aside. Near-zero build cost, high daily visibility, strong retention driver.
-- **Shift/earnings optimizer.** Using the user's own historical data (best time-of-day/day-of-week per platform), surface patterns like "you've historically earned more on Spark Tuesday mornings" — personalized, not dependent on surge data you don't have access to.
-- **Promised-vs-actual pay discrepancy tracking.** Gig platforms shorting drivers on pay is a constant complaint; flagging when an actual deposit doesn't match what was logged/promised is both useful and trust-building.
+- **True hourly rate calculator.** Net earnings minus gas, real vehicle wear/depreciation, and tax set-aside, divided by actual hours worked. Most drivers overestimate what they're really making — this single number ("you're actually earning $11.40/hr after costs") is the kind of insight that gets shared in Reddit/Facebook gig-worker groups and drives organic growth. **Shipped in v1.0** (see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)).
+- **Platform earnings comparison.** Per-platform breakdown of earnings and effective hourly rate from the user's own history — "I average $18.40/hr on DoorDash vs. $14.20/hr on Uber Eats." Derivable from existing data with minimal build cost; strong sharing driver. **(v1.1)**
+- **Earnings share card.** One-tap shareable summary image for Reddit/Facebook gig-worker groups — earnings, set-aside, effective hourly rate. Near-zero build cost; high viral potential in the communities already targeted for growth. **(v1.1)**
+- **Voice/hands-free logging.** Siri Shortcuts / Google Assistant integration — "log $45 from DoorDash" — solves the core friction (driving, can't type) better than UI polish alone. **(v1.2)**
+- **Home-screen/lock-screen widget** showing today's earnings and current tax set-aside. Near-zero battery impact, high daily visibility, strong retention driver. **(v1.2)**
+- **Shift/earnings optimizer.** Using the user's own historical data (best time-of-day/day-of-week per platform), surface patterns like "you've historically earned more on Spark Tuesday mornings" — personalized, not dependent on surge data you don't have access to. **(v1.2, premium)**
+- **Promised-vs-actual pay discrepancy tracking.** Gig platforms shorting drivers on pay is a constant complaint; flagging when an actual deposit doesn't match what was logged/promised is both useful and trust-building. **(v2.2)**
 
 ### 9.2 Financial-wellness features (fits the long-term AI vision)
 - **Envelope-style virtual buckets** (tax / savings / spending) so volatile gig income gets automatically smoothed, not just taxed.
@@ -260,9 +296,10 @@ These go beyond core tax tracking — they're what would make the app stand out 
   - **QuickBooks Self-Employed-compatible export** — matches a format self-employed users likely already use, a concrete premium hook beyond generic CSV.
 
 ### 9.3 Polish that matters more than it sounds
-- **Apple Watch companion** for glanceable earnings without touching the phone — also a real safety angle for someone driving.
-- **Multi-language support.** A large share of gig drivers aren't native English speakers — genuinely underserved and a real differentiator, not just a checkbox.
-- **Dark mode.** Cheap to add on top of the centralized design-token system already built for the mobile app's premium visual pass — not a rewrite, just alternate token values behind a scheme.
+- **Android launch.** Gig workers skew heavily toward Android — especially lower-income, high-frequency drivers. Deferring Android cedes the majority of the addressable market. **(v1.2)** (iOS-first is the right launch call; Android as a close follow-on is the right market call.)
+- **Apple Watch companion** for glanceable earnings without touching the phone — also a real safety angle for someone driving. **(v3.0)**
+- **Multi-language support.** A large share of gig drivers aren't native English speakers — genuinely underserved and a real differentiator, not just a checkbox. Prioritize Spanish first given gig-worker demographics. **(v3.0)**
+- **Dark mode.** Shipped in v1.0 — full theme refactor with `lightColors`/`darkColors` token sets and a system/light/dark setting in the Settings screen.
 
 ### 9.4 Trust & education (the thing that sells the free tier)
 - **"Show your math" audit-trail view.** Tap any tax-breakdown line (SE tax, federal, state, local) to see the actual calculation, not just the result — builds the trust that the free tier is supposed to earn per the monetization philosophy in §5. Should never be paywalled.
@@ -270,9 +307,12 @@ These go beyond core tax tracking — they're what would make the app stand out 
 - **Safe-harbor / underpayment-penalty explainer.** Surface the IRS's 110%-of-prior-year safe-harbor rule (see §2.2) directly in the UI, not just compute it silently — the explanation is as valuable as the number.
 
 ### 9.5 Growth & delight
-- **Year-end "Tax Wrapped" recap** — a Spotify-Wrapped-style annual summary (total earned, miles driven, top platform, busiest month, tax saved via deductions). Near-zero build cost reusing existing data; strong organic-sharing potential in the same gig-worker communities already targeted for growth. Time it for the filing-season window.
-- **Milestone celebrations / light gamification** — "you've logged $10k this year," logging streaks. Cheap retention lever.
-- **Referral program** — a straightforward word-of-mouth growth lever not yet captured anywhere in the monetization plan.
+- **Year-end "Tax Wrapped" recap** — a Spotify-Wrapped-style annual summary (total earned, miles driven, top platform, busiest month, tax saved via deductions). Near-zero build cost reusing existing data; strong organic-sharing potential. Time it for the filing-season window. **(v1.5)**
+- **Earnings share card** — one-tap shareable weekly summary image for gig-worker communities. See §9.1. **(v1.1)**
+- **Milestone celebrations / light gamification** — "you've logged $10k this year," logging streaks. Include a grace period so one missed day doesn't kill a streak. Cheap retention lever. **(v1.2)**
+- **Referral program** — unique referral link, install attribution, small incentive. **(v1.2)**
+- **Push notification expansion** — beyond quarterly due-date reminders: catch-up warnings when the owed/set-aside gap grows past a threshold, milestone notifications, streak-break nudges. **(v1.2)**
+- **App rating prompt (well-timed)** — `expo-store-review` / `SKStoreReviewController` after the user has experienced real value (5+ entries logged or first successful catch-up period). Crucial for App Store search ranking. **(v1.1)**
 
 ### 9.6 Explicitly out of scope (avoid scope creep)
 - Invoicing/freelancer bookkeeping for non-gig-driving side hustles — dilutes focus from the core driving-gig use case.
@@ -280,9 +320,17 @@ These go beyond core tax tracking — they're what would make the app stand out 
 - Non-US tax jurisdictions / international gig platforms — the multi-language support above (§9.3) is about language, not international tax law; this app is U.S.-tax-specific by design.
 - Pooled spousal/household tracking (two gig-working spouses sharing one set of entries) — a real scenario, but deferred rather than silently unaddressed; revisit once core single-filer/household tracking is solid.
 
----
+</details>
 
-## Open questions for you
-- Mobile-first only, or do you also want a web dashboard from the start?
-- Should Phase 1 launch with just federal + 1–2 states, or do you want broader state coverage before launch?
-- Any existing branding/name in mind, or should that be part of Phase 0?
+## Open questions (answered)
+
+<details>
+<summary>Mobile-first only, or web dashboard from the start? Mobile-first. Web dashboard deferred…</summary>
+
+- **Mobile-first only, or web dashboard from the start?** Mobile-first. Web dashboard deferred — revisit as a lead-magnet free tax calculator in v3.0 or if there's a pull from users wanting desktop access.
+- **Phase 1 state coverage?** Full 50 states + DC shipped in v1.0 — all in, not a partial rollout.
+- **App name?** **SetAsideTracker** — ties directly to the "set aside for taxes" dashboard card. Bundle ID `com.gigtaxtracker.app`.
+- **Payment infra: IAP or Stripe?** Apple IAP via RevenueCat — decided, per App Review Guideline 3.1.1. RevenueCat unifies with Play Billing for Android.
+- **Android?** Yes, v1.2 — gig workers skew heavily Android and deferring further cedes the majority of the addressable market.
+
+</details>

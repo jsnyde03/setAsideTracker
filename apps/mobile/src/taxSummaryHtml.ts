@@ -1,0 +1,232 @@
+import type { SafeHarborResult, TaxEstimateForYear } from "./calculations";
+import type { MileageLogRow, ScheduleCSummary } from "./scheduleC";
+
+export interface TaxSummaryData {
+  /** Who the report is for (the user's display name). */
+  preparedFor: string;
+  year: number;
+  /** Human-readable filing status, e.g. "Head of Household". */
+  filingStatusLabel: string;
+  /** State (+ county) line, e.g. "CA" or "MD · Montgomery". */
+  locationLabel: string;
+  /** Human-readable generation date, e.g. "June 30, 2026". */
+  generatedOn: string;
+  scheduleC: ScheduleCSummary;
+  estimate: TaxEstimateForYear;
+  /** Per-trip mileage log substantiating Schedule C Line 9. Empty when no entry has business miles;
+   * rendered as an audit-ready appendix. */
+  mileageLog: MileageLogRow[];
+  /** Federal safe-harbor / Form 2210 picture — the minimum to pay in to avoid the underpayment
+   * penalty, and the quarterly estimated-payment figure. Rendered as its own planning section. */
+  safeHarbor: SafeHarborResult;
+}
+
+function formatCurrency(amount: number): string {
+  return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
+/** Escapes the few characters that matter in HTML text/attribute context. The only user-provided
+ * string here is the display name; everything else is numbers/fixed labels. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function row(label: string, amount: number, opts: { strong?: boolean; negative?: boolean } = {}): string {
+  const cls = [opts.strong ? "strong" : "", opts.negative ? "neg" : ""].filter(Boolean).join(" ");
+  const value = opts.negative ? `(${formatCurrency(amount)})` : formatCurrency(amount);
+  return `<tr class="${cls}"><td>${label}</td><td class="num">${value}</td></tr>`;
+}
+
+/** Indented breakdown row under Line 27 — the label is user-provided free text, so it's escaped. */
+function subRow(label: string, amount: number): string {
+  return `<tr class="sub"><td>${escapeHtml(label)}</td><td class="num">${formatCurrency(amount)}</td></tr>`;
+}
+
+/** Formats the miles count with thousands separators (no decimals — mileage is tracked whole). */
+function formatMiles(miles: number): string {
+  return miles.toLocaleString("en-US");
+}
+
+/** Renders one trip row of the mileage-log appendix. Purpose/route are user free text, so escaped;
+ * a missing purpose falls back to the (muted) platform label and a missing route to a dash so the
+ * row is never blank. */
+function mileageRow(trip: MileageLogRow): string {
+  const purpose = trip.purpose
+    ? escapeHtml(trip.purpose)
+    : `<span class="muted">${escapeHtml(trip.platformLabel)}</span>`;
+  const routeParts = [trip.startLocation, trip.endLocation].filter((p): p is string => Boolean(p)).map(escapeHtml);
+  const route = routeParts.length > 0 ? routeParts.join(" &rarr; ") : `<span class="muted">&mdash;</span>`;
+  return `<tr><td class="nowrap">${escapeHtml(trip.date)}</td><td>${purpose}</td><td>${route}</td><td class="num">${formatMiles(trip.miles)}</td></tr>`;
+}
+
+/**
+ * Builds the federal safe-harbor / Form 2210 planning section — the minimum to pay in to avoid the
+ * underpayment penalty, which leg (this year's 90% vs. last year's 100/110%) binds, the withholding
+ * credited, and the quarterly estimated-payment figure. Mirrors the SafeHarborScreen. No user free
+ * text, so nothing to escape. Returns "" when the estimate carries no federal tax to plan around.
+ */
+function buildSafeHarborSection(sh: SafeHarborResult): string {
+  const heading = `<h2>Safe Harbor — Federal Underpayment Penalty</h2>`;
+
+  if (sh.noPenaltyExpected) {
+    const msg = sh.underDeMinimis
+      ? `You're expected to owe less than ${formatCurrency(1000)} in federal tax after withholding, so no underpayment penalty applies this year.`
+      : `Your expected W-2 withholding alone is on track to meet the safe harbor — no separate estimated payments are needed to avoid the penalty.`;
+    return `${heading}
+  <p class="note">${msg}</p>`;
+  }
+
+  const priorPct = sh.priorYearMultiplier === 1.1 ? "110%" : "100%";
+  const currentBinding = sh.bindingTest === "currentYear";
+  const priorRow = sh.hasPriorYear
+    ? row(`${priorPct} of last year's federal tax${currentBinding ? "" : " — binding"}`, sh.priorYearSafeHarbor)
+    : `<tr><td>${priorPct} of last year's federal tax</td><td class="num">— not provided</td></tr>`;
+  const withholdingRow =
+    sh.federalWithholding > 0 ? row("Less: expected W-2 withholding", sh.federalWithholding, { negative: true }) : "";
+  const perQuarterNote =
+    sh.estimatedPaymentsNeeded > 0
+      ? `<p class="note">≈ ${formatCurrency(sh.perQuarter)} per quarter across the four 1040-ES estimated-payment due dates.</p>`
+      : "";
+  const priorYearPrompt = !sh.hasPriorYear
+    ? `<p class="note">Enter last year's federal total tax in the app's Safe Harbor screen to check the prior-year safe harbor — if your income rose this year, it can lower the required amount.</p>`
+    : "";
+
+  return `${heading}
+  <p class="note">To avoid the federal underpayment penalty, pay in — through withholding plus estimated payments — at least the smaller of these two safe-harbor amounts:</p>
+  <table>
+    ${row(`90% of this year's federal tax${currentBinding ? " — binding" : ""}`, sh.ninetyPctCurrent)}
+    ${priorRow}
+    ${row("Required annual payment", sh.requiredAnnualPayment, { strong: true })}
+    ${withholdingRow}
+    ${row("Estimated payments to make", sh.estimatedPaymentsNeeded, { strong: true })}
+  </table>
+  ${perQuarterNote}
+  ${priorYearPrompt}`;
+}
+
+/**
+ * Builds the self-contained HTML for the tax-ready summary PDF. Pure (string in, string out) so it's
+ * unit-testable without expo-print; the native render/share lives in taxSummaryPdf.ts. The estimate
+ * breakdown is composed to reconcile exactly with the engine's `totalEstimatedTax`
+ * (seTax + federalIncomeTax-after-nonrefundable-CTC + state/local − refundable CTC).
+ */
+export function buildTaxSummaryHtml(data: TaxSummaryData): string {
+  const { estimate, scheduleC } = data;
+  const e = estimate.estimate;
+  const federalAfterCredit = e.federalIncomeTax.incomeTax - e.childTaxCredit.nonrefundableCredit;
+  const refundableCredit = e.childTaxCredit.refundableCredit;
+  const withholdingCredit = estimate.w2WithholdingYtdEstimate;
+  const mileage = e.mileageDeduction;
+
+  // Render the Line 27 "Other expenses" per-category breakdown as indented sub-rows directly under
+  // that line — the audit-ready substantiation of what the lumped Line 27 total is made of.
+  const expenseRows = scheduleC.expenseLines
+    .map((line) => {
+      const lineRow = row(`Line ${line.line} — ${line.label}`, line.amount);
+      if (line.line !== "27") return lineRow;
+      return lineRow + scheduleC.otherExpenses.map((o) => subRow(o.label, o.amount)).join("");
+    })
+    .join("");
+
+  const taxRows = [
+    row("Self-employment tax", e.seTax.totalSeTax),
+    row("Federal income tax (after Child Tax Credit)", federalAfterCredit),
+    row("State &amp; local tax", e.stateTax.stateTax),
+    refundableCredit > 0 ? row("Less: refundable Child Tax Credit", refundableCredit, { negative: true }) : "",
+    row("Total estimated tax", e.totalEstimatedTax, { strong: true }),
+    withholdingCredit > 0 ? row("Less: estimated W-2 withholding credit", withholdingCredit, { negative: true }) : "",
+  ].join("");
+
+  // Mileage-log appendix (Schedule C Line 9 substantiation) — one row per trip claiming business
+  // miles, with a total that reconciles to the Line 9 mileage figure. Omitted when no trips exist.
+  const totalLoggedMiles = data.mileageLog.reduce((sum, trip) => sum + trip.miles, 0);
+  const mileageAppendix =
+    data.mileageLog.length > 0
+      ? `
+  <h2>Mileage Log — Schedule C Line 9 Substantiation</h2>
+  <p class="note">The IRS requires a contemporaneous record of each business trip's date, purpose, and route to claim the standard mileage deduction. These are the trips backing the ${formatMiles(mileage.miles)} business miles on Line 9.</p>
+  <table>
+    <tr class="head"><td>Date</td><td>Purpose</td><td>Route</td><td class="num">Miles</td></tr>
+    ${data.mileageLog.map(mileageRow).join("")}
+    <tr class="strong"><td colspan="3">Total business miles</td><td class="num">${formatMiles(totalLoggedMiles)}</td></tr>
+  </table>`
+      : "";
+
+  const safeHarborSection = buildSafeHarborSection(data.safeHarbor);
+
+  const fallbackWarning = estimate.usedFallbackConfig
+    ? `<p class="warn">Note: official ${data.year} tax figures weren't finalized when this was generated, so the nearest available tax-year rates were used. Treat as an estimate.</p>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, system-ui, sans-serif; color: #13161B; margin: 0; padding: 32px; font-size: 13px; line-height: 1.5; }
+  h1 { font-size: 22px; margin: 0 0 2px; }
+  h2 { font-size: 14px; margin: 28px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #0F5FE0; color: #0F5FE0; }
+  .meta { color: #5B6270; font-size: 12px; margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 6px 0; border-bottom: 1px solid #EEF0F3; vertical-align: top; }
+  td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  tr.strong td { font-weight: 700; border-bottom: 2px solid #E4E7EC; }
+  tr.neg td.num { color: #0E8F5E; }
+  tr.sub td { padding: 3px 0; border-bottom: none; color: #5B6270; font-size: 12px; }
+  tr.sub td:first-child { padding-left: 18px; }
+  tr.head td { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #5B6270; border-bottom: 1px solid #E4E7EC; }
+  td.nowrap { white-space: nowrap; }
+  .muted { color: #9AA1AC; }
+  .setaside { margin-top: 16px; background: #E8F0FE; border-radius: 10px; padding: 16px; }
+  .setaside .label { font-size: 12px; color: #5B6270; }
+  .setaside .value { font-size: 26px; font-weight: 800; color: #0F5FE0; }
+  .note { color: #9AA1AC; font-size: 11px; margin-top: 4px; }
+  .warn { background: #FFF8E8; border: 1px solid #F0DDA0; border-radius: 8px; padding: 10px; color: #8a6d0b; font-size: 12px; }
+  .disclaimer { margin-top: 28px; color: #9AA1AC; font-size: 11px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <h1>Tax-Ready Summary — ${data.year}</h1>
+  <div class="meta">Prepared for ${escapeHtml(data.preparedFor)}</div>
+  <div class="meta">${escapeHtml(data.filingStatusLabel)} · ${escapeHtml(data.locationLabel)}</div>
+  <div class="meta">Generated ${escapeHtml(data.generatedOn)} by SetAside Tracker</div>
+
+  ${fallbackWarning}
+
+  <h2>Schedule C — Profit or Loss From Business</h2>
+  <table>
+    ${row("Line 1 — Gross receipts (earnings + tips)", scheduleC.grossReceipts)}
+    ${expenseRows}
+    ${row("Line 28 — Total expenses", scheduleC.totalExpenses, { strong: true })}
+    ${row("Line 31 — Net profit or (loss)", scheduleC.netProfit, { strong: true })}
+  </table>
+  <p class="note">Car &amp; truck (Line 9) uses the standard mileage rate: ${mileage.miles.toLocaleString("en-US")} business miles × ${formatCurrency(mileage.ratePerMile)}/mi = ${formatCurrency(mileage.deductionAmount)}, plus any parking and tolls.</p>
+
+  <h2>Estimated Taxes — ${data.year}</h2>
+  <table>
+    ${taxRows}
+  </table>
+
+  <div class="setaside">
+    <div class="label">Estimated amount to set aside</div>
+    <div class="value">${formatCurrency(estimate.netAmountToSetAside)}</div>
+    <div class="note">Total estimated tax${withholdingCredit > 0 ? ", net of estimated W-2 withholding already covering part of it" : ""}.</div>
+  </div>
+
+  ${safeHarborSection}
+  ${mileageAppendix}
+
+  <p class="disclaimer">
+    This summary is generated from the entries you logged in SetAside Tracker and is an estimate to
+    help you prepare — it is not tax advice and not an official IRS form. Figures may differ from your
+    filed return. Review with a qualified tax professional before filing.
+  </p>
+</body>
+</html>`;
+}

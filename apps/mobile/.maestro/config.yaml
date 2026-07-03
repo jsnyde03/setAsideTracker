@@ -1,0 +1,13 @@
+# Maestro workspace config. Runs every *.yaml flow in this directory in the order below.
+# Flows target the app by its bundle id (com.gigtaxtracker.app) — see each flow's header.
+flows:
+  - onboarding.yaml
+  - onboarding-validation.yaml
+  - log-and-delete-entry.yaml
+  - premium-paywall.yaml
+  - mileage-log-gating.yaml
+  - custom-expenses-gating.yaml
+  - w4-optimizer-gating.yaml
+  - safe-harbor-gating.yaml
+  - year-over-year-gating.yaml
+  - expense-breakdown-gating.yaml

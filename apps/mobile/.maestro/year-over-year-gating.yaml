@@ -1,0 +1,53 @@
+# Year-over-year insights is Premium and soft-gated on *data*: the dashboard card only appears once
+# entries span 2+ distinct tax years. Seeding that second year is a native-only path — it needs the
+# DateField's native date picker (the web Playwright suite uses an <input type="date"> instead), so
+# this flow is the only place that exercises setting an entry's date into a prior year. Once the card
+# appears, a free user tapping it routes straight to the paywall (no native Alert). The comparison
+# math is covered by the computeYearOverYear unit tests.
+appId: com.gigtaxtracker.app
+name: Year-over-year gating (native prior-year picker → locked card → paywall)
+---
+# Precondition: a fresh onboarded session on the dashboard.
+- runFlow: onboarding.yaml
+
+# --- Entry 1: a current-year entry (picker left at its default of today) ---
+- tapOn: "Log Earnings"
+- assertVisible: "Platform"
+- tapOn: "DoorDash"
+- tapOn:
+    text: "0.00"
+    index: 0
+- inputText: "5000"
+- hideKeyboard
+- tapOn: "Save Entry"
+- assertVisible: "Set aside for taxes"
+
+# --- Entry 2: drive the native date picker back one full year, then log it ---
+- tapOn: "Log Earnings"
+- assertVisible: "Platform"
+- tapOn: "DoorDash"
+# Open the inline native date picker via the Date field, then step back 12 months (one year).
+- tapOn:
+    text: "Date:.*"
+- repeat:
+    times: 12
+    commands:
+      - tapOn: "Previous Month"
+- tapOn: "15" # a day cell that exists in every month — commits a prior-year date
+- tapOn:
+    text: "0.00"
+    index: 0
+- inputText: "3000"
+- hideKeyboard
+- tapOn: "Save Entry"
+- assertVisible: "Set aside for taxes"
+
+# The card now appears (entries span two years); tapping it opens the paywall directly.
+- scrollUntilVisible:
+    element:
+      text: "Year-over-year insights.*Premium"
+    direction: DOWN
+- tapOn:
+    text: "Year-over-year insights.*Premium"
+- assertVisible: "SetAside Premium"
+- tapOn: "Close"

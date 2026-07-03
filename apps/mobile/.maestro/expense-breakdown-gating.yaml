@@ -1,0 +1,38 @@
+# The expense breakdown is Premium. It surfaces on the dashboard as an "Expense breakdown · Premium"
+# card, soft-gated on *data*: it only appears once the year has a deductible expense (a bucket cost
+# or business mileage). This flow logs an entry with mileage to make the card appear, then a free
+# user taps it and routes straight to the paywall (no native Alert). No native-only path here — the
+# same hop is covered by expense-breakdown.spec.ts on web; this exercises it on a real simulator for
+# parity. The Schedule C grouping itself is covered by the buildScheduleCSummary unit tests.
+appId: com.gigtaxtracker.app
+name: Expense breakdown gating (locked card → paywall)
+---
+# Precondition: a fresh onboarded session on the dashboard (shared no-W2 onboarding).
+- runFlow: onboarding.yaml
+
+# Log an entry with business mileage — a Line 9 (car & truck) expense, enough to surface the card.
+- tapOn: "Log Earnings"
+- assertVisible: "Platform"
+- tapOn: "DoorDash"
+- tapOn:
+    text: "0.00"
+    index: 0
+- inputText: "4000"
+# Mileage field (placeholder "0"); the anchored regex avoids matching the "0.00" money fields.
+- tapOn:
+    text: "^0$"
+    index: 0
+- inputText: "500"
+- hideKeyboard
+- tapOn: "Save Entry"
+- assertVisible: "Set aside for taxes"
+
+# The breakdown card is present but locked behind Premium; tapping it opens the paywall directly.
+- scrollUntilVisible:
+    element:
+      text: "Expense breakdown.*Premium"
+    direction: DOWN
+- tapOn:
+    text: "Expense breakdown.*Premium"
+- assertVisible: "SetAside Premium"
+- tapOn: "Close"

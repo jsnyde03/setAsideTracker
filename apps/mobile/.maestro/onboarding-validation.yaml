@@ -1,0 +1,21 @@
+# Exercises a NATIVE-ONLY path the web suite cannot: the Alert.alert validation dialogs in
+# OnboardingScreen. On web, react-native-web's Alert.alert just console.logs — there's no dialog to
+# assert on — so this guard rail is only verifiable on a real simulator/device. This is exactly the
+# "native verification gap" the project has flagged since v0.3.
+appId: com.gigtaxtracker.app
+name: Onboarding validation (native Alert dialogs)
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Welcome"
+# Continue with no name entered → native "Name required" alert.
+- tapOn: "Continue"
+- assertVisible: "Name required"
+- tapOn: "OK"
+# Enter a name but no state → native "State required" alert.
+- tapOn: "Your name"
+- inputText: "Maestro Tester"
+- hideKeyboard
+- tapOn: "Continue"
+- assertVisible: "State required"
+- tapOn: "OK"
