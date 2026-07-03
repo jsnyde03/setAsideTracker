@@ -12,11 +12,11 @@ clean **What's New** block (the draft for the App Store "What's New" field) plus
 
 ---
 
-## v1.1 — Premium Tier Launch + Free Tier Growth  🔄 SUBMITTED for App Store review (2026-07-01)
+## v1.1 — Premium Tier Launch + Free Tier Growth  ✅ LIVE on the App Store (2026-07-03)
 
-> **Submitted for review 2026-07-01** from the QA-passed 1.1.0 TestFlight build, with the two Premium
-> IAP subscriptions attached for first review. v1.0 is live; on v1.1 approval, Premium goes live and
-> `v1.1` merges to `master`. Phase A (free additions) **complete**; Phase B (premium)
+> **Approved + LIVE 2026-07-03** (submitted 2026-07-01 from the QA-passed 1.1.0 TestFlight build, with
+> the two Premium IAP subscriptions attached for first review — approved together, so Premium is live).
+> Remaining go-live housekeeping: merge `v1.1` → `master`. Phase A (free additions) **complete**; Phase B (premium)
 > **complete**; the ASO/store-metadata pass **complete** (`STORE_LISTING.md`, `SCREENSHOT_PLAN.md`).
 > Multi-state support was deferred to the v1.3 backlog (not a v1.1 show-stopper — a real engine
 > extension needing its own version). Full plan: [V1.1_EXECUTION_PLAN.md](V1.1_EXECUTION_PLAN.md) /
