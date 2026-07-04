@@ -55,9 +55,9 @@ taxes · quarterly tax calculator · 1099 taxes · 1099 tax calculator · set as
 ## Keywords (App Store keyword field: 100 char max)
 
 ```
-estimated,selfemployed,mileage,expense,deduction,rideshare,delivery,freelance,contractor,sidehustle
+estimated,selfemployed,expense,deduction,rideshare,delivery,freelance,contractor,writeoff,irs
 ```
-**99 chars.** Rules applied (verified against Apple's 2026 behavior):
+**93 chars.** _(2026-07-03 ASO re-audit: dropped `mileage` — unwinnable vs. the entrenched mileage incumbents (Everlance/Stride/Hurdlr/MileIQ); still shown in screenshots + description for human conversion — and `sidehustle`; added `writeoff` (Keeper/Everlance core tax term, was missing) + `irs`. QBSE's 2024 discontinuation also makes `selfemployed` more winnable. 7 chars headroom for a later test term. Rationale → `app-portfolio/content/ASO_REAUDIT_2026-07-03.md`.)_ Rules applied (verified against Apple's 2026 behavior):
 
 - **No spaces after commas** — spaces waste characters and are unnecessary; commas alone separate.
 - **No word already in the Title/Subtitle** — `tax`, `taxes`, `gig`, `1099`, `quarterly`,
@@ -99,6 +99,14 @@ Know exactly what to set aside for taxes from every gig — in real time. Premiu
 *(161 chars.)* Use this slot for the value hook and seasonal promos (e.g. swap in a tax-season message
 Jan–Apr) — it updates without a new build. It is **not** search-indexed, so it carries no keywords —
 pure conversion copy.
+
+**Seasonal variants (2026-07-03 ASO re-audit — swap in on this calendar; free, no review, ≤170 chars):**
+- **Evergreen (default):** the copy above.
+- **Q4 push (Dec → Jan 15):** `Q4 estimated taxes are due Jan 15. Know exactly what to set aside from every gig, in real time. Premium adds a tax-ready PDF, mileage log, and safe-harbor calc.`
+- **Tax season (Jan–Apr):** `Filing season: hand your preparer ONE tax-ready PDF — Schedule C, mileage log, and your set-aside math in a single file. Premium.`
+- **Quarterly urgency (~2 wks before Apr 15 / Jun 15 / Sep 15 / Jan 15):** `Quarterly taxes due soon. See exactly what to set aside so you're never hit with an underpayment penalty — real-time, from every gig.`
+
+_Traffic for every tax term spikes Jan–Apr + around each due date; tune this slot to the calendar since it's the one free, no-review lever._
 
 ---
 
@@ -212,7 +220,7 @@ apply to the captions:
 |---|---|---|
 | **Name** | `SetAsideTracker: Gig Taxes` | 26/30. Lands with the v1.1 submission (can't change while v1.0 is in review). |
 | **Subtitle** | `Quarterly 1099 tax calculator` | 29/30. |
-| **Keywords** | `estimated,selfemployed,mileage,expense,deduction,rideshare,delivery,freelance,contractor,sidehustle` | 99/100. No spaces. |
+| **Keywords** | `estimated,selfemployed,expense,deduction,rideshare,delivery,freelance,contractor,writeoff,irs` | 93/100. No spaces. (2026-07-03 re-audit: −mileage/sidehustle, +writeoff/irs.) |
 | **Promotional text** | see above | 161/170. Editable anytime without review. |
 | **Description** | see above | ~2,650/4,000. |
 | **What's New** | see above | v1.1 update notes. |
