@@ -12,11 +12,37 @@ clean **What's New** block (the draft for the App Store "What's New" field) plus
 
 ---
 
+## v1.1.1 — Premium app icon  ✅ LIVE on the App Store (approved 2026-07-17)
+
+> Icon-only patch release (`08305f0`, tag `v1.1.1`, merged to `master` in `906cfd9`). Written up
+> **2026-08-07 at the v1.2 switch-in** — it shipped without a release-notes or completions-log entry,
+> the only tagged-and-approved Gig release to do so. Backfilled here so the living-release-notes
+> record has no hole in it.
+
+### What's New (as submitted)
+
+```
+A new app icon.
+```
+
+### Completed in this release
+
+- **Premium app icon.** Replaced the generic mark with the gold shield + `$` on black — "protect your
+  set-aside" — from Jason's design, recreated as a 1024×1024 SVG and rendered to RGB with **no alpha
+  channel** (Apple rejects icons with transparency). Source SVG kept in
+  `apps/mobile/assets/icon-source/`. Verified legible at 40px and 60px. Part of the portfolio-wide
+  premium-icon pass (Jason 2026-07-06).
+- **Version bump** `1.1.0` → `1.1.1` in `apps/mobile/app.json`; build number auto-increments in Codemagic.
+- **Unblocked the Apple Search Ads campaign** — ASA serves the live listing as the ad creative, so the
+  campaign had been gated on this icon being live (see `ASA_SETUP_GUIDE.md` §sequencing).
+
+---
+
 ## v1.1 — Premium Tier Launch + Free Tier Growth  ✅ LIVE on the App Store (2026-07-03)
 
 > **Approved + LIVE 2026-07-03** (submitted 2026-07-01 from the QA-passed 1.1.0 TestFlight build, with
 > the two Premium IAP subscriptions attached for first review — approved together, so Premium is live).
-> Remaining go-live housekeeping: merge `v1.1` → `master`. Phase A (free additions) **complete**; Phase B (premium)
+> ✅ Go-live housekeeping complete: `v1.1` merged to `master` (`89cee3c`). Phase A (free additions) **complete**; Phase B (premium)
 > **complete**; the ASO/store-metadata pass **complete** (`STORE_LISTING.md`, `SCREENSHOT_PLAN.md`).
 > Multi-state support was deferred to the v1.3 backlog (not a v1.1 show-stopper — a real engine
 > extension needing its own version). Full plan: [V1.1_EXECUTION_PLAN.md](V1.1_EXECUTION_PLAN.md) /

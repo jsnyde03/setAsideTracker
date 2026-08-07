@@ -215,10 +215,12 @@ workflows:
         - push
         - pull_request
       branch_patterns:
-        # TEMPORARILY DISABLED (2026-06-30) to conserve Codemagic minutes near the monthly cap — a
-        # push must not auto-spend minutes. Re-enable (include: true) after the monthly reset.
+        # RE-ENABLED 2026-08-07 at the v1.2 switch-in. It was disabled 2026-06-30 "temporarily,
+        # until the monthly reset" and two resets then passed with it still off — which meant the
+        # repo spent five weeks with no automated gate on any push at all. This is the cheap Linux
+        # workflow, so the conserve-minutes rule points at the mac ones, not this.
         - pattern: "*"
-          include: false
+          include: true
 
     scripts:
       - name: Install root workspace dependencies
@@ -238,6 +240,19 @@ workflows:
         script: |
           cd apps/mobile
           npx playwright install --with-deps chromium
+
+      - name: Typecheck + unit tests (fail fast before the slow browser run)
+        # Added 2026-08-07. This workflow previously ran ONLY Playwright, so the 101 tax-engine and
+        # 144 mobile unit tests never ran on a push — they were reachable only via the expensive mac
+        # maestro workflow. Cheap checks belong first: a type error shouldn't cost a chromium boot.
+        # (Lint is deliberately NOT here yet — it has a 14-item pre-existing ledger to clear first;
+        # it becomes a gate in v1.2 once that's green, so this pipeline never lands red.)
+        script: |
+          cd services/tax-engine
+          npm test
+          cd ../../apps/mobile
+          npm run typecheck
+          npm test
 
       - name: Run web E2E (Playwright boots Expo web itself)
         # The playwright.config.ts webServer block starts `npm run web` and waits for :8081, so no
@@ -278,9 +293,13 @@ workflows:
       events:
         - push
       branch_patterns:
-        # TEMPORARILY DISABLED (2026-06-30) to conserve Codemagic minutes near the monthly cap — this
-        # is the expensive mac workflow and must not auto-fire on a v1.1 push. Re-enable after reset.
-        - pattern: "v1.1"
+        # MANUAL-ONLY, deliberately (settled 2026-08-07, replacing a stale "temporarily disabled
+        # until the monthly reset" note from 2026-06-30 that was never true again). This is the
+        # expensive mac workflow; auto-firing it on every push is exactly what the conserve-minutes
+        # rule exists to prevent. Run it from the Codemagic UI ("Start new build" → this workflow →
+        # pick the branch) at the points that earn it: before a TestFlight submission, and after any
+        # native-path change. The pattern below is left non-matching on purpose.
+        - pattern: "v1.2"
           include: false
 
     scripts:

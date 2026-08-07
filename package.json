@@ -4,5 +4,12 @@
   "workspaces": [
     "apps/*",
     "services/*"
-  ]
+  ],
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~56.0.4"
+  },
+  "scripts": {
+    "lint": "npm run lint --workspace apps/mobile"
+  }
 }
