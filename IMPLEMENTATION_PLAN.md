@@ -8,15 +8,17 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 >
 > Three documents defined "v1.2" three incompatible ways and had done so for ~6 weeks (audit F5). Jason settled it on 2026-08-07: **v1.2 = the free-tier UX bundle, Android = v1.3**, and everything below shifts up one. Any reference written before that date maps as:
 >
-> | was | is now |
-> |---|---|
-> | v1.2 Android + Retention/Growth | **v1.3** |
-> | v1.3 Mileage & Receipts | **v1.4** |
-> | v1.4 Platform Auto-Sync | **v1.5** |
-> | v1.5 Filing Season Toolkit | **v1.6** ⚠️ still date-sensitive — target early January regardless of where v1.4/v1.5 stand |
-> | v1.6 Money-Moves & Pro Tools | **v1.7** |
+> | was | is now | why |
+> |---|---|---|
+> | v1.2 Android + Retention/Growth | **v1.3** | v1.2 became the UX bundle |
+> | v1.5 Filing Season Toolkit | **v1.4** ⬆️ | **moved FORWARD** — the only date-locked version on the ladder, and it was stuck behind two versions with no deadline |
+> | v1.3 Mileage & Receipts | **v1.5** | |
+> | v1.4 Platform Auto-Sync | **v1.6** | |
+> | v1.6 Money-Moves & Pro Tools | **v1.7** | |
 >
-> **v2.0–v3.0 are unchanged** — they were never part of the cascade. The one item that moved *between* versions rather than being renumbered is the **iOS home-screen widget**, pulled from v1.3's retention set into **v1.2** ([D2]).
+> **v2.0–v3.0 are unchanged** — they were never part of the cascade. Two items moved *between* versions rather than being renumbered: the **iOS home-screen widget**, pulled from v1.3's retention set into **v1.2** ([D2]); and the **shift/earnings optimizer**, pulled from v1.3 into v1.2's premium slice ([D3]).
+>
+> ⚠️ **Note the direction of travel.** Everything shifted *down* the ladder except Filing Season, which jumped *up* three places. That is deliberate: it is the one item whose value collapses if it ships late, and the 2026-08-07 build-order review found it could not have made its January window where it sat.
 
 ## ✅ v0.1 — Tax Engine Proof of Concept (internal only)
 
@@ -298,19 +300,21 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 </details>
 
-## ⬜ v1.2 — Free-Tier UX Bundle
+## ⬜ v1.2 — UX Bundle + Premium Quarterly Tools 🎯 **target: live by end of August 2026**
 
 <details>
 <summary>Status: Not Started — planned + decomposed; see V1_2_EXECUTION_PLAN.md</summary>
 
-**Status: Not Started** — decomposed and gated, **not yet promoted to the active build slot** (Jason 2026-08-07: plan now, promote later).
-**Goal:** make the app's value visible *before* the user has logged anything — the diagnosis being that a new user finishes the tax-profile wizard and lands on a dashboard reading $0.00.
+**Status: Not Started** — decomposed and gated, **not yet promoted to the active build slot** (Jason 2026-08-07: plan now, promote later). **The version stays intact and ships this month** ([D4]).
+**Goal:** make the app's value visible *before* the user has logged anything — a new user finishes the tax-profile wizard and lands on a dashboard reading $0.00 — **and give the newly-converting paying cohort something new they're paying for.**
 
-**📋 Sequence, dependencies, and external prerequisites → [V1_2_EXECUTION_PLAN.md](V1_2_EXECUTION_PLAN.md).** Structural audit that shaped it → [`docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md`](docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md).
+**📋 Sequence, dependencies, and external prerequisites → [V1_2_EXECUTION_PLAN.md](V1_2_EXECUTION_PLAN.md).** Structural audit → [`docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md`](docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md). Ladder rationale → [BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md).
 
-All free — none of it paywalled, per the tier-gating principle. In order: **routing migration to `expo-router`** ([D1] — the app has no router today, so iPad split-view is architecturally impossible without one) → **demo mode** (reversible sample persona; isolation enforced at `repository.ts`) → **native iPad** (adaptive split-view/sidebar, not a wrapper) → **guided onboarding** (full coachmark tour) → **accessibility depth audit** → **iOS home-screen widget** ([D2], folded in 2026-08-07; the one native item) → the filed v1.2 correctness backlog → clear the lint ledger → verify + device QA + whole-phase after-scan.
+In order: **routing migration to `expo-router`** ([D1] — the app has no router today, so iPad split-view is architecturally impossible without one) → **demo mode** (reversible sample persona; isolation enforced at `repository.ts`) → **the premium slice** ([D3]: shift/earnings optimizer · safe-harbor payment tracker · per-quarter amounts in reminders · expense drill-down — placed *before* the screen passes so each walks the final surface once) → **native iPad** → **guided onboarding** (full coachmark tour) → **accessibility depth audit** → **iOS home-screen widget** ([D2]; the one native item, and the main risk to the August date) → the filed correctness backlog → clear the lint ledger → verify + device QA + whole-phase after-scan.
 
-**Ships to:** general public, free tier. **Exit criteria:** a brand-new user sees the whole app working before logging anything; genuinely native on iPad; full surface passes an accessibility audit; real data provably untouched by demo mode.
+**Tier split:** the free half stays free per the tier-gating principle; the premium half is **additive** and sits on the tax-time/complexity axis, never on the core "what should I set aside" job.
+
+**Ships to:** general public. **Exit criteria:** a brand-new user sees the whole app working before logging anything; genuinely native on iPad; full surface passes an accessibility audit; **an existing subscriber finds something new**; real data provably untouched by demo mode.
 
 </details>
 
@@ -346,7 +350,29 @@ All free — none of it paywalled, per the tier-gating principle. In order: **ro
 
 </details>
 
-## ⬜ v1.4 — Mileage & Receipts Automation
+## ⬜ v1.4 — Filing Season Toolkit 🔒 **the only date-locked version on this ladder**
+
+<details>
+<summary>Status: Not Started — target submit ~Dec 15, 2026</summary>
+
+**Status: Not Started** — **⚠️ moved ahead of Mileage and Platform Auto-Sync on 2026-08-07.** The build-order review ([BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md) §1) found this is the **only** item on the whole roadmap whose value window is hard — and it had been sitting behind two versions that have no deadline at all, one of which requires building the app's first backend. It could not have landed in its window.
+**Goal:** be indispensable in Jan–April, when gig workers actually file — the quarter in which a tax app earns (traffic spike, conversion spike, affiliate revenue).
+
+**🔒 The calendar, backwards from the tightest item.** "Tax Wrapped" is a year-boundary artifact whose sharing energy is the first ~2 weeks of January ⇒ live ~Jan 1 ⇒ **submit ~Dec 15**, ahead of Apple's annual holiday shutdown (historically ~Dec 20–27 — **re-check the actual 2026 dates in November**; they're announced each year) ⇒ feature-complete ~Dec 5 ⇒ **start by ~late October**. Separately, 1099-NECs must be furnished to recipients by **Jan 31**, so reconciliation needs to be live by mid-January.
+
+⚡ **Start the affiliate applications by ~November at the latest.** TurboTax / FreeTaxUSA / Cash App Taxes affiliate programs carry partner-side approval latency measured in weeks — the same category as the Play Console prerequisites. Miss it and the affiliate half misses its window regardless of when the code is ready.
+
+*(Schedule C category alignment, safe-harbor calculator, and PDF export were pulled into v1.1 where they have year-round impact; the safe-harbor **payment tracker** went into v1.2. What remains is specifically filing-season-timed.)*
+
+- **1099-NEC / 1099-K reconciliation.** Let users check their tracked earnings total against the actual 1099 they receive from each platform. Catches missed entries; the single most trust-building feature at the most stressful moment of the gig-worker year.
+- **Year-end "Tax Wrapped" recap** (free). Spotify-Wrapped-style annual summary: total earned, miles driven, top platform, busiest month, tax saved via deductions. Reuses entirely existing data; zero new infrastructure. Strong organic-sharing driver timed to filing season. Per [ROADMAP §9.5](ROADMAP.md). ⚠️ **This is the item that sets the whole version's deadline** — it is cheap to build and impossible to ship late.
+- **Affiliate integration with tax filing software.** TurboTax, FreeTaxUSA, Cash App Taxes — gig workers in this app are warm, pre-qualified leads at exactly the right moment. Optional CPA referral directory for users who want a human. Per [ROADMAP §5](ROADMAP.md).
+
+**Ships to:** general public, timed for filing-season launch. **Exit criteria:** submitted by ~Dec 15 and live before Jan 1.
+
+</details>
+
+## ⬜ v1.5 — Mileage & Receipts Automation
 
 <details>
 <summary>Status: Not Started</summary>
@@ -364,7 +390,7 @@ All free — none of it paywalled, per the tier-gating principle. In order: **ro
 
 </details>
 
-## ⬜ v1.5 — Platform Auto-Sync
+## ⬜ v1.6 — Platform Auto-Sync
 
 <details>
 <summary>Status: Not Started</summary>
@@ -381,24 +407,6 @@ All free — none of it paywalled, per the tier-gating principle. In order: **ro
 **Don't start before v1.1 (payment infra) is stable** — auto-sync is the single best premium conversion driver and shouldn't debut into a broken checkout flow.
 
 **Ships to:** general public, premium. **Exit criteria:** auto-synced entries match manual entries in accuracy during a parallel-run validation period.
-
-</details>
-
-## ⬜ v1.6 — Filing Season Toolkit
-
-<details>
-<summary>Status: Not Started</summary>
-
-**Status: Not Started**
-**Goal:** be indispensable in Jan–April, when gig workers actually file. **Date-sensitive — target shipping by early January regardless of where v1.3/v1.4 stand.**
-
-*(Schedule C category alignment, safe-harbor calculator, and PDF export were pulled into v1.1 where they have year-round impact. What remains is specifically filing-season-timed.)*
-
-- **1099-NEC / 1099-K reconciliation.** Let users check their tracked earnings total against the actual 1099 they receive from each platform. Catches missed entries; the single most trust-building feature at the most stressful moment of the gig-worker year.
-- **Year-end "Tax Wrapped" recap** (free). Spotify-Wrapped-style annual summary: total earned, miles driven, top platform, busiest month, tax saved via deductions. Reuses entirely existing data; zero new infrastructure. Strong organic-sharing driver timed to filing season. Per [ROADMAP §9.5](ROADMAP.md).
-- **Affiliate integration with tax filing software.** TurboTax, FreeTaxUSA, Cash App Taxes — gig workers in this app are warm, pre-qualified leads at exactly the right moment. Optional CPA referral directory for users who want a human. Per [ROADMAP §5](ROADMAP.md).
-
-**Ships to:** general public, timed for filing-season launch.
 
 </details>
 
@@ -496,10 +504,11 @@ All free — none of it paywalled, per the tier-gating principle. In order: **ro
 - **Wire up Sentry and analytics immediately post–App Store approval.** Both are scaffolded with no real backend. You need crash data and usage patterns before making confident v1.1 feature-prioritization decisions — don't start building v1.1 blind to what's actually happening in production.
 - **v1.2's routing migration is a hard prerequisite, not a refactor.** The app has no navigation library — routing is a `useState<Screen>` machine in a 593-line `App.tsx`. iPad split-view needs two screens rendered at once, which that model cannot express. It also gates v1.3's Android hardware back button. Do it first, or the items stacked on it get mis-estimated.
 - **Android's Jason-side prerequisites should run during v1.2, not at v1.3's switch-in.** If the Play Console account is personal, production access is gated behind **≥12 testers opted in for 14 continuous days** — dead wall-clock that costs nothing to run in parallel with a build. Starting it late adds ~3 weeks to v1.3 for no reason.
-- **Don't start v1.5 (Platform Auto-Sync) before v1.1 (payment infra) is stable** — auto-sync is the single best premium conversion driver and shouldn't debut with a broken checkout flow.
-- **v1.4 (GPS mileage) can ship before v1.5 (platform auto-sync)** — no backend dependency, higher per-user daily retention value. IRS-compliant mileage log fields in v1.1 provide the data-model foundation so no schema rework is needed. It is also the main lever against manual-entry retention decay, which v1.2 deliberately does not address.
-- **v1.6 (filing season toolkit) is date-sensitive** — target early January regardless of where v1.4/v1.5 stand. The 1099 reconciliation and affiliate integration have a narrow value window (Jan–April). ⚠️ **The renumber did not move this deadline** — with v1.2 and v1.3 now ahead of it, the calendar is tighter than the ladder makes it look.
-- **v1.7 (Money-Moves) only depends on v1.1's premium infra** — it doesn't require platform auto-sync or GPS mileage, so it can run in parallel with v1.4/v1.5 if those take longer than expected.
+- **🔒 v1.4 (Filing Season) is the ladder's only hard deadline, and everything above it is scheduled around that.** Submit ~Dec 15 ⇒ start ~late October. This is why it now sits ahead of Mileage and Auto-Sync rather than behind them: those two have no deadline, and Auto-Sync additionally requires building the app's first backend. **Every version above v1.4 is on a clock it doesn't own.**
+- **Every version from here carries a premium line** ([D3], 2026-08-07). v1.2 shipped with none until Jason caught it; nothing in the process had required one. Free stays bounded and finishable; premium carries growth.
+- **Don't start v1.6 (Platform Auto-Sync) before v1.1 (payment infra) is stable** — auto-sync is the single best premium conversion driver and shouldn't debut with a broken checkout flow.
+- **v1.5 (GPS mileage) can ship before v1.6 (platform auto-sync)** — no backend dependency, higher per-user daily retention value. IRS-compliant mileage log fields in v1.1 provide the data-model foundation so no schema rework is needed. It is also **the strongest lever against manual-entry retention decay** — the problem v1.2's premium slice and widget only partially reach, since passive capture is the real answer.
+- **v1.7 (Money-Moves) only depends on v1.1's premium infra** — it doesn't require platform auto-sync or GPS mileage, so it can run in parallel with v1.5/v1.6 if those take longer than expected.
 - **v2.0 is gated on the cost model, not the calendar** — don't ship AI tier features until per-user inference economics are validated with margin.
 - **SOC 2 roadmap must be underway before v2.2 (Bank/Plaid) starts** — that's when the app transitions from purely local-first to holding bank-linked data, a materially different compliance posture than everything built before it.
 
