@@ -257,12 +257,14 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 </details>
 
-## 🔄 v1.1 — Premium Tier Launch + Free Tier Growth
+## ✅ v1.1 — Premium Tier Launch + Free Tier Growth
 
 <details>
-<summary>Status: In Progress</summary>
+<summary>Status: Done — LIVE on the App Store (2026-07-03); v1.1.1 followed 2026-07-17</summary>
 
-**Status: In Progress** — work lives on the `v1.1` branch (not merged to `master` until v1.0 is live). Sequencing, dependencies, and external prerequisites are tracked in [V1.1_EXECUTION_PLAN.md](V1.1_EXECUTION_PLAN.md). Shipped so far: Workstream 0 (Playwright + Maestro + CI testing harness), the "Show your math" audit trail (Phase A #1), in-app tax literacy (Phase A #2), the What-if earnings simulator (Phase A #3), the platform earnings comparison (Phase A #4), the earnings share card (Phase A #5), and the well-timed app rating prompt (Phase A #6). **Phase A (the free-tier additions) is complete** — what remains in v1.1 is the premium track (Phase B), which is gated on Sentry/analytics + RevenueCat setup.
+**Status: ✅ Done — LIVE.** Approved and live on the App Store **2026-07-03**, with both Premium IAP subscriptions attached and approved in the same review, so Premium went live with it. Merged to `master` (`89cee3c`); the **v1.1.1** icon patch followed and was approved **2026-07-17** (`906cfd9`, tag `v1.1.1`). _(This section read "In Progress — not merged to master until v1.0 is live" for five weeks after it shipped; corrected 2026-08-07 at the v1.2 switch-in.)_ Sequencing and prerequisites → [V1.1_EXECUTION_PLAN.md](V1.1_EXECUTION_PLAN.md); user-facing detail → [RELEASE_NOTES.md](RELEASE_NOTES.md).
+
+**Phase A (free additions) complete:** the testing harness (Playwright + Maestro + CI), "Show your math" audit trail, in-app tax literacy, the What-if simulator, platform earnings comparison, the earnings share card, and the well-timed rating prompt. **Phase B (premium) complete:** RevenueCat IAP, the paywall, the tax-ready PDF export, Schedule C alignment, IRS-compliant mileage log fields, custom expense categories, the expense breakdown, the W-4 optimizer, the safe-harbor calculator, and year-over-year insights. **Multi-state support was deferred** — a real engine extension (sourcing/apportionment/reciprocity) needing its own version, not a v1.1 show-stopper.
 **Goal:** launch monetization once free-tier retention looks healthy; simultaneously add free features that deepen engagement and drive organic sharing.
 
 **Prerequisite: wire up Sentry and analytics before this ships.** Both `apps/mobile/src/errorReporting.ts` and `analytics.ts` are scaffolded with no real backend (`EXPO_PUBLIC_SENTRY_DSN` unset, no analytics vendor configured). Set up a real Sentry project + DSN, and pick an analytics vendor (PostHog or Amplitude are natural fits) and wire `analytics.ts` to it. You need crash data and real usage patterns before making confident feature-prioritization decisions — this is operational work, not a separate version, and should happen immediately post–App Store approval.
