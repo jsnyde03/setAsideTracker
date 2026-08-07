@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, Alert, AppState, StyleSheet, View } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
 import type { Entry, FiledYearTax, LocalUserProfile, TaxProfile } from "./src/types";
 import {
   addEntry,
@@ -12,9 +11,9 @@ import {
   getLocalUserProfile,
   getTaxProfile,
   restoreBackupSnapshot,
-  saveAppSettings,
   saveLocalUserProfile,
   saveTaxProfile,
+  updateAppSettings,
   updateEntry,
 } from "./src/storage/repository";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
@@ -30,20 +29,15 @@ import { EditTaxProfileScreen } from "./src/screens/EditTaxProfileScreen";
 import { PaywallScreen } from "./src/screens/PaywallScreen";
 import { LockScreen } from "./src/screens/LockScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
-import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { isAppLockAvailable, unlockWithDeviceAuth } from "./src/security/appLock";
 import { cancelQuarterlyReminders, scheduleQuarterlyReminders } from "./src/notifications/scheduleReminders";
 import { trackEvent, ANALYTICS_EVENTS } from "./src/analytics";
-import { initAnalytics } from "./src/analyticsClient";
-import { initPurchases } from "./src/premium/purchasesClient";
-import { PremiumProvider } from "./src/premium/PremiumContext";
 import { maybeRequestReview } from "./src/appReview";
-import { initErrorReporting, reportError } from "./src/errorReporting";
-import { ThemeProvider, useTheme, type ColorSchemePreference } from "./src/ThemeContext";
+import { reportError } from "./src/errorReporting";
+import { useTheme, type ColorSchemePreference } from "./src/ThemeContext";
 
-initErrorReporting();
-initAnalytics();
-initPurchases();
+// initErrorReporting/initAnalytics/initPurchases used to run here at module scope. They moved to
+// `app/_layout.tsx` in 1.2.0.2 — leaving them in both places would double-initialise all three.
 
 type Screen =
   | "loading"
@@ -60,32 +54,13 @@ type Screen =
   | "platformComparison"
   | "paywall";
 
-export default function App() {
-  // Lifted above AppContent (rather than state inside it) so ThemeProvider can wrap AppContent
-  // and still have AppContent's own useTheme() calls see the live value — a component can't
-  // consume a context it renders itself, only its descendants can.
-  const [colorScheme, setColorScheme] = useState<ColorSchemePreference>("system");
-
-  return (
-    <SafeAreaProvider>
-      <ThemeProvider scheme={colorScheme}>
-        <PremiumProvider>
-          <ErrorBoundary>
-            <AppContent colorScheme={colorScheme} setColorScheme={setColorScheme} />
-          </ErrorBoundary>
-        </PremiumProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
-  );
-}
-
-interface AppContentProps {
-  colorScheme: ColorSchemePreference;
-  setColorScheme: (scheme: ColorSchemePreference) => void;
-}
-
-function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
-  const { colors, isDark } = useTheme();
+/**
+ * The app's screen machine. It is no longer the root: `app/_layout.tsx` owns the provider stack and
+ * mounts this as a route (1.2.0.2), and the theme preference it used to lift now lives in
+ * `ThemeProvider` itself. 1.2.0.4 dissolves the `useState<Screen>` dispatch below into real routes.
+ */
+export default function AppContent() {
+  const { colors, isDark, scheme: colorScheme, setScheme } = useTheme();
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.bg },
     loadingContainer: { flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
@@ -128,7 +103,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
         setLockAvailable(lockIsAvailable);
         setAppLockEnabled(storedAppSettings.appLockEnabled);
         setIsLocked(lockIsAvailable && storedAppSettings.appLockEnabled);
-        setColorScheme(storedAppSettings.colorScheme ?? "system");
+        // colorScheme is deliberately absent here — ThemeProvider loads and owns it now (1.2.0.2).
         setRemindersEnabled(storedRemindersEnabled);
 
         if (storedProfile && storedTaxProfile) {
@@ -264,7 +239,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
     // next time the app backgrounds/returns or cold-starts, same as any other security setting.
     setAppLockEnabled(enabled);
     try {
-      await saveAppSettings({ appLockEnabled: enabled, colorScheme, remindersEnabled });
+      await updateAppSettings({ appLockEnabled: enabled });
     } catch (error) {
       reportError(error, { where: "handleToggleAppLock" });
       Alert.alert(
@@ -275,9 +250,8 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
   }
 
   async function handleChangeColorScheme(scheme: ColorSchemePreference) {
-    setColorScheme(scheme);
     try {
-      await saveAppSettings({ appLockEnabled, colorScheme: scheme, remindersEnabled });
+      await setScheme(scheme);
     } catch (error) {
       reportError(error, { where: "handleChangeColorScheme" });
       Alert.alert(
@@ -290,7 +264,7 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
   async function handleToggleReminders(enabled: boolean) {
     setRemindersEnabled(enabled);
     try {
-      await saveAppSettings({ appLockEnabled, colorScheme, remindersEnabled: enabled });
+      await updateAppSettings({ remindersEnabled: enabled });
       if (enabled) {
         await scheduleQuarterlyReminders();
       } else {
@@ -391,7 +365,31 @@ function AppContent({ colorScheme, setColorScheme }: AppContentProps) {
     setEntries(restored.entries);
     setLocalUserProfile(restored.localUserProfile);
     setTaxProfile(restored.taxProfile);
+
+    // All three settings, not just the lock. `restoreBackupSnapshot` writes the whole settings object
+    // to storage, but only `appLockEnabled` was ever applied to in-memory state — so restoring a
+    // backup saved in dark mode left the app rendering light until the next cold start, and a
+    // restored `remindersEnabled` was written but never acted on, so the notification schedule stayed
+    // whatever it had been. Found while moving the theme preference in 1.2.0.2.
     setAppLockEnabled(restored.appSettings.appLockEnabled);
+    const restoredReminders = restored.appSettings.remindersEnabled ?? true;
+    setRemindersEnabled(restoredReminders);
+    if (restored.appSettings.colorScheme) {
+      // Re-persists the same value the restore just wrote, which is a no-op against storage; the
+      // point is bringing the live theme into line with it.
+      await setScheme(restored.appSettings.colorScheme);
+    }
+    try {
+      if (restoredReminders) {
+        await scheduleQuarterlyReminders();
+      } else {
+        await cancelQuarterlyReminders();
+      }
+    } catch (error) {
+      // A reminder-scheduling failure must not make a successful data restore look like a failure.
+      reportError(error, { where: "handleRestoreBackup/reminders" });
+    }
+
     setScreen(restored.localUserProfile && restored.taxProfile ? "dashboard" : "onboarding");
     Alert.alert("Restored", "Your data has been restored from the backup file.");
   }

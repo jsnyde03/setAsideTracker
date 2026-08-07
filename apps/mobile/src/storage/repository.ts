@@ -99,8 +99,24 @@ export async function getAppSettings(): Promise<AppSettings> {
   return settings ?? DEFAULT_APP_SETTINGS;
 }
 
+/** Overwrites the whole settings object. Use this only when you genuinely have all of it — a
+ * restore, for instance. For changing one setting, use `updateAppSettings`. */
 export async function saveAppSettings(settings: AppSettings): Promise<void> {
   await writeJson(KEYS.appSettings, settings);
+}
+
+/**
+ * Merges a partial change into the stored settings.
+ *
+ * Every setting used to be saved by rebuilding the whole `AppSettings` object from whatever the
+ * calling component happened to hold in state. That was safe only for as long as all three setters
+ * lived in the same component and read the same closure — the moment any of them moves (the theme
+ * preference moved into `ThemeProvider` in 1.2.0.2), a wholesale write silently clobbers the two
+ * settings the writer didn't know about. Read-then-merge removes that whole class of bug.
+ */
+export async function updateAppSettings(patch: Partial<AppSettings>): Promise<void> {
+  const current = await getAppSettings();
+  await writeJson(KEYS.appSettings, { ...current, ...patch });
 }
 
 /**

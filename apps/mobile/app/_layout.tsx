@@ -5,10 +5,40 @@
 import "react-native-get-random-values";
 
 import { Stack } from "expo-router";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ErrorBoundary } from "../src/components/ErrorBoundary";
+import { PremiumProvider } from "../src/premium/PremiumContext";
+import { ThemeProvider } from "../src/ThemeContext";
+import { initAnalytics } from "../src/analyticsClient";
+import { initErrorReporting } from "../src/errorReporting";
+import { initPurchases } from "../src/premium/purchasesClient";
 
-// Headers are off globally: every screen already draws its own header, and 1.2.0.4 ports them as-is
-// so the text-driven Playwright/Maestro suites keep matching. Turning headers on is a deliberate
-// per-route decision later, not a default inherited from the router.
+// Module-scope, so they run exactly once before the first render — same as when they sat at the top
+// of App.tsx. They stay side-effecting rather than becoming hooks: error reporting in particular has
+// to be armed before any component can throw.
+initErrorReporting();
+initAnalytics();
+initPurchases();
+
+/**
+ * The provider stack lives here, ABOVE the `Stack`, so every route sees it. Mounted inside a route
+ * instead, sibling routes would each get their own copy of the theme and the premium entitlement —
+ * the failure mode where one tab shows a different state than the one beside it.
+ *
+ * Headers are off globally: every screen already draws its own, and 1.2.0.4 ports them as-is so the
+ * text-driven Playwright/Maestro suites keep matching. Turning headers on is a deliberate per-route
+ * decision later, not a default inherited from the router.
+ */
 export default function RootLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <PremiumProvider>
+          <ErrorBoundary>
+            <Stack screenOptions={{ headerShown: false }} />
+          </ErrorBoundary>
+        </PremiumProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
 }

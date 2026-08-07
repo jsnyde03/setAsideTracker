@@ -11,6 +11,62 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.0.2 Hoist the provider stack — SUB-TASK after-scan · 2026-08-07
+
+**Result: done.** Providers (`SafeAreaProvider → ThemeProvider → PremiumProvider → ErrorBoundary`) and
+the three `init*` calls moved into `app/_layout.tsx` above the `Stack`; `App.tsx` is now a plain route
+component. **19/19 e2e (2 new) · 245 unit · typecheck + lint clean · ports closed.**
+
+**The knot the before-scan found, and how it was cut.** `colorScheme` lived in `App()` for exactly one
+reason: `ThemeProvider` took it as a prop while `AppContent` needed to set it, and a component can't
+consume a context it renders itself. That entangled 1.2.0.2 with 1.2.0.3 through a single value.
+Resolved by **giving `ThemeProvider` the preference outright** — it loads and persists it, and exposes
+`scheme` + `setScheme`. The lifted state disappears, and any route can now change the theme without
+being prop-drilled from `App`, which is a precondition for screens becoming independent routes.
+
+**Prerequisite it forced — and a latent bug it closed.** `saveAppSettings` did a wholesale write, and
+three separate call sites each rebuilt the whole object from their own closure. Safe only while all
+three lived in one component; the moment `ThemeProvider` wrote independently it would have clobbered
+the other two. Added **`updateAppSettings`** (read-then-merge) alongside the existing full-write, so
+restore keeps its overwrite semantics unchanged. Covered by a new regression test.
+
+**⭐ Pre-existing bug found and fixed:** `handleRestoreBackup` applied only `appLockEnabled`, though
+`restoreBackupSnapshot` writes all three settings to storage and its own comment says the caller should
+sync in-memory state. So **restoring a backup saved in dark mode kept rendering light until a cold
+start**, and a restored `remindersEnabled` was persisted but never acted on — the notification schedule
+stayed whatever it had been. Now applies all three and re-runs schedule/cancel.
+
+**What only surfaced by doing it:**
+1. ⚠️ **A bug I introduced and caught before committing:** the `init*` calls were added to
+   `_layout.tsx` while still present in `App.tsx` — double-initialising Sentry, analytics and
+   RevenueCat. Found by checking imports after typecheck passed. *Typecheck does not flag this class;
+   only reading the diff does.*
+2. ⚠️ **The 17-spec suite passed the entire change without exercising it once.** There was no test over
+   theme switching or restore. Green meant "nothing else broke", not "this works" — exactly the trap
+   this plan quotes from Debt. Two specs added.
+3. ⚠️ **My first two test attempts asserted against invented selectors and an over-specified artifact.**
+   `getByLabel("Quarterly tax reminders")` didn't exist (the label is "Quarterly Due Date Reminders",
+   and the `Switch` has no `accessibilityLabel` at all), and a cross-reload **screenshot equality**
+   check passed only on retry. Replaced with property assertions. *Pin the intent, not the artifact.*
+4. ⚠️ **A reload lands on the dashboard, not the screen you were on** — screen position is still React
+   state at the strangler-fig stage. My test assumed otherwise. Documented in the spec, with a pointer
+   to revisit at 1.2.0.4, which is what makes routes survive a reload.
+5. 🔴 **Two real a11y defects → filed to 1.2.5** (backlog, not folded — both touch shared primitives
+   used on every screen): `Chip` announces **no selected state** because RN-Web drops
+   `accessibilityState={{ selected }}` on `role="button"`, and `Chip` is the app's selection primitive
+   everywhere; the Settings `Switch`es carry no `accessibilityLabel`.
+6. ⚙️ **Version-bump lesson** (from the parallel Codemagic run): bump `app.json`'s version at the START
+   of a version's work. `1.1.1` was already approved, so the interim TestFlight upload was rejected —
+   at precisely the moment an interim build was most useful. Bumped to `1.2.0`.
+
+**Native build validated by that same run** — it compiled, signed and produced a valid `.ipa`, which
+closes 1.2.0.1's owed native pass: `expo prebuild` survives the entry-point swap, `react-native-screens`
+autolinks, and the new `scheme` doesn't disturb signing. Only the ASC upload failed, on the version.
+
+**Enhancements surfaced → routed:** `updateAppSettings` and the restore fix folded in (both required by,
+or directly adjacent to, the change). The two a11y defects deferred to 1.2.5. Nothing else.
+
+
 ### 🔎 1.2.0.1 Install + entry point — SUB-TASK after-scan · 2026-08-07
 
 **Result: done, exit criteria met.** `expo-router@56.2.18` + `react-native-screens@4.27.0` installed;

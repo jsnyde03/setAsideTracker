@@ -42,13 +42,17 @@ Cloud runs its own `node.exe`.
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ▶ **1.2.0 — Routing migration to `expo-router`** · 🔵 before-scan done · 🔨 **1 of 7 sub-steps done**
+### ▶ **1.2.0 — Routing migration to `expo-router`** · 🔵 before-scan done · 🔨 **2 of 7 sub-steps done**
 
-> **🔴 OWED — dispatch a Codemagic iOS build before 1.2.0 closes.** 1.2.0.1 added
-> **`react-native-screens`, a native module**, and the standing rule is that native deps get a build
-> pass before they're trusted — new native modules have broken this repo's iOS CI before via xcodeproj
-> globbing. Web being green proves nothing here. **Jason-side** (`ios-testflight` is manual-only).
-> Doing it now also front-runs 1.2.6's "run a native build early, not at the end."
+> **✅ NATIVE BUILD VALIDATED (2026-08-07).** The Codemagic run **compiled, signed and produced a valid
+> `.ipa`** — so `expo prebuild` survives the `expo-router/entry` swap, **`react-native-screens`
+> autolinks**, the new `scheme` doesn't disturb signing, and there's no xcodeproj-glob breakage. The
+> owed native pass is closed. It failed only at **upload**: ASC rejected `CFBundleShortVersionString
+> 1.1.1` as already-approved. **Fixed — `app.json` version bumped to `1.2.0`.**
+>
+> ⚠️ **Lesson, folded into the plan:** bump the version at the START of a version's work, not at
+> submission. A stale version number turns every interim TestFlight build into a failed upload, which
+> is exactly when those builds are most useful.
 
 **Why it leads:** the app has **no navigation library**. Routing is a `useState<Screen>` machine in a
 593-line `App.tsx` that renders one screen at a time by construction, so iPad split-view (1.2.3) is
@@ -75,11 +79,13 @@ route guards, and v1.3's Android back button.
       polyfill rehomed to `app/_layout.tsx`; `index.ts` deleted. **Whole app mounted as ONE route
       (strangler-fig) so it stays working at every step.** ⭐ **Viability CLOSED — [D1] holds.**
       *Verified:* 17/17 Playwright green **with zero test edits**, 245 unit tests, typecheck clean.
-- [ ] **1.2.0.2 — Hoist the provider stack into `app/_layout.tsx`.** _(Scope corrected by 1.2.0.1's
-      after-scan: `_layout.tsx` already exists — it had to, since the entry point can't flip without a
-      route tree. This step **moves** `SafeAreaProvider → ThemeProvider → PremiumProvider →
-      ErrorBoundary` out of `App.tsx` into it, rather than creating it.)_ *Exit:* every route sees
-      theme + premium; `App.tsx` no longer owns providers.
+- [x] **1.2.0.2 — Hoist the provider stack ✅ DONE 2026-08-07.** Providers + the three `init*` calls
+      moved into `app/_layout.tsx` above the `Stack`; `App.tsx` is now a plain route component.
+      **`ThemeProvider` owns the theme preference** (loads + persists it), which deletes the lifted
+      state and lets any route change the theme. New `updateAppSettings` merges instead of
+      overwriting. ⭐ **Fixed a pre-existing bug:** restore-from-backup applied only `appLockEnabled`,
+      so a restored theme didn't show until a cold start and restored reminders were never rescheduled.
+      *Verified:* 19/19 e2e (2 new), 245 unit, typecheck + lint clean, ports closed.
 - [ ] **1.2.0.3 — Lift app state above the router.** Move entries / taxProfile / localUserProfile /
       settings out of `AppContent` into a shared provider. ⚠️ **This is the seam demo mode (1.2.1)
       swaps** — shape it for that now. *Exit:* no route prop-drills app state.
@@ -147,7 +153,18 @@ _(none yet)_
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
 
-_Nothing here yet. Populated by the scans as they run._
+- **🔴 `Chip` announces no selected state to screen readers → 1.2.5 (a11y audit).** `Chip` sets
+  `accessibilityState={{ selected }}` with `accessibilityRole="button"`, and **RN-Web drops it** —
+  ARIA doesn't allow `aria-selected` on `button`, so the accessibility tree renders a bare
+  `button "Dark"` with no indication it's the active choice. **`Chip` is the app's selection primitive**
+  (filing status, platform, theme, tax year), so a VoiceOver user currently cannot tell which option is
+  selected *anywhere in the app*. Fix is likely `radio`/`radiogroup` semantics for mutually-exclusive
+  sets, or `aria-pressed` for toggles. **Deferred, not folded:** it changes a shared primitive used
+  across every screen, so it belongs in the audit that sweeps them all. _(Found 2026-08-07 at 1.2.0.2,
+  by reading the a11y snapshot after a test assertion failed against it.)_
+- **Settings `Switch`es carry no `accessibilityLabel` → 1.2.5 (a11y audit).** App Lock and Quarterly
+  Due Date Reminders are labelled only by adjacent `Text`, so they announce as bare switches. _(Same
+  provenance.)_
 
 ## ⏳ Open
 
