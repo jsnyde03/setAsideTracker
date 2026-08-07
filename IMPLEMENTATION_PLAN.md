@@ -4,6 +4,20 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 **Status legend:** ✅ Done · 🔄 In Progress · ⬜ Not Started
 
+> ### ⚠️ Renumbered 2026-08-07 — translate old references with this map
+>
+> Three documents defined "v1.2" three incompatible ways and had done so for ~6 weeks (audit F5). Jason settled it on 2026-08-07: **v1.2 = the free-tier UX bundle, Android = v1.3**, and everything below shifts up one. Any reference written before that date maps as:
+>
+> | was | is now |
+> |---|---|
+> | v1.2 Android + Retention/Growth | **v1.3** |
+> | v1.3 Mileage & Receipts | **v1.4** |
+> | v1.4 Platform Auto-Sync | **v1.5** |
+> | v1.5 Filing Season Toolkit | **v1.6** ⚠️ still date-sensitive — target early January regardless of where v1.4/v1.5 stand |
+> | v1.6 Money-Moves & Pro Tools | **v1.7** |
+>
+> **v2.0–v3.0 are unchanged** — they were never part of the cascade. The one item that moved *between* versions rather than being renumbered is the **iOS home-screen widget**, pulled from v1.3's retention set into **v1.2** ([D2]).
+
 ## ✅ v0.1 — Tax Engine Proof of Concept (internal only)
 
 <details>
@@ -282,13 +296,31 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 </details>
 
-## ⬜ v1.2 — Android Launch + Retention & Growth
+## ⬜ v1.2 — Free-Tier UX Bundle
+
+<details>
+<summary>Status: Not Started — planned + decomposed; see V1_2_EXECUTION_PLAN.md</summary>
+
+**Status: Not Started** — decomposed and gated, **not yet promoted to the active build slot** (Jason 2026-08-07: plan now, promote later).
+**Goal:** make the app's value visible *before* the user has logged anything — the diagnosis being that a new user finishes the tax-profile wizard and lands on a dashboard reading $0.00.
+
+**📋 Sequence, dependencies, and external prerequisites → [V1_2_EXECUTION_PLAN.md](V1_2_EXECUTION_PLAN.md).** Structural audit that shaped it → [`docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md`](docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md).
+
+All free — none of it paywalled, per the tier-gating principle. In order: **routing migration to `expo-router`** ([D1] — the app has no router today, so iPad split-view is architecturally impossible without one) → **demo mode** (reversible sample persona; isolation enforced at `repository.ts`) → **native iPad** (adaptive split-view/sidebar, not a wrapper) → **guided onboarding** (full coachmark tour) → **accessibility depth audit** → **iOS home-screen widget** ([D2], folded in 2026-08-07; the one native item) → the filed v1.2 correctness backlog → clear the lint ledger → verify + device QA + whole-phase after-scan.
+
+**Ships to:** general public, free tier. **Exit criteria:** a brand-new user sees the whole app working before logging anything; genuinely native on iPad; full surface passes an accessibility audit; real data provably untouched by demo mode.
+
+</details>
+
+## ⬜ v1.3 — Android Launch + Retention & Growth
 
 <details>
 <summary>Status: Not Started</summary>
 
-**Status: Not Started**
+**Status: Not Started** — _(was v1.2 until 2026-08-07; see the renumber note at the top of this file.)_
 **Goal:** reach the majority of the gig-worker market (Android-majority demographics) and ship the retention/viral-growth features while the install base is young enough that growth mechanics compound best.
+
+⚠️ **Two prerequisites are Jason-side and should start during v1.2, not at this version's switch-in** — the Play Console account type (personal ⇒ a ≥12-tester / 14-continuous-day closed-testing gate, which is dead wall-clock) and the Play Billing products + RevenueCat Android key. Both decomposed in [GIG_ANDROID_PLAN.md](GIG_ANDROID_PLAN.md).
 
 **Why Android belongs here, not later:** gig workers skew heavily toward Android — especially the lower-income, high-frequency drivers this app targets. Deferring Android cedes the majority of the addressable market to a competitor who ships sooner. RevenueCat already handles Google Play Billing via the same `react-native-purchases` SDK (no second integration), and the app has no backend; the marginal work is Play Console setup, Android CI, and screenshots. Android CI and store listing work can begin in parallel with v1.1 development.
 
@@ -300,7 +332,7 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 - **Native-only verification gap — close it here.** This version is the forcing function to actually confirm all the accumulated "needs a real device" items that have been deferred since v0.3: `Alert.alert` confirmation dialogs (delete entry, restore backup, clear all data), the native `DateField.tsx` picker, biometric lock, notification delivery, the CSV and backup native share/file paths. One real-device test pass closes all of them for both platforms.
 
 ### Retention & growth features
-- **Home-screen / lock-screen widget.** iOS WidgetKit + Android App Widget showing today's earnings and the running "set aside" total — glanceable without opening the app. Near-zero battery impact. Strong daily-retention driver; reminds users to log every shift. Per [ROADMAP §9.1](ROADMAP.md). Pulled forward from old v1.4.
+- **Home-screen / lock-screen widget — ⤴ the iOS half MOVED TO v1.2** ([D2], Jason 2026-08-07). Today's earnings and the running "set aside" total, glanceable without opening the app; near-zero battery impact; the cheapest lever against the week-3 retention drop-off, which is why it was pulled a version earlier. **What remains here is the Android App Widget**, which rides this version's native pass. Per [ROADMAP §9.1](ROADMAP.md).
 - **Set-aside view customization (free) — CANDIDATE, placement TBD.** Let the headline "set aside" number be viewed by **cadence — daily / weekly / monthly** (spreading the *remaining* amount to set aside across the time left until the next due date), plus a per-dollar / per-shift rate, and an optional **per-platform allocation** (a proportional split of the total set-aside by each platform's share of net profit — *clearly labeled as an allocation*, since tax is progressive on total income, not platform-specific). Mostly a presentation layer over existing math (`computeCatchUpStatus`'s weekly amount, `effectiveSetAsideRate`) and the free platform-comparison view. Stays **free** per the tier-gating principle — it's the core daily-use loop and trust layer, not filing-season/power tooling. Pairs with the home-screen widget above. **Revisit placement after the v1.1 premium work** to confirm whether it lands here in v1.2 or as a fast-follow free addition. New idea (user, 2026-06-30), not yet in the roadmap.
 - **Voice / hands-free logging.** Siri Shortcuts (iOS) and Google Assistant: "Hey Siri, log $45 from DoorDash" → pre-filled entry screen. Solves the core friction (driving, can't type) better than any UI polish. Per [ROADMAP §9.1](ROADMAP.md). Pulled forward from old v1.4.
 - **Milestone celebrations + logging streaks.** Animation/confetti on "you've logged $10k this year," "$1k set aside," first quarterly deadline met, N-day logging streaks. Include a grace period (one missed day doesn't kill a streak). Per [ROADMAP §9.5](ROADMAP.md). Pulled forward from old v1.4.
@@ -312,7 +344,7 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 </details>
 
-## ⬜ v1.3 — Mileage & Receipts Automation
+## ⬜ v1.4 — Mileage & Receipts Automation
 
 <details>
 <summary>Status: Not Started</summary>
@@ -330,7 +362,7 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 </details>
 
-## ⬜ v1.4 — Platform Auto-Sync
+## ⬜ v1.5 — Platform Auto-Sync
 
 <details>
 <summary>Status: Not Started</summary>
@@ -350,7 +382,7 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 </details>
 
-## ⬜ v1.5 — Filing Season Toolkit
+## ⬜ v1.6 — Filing Season Toolkit
 
 <details>
 <summary>Status: Not Started</summary>
@@ -368,7 +400,7 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 </details>
 
-## ⬜ v1.6 — Money-Moves & Pro Tools
+## ⬜ v1.7 — Money-Moves & Pro Tools
 
 <details>
 <summary>Status: Not Started</summary>
@@ -460,11 +492,12 @@ Companion to [ROADMAP.md](ROADMAP.md). The roadmap covers *what* and *why*; this
 
 - **v0.1–v0.3 are not public** — they existed to de-risk the tax engine and core loop before any store submission or marketing spend.
 - **Wire up Sentry and analytics immediately post–App Store approval.** Both are scaffolded with no real backend. You need crash data and usage patterns before making confident v1.1 feature-prioritization decisions — don't start building v1.1 blind to what's actually happening in production.
-- **Android CI and Play Console setup can start in parallel with v1.1 development.** The RevenueCat product/entitlement config needs to exist before Play Billing can go live, but the CI pipeline and store listing work are independent of that.
-- **Don't start v1.4 (Platform Auto-Sync) before v1.1 (payment infra) is stable** — auto-sync is the single best premium conversion driver and shouldn't debut with a broken checkout flow.
-- **v1.3 (GPS mileage) can ship before v1.4 (platform auto-sync)** — no backend dependency, higher per-user daily retention value. IRS-compliant mileage log fields in v1.1 provide the data-model foundation so no schema rework is needed.
-- **v1.5 (filing season toolkit) is date-sensitive** — target early January regardless of where v1.3/v1.4 stand. The 1099 reconciliation and affiliate integration have a narrow value window (Jan–April).
-- **v1.6 (Money-Moves) only depends on v1.1's premium infra** — it doesn't require platform auto-sync or GPS mileage, so it can run in parallel with v1.3/v1.4 if those take longer than expected.
+- **v1.2's routing migration is a hard prerequisite, not a refactor.** The app has no navigation library — routing is a `useState<Screen>` machine in a 593-line `App.tsx`. iPad split-view needs two screens rendered at once, which that model cannot express. It also gates v1.3's Android hardware back button. Do it first, or the items stacked on it get mis-estimated.
+- **Android's Jason-side prerequisites should run during v1.2, not at v1.3's switch-in.** If the Play Console account is personal, production access is gated behind **≥12 testers opted in for 14 continuous days** — dead wall-clock that costs nothing to run in parallel with a build. Starting it late adds ~3 weeks to v1.3 for no reason.
+- **Don't start v1.5 (Platform Auto-Sync) before v1.1 (payment infra) is stable** — auto-sync is the single best premium conversion driver and shouldn't debut with a broken checkout flow.
+- **v1.4 (GPS mileage) can ship before v1.5 (platform auto-sync)** — no backend dependency, higher per-user daily retention value. IRS-compliant mileage log fields in v1.1 provide the data-model foundation so no schema rework is needed. It is also the main lever against manual-entry retention decay, which v1.2 deliberately does not address.
+- **v1.6 (filing season toolkit) is date-sensitive** — target early January regardless of where v1.4/v1.5 stand. The 1099 reconciliation and affiliate integration have a narrow value window (Jan–April). ⚠️ **The renumber did not move this deadline** — with v1.2 and v1.3 now ahead of it, the calendar is tighter than the ladder makes it look.
+- **v1.7 (Money-Moves) only depends on v1.1's premium infra** — it doesn't require platform auto-sync or GPS mileage, so it can run in parallel with v1.4/v1.5 if those take longer than expected.
 - **v2.0 is gated on the cost model, not the calendar** — don't ship AI tier features until per-user inference economics are validated with margin.
 - **SOC 2 roadmap must be underway before v2.2 (Bank/Plaid) starts** — that's when the app transitions from purely local-first to holding bank-linked data, a materially different compliance posture than everything built before it.
 

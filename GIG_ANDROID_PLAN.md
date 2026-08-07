@@ -1,5 +1,21 @@
 # Gig (SetAsideTracker) — Android Launch Plan
 
+> ## 📌 Slotted as **v1.3** (settled 2026-08-07)
+>
+> This plan was written 2026-07-07 as a standalone "Android is unblocked" doc, and for a month it sat
+> in contradiction with the portfolio plan (which had v1.2 as the free-tier UX bundle) — a repo doc
+> quietly pre-deciding a portfolio-level sequencing question. **Resolved: v1.2 is the UX bundle,
+> Android is v1.3.** New Android users then land on the fixed first-run experience rather than the
+> current one, which is the whole point of doing them in that order.
+>
+> **⚡ But steps 1 and 2 below start NOW, during v1.2.** They are Jason-side dashboard work with no
+> build cost, and step 1 may start a **14-day** clock. Running that clock in parallel with the v1.2
+> build is the difference between v1.3 taking ~1 week and ~3. Steps 3, 5 and 7 (my side) stay parked
+> until v1.3 becomes active.
+>
+> Sequence and dependencies for the version ahead of this one →
+> [V1_2_EXECUTION_PLAN.md](V1_2_EXECUTION_PLAN.md).
+
 _Created 2026-07-07. Google Play Console access is complete → **Android is unblocked.** Gig is the portfolio's first Android launch, chosen because it's the proven iOS revenue app, it's Expo/React Native (the **same codebase** builds Android), and the gig-worker audience (delivery, rideshare) skews heavily Android. This is the decomposed, executable plan. Every step is tagged **[JASON]** (you, in an external dashboard — written field-by-field per the executable-how-to rule) or **[CLAUDE]** (I do it in the repo)._
 
 ---

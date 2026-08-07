@@ -280,9 +280,9 @@ These go beyond core tax tracking — they're what would make the app stand out 
 - **True hourly rate calculator.** Net earnings minus gas, real vehicle wear/depreciation, and tax set-aside, divided by actual hours worked. Most drivers overestimate what they're really making — this single number ("you're actually earning $11.40/hr after costs") is the kind of insight that gets shared in Reddit/Facebook gig-worker groups and drives organic growth. **Shipped in v1.0** (see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)).
 - **Platform earnings comparison.** Per-platform breakdown of earnings and effective hourly rate from the user's own history — "I average $18.40/hr on DoorDash vs. $14.20/hr on Uber Eats." Derivable from existing data with minimal build cost; strong sharing driver. **(v1.1)**
 - **Earnings share card.** One-tap shareable summary image for Reddit/Facebook gig-worker groups — earnings, set-aside, effective hourly rate. Near-zero build cost; high viral potential in the communities already targeted for growth. **(v1.1)**
-- **Voice/hands-free logging.** Siri Shortcuts / Google Assistant integration — "log $45 from DoorDash" — solves the core friction (driving, can't type) better than UI polish alone. **(v1.2)**
-- **Home-screen/lock-screen widget** showing today's earnings and current tax set-aside. Near-zero battery impact, high daily visibility, strong retention driver. **(v1.2)**
-- **Shift/earnings optimizer.** Using the user's own historical data (best time-of-day/day-of-week per platform), surface patterns like "you've historically earned more on Spark Tuesday mornings" — personalized, not dependent on surge data you don't have access to. **(v1.2, premium)**
+- **Voice/hands-free logging.** Siri Shortcuts / Google Assistant integration — "log $45 from DoorDash" — solves the core friction (driving, can't type) better than UI polish alone. **(v1.3)**
+- **Home-screen/lock-screen widget** showing today's earnings and current tax set-aside. Near-zero battery impact, high daily visibility, strong retention driver. **(iOS: v1.2 · Android: v1.3)**
+- **Shift/earnings optimizer.** Using the user's own historical data (best time-of-day/day-of-week per platform), surface patterns like "you've historically earned more on Spark Tuesday mornings" — personalized, not dependent on surge data you don't have access to. **(v1.3, premium)**
 - **Promised-vs-actual pay discrepancy tracking.** Gig platforms shorting drivers on pay is a constant complaint; flagging when an actual deposit doesn't match what was logged/promised is both useful and trust-building. **(v2.2)**
 
 ### 9.2 Financial-wellness features (fits the long-term AI vision)
@@ -296,7 +296,11 @@ These go beyond core tax tracking — they're what would make the app stand out 
   - **QuickBooks Self-Employed-compatible export** — matches a format self-employed users likely already use, a concrete premium hook beyond generic CSV.
 
 ### 9.3 Polish that matters more than it sounds
-- **Android launch.** Gig workers skew heavily toward Android — especially lower-income, high-frequency drivers. Deferring Android cedes the majority of the addressable market. **(v1.2)** (iOS-first is the right launch call; Android as a close follow-on is the right market call.)
+- **Demo mode.** A reversible sample persona so a new user — or an App Store reviewer — sees the whole app working *before* logging anything. This app's central UX problem is that its value is invisible until data exists: you finish the tax-profile wizard and land on a dashboard reading $0.00. Also productionizes the screenshot seed that `SCREENSHOT_PLAN.md` currently builds by hand. Free. **(v1.2)**
+- **Guided onboarding — a full coachmark tour.** An interactive first-run tour over populated views (hence demo mode first), teaching the core loop rather than describing it. The overlay/tooltip system is built to be reusable across the three finance apps. Free. **(v1.2)**
+- **Native iPad.** Genuinely adaptive — split-view/sidebar (entry list beside detail pane), a dashboard that uses the larger canvas, size-class handling, Split View / Stage Manager. **Not a wrapper**; a stretched phone UI reads as low-effort. iPad layout is basic core, so it is free, not a premium axis. **(v1.2)**
+- **Accessibility depth audit.** Dynamic Type, VoiceOver order and labels, 44pt touch targets, high-contrast, reduce-motion — across the full surface, which is now 13 screens. **(v1.2)**
+- **Android launch.** Gig workers skew heavily toward Android — especially lower-income, high-frequency drivers. Deferring Android cedes the majority of the addressable market. **(v1.3)** (iOS-first is the right launch call; Android as a close follow-on is the right market call.)
 - **Apple Watch companion** for glanceable earnings without touching the phone — also a real safety angle for someone driving. **(v3.0)**
 - **Multi-language support.** A large share of gig drivers aren't native English speakers — genuinely underserved and a real differentiator, not just a checkbox. Prioritize Spanish first given gig-worker demographics. **(v3.0)**
 - **Dark mode.** Shipped in v1.0 — full theme refactor with `lightColors`/`darkColors` token sets and a system/light/dark setting in the Settings screen.
@@ -307,11 +311,11 @@ These go beyond core tax tracking — they're what would make the app stand out 
 - **Safe-harbor / underpayment-penalty explainer.** Surface the IRS's 110%-of-prior-year safe-harbor rule (see §2.2) directly in the UI, not just compute it silently — the explanation is as valuable as the number.
 
 ### 9.5 Growth & delight
-- **Year-end "Tax Wrapped" recap** — a Spotify-Wrapped-style annual summary (total earned, miles driven, top platform, busiest month, tax saved via deductions). Near-zero build cost reusing existing data; strong organic-sharing potential. Time it for the filing-season window. **(v1.5)**
+- **Year-end "Tax Wrapped" recap** — a Spotify-Wrapped-style annual summary (total earned, miles driven, top platform, busiest month, tax saved via deductions). Near-zero build cost reusing existing data; strong organic-sharing potential. Time it for the filing-season window. **(v1.6)**
 - **Earnings share card** — one-tap shareable weekly summary image for gig-worker communities. See §9.1. **(v1.1)**
-- **Milestone celebrations / light gamification** — "you've logged $10k this year," logging streaks. Include a grace period so one missed day doesn't kill a streak. Cheap retention lever. **(v1.2)**
-- **Referral program** — unique referral link, install attribution, small incentive. **(v1.2)**
-- **Push notification expansion** — beyond quarterly due-date reminders: catch-up warnings when the owed/set-aside gap grows past a threshold, milestone notifications, streak-break nudges. **(v1.2)**
+- **Milestone celebrations / light gamification** — "you've logged $10k this year," logging streaks. Include a grace period so one missed day doesn't kill a streak. Cheap retention lever. **(v1.3)**
+- **Referral program** — unique referral link, install attribution, small incentive. **(v1.3)**
+- **Push notification expansion** — beyond quarterly due-date reminders: catch-up warnings when the owed/set-aside gap grows past a threshold, milestone notifications, streak-break nudges. **(v1.3)**
 - **App rating prompt (well-timed)** — `expo-store-review` / `SKStoreReviewController` after the user has experienced real value (5+ entries logged or first successful catch-up period). Crucial for App Store search ranking. **(v1.1)**
 
 ### 9.6 Explicitly out of scope (avoid scope creep)
@@ -331,6 +335,6 @@ These go beyond core tax tracking — they're what would make the app stand out 
 - **Phase 1 state coverage?** Full 50 states + DC shipped in v1.0 — all in, not a partial rollout.
 - **App name?** **SetAsideTracker** — ties directly to the "set aside for taxes" dashboard card. Bundle ID `com.gigtaxtracker.app`.
 - **Payment infra: IAP or Stripe?** Apple IAP via RevenueCat — decided, per App Review Guideline 3.1.1. RevenueCat unifies with Play Billing for Android.
-- **Android?** Yes, v1.2 — gig workers skew heavily Android and deferring further cedes the majority of the addressable market.
+- **Android?** Yes — **v1.3** (renumbered from v1.2 on 2026-08-07, when v1.2 was settled as the free-tier UX bundle). Gig workers skew heavily Android and deferring further cedes the majority of the addressable market. Its Jason-side prerequisites start during v1.2 so the closed-testing clock isn't dead time.
 
 </details>
