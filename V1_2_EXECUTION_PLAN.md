@@ -29,11 +29,26 @@ _Set by Jason 2026-08-07. Every level, no exceptions; scans are proportional, ne
 
 **Scan status legend:** ⬜ not run · 🔵 before-scan done · ✅ after-scan done (item complete)
 
+**🔌 Standing (Jason 2026-08-07): never leave Expo ports open.** Any step that boots Expo web —
+`npm run web`, or a Playwright run whose `webServer` starts Metro — must end with **8081 / 8082 /
+19000 / 19001 / 19006 verified free**. A stale Metro serves the *old bundle* to the next run, which
+reads exactly like a change that didn't take. ⚠️ Identify a PID before killing it: Adobe Creative
+Cloud runs its own `node.exe`.
+
+**⚙️ Environment:** npm and Playwright here need `NODE_OPTIONS=--use-system-ca`, or installs fail with
+`ERR_SSL_WRONG_VERSION_NUMBER`. Recurs on every install (1.2.3, 1.2.6).
+
 ---
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ▶ **1.2.0 — Routing migration to `expo-router`** · 🔵 before-scan done · ⬜ not started
+### ▶ **1.2.0 — Routing migration to `expo-router`** · 🔵 before-scan done · 🔨 **1 of 7 sub-steps done**
+
+> **🔴 OWED — dispatch a Codemagic iOS build before 1.2.0 closes.** 1.2.0.1 added
+> **`react-native-screens`, a native module**, and the standing rule is that native deps get a build
+> pass before they're trusted — new native modules have broken this repo's iOS CI before via xcodeproj
+> globbing. Web being green proves nothing here. **Jason-side** (`ios-testflight` is manual-only).
+> Doing it now also front-runs 1.2.6's "run a native build early, not at the end."
 
 **Why it leads:** the app has **no navigation library**. Routing is a `useState<Screen>` machine in a
 593-line `App.tsx` that renders one screen at a time by construction, so iPad split-view (1.2.3) is
@@ -55,12 +70,16 @@ route guards, and v1.3's Android back button.
 
 **Sub-steps** _(each gets its own before + after scan)_
 
-- [ ] **1.2.0.1 — Install + entry point.** Add `expo-router`, flip `"main"` → `expo-router/entry`, add a
-      `scheme` to `app.json`, preserve the crypto-polyfill ordering. ⚠️ **Resolves the one open
-      viability question** — if SDK 56 compatibility fails here, stop and re-open [D1].
-      *Exit:* app boots on web, encryption round-trips, typecheck clean.
-- [ ] **1.2.0.2 — Provider stack in `app/_layout.tsx`.** Hoist `SafeAreaProvider → ThemeProvider →
-      PremiumProvider → ErrorBoundary` **above** the `Stack`. *Exit:* every route sees theme + premium.
+- [x] **1.2.0.1 — Install + entry point ✅ DONE 2026-08-07.** `expo-router@56.2.18` +
+      `react-native-screens@4.27.0`; `"main"` → `expo-router/entry`; `scheme: "setasidetracker"`;
+      polyfill rehomed to `app/_layout.tsx`; `index.ts` deleted. **Whole app mounted as ONE route
+      (strangler-fig) so it stays working at every step.** ⭐ **Viability CLOSED — [D1] holds.**
+      *Verified:* 17/17 Playwright green **with zero test edits**, 245 unit tests, typecheck clean.
+- [ ] **1.2.0.2 — Hoist the provider stack into `app/_layout.tsx`.** _(Scope corrected by 1.2.0.1's
+      after-scan: `_layout.tsx` already exists — it had to, since the entry point can't flip without a
+      route tree. This step **moves** `SafeAreaProvider → ThemeProvider → PremiumProvider →
+      ErrorBoundary` out of `App.tsx` into it, rather than creating it.)_ *Exit:* every route sees
+      theme + premium; `App.tsx` no longer owns providers.
 - [ ] **1.2.0.3 — Lift app state above the router.** Move entries / taxProfile / localUserProfile /
       settings out of `AppContent` into a shared provider. ⚠️ **This is the seam demo mode (1.2.1)
       swaps** — shape it for that now. *Exit:* no route prop-drills app state.

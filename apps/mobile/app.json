@@ -4,6 +4,7 @@
     "slug": "setasidetracker",
     "version": "1.1.1",
     "orientation": "portrait",
+    "scheme": "setasidetracker",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {

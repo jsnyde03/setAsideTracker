@@ -11,6 +11,44 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.0.1 Install + entry point — SUB-TASK after-scan · 2026-08-07
+
+**Result: done, exit criteria met.** `expo-router@56.2.18` + `react-native-screens@4.27.0` installed;
+`"main"` → `expo-router/entry`; `scheme: "setasidetracker"` added; polyfill rehomed to
+`app/_layout.tsx`; `index.ts` deleted (both its jobs rehomed). **17/17 Playwright green with zero test
+edits · 245 unit tests · typecheck clean.**
+
+⭐ **The version's one open viability risk is closed.** expo-router resolves cleanly against Expo SDK 56
+/ RN 0.85 / React 19.2.3. **[D1] holds**; the audit's fallback option B is not needed.
+
+**Design decision made during the step — strangler-fig, not big-bang.** `"main"` cannot flip to
+`expo-router/entry` without a route tree to boot into, so rather than port 13 screens at once,
+`app/index.tsx` re-exports the existing `App` and the whole app runs as a single route. **The app is
+fully working after every sub-step**, and 1.2.0.4 extracts screens progressively. Recorded because it
+changes what "done" looks like for the sub-steps that follow.
+
+**What only surfaced by doing it:**
+1. ⚠️ **The 1.2.0.1 / 1.2.0.2 boundary was wrong.** `app/_layout.tsx` had to exist for the entry point
+   to flip at all, so it was created here. 1.2.0.2 is now *hoist providers into it*, not *create it*.
+   Plan corrected in the same edit.
+2. 🔴 **`react-native-screens` is a new NATIVE module and the native build is unvalidated.** Web green
+   proves nothing about autolinking or the xcodeproj glob, both of which have broken this repo's iOS CI
+   before. Filed as an **owed build pass on 1.2.0** rather than deferred to 1.2.9 — a three-week-late
+   discovery here would invalidate work built on top of it. Admitted under queue category 2 (deferring
+   makes later items unsafe).
+3. ⚙️ **npm in this environment fails without `NODE_OPTIONS=--use-system-ca`** — the first
+   `expo install` died on `ERR_SSL_WRONG_VERSION_NUMBER`; the identical command with that flag added 91
+   packages. **This will recur on every install** (1.2.3, 1.2.6), and Playwright needs it too. Recorded
+   so it is not rediscovered each time. _(Same root cause as the known Playwright CA quirk.)_
+4. ⚙️ Windows `EPERM ... rmdir` warnings during npm's cleanup — non-fatal, file locks in `node_modules`.
+   Noted only because a clean CI install may behave differently.
+5. ❓ `react-native-screens` arrived **transitively** and is not declared in `apps/mobile/package.json`.
+   Expo autolinking handles that, but it is worth an `expo-doctor` check when the native build runs.
+
+**Enhancements surfaced → routed:** nothing folded in beyond the two corrections above; nothing new
+deferred to the backlog. The step stayed scope-locked.
+
+
 ### 🔎 v1.2 — VERSION-LEVEL before-scan (viability + enhancement) · 2026-08-07
 
 **Viability: GO.** The version is worth building and can be built. Its premise — *this app's value is
