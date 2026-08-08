@@ -4,6 +4,36 @@
 > here and nowhere else. Detail of completed work → [V1_2_LOG.md](V1_2_LOG.md). Version ladder →
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Nothing else carries a v1.2 queue.
 
+> ## ⏭️ RESUME HERE — session closed 2026-08-08
+>
+> **Repo CLEAN and PUSHED:** `v1.2` @ `9a0ab27`. Everything below is on the remote; nothing lives only
+> on the machine.
+>
+> **▶ NEXT = 1.2.1 (demo mode).** It is in the active slot **undecomposed on purpose** — its sub-steps
+> get written *after* its before-scan, because a decomposition authored before the scan is a guess.
+> Start with the scan. Its spec is in [V1_2_LOG.md](V1_2_LOG.md) → "Queued item specs", retrieved at
+> switch-in.
+>
+> **✅ Just finished: 1.2.0 (routing migration), 8 sub-steps, closed.** The app went from a
+> `useState<Screen>` machine in a 593-line `App.tsx` to real `expo-router` routes. `App.tsx` deleted.
+>
+> **⏳ TWO JASON-SIDE DISPATCHES OWED — both on branch `v1.2`:**
+> 1. **`SetAsideTracker — iOS TestFlight`** — the 2026-08-07 run *built and signed fine* (which
+>    validated the migration natively) and failed only on upload, because the version was still
+>    `1.1.1`. Now bumped to `1.2.0`, so a re-run should upload.
+> 2. **`SetAsideTracker — iOS Maestro (native flows)`** — ⚠️ **has not run since the migration began.**
+>    Five flows had selectors rewritten and one is new; **none has executed once.** Treat the first run
+>    as the validation pass, not a regression check. Expect a round of tuning.
+>
+> **⚠️ Standing caveat: everything in v1.2 so far is WEB-VERIFIED ONLY.** react-native-web renders no
+> `Alert`, no biometrics, no document picker, no real navigation stack — and `react-native-screens`
+> now sits under every screen. **A green suite here means "nothing else broke", not "this works on a
+> phone."** That happened three times in this item alone. Device gates →
+> [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
+>
+> **Health at close:** 23/23 Playwright · 245 unit (101 engine + 144 mobile) · typecheck clean · lint
+> at 14 pre-existing findings, none introduced (ledger clears at 1.2.8).
+
 **Branch:** `v1.2` (pushed) · **Target:** live on the App Store by **end of August 2026** ([D4])
 **Structural audit:** [`docs/audits/2026-08-07-v1.2-structural/`](docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md) · **Ladder rationale:** [BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md)
 
