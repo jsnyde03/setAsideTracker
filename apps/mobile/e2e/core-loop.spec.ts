@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, resetAppStorage } from "./helpers";
+import { completeOnboarding, grossPayField, resetAppStorage } from "./helpers";
 
 /**
  * Baseline regression for the core daily-use loop: onboard → see the dashboard → log an entry →
@@ -24,7 +24,7 @@ test.describe("core loop", () => {
     // AddEntry screen.
     await expect(page.getByText("Platform")).toBeVisible();
     await page.getByText("DoorDash", { exact: true }).click();
-    await page.getByPlaceholder("0.00").first().fill("120"); // Gross pay is the first 0.00 field.
+    await grossPayField(page).fill("120"); // Gross pay is the first 0.00 field.
     await page.getByText("Save Entry", { exact: true }).click();
 
     // Back on the dashboard, the new entry shows up in the list and the totals reflect it.

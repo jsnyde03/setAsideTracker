@@ -1,10 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { completeOnboarding, resetAppStorage } from "./helpers";
+import { completeOnboarding, grossPayField, platformChip, resetAppStorage, visible } from "./helpers";
 
 async function logEntry(page: Page, platform: string, grossPay: string) {
   await page.getByText("Log Earnings", { exact: true }).click();
-  await page.getByText(platform, { exact: true }).click();
-  await page.getByPlaceholder("0.00").first().fill(grossPay);
+  await platformChip(page, platform).click();
+  await grossPayField(page).fill(grossPay);
   await page.getByText("Save Entry", { exact: true }).click();
   await expect(page.getByText("Set aside for taxes")).toBeVisible();
 }
@@ -32,8 +32,11 @@ test.describe("platform comparison", () => {
     // Open the full comparison — both platforms ranked, DoorDash (higher earnings) first.
     await page.getByLabel("Compare your platforms").click();
     await expect(page.getByText("Compare platforms")).toBeVisible();
-    await expect(page.getByText("DoorDash")).toBeVisible();
-    await expect(page.getByText("Uber")).toBeVisible();
-    await expect(page.getByText("$300.00")).toBeVisible();
+    // Both platforms appear on the comparison screen itself. Visibility-scoped because "DoorDash"
+    // also sits — hidden — on the dashboard behind this route, in both an entry row and the
+    // "leads with" teaser on the card that opened this screen.
+    await expect(visible(page.getByText("DoorDash", { exact: true })).first()).toBeVisible();
+    await expect(visible(page.getByText("Uber", { exact: true })).first()).toBeVisible();
+    await expect(visible(page.getByText("$300.00")).first()).toBeVisible();
   });
 });

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, resetAppStorage } from "./helpers";
+import { completeOnboarding, grossPayField, resetAppStorage } from "./helpers";
 
 /**
  * "Show your math" audit trail: each tax figure on the dashboard opens a detail sheet explaining
@@ -19,7 +19,7 @@ test.describe("show your math", () => {
     await page.getByText("Log Earnings", { exact: true }).click();
     await expect(page.getByText("Platform")).toBeVisible();
     await page.getByText("DoorDash", { exact: true }).click();
-    await page.getByPlaceholder("0.00").first().fill("90000"); // Gross pay.
+    await grossPayField(page).fill("90000"); // Gross pay.
     await page.getByText("Save Entry", { exact: true }).click();
 
     await expect(page.getByText("Set aside for taxes")).toBeVisible();

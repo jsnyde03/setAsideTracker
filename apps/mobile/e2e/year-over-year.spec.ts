@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, resetAppStorage } from "./helpers";
+import { completeOnboarding, grossPayField, platformChip, resetAppStorage } from "./helpers";
 
 /**
  * Year-over-year insights is Premium. Unlike the W-4 / safe-harbor cards (gated on tax conditions),
@@ -19,11 +19,11 @@ test.describe("Year-over-year insights gating", () => {
   async function logEntry(page: import("@playwright/test").Page, amount: string, date?: string) {
     await page.getByText("Log Earnings", { exact: true }).click();
     await expect(page.getByText("Platform")).toBeVisible();
-    await page.getByText("DoorDash", { exact: true }).click();
+    await platformChip(page, "DoorDash").click();
     if (date) {
       await page.getByLabel("Date").fill(date);
     }
-    await page.getByPlaceholder("0.00").first().fill(amount);
+    await grossPayField(page).fill(amount);
     await page.getByText("Save Entry", { exact: true }).click();
     await expect(page.getByText("Set aside for taxes")).toBeVisible();
   }

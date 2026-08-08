@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, resetAppStorage } from "./helpers";
+import { completeOnboarding, grossPayField, resetAppStorage } from "./helpers";
 
 /**
  * The safe-harbor / Form 2210 calculator is Premium. On web there's no RevenueCat SDK, so the user
@@ -20,7 +20,7 @@ test.describe("Safe-harbor calculator gating", () => {
     await page.getByText("Log Earnings", { exact: true }).click();
     await expect(page.getByText("Platform")).toBeVisible();
     await page.getByText("DoorDash", { exact: true }).click();
-    await page.getByPlaceholder("0.00").first().fill("4000"); // enough gig income to owe SE tax
+    await grossPayField(page).fill("4000"); // enough gig income to owe SE tax
     await page.getByText("Save Entry", { exact: true }).click();
 
     // Back on the dashboard: the safe-harbor card is present but locked behind Premium.

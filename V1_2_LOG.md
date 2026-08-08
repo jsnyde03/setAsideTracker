@@ -11,6 +11,54 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.0.4 Port the screens to routes — SUB-TASK after-scan · 2026-08-08
+
+**Result: done, and it absorbed 1.2.0.6.** 12 route files under `app/`, plus `AppGate` (loading + lock)
+and `ScreenFrame` (the themed background + status bar repeated verbatim in all thirteen dispatch
+branches). **`App.tsx` is deleted** — the 593-line screen machine is gone. 19/19 e2e · 245 unit ·
+typecheck + lint clean (still 14).
+
+**Two pieces of state died rather than moved**, which is the real measure of the migration:
+- **`editingEntry`** → an `?id=` param. Which entry you're editing is a property of *where you are*, so
+  it belongs in the URL. Side effect: an edit screen now survives a reload, which the old state never did.
+- **`paywallOrigin`** → nothing. It existed only to remember which of three screens to return to, and
+  history knows that already. **1.2.0.6 is therefore closed here** — there was nothing left to delete
+  separately.
+
+**⚠️ The cost the before-scan missed, and the lesson in it.** The scan established that the suites drive
+by visible text and concluded they'd survive "if the visible UI is preserved". The visible UI *was*
+preserved — and 12 selectors broke anyway. **A `Stack` keeps the previous route MOUNTED as
+`display:none` instead of unmounting it.** So while the entry form is open the dashboard is still in
+the DOM, and the two share text: `DoorDash` is both a platform chip and an entry row; `0.00` is both
+the gross-pay field and the dashboard's set-aside input. Selectors that were unambiguous only because
+the old dispatch unmounted everything else became ambiguous or resolved to hidden elements.
+
+**The premise was right and the conclusion was still incomplete** — "same pixels" is not "same DOM".
+Worth carrying: the before-scan reasoned about what the user sees, and the tests query what exists.
+
+Fixed with visibility-scoped helpers in `e2e/helpers.ts` (`visible`, `grossPayField`, `platformChip`)
+rather than 12 ad-hoc patches, so the reason is documented once. **This is not a workaround** — the
+helpers state what the tests always meant: the thing the user can see and could tap. Several were
+weak before (`.first()` on a placeholder used eight times in one screen).
+
+**Diagnostic note worth keeping: a failing suite is a SLOW suite.** Runs went from ~1.4 min green to
+600s+ timing out, because each broken selector waits out a 30s visibility timeout. I initially read
+that as a hang and waited on it twice; **Jason called it frozen, correctly.** The right move on a
+suddenly-slow suite is `--retries=0 --reporter=line` to a file immediately, not patience.
+
+**And I corrected a wrong guess by reading rather than guessing again:** I assumed "DoorDash leads
+with…" was on the comparison screen and asserted against it; the failure showed it hidden, because it
+is on the *dashboard teaser card* that opens that screen.
+
+**Boundary shift, recorded:** `AppGate` had to move the loading + lock gate here — a gate wrapping every
+screen can't live inside one of them once they're separate routes. **1.2.0.5 is now "harden the guards"
+(admit the demo's not-yet-onboarded audience), not "build them."**
+
+**Enhancements surfaced → routed:** `ScreenFrame` and the e2e helpers folded in (both required). Nothing
+deferred. ⚠️ **Untouched and still owed:** the native surface — every route change here is web-verified
+only, and the Maestro flows have not run since. That is 1.2.0.7's and 1.2.9's.
+
+
 ### 🔎 1.2.0.3 Lift app state above the router — SUB-TASK after-scan · 2026-08-08
 
 **Result: done.** New `src/state/AppDataContext.tsx`, mounted above the `Stack`, owns

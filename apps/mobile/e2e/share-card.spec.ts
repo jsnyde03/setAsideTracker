@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, resetAppStorage } from "./helpers";
+import { completeOnboarding, grossPayField, resetAppStorage } from "./helpers";
 
 /**
  * Earnings share card: once there are earnings, the dashboard shows a share button that opens a
@@ -20,7 +20,7 @@ test.describe("earnings share card", () => {
 
     await page.getByText("Log Earnings", { exact: true }).click();
     await page.getByText("DoorDash", { exact: true }).click();
-    await page.getByPlaceholder("0.00").first().fill("1000");
+    await grossPayField(page).fill("1000");
     await page.getByText("Save Entry", { exact: true }).click();
     await expect(page.getByText("Set aside for taxes")).toBeVisible();
 

@@ -42,7 +42,9 @@ Cloud runs its own `node.exe`.
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ▶ **1.2.0 — Routing migration to `expo-router`** · 🔵 before-scan done · 🔨 **3 of 7 sub-steps done**
+### ▶ **1.2.0 — Routing migration to `expo-router`** · 🔵 before-scan done · 🔨 **5 of 7 sub-steps done**
+> **Remaining: 1.2.0.5** (harden route guards — `AppGate` already relocated the loading/lock gate, so
+> this is now *admit the not-yet-onboarded demo audience*, not *build guards*) **→ 1.2.0.7** (verify).
 
 > **✅ NATIVE BUILD VALIDATED (2026-08-07).** The Codemagic run **compiled, signed and produced a valid
 > `.ipa`** — so `expo prebuild` survives the `expo-router/entry` swap, **`react-native-screens`
@@ -93,13 +95,19 @@ route guards, and v1.3's Android back button.
       screen and `isLocked` are now **derived** rather than set in an effect. *Verified:* 19/19 e2e,
       245 unit, typecheck + lint clean (still 14).
       ⚠️ **Coverage gap found, filed below** — clear-all-data / restore / lock have no test anywhere.
-- [ ] **1.2.0.4 — Port the 13 screens to routes**, in groups, **preserving visible UI exactly** so the
-      text-based suites survive. *Exit:* all 13 reachable by route.
+- [x] **1.2.0.4 — Port the screens to routes ✅ DONE 2026-08-08.** 12 route files + `AppGate` (loading
+      + lock) + `ScreenFrame` (the wrapper repeated in all 13 branches). **`App.tsx` deleted.**
+      `editingEntry` became an `?id=` param; **`paywallOrigin` is gone — `router.back()` is all it ever
+      did, so 1.2.0.6 is satisfied here.** *Verified:* 19/19 e2e, 245 unit, typecheck + lint clean.
+      ⚠️ **Cost the before-scan missed:** a `Stack` keeps the previous route mounted as `display:none`,
+      so shared text/placeholders across screens made 12 selectors ambiguous. Fixed with visibility-
+      scoped helpers — see the log.
 - [ ] **1.2.0.5 — Route guards.** Onboarding gate + lock screen. ⚠️ Must **admit** the not-yet-onboarded
       user (Debt's `3.5.4.3`: a blanket guard locked out the demo's own audience). *Exit:* guards hold
       and don't over-block.
-- [ ] **1.2.0.6 — Delete `paywallOrigin`**, replace with real back-navigation. *Exit:* paywall returns
-      correctly from every entry point.
+- [x] **1.2.0.6 — Delete `paywallOrigin` ✅ DONE 2026-08-08, folded into 1.2.0.4.** Real history made it
+      meaningless — `router.back()` is exactly what it emulated. Verified from all three entry points
+      (dashboard, Settings, entry form) by the paywall + gating specs.
 - [ ] **1.2.0.7 — Verify + after-scan.** 12 Playwright specs green · typecheck · 245 unit tests · both
       themes · **look at every route** — ⚠️ Debt's cautionary case: a root-layout change broke
       navigation app-wide while the e2e stayed green, because a reload lands on the right URL anyway.

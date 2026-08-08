@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
  * Wipe all on-device state the app persists in the browser (AsyncStorage is backed by
@@ -25,6 +25,32 @@ export async function resetAppStorage(page: Page): Promise<void> {
     }
   });
   await page.reload();
+}
+
+/**
+ * ⚠️ Why several helpers here filter on visibility.
+ *
+ * Since 1.2.0.4 the app uses a real router, and a `Stack` keeps the previous route **mounted** as
+ * `display:none` rather than unmounting it. So while the entry form is open, the dashboard is still
+ * in the DOM behind it — and the two screens share text and placeholders ("DoorDash" appears both as
+ * an entry row and as a platform chip; `0.00` is both the set-aside input and the gross-pay field).
+ *
+ * That broke selectors that had been unambiguous only because the old screen-dispatch unmounted
+ * everything else. Filtering to visible is not a workaround — it states what these tests always
+ * meant: *the thing the user can see and could tap.*
+ */
+export function visible(locator: Locator): Locator {
+  return locator.filter({ visible: true });
+}
+
+/** The gross-pay field on the entry form. See the note above on visibility filtering. */
+export function grossPayField(page: Page): Locator {
+  return visible(page.getByPlaceholder("0.00")).first();
+}
+
+/** A platform chip on the entry form — not the same platform's name in a dashboard entry row. */
+export function platformChip(page: Page, platform: string): Locator {
+  return visible(page.getByText(platform, { exact: true })).first();
 }
 
 export interface OnboardingInput {

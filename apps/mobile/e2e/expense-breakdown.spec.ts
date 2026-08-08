@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, resetAppStorage } from "./helpers";
+import { completeOnboarding, grossPayField, resetAppStorage } from "./helpers";
 
 /**
  * The expense breakdown is Premium. On web there's no RevenueCat SDK, so the user is always free —
@@ -20,7 +20,7 @@ test.describe("Expense breakdown gating", () => {
     await page.getByText("Log Earnings", { exact: true }).click();
     await expect(page.getByText("Platform")).toBeVisible();
     await page.getByText("DoorDash", { exact: true }).click();
-    await page.getByPlaceholder("0.00").first().fill("4000"); // gross pay
+    await grossPayField(page).fill("4000"); // gross pay
     await page.getByPlaceholder("0", { exact: true }).first().fill("500"); // business miles → a Line 9 expense
     await page.getByText("Save Entry", { exact: true }).click();
 
@@ -40,7 +40,7 @@ test.describe("Expense breakdown gating", () => {
     await page.getByText("Log Earnings", { exact: true }).click();
     await expect(page.getByText("Platform")).toBeVisible();
     await page.getByText("DoorDash", { exact: true }).click();
-    await page.getByPlaceholder("0.00").first().fill("4000"); // gross pay only — no mileage or expenses
+    await grossPayField(page).fill("4000"); // gross pay only — no mileage or expenses
     await page.getByText("Save Entry", { exact: true }).click();
 
     await expect(page.getByText("Set aside for taxes")).toBeVisible();

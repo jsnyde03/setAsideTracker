@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, resetAppStorage } from "./helpers";
+import { completeOnboarding, grossPayField, resetAppStorage } from "./helpers";
 
 /**
  * What-if earnings simulator: from the dashboard, open the simulator (pre-filled with this year's
@@ -17,7 +17,7 @@ test.describe("what-if simulator", () => {
     // Log a known entry so the simulator pre-fills from a real number.
     await page.getByText("Log Earnings", { exact: true }).click();
     await page.getByText("DoorDash", { exact: true }).click();
-    await page.getByPlaceholder("0.00").first().fill("50000"); // Gross pay.
+    await grossPayField(page).fill("50000"); // Gross pay.
     await page.getByText("Save Entry", { exact: true }).click();
     await expect(page.getByText("Set aside for taxes")).toBeVisible();
 

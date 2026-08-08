@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, resetAppStorage } from "./helpers";
+import { completeOnboarding, grossPayField, resetAppStorage } from "./helpers";
 
 /**
  * The W-4 withholding optimizer is Premium. On web there's no RevenueCat SDK, so the user is always
@@ -21,7 +21,7 @@ test.describe("W-4 optimizer gating", () => {
     await page.getByText("Log Earnings", { exact: true }).click();
     await expect(page.getByText("Platform")).toBeVisible();
     await page.getByText("DoorDash", { exact: true }).click();
-    await page.getByPlaceholder("0.00").first().fill("4000"); // enough gig income to owe SE tax
+    await grossPayField(page).fill("4000"); // enough gig income to owe SE tax
     await page.getByText("Save Entry", { exact: true }).click();
 
     // Back on the dashboard: the optimizer card is present but locked behind Premium.
@@ -40,7 +40,7 @@ test.describe("W-4 optimizer gating", () => {
     await page.getByText("Log Earnings", { exact: true }).click();
     await expect(page.getByText("Platform")).toBeVisible();
     await page.getByText("DoorDash", { exact: true }).click();
-    await page.getByPlaceholder("0.00").first().fill("4000");
+    await grossPayField(page).fill("4000");
     await page.getByText("Save Entry", { exact: true }).click();
 
     await expect(page.getByText("Set aside for taxes")).toBeVisible();

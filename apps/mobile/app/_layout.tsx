@@ -6,6 +6,7 @@ import "react-native-get-random-values";
 
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AppGate } from "../src/components/AppGate";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import { PremiumProvider } from "../src/premium/PremiumContext";
 import { AppDataProvider } from "../src/state/AppDataContext";
@@ -37,7 +38,9 @@ export default function RootLayout() {
         <PremiumProvider>
           <AppDataProvider>
             <ErrorBoundary>
-              <Stack screenOptions={{ headerShown: false }} />
+              <AppGate>
+                <Stack screenOptions={{ headerShown: false }} />
+              </AppGate>
             </ErrorBoundary>
           </AppDataProvider>
         </PremiumProvider>
