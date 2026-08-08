@@ -6,8 +6,9 @@
 
 > ## ⏭️ RESUME HERE — session closed 2026-08-08
 >
-> **Repo CLEAN and PUSHED:** `v1.2` @ `9a0ab27`. Everything below is on the remote; nothing lives only
-> on the machine.
+> **Repo CLEAN and PUSHED on `v1.2`** — everything below is on the remote; nothing lives only on the
+> machine. _(Deliberately not pinning a commit hash here: it goes stale the next time anything lands,
+> and `git log -1` is always right.)_
 >
 > **▶ NEXT = 1.2.1 (demo mode).** It is in the active slot **undecomposed on purpose** — its sub-steps
 > get written *after* its before-scan, because a decomposition authored before the scan is a guess.
@@ -109,9 +110,10 @@ preview populated while `subscribe`/`export` still route to the real paywall.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
+_1.2.1 is not listed here — it is the active item above. An item appears in exactly one place._
+
 | # | item | notes |
 |---|---|---|
-| 1.2.1 | **Demo mode** | Reversible sample persona. Isolation enforced at `repository.ts` (one flat module, 15 fns — the whole guarantee is checkable in one file). Consumes 1.2.0.3's seam. |
 | 1.2.2 | **⭐ Premium slice** | Optimizer (headline) · safe-harbor payment tracker · per-quarter amounts in reminders · expense drill-down. **Before the screen passes** so each walks the final surface once. |
 | 1.2.3 | **Native iPad** | Adaptive split-view/sidebar. ~2× its original estimate (scoped at 6 screens, now 13). |
 | 1.2.4 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
