@@ -17,13 +17,15 @@
 > **✅ Just finished: 1.2.0 (routing migration), 8 sub-steps, closed.** The app went from a
 > `useState<Screen>` machine in a 593-line `App.tsx` to real `expo-router` routes. `App.tsx` deleted.
 >
-> **⏳ TWO JASON-SIDE DISPATCHES OWED — both on branch `v1.2`:**
-> 1. **`SetAsideTracker — iOS TestFlight`** — the 2026-08-07 run *built and signed fine* (which
->    validated the migration natively) and failed only on upload, because the version was still
->    `1.1.1`. Now bumped to `1.2.0`, so a re-run should upload.
-> 2. **`SetAsideTracker — iOS Maestro (native flows)`** — ⚠️ **has not run since the migration began.**
->    Five flows had selectors rewritten and one is new; **none has executed once.** Treat the first run
->    as the validation pass, not a regression check. Expect a round of tuning.
+> **✅ TestFlight build SUCCEEDED 2026-08-08** — `1.2.0` built, signed, uploaded and is installable.
+> The whole `expo-router` + `react-native-screens` stack packages correctly. **There is now a real
+> device build of the migration**, which is what unblocks everything in
+> [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) §A — the checks no harness can perform.
+>
+> **⏳ STILL OWED — one dispatch on `v1.2`:**
+> - **`SetAsideTracker — iOS Maestro (native flows)`** — ⚠️ **has not run since the migration began.**
+>   Five flows had selectors rewritten and one is new; **none has executed once.** Treat the first run
+>   as the validation pass, not a regression check. Expect a round of tuning.
 >
 > **⚠️ Standing caveat: everything in v1.2 so far is WEB-VERIFIED ONLY.** react-native-web renders no
 > `Alert`, no biometrics, no document picker, no real navigation stack — and `react-native-screens`

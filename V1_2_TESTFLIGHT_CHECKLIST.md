@@ -52,11 +52,27 @@ real navigation stack. Green means "nothing else broke", not "this works on a ph
 
 ---
 
-## Owed before this can be run
+## Status
 
-1. **Dispatch `maestro-ios` on `v1.2`.** The flows have not run since the migration began. **Treat the
-   first run as a validation pass, not a regression check** — the selectors were updated blind
-   (1.2.0.8 relabelled every input, so five flows moved from placeholder-and-index to accessible
-   names), and none of that has executed once.
-2. **A TestFlight build from `v1.2`** with the version at `1.2.0` (the `1.1.1` upload was rejected as
-   already-approved).
+✅ **A `1.2.0` TestFlight build exists (2026-08-08)** — built, signed, uploaded, installable. **§A is
+now runnable**, and §A is the whole reason this document exists: those checks cannot be automated by
+anything, so they are the only way that surface ever gets verified.
+
+⏳ **Still owed: dispatch `maestro-ios` on `v1.2`.** The flows have not run since the migration began.
+**Treat the first run as a validation pass, not a regression check** — 1.2.0.8 relabelled every input,
+so five flows moved from placeholder-and-index to accessible names, and none of that has executed once.
+
+### If there's only time for a few checks, do these — highest value first
+
+They're ranked by *what nothing else in the project can see*, not by how likely they are to break.
+
+1. **Restore from a backup saved in the OTHER theme** (§A) — exercises the exact bug 1.2.0.2 fixed,
+   through the one path (a native document picker) no harness can drive.
+2. **App Lock: enable → background → return** (§A) — the biometric prompt is invisible to every
+   automated tool, and Face ID doesn't work in Expo Go, so this build is the first chance to see it.
+3. **The back-swipe gesture** (§B) — **brand new**: there was no navigation stack before v1.2, so this
+   interaction has never existed in this app on any build.
+4. **Deep link `setasidetracker://what-if`, then hit Close** (§B) — the dead-close-button defect fixed
+   at 1.2.0.7; confirm the fallback lands on the dashboard.
+5. **Clear all data** (§A/C) — a data-loss path, and the destructive Alert is web-invisible. The new
+   Maestro flow covers it, but that flow has never run.
