@@ -42,7 +42,7 @@ Cloud runs its own `node.exe`.
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ▶ **1.2.0 — Routing migration to `expo-router`** · 🔵 before-scan done · 🔨 **2 of 7 sub-steps done**
+### ▶ **1.2.0 — Routing migration to `expo-router`** · 🔵 before-scan done · 🔨 **3 of 7 sub-steps done**
 
 > **✅ NATIVE BUILD VALIDATED (2026-08-07).** The Codemagic run **compiled, signed and produced a valid
 > `.ipa`** — so `expo prebuild` survives the `expo-router/entry` swap, **`react-native-screens`
@@ -86,9 +86,13 @@ route guards, and v1.3's Android back button.
       overwriting. ⭐ **Fixed a pre-existing bug:** restore-from-backup applied only `appLockEnabled`,
       so a restored theme didn't show until a cold start and restored reminders were never rescheduled.
       *Verified:* 19/19 e2e (2 new), 245 unit, typecheck + lint clean, ports closed.
-- [ ] **1.2.0.3 — Lift app state above the router.** Move entries / taxProfile / localUserProfile /
-      settings out of `AppContent` into a shared provider. ⚠️ **This is the seam demo mode (1.2.1)
-      swaps** — shape it for that now. *Exit:* no route prop-drills app state.
+- [x] **1.2.0.3 — Lift app state above the router ✅ DONE 2026-08-08.** New
+      `src/state/AppDataContext.tsx` above the `Stack` owns profile / tax profile / entries and the two
+      non-theme settings; **`App.tsx` imports nothing from `storage/` any more** — which is the seam
+      demo mode redirects. Data layer throws; `App` keeps alerts, analytics and navigation. Boot
+      screen and `isLocked` are now **derived** rather than set in an effect. *Verified:* 19/19 e2e,
+      245 unit, typecheck + lint clean (still 14).
+      ⚠️ **Coverage gap found, filed below** — clear-all-data / restore / lock have no test anywhere.
 - [ ] **1.2.0.4 — Port the 13 screens to routes**, in groups, **preserving visible UI exactly** so the
       text-based suites survive. *Exit:* all 13 reachable by route.
 - [ ] **1.2.0.5 — Route guards.** Onboarding gate + lock screen. ⚠️ Must **admit** the not-yet-onboarded
@@ -165,6 +169,13 @@ _(none yet)_
 - **Settings `Switch`es carry no `accessibilityLabel` → 1.2.5 (a11y audit).** App Lock and Quarterly
   Due Date Reminders are labelled only by adjacent `Text`, so they announce as bare switches. _(Same
   provenance.)_
+- **🔴 Clear-all-data, restore-from-backup and app-lock have NO automated coverage → 1.2.9 (device QA),
+  + a Maestro flow.** No Playwright spec and no `.maestro` flow touches any of them. They're
+  `Alert`-driven, and RN-Web doesn't render Alerts, so they **cannot** be covered on web — Maestro is
+  the only instrument that can see them. **Two of the three are data-loss paths**, and 1.2.0.3 rewired
+  all three (clear + restore now run through `AppDataProvider`; `isLocked` is derived rather than
+  stored). **Owed: an explicit device check at 1.2.9, and a Maestro flow so it isn't manual forever.**
+  _(Found 2026-08-08 at 1.2.0.3 — the suite went 19/19 across the rewiring without touching them once.)_
 
 ## ⏳ Open
 

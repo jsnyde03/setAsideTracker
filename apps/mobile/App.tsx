@@ -2,20 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, Alert, AppState, StyleSheet, View } from "react-native";
 import type { Entry, FiledYearTax, LocalUserProfile, TaxProfile } from "./src/types";
-import {
-  addEntry,
-  clearAllLocalData,
-  deleteEntry,
-  getAppSettings,
-  getEntries,
-  getLocalUserProfile,
-  getTaxProfile,
-  restoreBackupSnapshot,
-  saveLocalUserProfile,
-  saveTaxProfile,
-  updateAppSettings,
-  updateEntry,
-} from "./src/storage/repository";
+// No storage imports left: as of 1.2.0.3 every read and write goes through AppDataProvider, so this
+// component talks to data through one hook instead of to the persistence layer directly. That is what
+// lets demo mode (1.2.1) redirect storage underneath without this file knowing.
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { AddEntryScreen } from "./src/screens/AddEntryScreen";
@@ -34,6 +23,7 @@ import { cancelQuarterlyReminders, scheduleQuarterlyReminders } from "./src/noti
 import { trackEvent, ANALYTICS_EVENTS } from "./src/analytics";
 import { maybeRequestReview } from "./src/appReview";
 import { reportError } from "./src/errorReporting";
+import { useAppData } from "./src/state/AppDataContext";
 import { useTheme, type ColorSchemePreference } from "./src/ThemeContext";
 
 // initErrorReporting/initAnalytics/initPurchases used to run here at module scope. They moved to
@@ -65,67 +55,95 @@ export default function AppContent() {
     container: { flex: 1, backgroundColor: colors.bg },
     loadingContainer: { flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
   });
-  const [screen, setScreen] = useState<Screen>("loading");
-  const [localUserProfile, setLocalUserProfile] = useState<LocalUserProfile | null>(null);
-  const [taxProfile, setTaxProfile] = useState<TaxProfile | null>(null);
-  const [entries, setEntries] = useState<Entry[]>([]);
+  // App data and the two non-theme settings live in AppDataProvider, above the router (1.2.0.3), so
+  // every future route reads one copy. What's left here is navigation and lock state — navigation
+  // dissolves into real routes at 1.2.0.4, and lock moves with the route guards at 1.2.0.5.
+  const {
+    ready,
+    loadError,
+    localUserProfile,
+    taxProfile,
+    entries,
+    appLockEnabled,
+    remindersEnabled,
+    completeOnboarding,
+    saveEntry,
+    removeEntry,
+    saveProfile,
+    saveTaxProfile,
+    updateAmountSetAside,
+    updateFiledTax,
+    setAppLockEnabled,
+    setRemindersEnabled,
+    clearAllData,
+    restoreBackup,
+  } = useAppData();
+
+  // null = still checking whether a lock can be enforced on this device.
+  const [lockAvailable, setLockAvailable] = useState<boolean | null>(null);
+  // Tracks the UNLOCK, not the lock. Locked is the resting state whenever the setting is on, so
+  // deriving it means the lock can't be left stale by a settings change — turning the lock off
+  // releases the screen immediately, and clearing all data (which turns it off) can't strand the user
+  // behind a lock on an app with no data in it.
+  const [unlocked, setUnlocked] = useState(false);
+  const isLocked = lockAvailable === true && appLockEnabled && !unlocked;
+  const [showRetryHint, setShowRetryHint] = useState(false);
+
+  // Navigation is DERIVED from the data, with an explicit override for user navigation. Storing the
+  // boot decision in an effect instead meant "which screen opens" was a side effect of loading, which
+  // is what made the loading state stick when anything failed. `navScreen` is only ever set by the
+  // user going somewhere; before they do, where the app opens follows from whether a profile exists.
+  const [navScreen, setNavScreen] = useState<Screen | null>(null);
+  const bootSettled = ready && lockAvailable !== null;
+  const screen: Screen =
+    navScreen ?? (!bootSettled ? "loading" : localUserProfile && taxProfile ? "dashboard" : "onboarding");
+  const setScreen = setNavScreen;
   // Non-null means AddEntryScreen is showing in edit mode for this entry.
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
   // Where the paywall returns to when closed — the paywall is reachable from more than one screen
   // (Settings' PDF export, the entry form's locked mileage log), so it remembers its origin.
   const [paywallOrigin, setPaywallOrigin] = useState<Screen>("settings");
 
-  // null = still checking whether a lock can be enforced on this device.
-  const [lockAvailable, setLockAvailable] = useState<boolean | null>(null);
-  // Whether the user has opted into app lock — defaults to off, even on devices that support it.
-  const [appLockEnabled, setAppLockEnabled] = useState(false);
-  // Whether quarterly due-date reminders are on — defaults to true (the always-on behavior
-  // before this setting existed, so existing users see no change until they actively turn it off).
-  const [remindersEnabled, setRemindersEnabled] = useState(true);
-  const [isLocked, setIsLocked] = useState(false);
-  const [showRetryHint, setShowRetryHint] = useState(false);
-
+  // Whether the DEVICE can enforce a lock. A capability query, not app data, so it stays here rather
+  // than in AppDataProvider.
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
-        const [storedProfile, storedTaxProfile, storedEntries, lockIsAvailable, storedAppSettings] =
-          await Promise.all([
-            getLocalUserProfile(),
-            getTaxProfile(),
-            getEntries(),
-            isAppLockAvailable(),
-            getAppSettings(),
-          ]);
-
-        const storedRemindersEnabled = storedAppSettings.remindersEnabled ?? true;
-
-        setEntries(storedEntries);
-        setLockAvailable(lockIsAvailable);
-        setAppLockEnabled(storedAppSettings.appLockEnabled);
-        setIsLocked(lockIsAvailable && storedAppSettings.appLockEnabled);
-        // colorScheme is deliberately absent here — ThemeProvider loads and owns it now (1.2.0.2).
-        setRemindersEnabled(storedRemindersEnabled);
-
-        if (storedProfile && storedTaxProfile) {
-          setLocalUserProfile(storedProfile);
-          setTaxProfile(storedTaxProfile);
-          setScreen("dashboard");
-          if (storedRemindersEnabled) scheduleQuarterlyReminders();
-        } else {
-          setScreen("onboarding");
-        }
-      } catch (error) {
-        // Without this, a failed load here leaves the app stuck on the loading spinner forever
-        // with no feedback at all. Fall back to a safe, unlocked state so the user isn't stuck.
-        setLockAvailable(false);
-        setScreen("onboarding");
-        Alert.alert(
-          "Couldn't load your data",
-          error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
-        );
+        const available = await isAppLockAvailable();
+        if (!cancelled) setLockAvailable(available);
+      } catch {
+        // Treat an unanswerable capability query as "can't lock" — the safe direction is letting the
+        // user in, not locking them out of their own data.
+        if (!cancelled) setLockAvailable(false);
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  // Surface a failed initial load. AppDataProvider records it rather than alerting, because it isn't
+  // a UI layer; this is where the user actually hears about it, and `ready` still flips either way so
+  // the app can never hang on the spinner.
+  useEffect(() => {
+    if (!loadError) return;
+    Alert.alert(
+      "Couldn't load your data",
+      loadError instanceof Error ? loadError.message : "An unexpected error occurred. Please try again."
+    );
+  }, [loadError]);
+
+  // Schedule reminders once, on the first settled boot with a complete profile. Guarded by a ref
+  // rather than an empty dep array so it waits for the data without re-firing every time it changes.
+  const bootRemindersScheduled = useRef(false);
+  useEffect(() => {
+    if (!ready || bootRemindersScheduled.current) return;
+    bootRemindersScheduled.current = true;
+    if (localUserProfile && taxProfile && remindersEnabled) {
+      scheduleQuarterlyReminders().catch((error) => reportError(error, { where: "bootReminders" }));
+    }
+  }, [ready, localUserProfile, taxProfile, remindersEnabled]);
 
   // Re-lock whenever the app returns from the background, so leaving and reopening the app
   // always requires unlocking again (not just on cold start).
@@ -139,7 +157,7 @@ export default function AppContent() {
       // Alert.alert being shown — treating it the same as background caused the app to
       // immediately re-lock right after a successful unlock.
       if (appState.current === "background" && nextState === "active") {
-        setIsLocked(true);
+        setUnlocked(false);
         setShowRetryHint(false);
       }
       appState.current = nextState;
@@ -151,7 +169,7 @@ export default function AppContent() {
   async function handleUnlock() {
     const success = await unlockWithDeviceAuth();
     if (success) {
-      setIsLocked(false);
+      setUnlocked(true);
       setShowRetryHint(false);
     } else {
       setShowRetryHint(true);
@@ -160,10 +178,7 @@ export default function AppContent() {
 
   async function handleOnboardingComplete(profile: LocalUserProfile, newTaxProfile: TaxProfile) {
     try {
-      await saveLocalUserProfile(profile);
-      await saveTaxProfile(newTaxProfile);
-      setLocalUserProfile(profile);
-      setTaxProfile(newTaxProfile);
+      await completeOnboarding(profile, newTaxProfile);
       setScreen("dashboard");
       if (remindersEnabled) scheduleQuarterlyReminders();
       trackEvent(ANALYTICS_EVENTS.onboardingCompleted, {
@@ -184,8 +199,7 @@ export default function AppContent() {
   async function handleSaveEntry(entry: Entry) {
     const isEditing = editingEntry !== null;
     try {
-      const updated = isEditing ? await updateEntry(entry) : await addEntry(entry);
-      setEntries(updated);
+      const updated = await saveEntry(entry, isEditing);
       setEditingEntry(null);
       setScreen("dashboard");
       trackEvent(isEditing ? ANALYTICS_EVENTS.entryUpdated : ANALYTICS_EVENTS.entryLogged, {
@@ -215,8 +229,7 @@ export default function AppContent() {
 
   async function handleDeleteEntry(entryId: string) {
     try {
-      const updated = await deleteEntry(entryId);
-      setEntries(updated);
+      await removeEntry(entryId);
       setEditingEntry(null);
       setScreen("dashboard");
     } catch (error) {
@@ -237,9 +250,8 @@ export default function AppContent() {
     // Persists immediately, but deliberately doesn't lock the app right now even if turned on —
     // that would lock the user out of the Settings screen they're sitting in. It takes effect
     // next time the app backgrounds/returns or cold-starts, same as any other security setting.
-    setAppLockEnabled(enabled);
     try {
-      await updateAppSettings({ appLockEnabled: enabled });
+      await setAppLockEnabled(enabled);
     } catch (error) {
       reportError(error, { where: "handleToggleAppLock" });
       Alert.alert(
@@ -262,9 +274,8 @@ export default function AppContent() {
   }
 
   async function handleToggleReminders(enabled: boolean) {
-    setRemindersEnabled(enabled);
     try {
-      await updateAppSettings({ remindersEnabled: enabled });
+      await setRemindersEnabled(enabled);
       if (enabled) {
         await scheduleQuarterlyReminders();
       } else {
@@ -281,8 +292,7 @@ export default function AppContent() {
 
   async function handleSaveProfile(profile: LocalUserProfile) {
     try {
-      await saveLocalUserProfile(profile);
-      setLocalUserProfile(profile);
+      await saveProfile(profile);
       Alert.alert("Saved", "Your profile has been updated.");
     } catch (error) {
       reportError(error, { where: "handleSaveProfile" });
@@ -296,7 +306,6 @@ export default function AppContent() {
   async function handleSaveTaxProfile(newTaxProfile: TaxProfile) {
     try {
       await saveTaxProfile(newTaxProfile);
-      setTaxProfile(newTaxProfile);
       setScreen("settings");
     } catch (error) {
       reportError(error, { where: "handleSaveTaxProfile" });
@@ -308,14 +317,8 @@ export default function AppContent() {
   }
 
   async function handleUpdateAmountSetAside(year: number, amount: number) {
-    if (!taxProfile) return;
-    const updated: TaxProfile = {
-      ...taxProfile,
-      amountSetAsideByYear: { ...taxProfile.amountSetAsideByYear, [year]: amount },
-    };
     try {
-      await saveTaxProfile(updated);
-      setTaxProfile(updated);
+      await updateAmountSetAside(year, amount);
     } catch (error) {
       reportError(error, { where: "handleUpdateAmountSetAside" });
       Alert.alert(
@@ -326,14 +329,8 @@ export default function AppContent() {
   }
 
   async function handleUpdateFiledTax(year: number, filed: FiledYearTax) {
-    if (!taxProfile) return;
-    const updated: TaxProfile = {
-      ...taxProfile,
-      filedTaxByYear: { ...taxProfile.filedTaxByYear, [year]: filed },
-    };
     try {
-      await saveTaxProfile(updated);
-      setTaxProfile(updated);
+      await updateFiledTax(year, filed);
     } catch (error) {
       reportError(error, { where: "handleUpdateFiledTax" });
       Alert.alert(
@@ -345,11 +342,7 @@ export default function AppContent() {
 
   async function handleClearAllData() {
     try {
-      await clearAllLocalData();
-      setEntries([]);
-      setLocalUserProfile(null);
-      setTaxProfile(null);
-      setAppLockEnabled(false);
+      await clearAllData();
       setScreen("onboarding");
     } catch (error) {
       reportError(error, { where: "handleClearAllData" });
@@ -361,19 +354,12 @@ export default function AppContent() {
   }
 
   async function handleRestoreBackup(json: string) {
-    const restored = await restoreBackupSnapshot(json); // throws on a malformed file — let SettingsScreen's caller show the error
-    setEntries(restored.entries);
-    setLocalUserProfile(restored.localUserProfile);
-    setTaxProfile(restored.taxProfile);
+    // Throws on a malformed file — let SettingsScreen's caller show the error. The provider applies
+    // the restored data and settings to state; what's left here is the parts it deliberately doesn't
+    // own: the theme (ThemeProvider's), the notification schedule, and navigation.
+    const restored = await restoreBackup(json);
 
-    // All three settings, not just the lock. `restoreBackupSnapshot` writes the whole settings object
-    // to storage, but only `appLockEnabled` was ever applied to in-memory state — so restoring a
-    // backup saved in dark mode left the app rendering light until the next cold start, and a
-    // restored `remindersEnabled` was written but never acted on, so the notification schedule stayed
-    // whatever it had been. Found while moving the theme preference in 1.2.0.2.
-    setAppLockEnabled(restored.appSettings.appLockEnabled);
     const restoredReminders = restored.appSettings.remindersEnabled ?? true;
-    setRemindersEnabled(restoredReminders);
     if (restored.appSettings.colorScheme) {
       // Re-persists the same value the restore just wrote, which is a no-op against storage; the
       // point is bringing the live theme into line with it.

@@ -11,6 +11,51 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.0.3 Lift app state above the router — SUB-TASK after-scan · 2026-08-08
+
+**Result: done.** New `src/state/AppDataContext.tsx`, mounted above the `Stack`, owns
+`localUserProfile` / `taxProfile` / `entries` plus `appLockEnabled` / `remindersEnabled`. **`App.tsx`
+now imports nothing from `storage/`** — 591 → 577 lines, and, more to the point, it talks to data
+through one hook instead of to persistence directly. **That is the seam demo mode (1.2.1) redirects.**
+19/19 e2e · 245 unit · typecheck + lint clean (still exactly 14).
+
+**Before-scan sorted the state into four groups, and only two moved.** App data and the two non-theme
+settings lifted; **session/lock state stays** (it belongs with the route guards at 1.2.0.5) and
+**navigation state stays** (it dissolves at 1.2.0.4). Lifting all of it at once would have dragged two
+later sub-steps into this one.
+
+**Design decision: the data layer throws; the caller owns the response.** Each of the nine handlers was
+persist → set state → navigate → track, with `Alert` + `reportError` on failure. Only the first two
+halves moved. Moving the rest would have put `Alert.alert` and navigation inside a data provider,
+which is how a data layer stops being one.
+
+**Two things became derived rather than stored, and both are strictly better:**
+- **The boot screen.** It used to be decided inside the load effect, which made "which screen opens" a
+  side effect of loading — the reason a failed load could strand the app on the spinner. Now
+  `screen = navScreen ?? (settled ? (profile ? dashboard : onboarding) : loading)`, so navigation is an
+  explicit override over a derivation.
+- **`isLocked` → `unlocked`.** Tracking the *unlock* instead of the lock means the lock can't be left
+  stale by a settings change: turning it off releases the screen immediately, and clearing all data
+  (which turns it off) can't strand the user behind a lock guarding an app with no data in it.
+- Bonus: both avoided `setState`-in-effect, so the lint ledger stayed at 14 rather than growing.
+
+**What only surfaced by doing it:**
+1. 🔴 **Clear-all-data, restore-from-backup and app-lock have no automated coverage at all** — no
+   Playwright spec, no Maestro flow. **The suite went 19/19 across a rewiring of all three without
+   exercising any of them.** They're `Alert`-driven and RN-Web doesn't render Alerts, so they can't be
+   covered on web; Maestro is the only instrument that can see them. **Two are data-loss paths.**
+   Filed to the backlog for 1.2.9 device QA + a Maestro flow. *This is the second time in three
+   sub-steps that a green suite meant "nothing else broke" rather than "this works."*
+2. ⚠️ **Ordering trap:** the derived `screen` referenced `lockAvailable` above its own declaration —
+   caught by typecheck, but a reminder that derivations are order-sensitive in a way `useState` isn't.
+3. ⚙️ `node -e` silently no-op'd a file write again (third time this session). Used Edit instead.
+   The rule already exists in memory; recording that it recurred, not re-learning it.
+
+**Enhancements surfaced → routed:** the two derivations folded in (both required by the move and both
+reduce risk). The coverage gap deferred to 1.2.9 + backlog — it needs a device, so it can't close here.
+Nothing else.
+
+
 ### 🔎 1.2.0.2 Hoist the provider stack — SUB-TASK after-scan · 2026-08-07
 
 **Result: done.** Providers (`SafeAreaProvider → ThemeProvider → PremiumProvider → ErrorBoundary`) and

@@ -8,6 +8,7 @@ import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import { PremiumProvider } from "../src/premium/PremiumContext";
+import { AppDataProvider } from "../src/state/AppDataContext";
 import { ThemeProvider } from "../src/ThemeContext";
 import { initAnalytics } from "../src/analyticsClient";
 import { initErrorReporting } from "../src/errorReporting";
@@ -34,9 +35,11 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <PremiumProvider>
-          <ErrorBoundary>
-            <Stack screenOptions={{ headerShown: false }} />
-          </ErrorBoundary>
+          <AppDataProvider>
+            <ErrorBoundary>
+              <Stack screenOptions={{ headerShown: false }} />
+            </ErrorBoundary>
+          </AppDataProvider>
         </PremiumProvider>
       </ThemeProvider>
     </SafeAreaProvider>
