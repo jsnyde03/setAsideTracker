@@ -11,6 +11,198 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 Maestro dispatch #1 — TRIAGED · 2026-08-08
+
+**Verdict: INFRASTRUCTURE. Not signal.** It died at **step 7, `Build the app for the iOS Simulator`**
+— so `simctl`, Maestro and the flows themselves never ran. **The rewritten selectors and the
+stacked-route accessibility hierarchy remain completely unvalidated**, exactly as before the
+dispatch. The pre-registered triage rule called this correctly: a failure at or before `xcodebuild`
+is a `codemagic.yaml` problem.
+
+**Root cause, from the trace:** `error: Auth token is required for this request` out of `sentry-cli`,
+then `+ exit 1` and `PhaseScriptExecution Bundle React Native code and images` failing the build.
+The Maestro workflow's `environment:` was only `node: 22` — it deliberately omits the `AppleConnect`
+group (a simulator build needs no signing), **and that group is also where `SENTRY_AUTH_TOKEN` comes
+from.** With no token and `SENTRY_DISABLE_AUTO_UPLOAD` unset rather than `"true"`, the upload step
+ran, failed, and took the phase with it.
+
+⚡ **This was predicted in writing and still happened.** The TestFlight workflow's own comment records
+that in `@sentry/react-native` 7.11.0 an upload failure fails the entire build and
+`SENTRY_ALLOW_FAILURE` is *not* honored, with the stated recovery being to set
+`SENTRY_DISABLE_AUTO_UPLOAD` back to `"true"`. The note was written about the release workflow; the
+failure landed on the simulator workflow, which was created later and never inherited the warning.
+
+**Fixed:** `SENTRY_DISABLE_AUTO_UPLOAD: "true"` added to the Maestro workflow. Disabling the upload
+beats adding the token — a throwaway simulator binary's source maps have no business in Sentry, and
+this keeps a secret and a network round-trip out of the test workflow.
+
+**Predicted next false-failure, checked and RULED OUT.** The Maestro workflow also lacks
+`EXPO_PUBLIC_RC_IOS_KEY`, which looked like it could leave `premium-paywall.yaml` asserting against a
+paywall with no products. It can't: `PaywallScreen.tsx:277` renders `accessibilityLabel="Subscribe"`
+unconditionally, and the flow asserts only static copy, never a price. No change needed.
+
+**⚠️ Still untested downstream of the build:** the `xcrun simctl boot "iPhone 15" || true` line. The
+runner reported **Xcode 26.4**; if that image has no iPhone 15, the swallowed boot failure surfaces as
+an *install* failure and misreads as an app problem. Unchanged and unverified — the build never got
+that far. Keep it in the triage rule for dispatch #2.
+
+### 🔎 1.2.1.3 Plug the non-repository leaks — SUB-TASK after-scan · 2026-08-08
+
+**Shipped.** Three guards, each at a single choke point: `maybeRequestReview` (`appReview.ts`),
+`scheduleQuarterlyReminders` **and** `cancelQuarterlyReminders` (`notifications/scheduleReminders.ts`),
+and `trackEvent` (`analytics.ts`). 9 tests, each written as a **pair** — guarded behaviour *and* the
+unguarded behaviour — so a guard that simply always returned false would fail the other half.
+
+**The flag moved to its own module, and the store reference went with it.** `src/demo/demoMode.ts`,
+pure, no react-native. Two of the three guarded modules are deliberately import-light so their unit
+tests run in plain Node; importing `repository.ts` for the flag would have dragged AsyncStorage and
+`react-native` into all of them. The **store reference itself** lives there too rather than a
+mirrored boolean — two things that must agree eventually don't. `repository.ts`'s `backend()` now
+reads `getDemoStore() ?? AsyncStorage` and is still a one-expression, inspectable guarantee.
+
+**Found during implementation, and the before-scan could not have seen it:**
+
+1. 🔴 **`cancelQuarterlyReminders` needed guarding for the *opposite* reason to the scheduler, and
+   this is the one that was nearly missed.** The before-scan flagged demo *scheduling* real
+   reminders. But cancel calls `cancelAllScheduledNotificationsAsync()` — **every** scheduled
+   notification on the device, demo's or not. A visitor flicking the reminders toggle inside the demo
+   would have silently deleted the real user's genuine quarterly reminders. Data loss, disguised as a
+   no-op, on the tax dates the app exists to protect. Guarded and tested.
+2. **The scheduler guard had to sit ABOVE `requestPermissionsAsync`.** Otherwise a demo raises the
+   notifications permission dialog — a one-shot system prompt the real app wants to ask for on its
+   own terms, at a moment that means something.
+3. **Analytics drops rather than tags.** A `demo: true` property still puts the event in the funnel,
+   where every query would need to remember to exclude it forever, and the first that forgets reports
+   a number that isn't true. Demo traffic is exactly what would distort the **[D3-ASA]** read. Dev
+   console logging still fires, so demo behaviour stays visible while working on it.
+
+**⚠️ Test-infrastructure trap, worth remembering.** The first run of these tests failed 3/9, and the
+failure was in the *test*, not the guards: `vi.resetModules()` gives every dynamic `import()` a fresh
+module graph, including a fresh `demoMode`. Toggling the demo flag on a **statically**-imported
+`demoMode` therefore toggled a different instance than the module under test, and every guard read
+`false`. The dangerous version of this mistake is the inverse — a guard test that passes because the
+flag was never actually set — which would have looked exactly like proof. Loaders now return
+`demoMode` from the same graph.
+
+**Health:** 190 mobile unit tests (was 181) · typecheck clean · lint 14, none introduced.
+
+### 🔎 1.2.1.2 Seed generator — SUB-TASK after-scan · 2026-08-08
+
+**Shipped.** `src/demo/demoSeed.ts` — `buildDemoSeed(now = new Date())`, the Maya persona ported from
+`SCREENSHOT_PLAN.md` with every date expressed as **days before today** and materialised at seed
+time. 29 tests, `now` injected so the calendar behaviour is testable without touching the clock.
+
+**The staleness risk was measured, not assumed.** `calculations.ts:177` — `entriesForYear` filters by
+`entry.date.startsWith("2026-")`. So the absolute-dated persona wouldn't merely look old on 1
+January, it would **vanish from the dashboard entirely**. That is what made relative dates a
+requirement rather than a nicety.
+
+**The January case, and why it compresses rather than shifts.** The persona spans 52 days; early in a
+calendar year there isn't that much room before the tax year begins. Spilling into December would
+re-create the exact defect above, so the span is **compressed proportionally** into whatever room
+exists. Entries stay ordered, stay in the past, stay in-year. **Totals are unaffected** — all 20
+entries always present at their original amounts — so the green "on track" state and every headline
+figure hold whenever the demo is entered. Tested at seven dates including a leap day, 31 December,
+and 1 January (the degenerate no-room edge).
+
+**The port is faithful, and that is verified rather than eyeballed.** The test asserts gross + tips
+**= $6,213**, which matches the sanity-check figure `SCREENSHOT_PLAN.md` states independently. A
+transcription slip in any of the 20 rows breaks it.
+
+**Surfaced during implementation:**
+
+1. **The theme had to be deliberately excluded from the seed.** The persona's backup file carries
+   `colorScheme: "dark"`, and seeding it would flip the visitor's app to dark — the most visible
+   possible reach outside the sandbox, and on a preference the demo has no business touching. The
+   seed omits it; the theme has lived outside this data since 1.2.0.2 anyway.
+2. **`remindersEnabled: false` is in the seed, and it is a coupling 1.2.1.3 must honour.** The seed
+   supplies the *state*; 1.2.1.3 prevents the scheduling *call*. Either alone leaves demo and reality
+   disagreeing — a toggle reading "on" with nothing scheduled, or reminders scheduled from demo data.
+3. **A demo entered on 1–2 January shows the entries bunched onto ~one day.** Correct, and harmless
+   for the demo's job, but bad for store screenshots. Documented in the module; belongs with the
+   already-filed `SCREENSHOT_PLAN.md` backlog item.
+
+### 🔎 1.2.1.1 Demo store — SUB-TASK after-scan · 2026-08-08
+
+**Shipped.** `src/storage/demoStore.ts` (pure, no imports — same reason `appReviewPolicy.ts` was
+split out of `appReview.ts`: it stays testable in plain Node) exposing `KeyValueStore` +
+`createDemoStore()`. `repository.ts` gained one variable and one function — `demoStore` and
+`backend()` — plus `enterDemoMode(seed)` / `exitDemoMode()` / `isDemoModeActive()`. Every read and
+write now routes through `backend()`; **`grep "AsyncStorage\." repository.ts` returns nothing**, which
+is the inspectable form of the guarantee.
+
+**Design property, deliberate: the demo store is in-memory and NOTHING is persisted** — not the seed,
+not what a visitor adds, not a "was in demo" flag. That makes isolation structural rather than
+careful: there is no demo artifact a later bug could fail to clean up, and `exitDemoMode()` is a
+one-line reference drop because releasing it *is* the cleanup.
+
+**Green was verified, not assumed.** Mutating `backend()` to `return AsyncStorage` failed exactly the
+two isolation tests and nothing else — so those tests depend on the mechanism rather than restating
+it. 8 new tests · 152 mobile unit (was 144) · typecheck clean · lint still 14, none introduced.
+
+**Surfaced during implementation (the before-scan structurally could not have caught these):**
+
+1. **The premium cache had to be exempted.** Routing `cachedPremium` into the demo store would mean a
+   renewal or purchase landing while someone explores the demo gets cached nowhere and is lost on
+   exit. Premium is Apple-ID-scoped, not local-data-scoped — the same reasoning `clearAllLocalData`
+   already used. **Resolved in-item:** `readJson`/`writeJson` take an optional `store`, and the two
+   premium functions pass `AsyncStorage` explicitly. It is the only override, and it is tested.
+2. **Demo state does not survive a relaunch.** Correct and intended, but it has a *product*
+   consequence 1.2.1.4 now owns: if iOS kills the app mid-demo, the visitor returns to onboarding
+   rather than the demo. Noted on that sub-step.
+3. **Callers must pair both transitions with `reload()`** or the provider shows demo data it can no
+   longer write to. Documented on both functions; 1.2.1.4 wires it.
+4. **Nothing stops future code importing AsyncStorage directly** and bypassing the guarantee — the
+   comment asks, but nothing enforces. → **filed to the backlog for 1.2.8**, which is already the
+   lint-rule/CI item.
+
+### 🔎 1.2.1 Demo mode — TASK before-scan · 2026-08-08
+
+**Premises verified against current code, not assumed.** Four held, one did not, and the one that
+did not is the item's central claim.
+
+**Held.** `src/storage/repository.ts` is one flat module (**16** exports, not the spec's 15) and
+`AppDataProvider` reaches storage only through it · `reload()` exists, aliased to `load` ·
+`RequireTaxProfile` is genuinely a one-line widen · the `setPurchasesClient()` seam is real.
+
+**Better than the spec knew.** The persona is already authored as a **valid backup file** —
+`store-assets/reference-screenshots/maya-persona-backup.json`, version 1, 20 entries, W2 +
+prior-year filed tax + amount-set-aside. `parseBackupSnapshot` already validates that exact shape,
+so the seed is a port, not an invention.
+
+**Did NOT hold — "no other persistence path."** Three writes bypass the repository:
+
+| path | where | consequence in demo |
+|---|---|---|
+| 🔴 review prompt | `appReview.ts` → `gigTaxTracker:reviewRequested`, raw AsyncStorage | `maybeRequestReview` fires on every entry save (`app/entry.tsx:38`); threshold is **5** and demo seeds **20**. The flag is **one-shot** — a visitor poking at sample data permanently burns the real user's single App Store review request. Irreversible. |
+| 🔴 OS notifications | `scheduleQuarterlyReminders()` from `app/onboarding.tsx:28` + two sites in `app/settings.tsx` | demo data schedules **real** quarterly reminders if demo entry routes through onboarding-complete |
+| 🟠 analytics | `trackEvent` at `entry_logged`, `onboarding_completed`, **`paywall_viewed`** | demo exploration pollutes the exact funnel the outstanding **[D3-ASA]** read depends on |
+
+So isolation is checkable at **three** files, not one. Cheap to plug, but only if it is a named
+sub-step — hence 1.2.1.3.
+
+**Two more surfaced.** (a) The persona's dates are **absolute** (May–Jun 2026,
+`amountSetAsideByYear: {"2026": …}`) — a demo that imports that file **goes stale in January**, so
+the seed must generate dates relative to today. Hence 1.2.1.2. (b) `AsyncStorage.removeMany` in
+`clearAllLocalData` looked wrong; checked against the v3 type defs (`async-storage@3.1.1` — v3
+renamed `multiRemove` → `removeMany`) and it is **correct**. No defect. Recorded because the next
+reader will have the same suspicion.
+
+**Design tension found — resolved by [D5].** The exit line wants premium screens to preview
+populated while `subscribe`/`export` still hit the real paywall, but `isPremium` is a **single
+boolean** read at 4 sites (`AddEntryScreen`, `DashboardScreen`, `PaywallScreen`, `SettingsScreen`)
+and no "preview" concept exists anywhere. Options put to Jason: **(A)** a separate `isDemoPreview`
+consumed alongside `isPremium` at the gate sites, with the two *action* paths (purchase, PDF
+export) still checking `isPremium` alone; **(B)** make `usePremium()` return true in demo and guard
+the actions separately; **(C)** no premium preview in demo. **Jason chose A, 2026-08-08** — it keeps
+the entitlement boolean honest and un-fakeable, which matters because every future gate site
+inherits whatever is decided here. B makes the boolean a lie that later code will trust; C removes
+the stated reason 1.2.1 runs before 1.2.2.
+
+**Filed to the backlog, not folded:** consolidating `appReview.ts`'s direct AsyncStorage write into
+the repository (architecture, not a demo blocker) · pointing `SCREENSHOT_PLAN.md` at the demo seed
+so the persona stops having two sources of truth.
+
 ### 🔎 1.2.0.8 Close the native-verification gap — after-scan · 2026-08-08
 
 **Result: closed as far as it can honestly be closed.** 23/23 e2e · typecheck + lint clean (still 14).
@@ -385,14 +577,9 @@ later item, not by this one.
 ## Queued item specs — retrieved at switch-in
 
 ### 1.2.1 — Demo mode
-Reversible sample persona; never touches real data; exits clean. **Enforce isolation at
-`src/storage/repository.ts`** — every read and write funnels through that one flat module (15 exported
-async functions, no other persistence path), so the guarantee is checkable by inspecting one file.
-Seeds the believable multi-platform persona `SCREENSHOT_PLAN.md` currently builds by hand, which
-productionizes the screenshot seed and eases App Store/IAP review. Premium screens preview **populated**
-but `subscribe`/`export` still route to the real paywall — show value, never grant entitlement; the seam
-is `setPurchasesClient()`. Build cross-app reusable (Debt + Freedom). *Exit:* enters and exits clean
-with real data provably untouched; every demo surface marked on screen **and in the a11y tree**.
+⬆️ **Retrieved and superseded 2026-08-08.** It is the active item; its decomposition lives in
+[V1_2_EXECUTION_PLAN.md](V1_2_EXECUTION_PLAN.md) and its before-scan record is above. _(The spec's
+"no other persistence path" claim was measured false at switch-in — do not re-import it from here.)_
 
 ### 1.2.2 — Premium slice
 **Shift/earnings optimizer** (headline; pulled from v1.3; also delivers the owed earning-optimization

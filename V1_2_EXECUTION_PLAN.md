@@ -10,10 +10,13 @@
 > machine. _(Deliberately not pinning a commit hash here: it goes stale the next time anything lands,
 > and `git log -1` is always right.)_
 >
-> **▶ NEXT = 1.2.1 (demo mode).** It is in the active slot **undecomposed on purpose** — its sub-steps
-> get written *after* its before-scan, because a decomposition authored before the scan is a guess.
-> Start with the scan. Its spec is in [V1_2_LOG.md](V1_2_LOG.md) → "Queued item specs", retrieved at
-> switch-in.
+> **▶ ACTIVE = 1.2.1 (demo mode), before-scan DONE 2026-08-08, decomposed into 7 sub-steps below.**
+> The scan killed the spec's central premise — persistence does **not** all funnel through
+> `repository.ts` — and found the persona already exists as a valid backup file. Record →
+> [V1_2_LOG.md](V1_2_LOG.md). **1.2.1.1–1.2.1.3 closed 2026-08-08; next action: 1.2.1.4.**
+> _(Health moved: **190** mobile unit tests, was 144. Typecheck clean. Lint still 14, none introduced.)_
+> ⚠️ **Still web/unit-verified only** — the leak guards are asserted against mocks. The review prompt,
+> the notification permission dialog and real scheduling are device-owed, at 1.2.9.
 >
 > **✅ Just finished: 1.2.0 (routing migration), 8 sub-steps, closed.** The app went from a
 > `useState<Screen>` machine in a 593-line `App.tsx` to real `expo-router` routes. `App.tsx` deleted.
@@ -23,19 +26,18 @@
 > device build of the migration**, which is what unblocks everything in
 > [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) §A — the checks no harness can perform.
 >
-> **🔄 DISPATCHED 2026-08-08 — `SetAsideTracker — iOS Maestro (native flows)` on `v1.2`, result pending.**
-> ⚠️ **Treat it as a validation pass, not a regression check**, for two independent reasons: five flows
-> had selectors rewritten and one is new (**none has executed once**), *and* the build recipe itself
-> may never have completed — its own header warns it will "need a round of tuning on a real Codemagic
-> mac runner (simulator name/runtime, build-products path)".
+> **❌ Maestro dispatch #1 FAILED 2026-08-08 — INFRASTRUCTURE, triaged and fixed.** It died at **step 7
+> (`xcodebuild`)**, so the flows never ran: **the rewritten selectors and the stacked-route a11y
+> hierarchy are still entirely unvalidated.** Cause: the workflow omits the `AppleConnect` group (no
+> signing needed for a simulator), and that group is also where `SENTRY_AUTH_TOKEN` lives — so
+> `sentry-cli` failed and took the JS-bundle phase down with it. **Fixed:**
+> `SENTRY_DISABLE_AUTO_UPLOAD: "true"` on that workflow. Full triage → [V1_2_LOG.md](V1_2_LOG.md).
 >
-> **Triage by which step fails — the two cases have different fixes:**
-> - install · prebuild · xcodebuild · **`simctl boot`/`install`** → **infrastructure**, fix
->   `codemagic.yaml`. ⚠️ Top candidate: the recipe boots **`"iPhone 15"`** with `|| true`, and the
->   runner showed **Xcode 26.4** — if that image has no iPhone 15, the boot failure is swallowed and
->   the *install* fails instead, which misreads as an app problem.
-> - **`Run Maestro native flows`** → **real signal**: either the rewritten selectors or the
->   stacked-route accessibility hierarchy, which could not be verified from here.
+> **▶ Dispatch #2 is owed and NOT yet sent** — batching it behind 1.2.1.7's demo flow so one mac run
+> validates the migration flows *and* demo mode. ⚠️ Still-live triage rule for that run: the recipe
+> boots **`"iPhone 15"`** with `|| true` on an **Xcode 26.4** runner — if that image has no iPhone 15,
+> the swallowed boot failure surfaces as an *install* failure and misreads as an app problem.
+> A failure inside **`Run Maestro native flows`** is the only outcome that is real signal.
 >
 > **⚠️ Standing caveat: everything in v1.2 so far is WEB-VERIFIED ONLY.** react-native-web renders no
 > `Alert`, no biometrics, no document picker, no real navigation stack — and `react-native-screens`
@@ -84,25 +86,25 @@ Cloud runs its own `node.exe`.
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ▶ **1.2.1 — Demo mode** · ⬜ before-scan not yet run · ⬜ not started
+### ▶ **1.2.1 — Demo mode** · 🔵 before-scan done 2026-08-08 · **3/7 sub-steps**
 
-**Why it is next:** it is the bundle's lead item by design — reusable seed-data infrastructure the
-others consume. The premium optimizer (1.2.2) is unshowable on an empty account, the onboarding tour
-(1.2.4) needs populated views to teach over, and the iPad pass (1.2.3) needs realistic content to lay
-out. Building it first is what makes those three demonstrable rather than theoretical.
+**Why it is next:** the bundle's lead item — reusable seed infrastructure the others consume. 1.2.2 is
+unshowable on an empty account, 1.2.4 needs populated views to teach over, 1.2.3 needs realistic
+content to lay out.
 
-**Carried in from 1.2.0, already true:**
-- `AppDataProvider` is the seam. Every read and write funnels through `src/storage/repository.ts`
-  (one flat module, 15 functions, no other persistence path), so isolation is enforceable at a single
-  file and checkable by inspection — the audit's F2 finding, now built.
-- `RequireTaxProfile` is **the one place** the guards widen to admit a not-yet-onboarded visitor.
-  Debt's `3.5.4.3` is the cautionary case: a blanket onboarding guard locked out the demo's own audience.
-- `reload()` exists on the provider precisely so entering and leaving demo re-reads without a remount.
+⚠️ **The before-scan killed the spec's central premise.** Persistence does **not** all funnel through
+`repository.ts` — `appReview.ts` (one-shot review flag), notification scheduling and analytics all
+bypass it. Isolation is a **three-file** guarantee, not one. Full record → [V1_2_LOG.md](V1_2_LOG.md).
 
-**Sub-steps — to be decomposed at switch-in, after its before-scan.** _(Not written ahead: a
-decomposition authored before the scan is a guess. The scan verifies premises against current code
-first — that is what caught the `Stack`-keeps-routes-mounted cost in 1.2.0.4, and what corrected the
-"demo isolation is the hard part" claim before that.)_
+| # | sub-step | scan |
+|---|---|---|
+| **1.2.1.1** | ✅ **Demo store — DONE 2026-08-08.** In-memory `demoStore.ts` + a one-function `backend()` switch; `repository.ts` now has **zero** direct `AsyncStorage.` calls. Premium cache deliberately exempt. 8 tests, verified by mutation. | ✅ |
+| **1.2.1.2** | ✅ **Seed generator — DONE 2026-08-08.** `buildDemoSeed(now)` with day-offset dates, compressed (not spilled) when the tax year is too young — `entriesForYear` would otherwise drop the whole persona on 1 Jan. 29 tests across 7 calendar dates; totals verified against the plan's $6,213. | ✅ |
+| **1.2.1.3** | ✅ **Leaks plugged — DONE 2026-08-08.** Guards at 4 choke points (review prompt · schedule · **cancel** · analytics), flag moved to a pure `demo/demoMode.ts`. ⭐ The scan found a **fourth** leak: `cancelQuarterlyReminders` wipes *all* device notifications, so a demo toggle would have deleted the real user's reminders. 9 paired tests. | ✅ |
+| **1.2.1.4** | **Enter/exit** — onboarding affordance, widen `RequireTaxProfile`, exit from Settings, `reload()` on both transitions. ⚠️ Owns two constraints from 1.2.1.1: demo does **not** survive an app kill (iOS kills mid-demo → back to onboarding), and both transitions must call `reload()`. | ⬜ |
+| **1.2.1.5** | **Mark every demo surface** — on screen **and** in the a11y tree | ⬜ |
+| **1.2.1.6** | **Premium preview without entitlement** — per **[D5]**: `isDemoPreview` alongside `isPremium` at the 4 gate sites; purchase + PDF export still check `isPremium` alone | ⬜ |
+| **1.2.1.7** | **Tests** — Playwright enter/exit + real-data-untouched · Maestro flow · unit tests for seed + isolation | ⬜ |
 
 **Exit line:** demo enters and exits clean with the real data **provably untouched**; every surface
 showing demo money is marked as such **on screen and in the accessibility tree**; premium screens
@@ -155,6 +157,7 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 | **[D2]** | **The iOS widget folds into v1.2**; Android's rides v1.3. | Jason 2026-08-07 |
 | **[D3]** | **A premium slice joins v1.2** ("Both"). **Standing: every version carries a premium line.** | Jason 2026-08-07 |
 | **[D4]** | **v1.2 stays INTACT, targets August.** | Jason 2026-08-07 |
+| **[D5]** | **Demo previews premium via a separate `isDemoPreview`, never by faking `isPremium`.** The entitlement boolean stays honest; purchase + export keep checking it alone. | Jason 2026-08-08 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
@@ -172,6 +175,18 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
 
+- **Nothing *enforces* that persistence goes through `repository.ts` → 1.2.8.** Add an ESLint
+  `no-restricted-imports` rule allowing `@react-native-async-storage/async-storage` only in
+  `src/storage/`, so demo mode's isolation guarantee is checked by CI rather than requested by a
+  comment. **Deferred, not folded:** 1.2.8 is already the lint-rule/CI-gate item, and it runs after the
+  files in question stop being rewritten. _(Found 2026-08-08 at the 1.2.1.1 after-scan.)_
+- **`appReview.ts` writes AsyncStorage directly, outside the repository and unencrypted → 1.2.8.**
+  1.2.1.3 neutralizes it *in demo*; consolidating it (and any sibling) into `repository.ts` so the
+  "one persistence path" claim becomes true is the broader fix. **Deferred, not folded:** it touches a
+  path demo mode doesn't need changed. _(Found 2026-08-08 at the 1.2.1 before-scan.)_
+- **`SCREENSHOT_PLAN.md`'s persona will have two sources of truth once 1.2.1.2 lands → 1.2.9.** Point
+  the plan at the demo seed (one-tap, as it already anticipates) instead of the hand-maintained
+  `maya-persona-backup.json`. _(Same provenance.)_
 - **🔴 `Chip` announces no selected state to screen readers → 1.2.5 (a11y audit).** `Chip` sets
   `accessibilityState={{ selected }}` with `accessibilityRole="button"`, and **RN-Web drops it** —
   ARIA doesn't allow `aria-selected` on `button`, so the accessibility tree renders a bare
