@@ -1,0 +1,108 @@
+import { describe, expect, it } from "vitest";
+import { entriesForYear } from "../calculations";
+import { DEMO_ENTRY_COUNT, buildDemoSeed } from "../demo/demoSeed";
+
+/**
+ * The seed's whole reason for existing is that it must not age. So the tests below build it at
+ * several points in the calendar — including the awkward ones — rather than at "now", which would
+ * pass today and quietly stop meaning anything in January.
+ */
+
+/** A local-time date, matching how the seed derives its own dates. */
+function on(year: number, month1Based: number, day: number): Date {
+  return new Date(year, month1Based - 1, day, 12, 0, 0);
+}
+
+const SAMPLE_DATES = [
+  on(2026, 8, 8), // mid-year, the roomy case
+  on(2027, 3, 1), // a different year entirely
+  on(2028, 2, 29), // a leap day
+  on(2026, 12, 31), // last day of a tax year
+  on(2027, 2, 20), // ~50 days in: just short of the persona's 52-day span
+  on(2027, 1, 15), // deep in the compression case
+  on(2027, 1, 1), // the degenerate edge — no room at all
+];
+
+describe("buildDemoSeed", () => {
+  it("seeds the documented persona", () => {
+    const seed = buildDemoSeed(on(2026, 8, 8));
+    expect(seed.localUserProfile.displayName).toBe("Maya Rodriguez");
+    expect(seed.taxProfile.state).toBe("CA");
+    expect(seed.taxProfile.hasW2Job).toBe(true);
+    expect(seed.entries).toHaveLength(DEMO_ENTRY_COUNT);
+  });
+
+  it.each(SAMPLE_DATES)("keeps every entry inside the current tax year on %s", (now) => {
+    const seed = buildDemoSeed(now);
+    const year = now.getFullYear();
+    // This is the defect the module exists to prevent: entries whose year no longer matches, which
+    // `entriesForYear` filters straight out of the dashboard.
+    expect(entriesForYear(seed.entries, year)).toHaveLength(DEMO_ENTRY_COUNT);
+  });
+
+  it.each(SAMPLE_DATES)("never dates an entry in the future on %s", (now) => {
+    const seed = buildDemoSeed(now);
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    for (const entry of seed.entries) {
+      expect(entry.date <= today).toBe(true);
+    }
+  });
+
+  it.each(SAMPLE_DATES)("keeps entries in chronological order on %s", (now) => {
+    const dates = buildDemoSeed(now).entries.map((entry) => entry.date);
+    expect([...dates].sort()).toEqual(dates);
+  });
+
+  it("spreads the full 52-day span when the year has room for it", () => {
+    const seed = buildDemoSeed(on(2026, 8, 8));
+    const dates = seed.entries.map((entry) => entry.date);
+    expect(dates[0]).toBe("2026-06-15"); // 54 days before 8 August
+    expect(dates[dates.length - 1]).toBe("2026-08-06"); // 2 days before
+  });
+
+  it("compresses rather than spilling into the previous tax year", () => {
+    const seed = buildDemoSeed(on(2027, 1, 15));
+    const dates = seed.entries.map((entry) => entry.date);
+    expect(dates.every((date) => date.startsWith("2027-"))).toBe(true);
+    expect(dates[0] >= "2027-01-01").toBe(true);
+  });
+
+  it("keeps the totals identical however the dates compress — the green 'on track' state holds", () => {
+    const roomy = buildDemoSeed(on(2026, 8, 8));
+    const cramped = buildDemoSeed(on(2027, 1, 3));
+    const gross = (seed: ReturnType<typeof buildDemoSeed>) =>
+      seed.entries.reduce((sum, entry) => sum + entry.grossPay + entry.tips, 0);
+    expect(gross(cramped)).toBe(gross(roomy));
+    expect(gross(roomy)).toBe(6213);
+  });
+
+  it("keys the per-year figures to the seed's own year, not a hardcoded one", () => {
+    const seed = buildDemoSeed(on(2029, 6, 1));
+    expect(seed.taxProfile.amountSetAsideByYear).toEqual({ 2029: 1400 });
+    expect(seed.taxProfile.filedTaxByYear).toEqual({ 2028: { totalTax: 1200 } });
+  });
+
+  it("carries the premium-authored fields, so the PDF and breakdown aren't empty", () => {
+    const seed = buildDemoSeed(on(2026, 8, 8));
+    expect(seed.entries.filter((entry) => entry.mileageLog).length).toBe(2);
+    expect(seed.entries.flatMap((entry) => entry.customExpenses ?? []).map((expense) => expense.label)).toEqual([
+      "Hot bags",
+      "Hot bags",
+      "Car wash",
+      "Hot bags",
+      "Hot bags",
+    ]);
+  });
+
+  it("never carries a theme or an enabled reminder — both would reach outside the sandbox", () => {
+    const seed = buildDemoSeed(on(2026, 8, 8));
+    expect(seed.appSettings.colorScheme).toBeUndefined();
+    expect(seed.appSettings.remindersEnabled).toBe(false);
+  });
+
+  it("gives every entry a distinct, obviously-synthetic id", () => {
+    const ids = buildDemoSeed(on(2026, 8, 8)).entries.map((entry) => entry.id);
+    expect(new Set(ids).size).toBe(DEMO_ENTRY_COUNT);
+    expect(ids.every((id) => id.startsWith("demo-entry-"))).toBe(true);
+  });
+});
