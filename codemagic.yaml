@@ -289,6 +289,23 @@ workflows:
     environment:
       node: 22
 
+      vars:
+        # ⚠️ REQUIRED — without this the build fails, and it did (first dispatch, 2026-08-08).
+        #
+        # This workflow deliberately does NOT declare the `AppleConnect` group, because a simulator
+        # build needs no signing. But that group is also where SENTRY_AUTH_TOKEN comes from, so
+        # sentry-cli ran here with no token, errored with "Auth token is required for this request",
+        # and took the "Bundle React Native code and images" phase down with it — exit 1, BUILD
+        # FAILED, step 7, before Maestro ever started. The TestFlight workflow's own note (see
+        # SENTRY_DISABLE_AUTO_UPLOAD there) already warned that in @sentry/react-native 7.11.0 an
+        # upload failure fails the whole build and SENTRY_ALLOW_FAILURE is not honored.
+        #
+        # Disabling the upload is the right fix rather than adding the token: a throwaway simulator
+        # binary's source maps have no business in Sentry — they'd pollute the release's artifacts
+        # for a build nobody runs — and this keeps a secret and a network round-trip out of the test
+        # workflow entirely.
+        SENTRY_DISABLE_AUTO_UPLOAD: "true"
+
     triggering:
       events:
         - push
