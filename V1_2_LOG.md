@@ -11,6 +11,46 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.1.4 Enter/exit wiring — SUB-TASK after-scan · 2026-08-08
+
+**Shipped.** `src/demo/DemoContext.tsx` — a provider inside `AppDataProvider` (both transitions must
+re-read through it) exposing `isDemo` / `enterDemo` / `exitDemo`. Entry affordance on onboarding
+("Explore with sample data", secondary to Continue by design); exit as the **first** section in
+Settings, above Premium, because once someone is in a demo the most important thing that screen
+offers is the way out. 4 new Playwright specs → **27/27**.
+
+⭐ **`RequireTaxProfile` did NOT need widening, and the plan said it would.** The item spec carried
+that over from Debt's `3.5.4.3`, where a blanket onboarding guard locked out the demo's own audience.
+It does not transfer: **this demo seeds a profile**, so `localUserProfile` and `taxProfile` are both
+non-null the moment `reload()` completes, and every guard passes untouched. A planned change to a
+security-shaped guard was deleted rather than made — the better outcome, and only visible because the
+premise was checked against the code instead of implemented on faith.
+
+**Three ordering decisions, each with a failure mode behind it:**
+
+1. **Entering rolls back.** If `reload()` throws after the store swap, the app would show real data
+   while every write lands in the demo store — indistinguishable, to the user, from their edits
+   silently not saving. On failure it now exits demo, re-reads, and rethrows.
+2. **Leaving flips `isDemo` *before* the re-read.** The demo store is already gone at that point, so
+   no render in between may still be claiming demo. There is nothing to roll back to; leaving is
+   always safe.
+3. **Exit routes to `/` unconditionally, never conditionally to `/onboarding`** the way
+   `handleRestoreBackup` does. That handler can decide, because `restored` is a fresh snapshot; the
+   exit handler's closure holds the **demo's** values, which cannot answer "does the real account
+   have a profile?". The dashboard route already derives that redirect from freshly-loaded data.
+
+**`useDemo()` returns a safe default rather than throwing**, unlike `useAppData`. Demo is an additive
+overlay — a screen rendered without the provider should behave as the normal app, not crash.
+
+**⚠️ e2e lesson, and it cost a red run.** `page.reload()` does not return to the dashboard:
+expo-router keeps the URL on web, so reloading from Settings lands back on **/settings**. The failing
+assertion had nothing to do with demo mode, and the failure screenshot showed the app behaving
+correctly — including, usefully, that Settings rendered **no "Sample data" section** for a real
+account. Looking at the artifact separated "my test is wrong" from "the app is wrong" immediately.
+
+**Confirmed still owed:** demo money currently appears on the dashboard with **no marking at all**.
+1.2.1.5 is doing necessary work, not polish.
+
 ### 🔎 Maestro dispatch #1 — TRIAGED · 2026-08-08
 
 **Verdict: INFRASTRUCTURE. Not signal.** It died at **step 7, `Build the app for the iOS Simulator`**

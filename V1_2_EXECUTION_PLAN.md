@@ -13,8 +13,9 @@
 > **▶ ACTIVE = 1.2.1 (demo mode), before-scan DONE 2026-08-08, decomposed into 7 sub-steps below.**
 > The scan killed the spec's central premise — persistence does **not** all funnel through
 > `repository.ts` — and found the persona already exists as a valid backup file. Record →
-> [V1_2_LOG.md](V1_2_LOG.md). **1.2.1.1–1.2.1.3 closed 2026-08-08; next action: 1.2.1.4.**
-> _(Health moved: **190** mobile unit tests, was 144. Typecheck clean. Lint still 14, none introduced.)_
+> [V1_2_LOG.md](V1_2_LOG.md). **1.2.1.1–1.2.1.4 closed 2026-08-08; next action: 1.2.1.5.**
+> _(Health moved: **27/27** Playwright (was 23) · **190** mobile unit (was 144) · typecheck clean ·
+> lint still 14, none introduced.)_
 > ⚠️ **Still web/unit-verified only** — the leak guards are asserted against mocks. The review prompt,
 > the notification permission dialog and real scheduling are device-owed, at 1.2.9.
 >
@@ -86,7 +87,7 @@ Cloud runs its own `node.exe`.
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ▶ **1.2.1 — Demo mode** · 🔵 before-scan done 2026-08-08 · **3/7 sub-steps**
+### ▶ **1.2.1 — Demo mode** · 🔵 before-scan done 2026-08-08 · **4/7 sub-steps**
 
 **Why it is next:** the bundle's lead item — reusable seed infrastructure the others consume. 1.2.2 is
 unshowable on an empty account, 1.2.4 needs populated views to teach over, 1.2.3 needs realistic
@@ -101,7 +102,7 @@ bypass it. Isolation is a **three-file** guarantee, not one. Full record → [V1
 | **1.2.1.1** | ✅ **Demo store — DONE 2026-08-08.** In-memory `demoStore.ts` + a one-function `backend()` switch; `repository.ts` now has **zero** direct `AsyncStorage.` calls. Premium cache deliberately exempt. 8 tests, verified by mutation. | ✅ |
 | **1.2.1.2** | ✅ **Seed generator — DONE 2026-08-08.** `buildDemoSeed(now)` with day-offset dates, compressed (not spilled) when the tax year is too young — `entriesForYear` would otherwise drop the whole persona on 1 Jan. 29 tests across 7 calendar dates; totals verified against the plan's $6,213. | ✅ |
 | **1.2.1.3** | ✅ **Leaks plugged — DONE 2026-08-08.** Guards at 4 choke points (review prompt · schedule · **cancel** · analytics), flag moved to a pure `demo/demoMode.ts`. ⭐ The scan found a **fourth** leak: `cancelQuarterlyReminders` wipes *all* device notifications, so a demo toggle would have deleted the real user's reminders. 9 paired tests. | ✅ |
-| **1.2.1.4** | **Enter/exit** — onboarding affordance, widen `RequireTaxProfile`, exit from Settings, `reload()` on both transitions. ⚠️ Owns two constraints from 1.2.1.1: demo does **not** survive an app kill (iOS kills mid-demo → back to onboarding), and both transitions must call `reload()`. | ⬜ |
+| **1.2.1.4** | ✅ **Enter/exit — DONE 2026-08-08.** `DemoContext` inside `AppDataProvider`; entry on onboarding, exit first in Settings; entry rolls back if the re-read fails. ⭐ **`RequireTaxProfile` needed NO widening** — the demo seeds a profile, so the Debt `3.5.4.3` premise doesn't transfer and no guard was weakened. 4 new e2e → 27/27. | ✅ |
 | **1.2.1.5** | **Mark every demo surface** — on screen **and** in the a11y tree | ⬜ |
 | **1.2.1.6** | **Premium preview without entitlement** — per **[D5]**: `isDemoPreview` alongside `isPremium` at the 4 gate sites; purchase + PDF export still check `isPremium` alone | ⬜ |
 | **1.2.1.7** | **Tests** — Playwright enter/exit + real-data-untouched · Maestro flow · unit tests for seed + isolation | ⬜ |
@@ -175,6 +176,14 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
 
+- **🟠 [DECISION — Jason] Can an already-onboarded user reach the demo?** Today: **no.** The affordance
+  lives only on onboarding, so the demo serves the not-yet-onboarded visitor and a fresh App Review
+  install, but an existing account has no way in. That is defensible, and it also means **you cannot
+  shoot store screenshots from the demo without wiping your own data first** — the exact chore
+  1.2.1.1's spec said demo mode would retire. _Recommendation: add "Explore sample data" to Settings
+  too_ — the machinery is built, it's a few lines, and it makes premium previews reachable for anyone
+  evaluating the app. **Not folded, because it widens who the feature is for, which is a product call
+  rather than a wiring detail.** _(Found 2026-08-08 at the 1.2.1.4 after-scan.)_
 - **Nothing *enforces* that persistence goes through `repository.ts` → 1.2.8.** Add an ESLint
   `no-restricted-imports` rule allowing `@react-native-async-storage/async-storage` only in
   `src/storage/`, so demo mode's isolation guarantee is checked by CI rather than requested by a

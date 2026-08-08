@@ -2,6 +2,7 @@ import { Alert } from "react-native";
 import { Redirect, useRouter } from "expo-router";
 import type { LocalUserProfile, TaxProfile } from "../src/types";
 import { ScreenFrame } from "../src/components/ScreenFrame";
+import { useDemo } from "../src/demo/DemoContext";
 import { OnboardingScreen } from "../src/screens/OnboardingScreen";
 import { useAppData } from "../src/state/AppDataContext";
 import { scheduleQuarterlyReminders } from "../src/notifications/scheduleReminders";
@@ -11,6 +12,7 @@ import { reportError } from "../src/errorReporting";
 export default function OnboardingRoute() {
   const router = useRouter();
   const { completeOnboarding, remindersEnabled, localUserProfile, taxProfile } = useAppData();
+  const { enterDemo } = useDemo();
 
   // The reverse guard. Onboarding writes a profile, so reaching it with one already set — by URL on
   // web, or by deep link on device now that a `scheme` is declared — would let a stranger's link walk
@@ -41,9 +43,24 @@ export default function OnboardingRoute() {
     }
   }
 
+  async function handleExploreDemo() {
+    try {
+      await enterDemo();
+      // `replace`, same reasoning as handleComplete: onboarding must not sit behind the demo in the
+      // back stack, or leaving the demo lands on a setup form the visitor never asked for.
+      router.replace("/");
+    } catch (error) {
+      reportError(error, { where: "handleExploreDemo" });
+      Alert.alert(
+        "Couldn't start the demo",
+        error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+      );
+    }
+  }
+
   return (
     <ScreenFrame>
-      <OnboardingScreen onComplete={handleComplete} />
+      <OnboardingScreen onComplete={handleComplete} onExploreDemo={handleExploreDemo} />
     </ScreenFrame>
   );
 }

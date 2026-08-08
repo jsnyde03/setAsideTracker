@@ -7,6 +7,7 @@ import "react-native-get-random-values";
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppGate } from "../src/components/AppGate";
+import { DemoProvider } from "../src/demo/DemoContext";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import { PremiumProvider } from "../src/premium/PremiumContext";
 import { AppDataProvider } from "../src/state/AppDataContext";
@@ -37,11 +38,15 @@ export default function RootLayout() {
       <ThemeProvider>
         <PremiumProvider>
           <AppDataProvider>
-            <ErrorBoundary>
-              <AppGate>
-                <Stack screenOptions={{ headerShown: false }} />
-              </AppGate>
-            </ErrorBoundary>
+            {/* Inside AppDataProvider, because entering and leaving demo mode both have to
+                re-read through it — the store is swapped underneath the data it already holds. */}
+            <DemoProvider>
+              <ErrorBoundary>
+                <AppGate>
+                  <Stack screenOptions={{ headerShown: false }} />
+                </AppGate>
+              </ErrorBoundary>
+            </DemoProvider>
           </AppDataProvider>
         </PremiumProvider>
       </ThemeProvider>

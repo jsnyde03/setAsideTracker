@@ -35,6 +35,10 @@ interface SettingsScreenProps {
   onClearAllData: () => void;
   onRestoreBackup: (json: string) => Promise<void>;
   onClose: () => void;
+  /** Whether a demo session is running. Optional so this screen still renders anywhere without a
+   *  demo provider above it — see the same choice on OnboardingScreen. */
+  isDemo?: boolean;
+  onExitDemo?: () => void;
 }
 
 const FILING_STATUS_LABELS: Record<TaxProfile["filingStatus"], string> = {
@@ -64,6 +68,8 @@ export function SettingsScreen({
   remindersEnabled,
   onToggleReminders,
   onClearAllData,
+  isDemo,
+  onExitDemo,
   onRestoreBackup,
   onClose,
 }: SettingsScreenProps) {
@@ -232,6 +238,30 @@ export function SettingsScreen({
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {/* First, above Premium, and only while the demo is running. Once someone is in a demo the
+            single most important thing this screen offers is the way back out of it. */}
+        {isDemo && onExitDemo ? (
+          <>
+            <Text style={styles.sectionLabel}>Sample data</Text>
+            <Pressable
+              onPress={onExitDemo}
+              style={styles.row}
+              accessibilityRole="button"
+              accessibilityLabel="Exit sample data"
+              accessibilityHint="Returns to your own account. Nothing from the sample is kept."
+            >
+              <View style={styles.rowText}>
+                <Text style={styles.rowLabel}>Exit sample data</Text>
+                <Text style={styles.rowHint}>
+                  You're exploring an example account. Nothing here is saved, and your own data hasn't
+                  been touched.
+                </Text>
+              </View>
+              <Ionicons name="exit-outline" size={20} color={colors.primary} />
+            </Pressable>
+          </>
+        ) : null}
+
         <Text style={styles.sectionLabel}>Premium</Text>
         {isPremium ? (
           <View style={styles.row}>

@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import type { ColorSchemePreference } from "../src/ThemeContext";
 import type { LocalUserProfile, TaxProfile } from "../src/types";
 import { RequireTaxProfile } from "../src/components/RequireTaxProfile";
+import { useDemo } from "../src/demo/DemoContext";
 import { useGoBack } from "../src/hooks/useGoBack";
 import { ScreenFrame } from "../src/components/ScreenFrame";
 import { SettingsScreen } from "../src/screens/SettingsScreen";
@@ -20,6 +21,7 @@ export default function SettingsRoute() {
   const router = useRouter();
   const goBack = useGoBack();
   const { scheme, setScheme } = useTheme();
+  const { isDemo, exitDemo } = useDemo();
   const {
     entries,
     localUserProfile,
@@ -114,6 +116,20 @@ export default function SettingsRoute() {
     }
 
     router.replace(restored.localUserProfile && restored.taxProfile ? "/" : "/onboarding");
+  }
+
+  async function handleExitDemo() {
+    try {
+      await exitDemo();
+      // Always to "/", never conditionally to "/onboarding" like the restore above. The values in
+      // this closure are the DEMO's, so they can't answer "does the real account have a profile?" —
+      // and the dashboard route already derives that redirect from freshly-loaded data. Deciding it
+      // here would mean deciding it from stale state.
+      router.replace("/");
+    } catch (error) {
+      reportError(error, { where: "handleExitDemo" });
+      Alert.alert("Couldn't exit the demo", error instanceof Error ? error.message : SAVE_FAILED);
+    }
     Alert.alert("Restored", "Your data has been restored from the backup file.");
   }
 
@@ -136,6 +152,8 @@ export default function SettingsRoute() {
         onClearAllData={handleClearAllData}
         onRestoreBackup={handleRestoreBackup}
         onClose={goBack}
+        isDemo={isDemo}
+        onExitDemo={handleExitDemo}
       />
       </ScreenFrame>
     </RequireTaxProfile>

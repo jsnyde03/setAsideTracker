@@ -24,6 +24,9 @@ import { useTheme } from "../ThemeContext";
 
 interface OnboardingScreenProps {
   onComplete: (profile: LocalUserProfile, taxProfile: TaxProfile) => void;
+  /** Optional: starts a demo session. Omitted, no demo affordance renders at all — which is what
+   *  keeps this screen usable in any context that has no demo provider above it. */
+  onExploreDemo?: () => void;
 }
 
 const FILING_STATUS_OPTIONS: { label: string; value: FilingStatus }[] = [
@@ -44,7 +47,7 @@ function formatCurrency(amount: number): string {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+export function OnboardingScreen({ onComplete, onExploreDemo }: OnboardingScreenProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const [displayName, setDisplayName] = useState("");
@@ -306,6 +309,22 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           <View style={styles.buttonWrap}>
             <PrimaryButton label="Continue" onPress={handleContinue} />
           </View>
+
+          {/* Secondary by design. Setting up a real profile is the goal; the demo is the way to see
+              what you'd be setting up for. Anyone who lands here without one is otherwise looking at
+              an empty app and a form. */}
+          {onExploreDemo ? (
+            <Pressable
+              onPress={onExploreDemo}
+              accessibilityRole="button"
+              accessibilityLabel="Explore with sample data"
+              accessibilityHint="Fills the app with an example person's earnings so you can look around. Your own data is not affected."
+              style={styles.demoLink}
+            >
+              <Text style={styles.demoLinkText}>Explore with sample data</Text>
+              <Text style={styles.demoLinkHint}>See how it works before entering anything of your own</Text>
+            </Pressable>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
@@ -346,5 +365,8 @@ function createStyles(colors: Colors) {
     },
     disclaimer: { flex: 1, ...type.micro, color: colors.inkSubtle, lineHeight: 16 },
     buttonWrap: { marginTop: spacing.lg },
+    demoLink: { marginTop: spacing.lg, alignItems: "center", paddingVertical: spacing.sm },
+    demoLinkText: { ...type.label, color: colors.primary },
+    demoLinkHint: { ...type.micro, color: colors.inkSubtle, marginTop: 2, textAlign: "center" },
   });
 }
