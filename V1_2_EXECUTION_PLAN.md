@@ -22,10 +22,19 @@
 > device build of the migration**, which is what unblocks everything in
 > [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) §A — the checks no harness can perform.
 >
-> **⏳ STILL OWED — one dispatch on `v1.2`:**
-> - **`SetAsideTracker — iOS Maestro (native flows)`** — ⚠️ **has not run since the migration began.**
->   Five flows had selectors rewritten and one is new; **none has executed once.** Treat the first run
->   as the validation pass, not a regression check. Expect a round of tuning.
+> **🔄 DISPATCHED 2026-08-08 — `SetAsideTracker — iOS Maestro (native flows)` on `v1.2`, result pending.**
+> ⚠️ **Treat it as a validation pass, not a regression check**, for two independent reasons: five flows
+> had selectors rewritten and one is new (**none has executed once**), *and* the build recipe itself
+> may never have completed — its own header warns it will "need a round of tuning on a real Codemagic
+> mac runner (simulator name/runtime, build-products path)".
+>
+> **Triage by which step fails — the two cases have different fixes:**
+> - install · prebuild · xcodebuild · **`simctl boot`/`install`** → **infrastructure**, fix
+>   `codemagic.yaml`. ⚠️ Top candidate: the recipe boots **`"iPhone 15"`** with `|| true`, and the
+>   runner showed **Xcode 26.4** — if that image has no iPhone 15, the boot failure is swallowed and
+>   the *install* fails instead, which misreads as an app problem.
+> - **`Run Maestro native flows`** → **real signal**: either the rewritten selectors or the
+>   stacked-route accessibility hierarchy, which could not be verified from here.
 >
 > **⚠️ Standing caveat: everything in v1.2 so far is WEB-VERIFIED ONLY.** react-native-web renders no
 > `Alert`, no biometrics, no document picker, no real navigation stack — and `react-native-screens`
