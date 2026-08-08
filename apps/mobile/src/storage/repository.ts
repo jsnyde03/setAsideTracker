@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { AppSettings, Entry, LocalUserProfile, TaxProfile } from "../types";
 import { buildBackupSnapshot, parseBackupSnapshot, type BackupSnapshot } from "../backup";
+import { getDemoStore, startDemoStore, stopDemoStore } from "../demo/demoMode";
+import type { KeyValueStore } from "./demoStore";
 import { decryptText, encryptText, getOrCreateEncryptionKey } from "./encryption";
 
 const KEYS = {
@@ -14,6 +16,64 @@ const KEYS = {
 
 const DEFAULT_APP_SETTINGS: AppSettings = { appLockEnabled: false };
 
+// ─── Demo mode (1.2.1) ───────────────────────────────────────────────────────────────────────────
+//
+// This one function is the WHOLE of the isolation guarantee: every read and write below goes through
+// `backend()`, so while a demo store exists AsyncStorage is not called at all and real data cannot
+// be reached — let alone modified. Deliberately one expression, so the claim is verifiable by
+// reading this file, which is the property the item was scoped around.
+//
+// ⚠️ If you add a persistence path anywhere in the app that does NOT come through this module, you
+// have put a hole in that guarantee. Three already existed when demo mode was built — the App Store
+// review flag, notification scheduling and analytics — and they are guarded at their own choke
+// points (1.2.1.3) precisely because they don't route through here.
+function backend(): KeyValueStore {
+  return getDemoStore() ?? AsyncStorage;
+}
+
+/** Re-exported so app-data callers have one import. The flag itself lives in `demo/demoMode` —
+ *  it has no react-native dependency, so pure modules can consult it too. */
+export { isDemoModeActive } from "../demo/demoMode";
+
+/** The data a demo session starts from. Same shape as a backup's payload, so the seeded persona and
+ *  a restored backup are the same kind of thing and can't drift apart. */
+export interface DemoSeed {
+  localUserProfile: LocalUserProfile;
+  taxProfile: TaxProfile;
+  entries: Entry[];
+  appSettings: AppSettings;
+}
+
+/**
+ * Switches storage to a fresh in-memory store and writes the seed into it.
+ *
+ * The seed is written through the same `writeJson` path as real data — so it is encrypted the same
+ * way and read back by the same code — rather than being injected pre-formatted. A demo that used a
+ * different write path would stop being a test of the real one.
+ *
+ * Callers must follow this with `reload()` on `AppDataProvider` to pick the seeded data up.
+ */
+export async function enterDemoMode(seed: DemoSeed): Promise<void> {
+  startDemoStore();
+  await Promise.all([
+    writeJson(KEYS.localUserProfile, seed.localUserProfile),
+    writeJson(KEYS.taxProfile, seed.taxProfile),
+    writeJson(KEYS.entries, seed.entries),
+    writeJson(KEYS.appSettings, seed.appSettings),
+  ]);
+}
+
+/**
+ * Drops the demo store, restoring access to real data. Nothing needs cleaning up — the demo's data
+ * was never written anywhere, so releasing the reference IS the cleanup.
+ *
+ * Callers must follow this with `reload()`, or the provider keeps showing demo data it can no longer
+ * write to.
+ */
+export function exitDemoMode(): void {
+  stopDemoStore();
+}
+
 // Cached across calls so every read/write doesn't hit SecureStore — initialized lazily and
 // shared via a single in-flight promise so concurrent calls can't race into generating two keys.
 let encryptionKeyPromise: Promise<string | null> | null = null;
@@ -25,8 +85,10 @@ function getEncryptionKey(): Promise<string | null> {
   return encryptionKeyPromise;
 }
 
-async function readJson<T>(key: string): Promise<T | null> {
-  const raw = await AsyncStorage.getItem(key);
+/** `store` defaults to whichever backend is live. The only caller that overrides it is the premium
+ *  cache, which is Apple-ID-scoped and must stay on real storage even inside demo mode. */
+async function readJson<T>(key: string, store: KeyValueStore = backend()): Promise<T | null> {
+  const raw = await store.getItem(key);
   if (raw === null) return null;
 
   const encryptionKey = await getEncryptionKey();
@@ -44,11 +106,11 @@ async function readJson<T>(key: string): Promise<T | null> {
   }
 }
 
-async function writeJson<T>(key: string, value: T): Promise<void> {
+async function writeJson<T>(key: string, value: T, store: KeyValueStore = backend()): Promise<void> {
   const json = JSON.stringify(value);
   const encryptionKey = await getEncryptionKey();
   const payload = encryptionKey ? encryptText(json, encryptionKey) : json;
-  await AsyncStorage.setItem(key, payload);
+  await store.setItem(key, payload);
 }
 
 export async function getLocalUserProfile(): Promise<LocalUserProfile | null> {
@@ -123,21 +185,27 @@ export async function updateAppSettings(patch: Partial<AppSettings>): Promise<vo
  * Last-known RevenueCat premium entitlement, cached so the gate can trust it offline — a failed
  * network call must never lock a paying user out of premium features. Defaults to false (free) when
  * never written. Stored through the same encrypted path as everything else.
+ *
+ * ⚠️ **These two deliberately bypass demo mode** and always read/write real storage. Premium is tied
+ * to the user's Apple ID, not to their local data — the same reason `clearAllLocalData` leaves it
+ * alone. Routing it into the demo store would mean a purchase or renewal landing while someone is
+ * exploring the demo gets cached nowhere and is lost on exit. Demo previews premium via
+ * `isDemoPreview` ([D5]) and never touches the entitlement, so there is nothing here for it to fake.
  */
 export async function getCachedPremium(): Promise<boolean> {
-  const cached = await readJson<boolean>(KEYS.cachedPremium);
+  const cached = await readJson<boolean>(KEYS.cachedPremium, AsyncStorage);
   return cached ?? false;
 }
 
 export async function saveCachedPremium(isPremium: boolean): Promise<void> {
-  await writeJson(KEYS.cachedPremium, isPremium);
+  await writeJson(KEYS.cachedPremium, isPremium, AsyncStorage);
 }
 
 /** Clears all locally stored data — there's no real backend/account, so this is the app's reset.
  * The cached entitlement is deliberately NOT cleared here: premium is tied to the user's Apple ID
  * (restored via RevenueCat), not to their local data, so wiping local data shouldn't drop premium. */
 export async function clearAllLocalData(): Promise<void> {
-  await AsyncStorage.removeMany([KEYS.localUserProfile, KEYS.taxProfile, KEYS.entries]);
+  await backend().removeMany([KEYS.localUserProfile, KEYS.taxProfile, KEYS.entries]);
 }
 
 /** Wholesale-replaces the entries list — used by backup restore, where the imported list IS the
