@@ -11,6 +11,50 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.0.8 Close the native-verification gap — after-scan · 2026-08-08
+
+**Result: closed as far as it can honestly be closed.** 23/23 e2e · typecheck + lint clean (still 14).
+
+**The before-scan found the root cause, and it wasn't the tests.** The audit assumed the fix was
+"write more Maestro flows". Reading the code first showed the actual problem: **`TextField` renders a
+visible label but never associates it with its input** — no `accessibilityLabel`, no association at
+all. So every text field in the app is an unnamed box to a screen reader, and the *only* handle a test
+ever had was the placeholder plus an index. **The fragility was a symptom of an accessibility bug.**
+
+Fixing it (label → `accessibilityLabel`, hint → `accessibilityHint`, and the visible `Text` hidden
+from assistive tech so it isn't announced twice and doesn't put a duplicate in the hierarchy) did four
+things at once: named every field for VoiceOver, removed 7 index-based Maestro selectors, let the
+Playwright helper target by name, and pre-emptively cleared part of what 1.2.5's a11y audit would have
+found anyway.
+
+**Proof the fix is real, not just non-breaking:** the Playwright helper was switched from
+`getByPlaceholder("0.00")` to `getByLabel("Gross pay")`. It passes — which it could not do if the
+accessible name hadn't landed. A "23/23 still green" on its own would have proven nothing.
+
+**Coverage, honestly split:**
+- **Automatable → automated.** `clear-all-data.yaml` drives the full path: destructive Alert →
+  confirm → land on onboarding → re-onboard → the logged entry is provably gone. Runs **last** in the
+  config, since it destroys the data every other flow depends on.
+- **Not automatable → written down.** Restore needs the native document picker; app-lock needs a
+  biometric prompt. Neither can be driven by any harness. They are now explicit gates in
+  `V1_2_TESTFLIGHT_CHECKLIST.md` §A with what specifically to watch — including that a restore from a
+  differently-themed backup must change the theme, the bug 1.2.0.2 fixed.
+
+**⚠️ The honest limit of this step: I cannot run Maestro here.** No macOS, no simulator. Five flows had
+their selectors rewritten and one flow is brand new, and **none of it has executed once.** The
+`maestro-ios` workflow comment and the checklist both now say so plainly: **the first dispatch is the
+validation pass, not a regression check.** Writing flows I can't run is worth doing — but claiming
+they work would not be.
+
+**Fifth wrong UI-string guess, caught by reading:** the destructive confirm button is
+**"Clear Everything"**, not "Clear". Had it shipped, the flow would have failed as *"the dialog never
+appeared"* — which reads like an app bug rather than a flow bug, and would have cost a whole mac CI
+cycle to diagnose. **Read the component; don't recall it.**
+
+**Enhancements surfaced → routed:** the `TextField` a11y fix folded in (it *is* the root cause). The
+`Chip` and `Switch` a11y defects stay filed for 1.2.5 — same class, but they need decisions about
+roles that belong in the audit that sweeps every screen.
+
 ### 🔎 1.2.0 Routing migration — WHOLE-ITEM after-scan · 2026-08-08
 
 **Closed.** 23/23 e2e (4 new) · 245 unit · typecheck + lint clean (still exactly 14, none introduced) ·

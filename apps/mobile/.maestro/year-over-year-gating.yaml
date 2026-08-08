@@ -14,9 +14,7 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
 - tapOn: "Log Earnings"
 - assertVisible: "Platform"
 - tapOn: "DoorDash"
-- tapOn:
-    text: "0.00"
-    index: 0
+- tapOn: "Gross pay"
 - inputText: "5000"
 - hideKeyboard
 - tapOn: "Save Entry"
@@ -34,9 +32,7 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
     commands:
       - tapOn: "Previous Month"
 - tapOn: "15" # a day cell that exists in every month — commits a prior-year date
-- tapOn:
-    text: "0.00"
-    index: 0
+- tapOn: "Gross pay"
 - inputText: "3000"
 - hideKeyboard
 - tapOn: "Save Entry"

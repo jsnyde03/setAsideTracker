@@ -23,9 +23,7 @@ name: Safe-harbor gating (locked card → paywall)
 - tapOn: "Log Earnings"
 - assertVisible: "Platform"
 - tapOn: "DoorDash"
-- tapOn:
-    text: "0.00"
-    index: 0
+- tapOn: "Gross pay"
 - inputText: "4000"
 - hideKeyboard
 - tapOn: "Save Entry"

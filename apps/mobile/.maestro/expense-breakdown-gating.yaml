@@ -14,14 +14,9 @@ name: Expense breakdown gating (locked card → paywall)
 - tapOn: "Log Earnings"
 - assertVisible: "Platform"
 - tapOn: "DoorDash"
-- tapOn:
-    text: "0.00"
-    index: 0
+- tapOn: "Gross pay"
 - inputText: "4000"
-# Mileage field (placeholder "0"); the anchored regex avoids matching the "0.00" money fields.
-- tapOn:
-    text: "^0$"
-    index: 0
+- tapOn: "Mileage (business miles driven)"
 - inputText: "500"
 - hideKeyboard
 - tapOn: "Save Entry"

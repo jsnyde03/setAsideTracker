@@ -43,9 +43,16 @@ export function visible(locator: Locator): Locator {
   return locator.filter({ visible: true });
 }
 
-/** The gross-pay field on the entry form. See the note above on visibility filtering. */
+/**
+ * The gross-pay field on the entry form.
+ *
+ * Targeted by its accessible NAME rather than its placeholder. `TextField` now labels its input
+ * (1.2.0.8) — before that every field in the app was an unnamed text box, which is why tests had to
+ * reach for placeholder-and-index in the first place. Still visibility-scoped per the note above,
+ * since the covered route stays mounted.
+ */
 export function grossPayField(page: Page): Locator {
-  return visible(page.getByPlaceholder("0.00")).first();
+  return visible(page.getByLabel("Gross pay", { exact: true })).first();
 }
 
 /** A platform chip on the entry form — not the same platform's name in a dashboard entry row. */

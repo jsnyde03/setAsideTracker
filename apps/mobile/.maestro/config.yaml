@@ -11,3 +11,6 @@ flows:
   - safe-harbor-gating.yaml
   - year-over-year-gating.yaml
   - expense-breakdown-gating.yaml
+  # Runs last: it destroys the app's data on purpose, so anything after it would start from a
+  # different state than it expects.
+  - clear-all-data.yaml

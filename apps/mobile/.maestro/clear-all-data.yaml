@@ -1,0 +1,50 @@
+# Clear all data — a destructive, native-Alert-confirmed path with NO automated coverage until now.
+#
+# Why it needs Maestro specifically: `Alert.alert` doesn't render under react-native-web, so the
+# Playwright suite cannot reach this at all. It went through the 1.2.0.3 rewiring (it now runs through
+# AppDataProvider) and the 1.2.0.4 routing migration (it now `replace`s to /onboarding rather than
+# setting a screen) with nothing exercising it in either.
+#
+# It is also one of two data-loss paths in the app. If the confirm dialog stops confirming, or the
+# post-clear navigation lands somewhere with a stale profile still in memory, this is where it shows.
+appId: com.gigtaxtracker.app
+name: Clear all data (destructive confirm + return to onboarding)
+---
+# Precondition: a fresh onboarded session on the dashboard.
+- runFlow: onboarding.yaml
+
+# Log an entry so there is something real to destroy — clearing an empty app proves much less.
+- tapOn: "Log Earnings"
+- assertVisible: "Platform"
+- tapOn: "DoorDash"
+- tapOn: "Gross pay"
+- inputText: "250"
+- hideKeyboard
+- tapOn: "Save Entry"
+- assertVisible: "Set aside for taxes"
+- assertVisible:
+    text: "Edit DoorDash entry.*"
+
+# --- Clear it, confirming the native destructive Alert ---
+- tapOn: "Settings"
+- assertVisible: "Appearance"
+- scrollUntilVisible:
+    element: "Clear all data"
+    direction: DOWN
+- tapOn: "Clear all data"
+- assertVisible: "Clear all data?"
+# "Clear Everything" is the destructive button's exact label — verified against SettingsScreen rather
+# than assumed. A wrong label here fails as "the dialog never appeared", which reads like a bug in the
+# app rather than in the flow.
+- tapOn: "Clear Everything"
+
+# The app must land back on onboarding — not on a dashboard still holding the cleared profile.
+- assertVisible: "Welcome"
+- assertNotVisible: "Set aside for taxes"
+
+# And the data must be genuinely gone, not merely navigated away from: re-onboarding lands on an
+# empty dashboard with no trace of the entry logged above.
+- runFlow: onboarding.yaml
+- assertVisible: "Set aside for taxes"
+- assertNotVisible:
+    text: "Edit DoorDash entry.*"

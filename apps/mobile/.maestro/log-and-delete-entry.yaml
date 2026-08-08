@@ -11,10 +11,11 @@ name: Log + delete entry (native picker + confirm dialog)
 - tapOn: "Log Earnings"
 - assertVisible: "Platform"
 - tapOn: "DoorDash"
-# Gross pay is the first field with the "0.00" placeholder.
-- tapOn:
-    text: "0.00"
-    index: 0
+# Fields are addressed by their accessible NAME. Before 1.2.0.8 `TextField` never labelled its input,
+# so the only handle was the placeholder plus an index — which broke the moment a router kept the
+# previous screen in the hierarchy behind this one, since the dashboard's set-aside field shares the
+# "0.00" placeholder.
+- tapOn: "Gross pay"
 - inputText: "120"
 - hideKeyboard
 - tapOn: "Save Entry"

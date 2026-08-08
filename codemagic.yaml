@@ -293,12 +293,15 @@ workflows:
       events:
         - push
       branch_patterns:
-        # MANUAL-ONLY, deliberately (settled 2026-08-07, replacing a stale "temporarily disabled
-        # until the monthly reset" note from 2026-06-30 that was never true again). This is the
-        # expensive mac workflow; auto-firing it on every push is exactly what the conserve-minutes
-        # rule exists to prevent. Run it from the Codemagic UI ("Start new build" → this workflow →
-        # pick the branch) at the points that earn it: before a TestFlight submission, and after any
-        # native-path change. The pattern below is left non-matching on purpose.
+        # MANUAL-ONLY, deliberately (settled 2026-08-07). This is the expensive mac workflow;
+        # auto-firing it on every push is exactly what the conserve-minutes rule exists to prevent.
+        # Run it from the Codemagic UI ("Start new build" → this workflow → pick the branch) at the
+        # points that earn it: before a TestFlight submission, and after any native-path change.
+        #
+        # ⚠️ v1.2 OWES THIS RUN. The flows have not executed since the expo-router migration began,
+        # and that migration replaced the entire navigation layer, added react-native-screens beneath
+        # every screen, and relabelled every text input (1.2.0.8). The web suite is green and cannot
+        # see any of it. Treat the first run as the validation pass, not as a regression check.
         - pattern: "v1.2"
           include: false
 

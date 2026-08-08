@@ -84,6 +84,16 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 
 ## ✅ Closed
 
+- **1.2.0.8 — Close the native-verification gap ✅ DONE 2026-08-08.** ⭐ **Root cause found: `TextField`
+  never labelled its input** — every text field in the app was an unnamed box to VoiceOver, which is
+  *why* tests could only reach them by placeholder-and-index. Fixed (label → `accessibilityLabel`,
+  visible label hidden from a11y to stop double-announcement), which made 7 fragile Maestro selectors
+  addressable by name. **New `clear-all-data.yaml`** covers the automatable data-loss path;
+  **[V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md)** makes restore + app-lock explicit
+  manual gates. Verified: 23/23 e2e with the Playwright helper switched to `getByLabel`, which *proves*
+  the labels landed. ⚠️ **The Maestro changes are unrun — the first `maestro-ios` dispatch is their
+  validation, not a regression check.**
+
 - **1.2.0 — Routing migration to `expo-router` ✅ DONE 2026-08-08** _(absorbed 1.2.0.6)._ The app had no
   navigation library; it now has real routes. `expo-router@56.2.18` · entry point → `expo-router/entry`
   · providers + `AppGate` above the `Stack` · `AppDataProvider` owns app data · **13 screens → 12 route
@@ -130,14 +140,13 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
   by reading the a11y snapshot after a test assertion failed against it.)_
 - **Settings `Switch`es carry no `accessibilityLabel` → 1.2.5 (a11y audit).** App Lock and Quarterly
   Due Date Reminders are labelled only by adjacent `Text`, so they announce as bare switches. _(Same
-  provenance.)_
-- **🔴 Clear-all-data, restore-from-backup and app-lock have NO automated coverage → 1.2.9 (device QA),
-  + a Maestro flow.** No Playwright spec and no `.maestro` flow touches any of them. They're
-  `Alert`-driven, and RN-Web doesn't render Alerts, so they **cannot** be covered on web — Maestro is
-  the only instrument that can see them. **Two of the three are data-loss paths**, and 1.2.0.3 rewired
-  all three (clear + restore now run through `AppDataProvider`; `isLocked` is derived rather than
-  stored). **Owed: an explicit device check at 1.2.9, and a Maestro flow so it isn't manual forever.**
-  _(Found 2026-08-08 at 1.2.0.3 — the suite went 19/19 across the rewiring without touching them once.)_
+  provenance. Note `TextField` was fixed at 1.2.0.8 — the `Switch` and `Chip` cases remain.)_
+- ~~**Clear-all-data, restore-from-backup and app-lock have NO automated coverage**~~ → ✅ **CLOSED
+  2026-08-08 by 1.2.0.8**, as far as it can be closed. `clear-all-data.yaml` covers the automatable
+  one end-to-end (destructive Alert → return to onboarding → data provably gone). **Restore and
+  app-lock are genuinely un-automatable** — a native document picker and a biometric prompt — so they
+  are now explicit manual gates in
+  [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) §A rather than an unstated hole.
 
 ## ⏳ Open
 
