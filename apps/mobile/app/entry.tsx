@@ -1,6 +1,8 @@
 import { Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { Entry } from "../src/types";
+import { RequireTaxProfile } from "../src/components/RequireTaxProfile";
+import { useGoBack } from "../src/hooks/useGoBack";
 import { ScreenFrame } from "../src/components/ScreenFrame";
 import { AddEntryScreen } from "../src/screens/AddEntryScreen";
 import { useAppData } from "../src/state/AppDataContext";
@@ -15,6 +17,7 @@ import { reportError } from "../src/errorReporting";
  */
 export default function EntryRoute() {
   const router = useRouter();
+  const goBack = useGoBack();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { entries, saveEntry, removeEntry } = useAppData();
 
@@ -24,7 +27,7 @@ export default function EntryRoute() {
   async function handleSave(entry: Entry) {
     try {
       const updated = await saveEntry(entry, isEditing);
-      router.back();
+      goBack();
       trackEvent(isEditing ? ANALYTICS_EVENTS.entryUpdated : ANALYTICS_EVENTS.entryLogged, {
         platform: entry.platform,
       });
@@ -48,7 +51,7 @@ export default function EntryRoute() {
   async function handleDelete(entryId: string) {
     try {
       await removeEntry(entryId);
-      router.back();
+      goBack();
     } catch (error) {
       reportError(error, { where: "handleDeleteEntry" });
       Alert.alert(
@@ -59,14 +62,16 @@ export default function EntryRoute() {
   }
 
   return (
-    <ScreenFrame>
+    <RequireTaxProfile>
+      <ScreenFrame>
       <AddEntryScreen
         entry={editingEntry}
         onSave={handleSave}
-        onCancel={() => router.back()}
+        onCancel={goBack}
         onDelete={handleDelete}
         onOpenPaywall={() => router.push("/paywall")}
       />
-    </ScreenFrame>
+      </ScreenFrame>
+    </RequireTaxProfile>
   );
 }

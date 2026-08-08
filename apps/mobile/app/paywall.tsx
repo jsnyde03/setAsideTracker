@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
 import { ScreenFrame } from "../src/components/ScreenFrame";
+import { useGoBack } from "../src/hooks/useGoBack";
 import { PaywallScreen } from "../src/screens/PaywallScreen";
 
 /**
@@ -9,10 +9,10 @@ import { PaywallScreen } from "../src/screens/PaywallScreen";
  * than as its own step; there is nothing left of it to delete separately.
  */
 export default function PaywallRoute() {
-  const router = useRouter();
+  const goBack = useGoBack();
   return (
     <ScreenFrame>
-      <PaywallScreen onClose={() => router.back()} />
+      <PaywallScreen onClose={goBack} />
     </ScreenFrame>
   );
 }

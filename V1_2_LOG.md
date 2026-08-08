@@ -11,6 +11,68 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.0 Routing migration — WHOLE-ITEM after-scan · 2026-08-08
+
+**Closed.** 23/23 e2e (4 new) · 245 unit · typecheck + lint clean (still exactly 14, none introduced) ·
+every route looked at in both themes · iOS build validated on Codemagic. `App.tsx` — 593 lines, 13
+sequential `if (screen === …)` branches — is deleted.
+
+**What the item actually bought, beyond "it has routes now":** three pieces of state stopped existing.
+`editingEntry` became a URL param, `paywallOrigin` became nothing (history already knew), and the boot
+screen and lock became derivations. **Deleted state can't drift**, which is worth more than the routes.
+
+**The pattern across all seven sub-steps — and the one thing to carry into 1.2.1:**
+**every sub-step's real cost was found by the scan, not by the plan, and twice the green suite was
+actively misleading.**
+- 1.2.0.1: the suites drive by visible text → a 1-file change, not 24. *(De-risked the whole item.)*
+- 1.2.0.2: 17 specs passed a provider rewrite **without exercising it once**.
+- 1.2.0.3: 19 specs passed a rewiring of clear-data, restore **and** lock **without touching any**.
+- 1.2.0.4: "same pixels" ≠ "same DOM" — a `Stack` keeps routes mounted, breaking 12 selectors.
+- 1.2.0.7: **`router.back()` on a deep-linked route did nothing**, leaving a dead close button and
+  force-quit as the only exit. No assertion could have caught it: every test reaches those screens by
+  tapping through, the one path where plain `back()` was always fine. **Found by walking the routes
+  with `goto()` and looking** — which is exactly what the "look at every route" exit condition is for.
+
+**Three defects fixed that predate this item or were introduced by it:**
+1. **Restore-from-backup applied only `appLockEnabled`** — a backup saved in dark mode rendered light
+   until a cold start, and restored reminders were never rescheduled. *(Pre-existing.)*
+2. **`saveAppSettings` clobbered neighbouring settings** on any independent write. *(Latent; would have
+   become live the moment the theme moved.)*
+3. **Dead close button on any deep-linked route.** *(Introduced by 1.2.0.4, fixed at 1.2.0.7.)*
+
+**⚠️ Standing caveat, unchanged and important: all of this is web-verified.** The Maestro flows have not
+run since the migration began, and `react-native-screens` is now doing real work under every screen.
+The iOS build compiles — that is not the same as the app behaving. **1.2.9's device pass is carrying
+more weight than it was three days ago**, and the untested clear-data / restore / lock paths are still
+owed a Maestro flow.
+
+**Replenishment:** 1.2.1 (demo mode) promoted to the active slot. **Recommended because it is the
+bundle's designed lead** — reusable seed-data infrastructure that the premium optimizer, the onboarding
+tour and the iPad pass all consume; each of those is unshowable or untestable on an empty account.
+
+---
+
+### 🔎 1.2.0.5 Route guards + 1.2.0.7 Verify — SUB-TASK after-scans · 2026-08-08
+
+**1.2.0.5.** `RequireTaxProfile` on the 9 data-dependent routes, plus the reverse guard on
+`/onboarding`. **Both close holes that 1.2.0.4 opened rather than pre-existing bugs:** the old dispatch
+only rendered a screen when its data existed — which is why 8 routes still cast `taxProfile as
+TaxProfile` — and real routing plus a declared `scheme` made those states addressable by URL and by
+deep link. Without the reverse guard, a link to `/onboarding` would walk an existing user back through
+setup and overwrite what they had. New `route-guards.spec.ts` pins all of it, including a loop over
+every guarded route. **`RequireTaxProfile` is deliberately one component** so 1.2.1 widens it in one
+line rather than nine.
+
+**1.2.0.7.** Verification, and it earned its place: the visual sweep found the dead-close-button defect
+that 23 green assertions did not. A temporary sweep spec walked all 11 routes in both themes; the
+screenshots were **looked at**, not just captured. Deleted afterwards rather than left in the standing
+suite, where it would slow every run without anyone diffing its output.
+
+**Also recorded:** my test assertions were wrong twice more — `"What if I earned more?"` is the
+*dashboard's button*, not the What-If screen's heading (`"What if…"`), and the reminders switch label
+was invented. Both fixed by reading the source instead of guessing again. That is now four wrong
+guesses about UI strings across this item; **read the component, don't recall it.**
+
 ### 🔎 1.2.0.4 Port the screens to routes — SUB-TASK after-scan · 2026-08-08
 
 **Result: done, and it absorbed 1.2.0.6.** 12 route files under `app/`, plus `AppGate` (loading + lock)

@@ -1,19 +1,22 @@
-import { useRouter } from "expo-router";
 import type { TaxProfile } from "../src/types";
+import { RequireTaxProfile } from "../src/components/RequireTaxProfile";
+import { useGoBack } from "../src/hooks/useGoBack";
 import { ScreenFrame } from "../src/components/ScreenFrame";
 import { YearOverYearScreen } from "../src/screens/YearOverYearScreen";
 import { useAppData } from "../src/state/AppDataContext";
 
 export default function YearOverYearRoute() {
-  const router = useRouter();
+  const goBack = useGoBack();
   const { entries, taxProfile } = useAppData();
   return (
-    <ScreenFrame>
+    <RequireTaxProfile>
+      <ScreenFrame>
       <YearOverYearScreen
         entries={entries}
         taxProfile={taxProfile as TaxProfile}
-        onClose={() => router.back()}
+        onClose={goBack}
       />
-    </ScreenFrame>
+      </ScreenFrame>
+    </RequireTaxProfile>
   );
 }

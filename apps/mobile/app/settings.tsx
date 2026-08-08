@@ -2,6 +2,8 @@ import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import type { ColorSchemePreference } from "../src/ThemeContext";
 import type { LocalUserProfile, TaxProfile } from "../src/types";
+import { RequireTaxProfile } from "../src/components/RequireTaxProfile";
+import { useGoBack } from "../src/hooks/useGoBack";
 import { ScreenFrame } from "../src/components/ScreenFrame";
 import { SettingsScreen } from "../src/screens/SettingsScreen";
 import { useAppData } from "../src/state/AppDataContext";
@@ -16,6 +18,7 @@ const SAVE_FAILED = "An unexpected error occurred. Please try again.";
 
 export default function SettingsRoute() {
   const router = useRouter();
+  const goBack = useGoBack();
   const { scheme, setScheme } = useTheme();
   const {
     entries,
@@ -115,7 +118,8 @@ export default function SettingsRoute() {
   }
 
   return (
-    <ScreenFrame>
+    <RequireTaxProfile>
+      <ScreenFrame>
       <SettingsScreen
         localUserProfile={localUserProfile as LocalUserProfile}
         onSaveProfile={handleSaveProfile}
@@ -131,8 +135,9 @@ export default function SettingsRoute() {
         onToggleReminders={handleToggleReminders}
         onClearAllData={handleClearAllData}
         onRestoreBackup={handleRestoreBackup}
-        onClose={() => router.back()}
+        onClose={goBack}
       />
-    </ScreenFrame>
+      </ScreenFrame>
+    </RequireTaxProfile>
   );
 }

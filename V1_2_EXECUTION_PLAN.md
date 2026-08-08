@@ -42,81 +42,29 @@ Cloud runs its own `node.exe`.
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ▶ **1.2.0 — Routing migration to `expo-router`** · 🔵 before-scan done · 🔨 **5 of 7 sub-steps done**
-> **Remaining: 1.2.0.5** (harden route guards — `AppGate` already relocated the loading/lock gate, so
-> this is now *admit the not-yet-onboarded demo audience*, not *build guards*) **→ 1.2.0.7** (verify).
+### ▶ **1.2.1 — Demo mode** · ⬜ before-scan not yet run · ⬜ not started
 
-> **✅ NATIVE BUILD VALIDATED (2026-08-07).** The Codemagic run **compiled, signed and produced a valid
-> `.ipa`** — so `expo prebuild` survives the `expo-router/entry` swap, **`react-native-screens`
-> autolinks**, the new `scheme` doesn't disturb signing, and there's no xcodeproj-glob breakage. The
-> owed native pass is closed. It failed only at **upload**: ASC rejected `CFBundleShortVersionString
-> 1.1.1` as already-approved. **Fixed — `app.json` version bumped to `1.2.0`.**
->
-> ⚠️ **Lesson, folded into the plan:** bump the version at the START of a version's work, not at
-> submission. A stale version number turns every interim TestFlight build into a failed upload, which
-> is exactly when those builds are most useful.
+**Why it is next:** it is the bundle's lead item by design — reusable seed-data infrastructure the
+others consume. The premium optimizer (1.2.2) is unshowable on an empty account, the onboarding tour
+(1.2.4) needs populated views to teach over, and the iPad pass (1.2.3) needs realistic content to lay
+out. Building it first is what makes those three demonstrable rather than theoretical.
 
-**Why it leads:** the app has **no navigation library**. Routing is a `useState<Screen>` machine in a
-593-line `App.tsx` that renders one screen at a time by construction, so iPad split-view (1.2.3) is
-architecturally impossible without this. It also gates the tour's and demo's entry points, deep links,
-route guards, and v1.3's Android back button.
+**Carried in from 1.2.0, already true:**
+- `AppDataProvider` is the seam. Every read and write funnels through `src/storage/repository.ts`
+  (one flat module, 15 functions, no other persistence path), so isolation is enforceable at a single
+  file and checkable by inspection — the audit's F2 finding, now built.
+- `RequireTaxProfile` is **the one place** the guards widen to admit a not-yet-onboarded visitor.
+  Debt's `3.5.4.3` is the cautionary case: a blanket onboarding guard locked out the demo's own audience.
+- `reload()` exists on the provider precisely so entering and leaving demo re-reads without a remount.
 
-**🔎 Before-scan findings** _(2026-08-07, verified against code — full record in the log)_
+**Sub-steps — to be decomposed at switch-in, after its before-scan.** _(Not written ahead: a
+decomposition authored before the scan is a guess. The scan verifies premises against current code
+first — that is what caught the `Stack`-keeps-routes-mounted cost in 1.2.0.4, and what corrected the
+"demo isolation is the hard part" claim before that.)_
 
-| | finding | consequence |
-|---|---|---|
-| ✅ | **The 12 Playwright specs use ZERO `getByTestId`** — one `goto("/")`, then drive by visible text | **The migration is not a 24-file rewrite.** Preserve the visible UI and the suite survives. Biggest de-risk. |
-| ✅ | `encryption.ts:3` **self-imports** the `react-native-get-random-values` polyfill | The entry-point swap does *not* silently break crypto on device. Verify, don't fear. |
-| ⚠️ | `"main": "index.ts"` must become `expo-router/entry`; `index.ts` also holds the polyfill import | Entry-point change is real. Keep polyfill-before-crypto ordering. |
-| ⚠️ | **`app.json` has no `scheme`** | Deep links need one. New config key → confirm it doesn't disturb signing. |
-| ⚠️ | **11 Maestro flows** drive native UI by text | Same resilience as Playwright *if* UI is preserved — but native-verified only at 1.2.9. |
-| ⚠️ | All app state (entries, profiles, settings, lock) lives in `AppContent` | Must be lifted **above** the Stack, or sibling routes see nothing. Debt's `3.5.4.2` lesson. |
-| ⚠️ | `paywallOrigin` state exists only to emulate "go back" | Real routing deletes this concept. Remove it, don't port it. |
-| ❓ | expo-router version compatible with Expo SDK 56 / RN 0.85 / React 19.2.3 | **Unverified offline** — resolve at install (1.2.0.1). The one genuine viability risk. |
-
-**Sub-steps** _(each gets its own before + after scan)_
-
-- [x] **1.2.0.1 — Install + entry point ✅ DONE 2026-08-07.** `expo-router@56.2.18` +
-      `react-native-screens@4.27.0`; `"main"` → `expo-router/entry`; `scheme: "setasidetracker"`;
-      polyfill rehomed to `app/_layout.tsx`; `index.ts` deleted. **Whole app mounted as ONE route
-      (strangler-fig) so it stays working at every step.** ⭐ **Viability CLOSED — [D1] holds.**
-      *Verified:* 17/17 Playwright green **with zero test edits**, 245 unit tests, typecheck clean.
-- [x] **1.2.0.2 — Hoist the provider stack ✅ DONE 2026-08-07.** Providers + the three `init*` calls
-      moved into `app/_layout.tsx` above the `Stack`; `App.tsx` is now a plain route component.
-      **`ThemeProvider` owns the theme preference** (loads + persists it), which deletes the lifted
-      state and lets any route change the theme. New `updateAppSettings` merges instead of
-      overwriting. ⭐ **Fixed a pre-existing bug:** restore-from-backup applied only `appLockEnabled`,
-      so a restored theme didn't show until a cold start and restored reminders were never rescheduled.
-      *Verified:* 19/19 e2e (2 new), 245 unit, typecheck + lint clean, ports closed.
-- [x] **1.2.0.3 — Lift app state above the router ✅ DONE 2026-08-08.** New
-      `src/state/AppDataContext.tsx` above the `Stack` owns profile / tax profile / entries and the two
-      non-theme settings; **`App.tsx` imports nothing from `storage/` any more** — which is the seam
-      demo mode redirects. Data layer throws; `App` keeps alerts, analytics and navigation. Boot
-      screen and `isLocked` are now **derived** rather than set in an effect. *Verified:* 19/19 e2e,
-      245 unit, typecheck + lint clean (still 14).
-      ⚠️ **Coverage gap found, filed below** — clear-all-data / restore / lock have no test anywhere.
-- [x] **1.2.0.4 — Port the screens to routes ✅ DONE 2026-08-08.** 12 route files + `AppGate` (loading
-      + lock) + `ScreenFrame` (the wrapper repeated in all 13 branches). **`App.tsx` deleted.**
-      `editingEntry` became an `?id=` param; **`paywallOrigin` is gone — `router.back()` is all it ever
-      did, so 1.2.0.6 is satisfied here.** *Verified:* 19/19 e2e, 245 unit, typecheck + lint clean.
-      ⚠️ **Cost the before-scan missed:** a `Stack` keeps the previous route mounted as `display:none`,
-      so shared text/placeholders across screens made 12 selectors ambiguous. Fixed with visibility-
-      scoped helpers — see the log.
-- [ ] **1.2.0.5 — Route guards.** Onboarding gate + lock screen. ⚠️ Must **admit** the not-yet-onboarded
-      user (Debt's `3.5.4.3`: a blanket guard locked out the demo's own audience). *Exit:* guards hold
-      and don't over-block.
-- [x] **1.2.0.6 — Delete `paywallOrigin` ✅ DONE 2026-08-08, folded into 1.2.0.4.** Real history made it
-      meaningless — `router.back()` is exactly what it emulated. Verified from all three entry points
-      (dashboard, Settings, entry form) by the paywall + gating specs.
-- [ ] **1.2.0.7 — Verify + after-scan.** 12 Playwright specs green · typecheck · 245 unit tests · both
-      themes · **look at every route** — ⚠️ Debt's cautionary case: a root-layout change broke
-      navigation app-wide while the e2e stayed green, because a reload lands on the right URL anyway.
-
-**Exit line:** all 13 screens reachable by route · providers above the `Stack` · app state lifted out
-of `App.tsx` · `paywallOrigin` gone · e2e + unit + typecheck green · **every route verified by looking,
-in both themes.**
-
----
+**Exit line:** demo enters and exits clean with the real data **provably untouched**; every surface
+showing demo money is marked as such **on screen and in the accessibility tree**; premium screens
+preview populated while `subscribe`/`export` still route to the real paywall.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
@@ -136,7 +84,13 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 
 ## ✅ Closed
 
-_(none yet)_
+- **1.2.0 — Routing migration to `expo-router` ✅ DONE 2026-08-08** _(absorbed 1.2.0.6)._ The app had no
+  navigation library; it now has real routes. `expo-router@56.2.18` · entry point → `expo-router/entry`
+  · providers + `AppGate` above the `Stack` · `AppDataProvider` owns app data · **13 screens → 12 route
+  files** · `App.tsx` (593 lines) **deleted** · `editingEntry` → an `?id=` param · `paywallOrigin`
+  **gone** · guards on 9 routes + the reverse guard on onboarding · `useGoBack` so a deep-linked screen
+  can still be closed. **23/23 e2e (4 new) · 245 unit · typecheck + lint clean · every route looked at
+  in both themes · iOS build validated on Codemagic.** _Full detail + all 7 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
 
 ---
 

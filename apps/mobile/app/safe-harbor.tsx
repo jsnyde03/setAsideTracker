@@ -1,13 +1,14 @@
 import { Alert } from "react-native";
-import { useRouter } from "expo-router";
 import type { FiledYearTax, TaxProfile } from "../src/types";
+import { RequireTaxProfile } from "../src/components/RequireTaxProfile";
+import { useGoBack } from "../src/hooks/useGoBack";
 import { ScreenFrame } from "../src/components/ScreenFrame";
 import { SafeHarborScreen } from "../src/screens/SafeHarborScreen";
 import { useAppData } from "../src/state/AppDataContext";
 import { reportError } from "../src/errorReporting";
 
 export default function SafeHarborRoute() {
-  const router = useRouter();
+  const goBack = useGoBack();
   const { entries, taxProfile, updateFiledTax } = useAppData();
 
   async function handleUpdateFiledTax(year: number, filed: FiledYearTax) {
@@ -23,13 +24,15 @@ export default function SafeHarborRoute() {
   }
 
   return (
-    <ScreenFrame>
+    <RequireTaxProfile>
+      <ScreenFrame>
       <SafeHarborScreen
         entries={entries}
         taxProfile={taxProfile as TaxProfile}
-        onClose={() => router.back()}
+        onClose={goBack}
         onUpdateFiledTax={handleUpdateFiledTax}
       />
-    </ScreenFrame>
+      </ScreenFrame>
+    </RequireTaxProfile>
   );
 }
