@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import * as StoreReview from "expo-store-review";
+import { isDemoModeActive } from "./demo/demoMode";
 import { shouldRequestReview, type ReviewTriggerState } from "./appReviewPolicy";
 
 /**
@@ -31,6 +32,17 @@ export async function maybeRequestReview(
 ): Promise<boolean> {
   // The OS rating prompt is native-only; react-native-web has no equivalent.
   if (Platform.OS === "web") return false;
+
+  // ⚠️ Demo mode never asks for a review, and this is the more serious of the two reasons why.
+  //
+  // The obvious one: it would be asking someone to rate an app they haven't used, on the strength of
+  // data that isn't theirs. The one that actually forced this guard: the demo seeds 20 entries and
+  // the threshold is 5, so the prompt would fire almost immediately — and `markReviewRequested`
+  // writes a **one-shot** flag through raw AsyncStorage, outside the repository's isolation. A demo
+  // session would therefore permanently burn the real user's single review request. There is no
+  // undoing that, which is why it is guarded here at the one choke point rather than at the call
+  // site in `app/entry.tsx`.
+  if (isDemoModeActive()) return false;
 
   const alreadyRequested = await hasRequestedReview();
   if (!shouldRequestReview({ ...trigger, alreadyRequested })) return false;

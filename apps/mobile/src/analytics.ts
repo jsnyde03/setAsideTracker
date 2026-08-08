@@ -11,6 +11,8 @@
  * plan) — which is disclosed in docs/privacy.html and the App Store Connect App Privacy labels.
  */
 
+import { isDemoModeActive } from "./demo/demoMode";
+
 /**
  * Canonical event names, in one place so the call sites and the paywall agree on spelling. The
  * premium-funnel events are fired by the PaywallScreen (screens/PaywallScreen.tsx).
@@ -44,6 +46,19 @@ export function setAnalyticsSink(next: AnalyticsSink | null): void {
 }
 
 export function trackEvent(name: string, properties?: Record<string, unknown>): void {
+  // Demo events are DROPPED, not tagged. Tagging would still put them in the funnel, where every
+  // query — conversion rate, `paywall_viewed`, activation — would need to remember to exclude them,
+  // forever, and the first one that forgets reports a number that isn't true. The demo exists partly
+  // to be shown to reviewers and in screenshots, so its traffic is exactly the kind that would
+  // distort the read the [D3-ASA] numbers are wanted for. Dev logging below still fires, so demo
+  // behaviour stays visible while working on it.
+  if (isDemoModeActive()) {
+    if (typeof __DEV__ !== "undefined" && __DEV__) {
+      console.log("[analytics · demo, not sent]", name, properties ?? {});
+    }
+    return;
+  }
+
   if (sink) {
     sink.capture(name, properties);
     return;

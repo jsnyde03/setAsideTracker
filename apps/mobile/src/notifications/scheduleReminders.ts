@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import { isDemoModeActive } from "../demo/demoMode";
 import { getUpcomingQuarterlyDueDates } from "./quarterlyDueDates";
 
 const ANDROID_CHANNEL_ID = "tax-reminders";
@@ -33,6 +34,15 @@ function atNineAm(date: Date): Date {
 export async function scheduleQuarterlyReminders(): Promise<ScheduleResult> {
   if (Platform.OS === "web") {
     return { scheduled: false, reason: "not supported on web" };
+  }
+
+  // Demo mode schedules nothing. Reminders are real OS notifications that outlive the demo session
+  // by months, computed from a persona's tax situation rather than the user's — so a demo that
+  // scheduled them would put wrong dates on someone's real phone. This sits ABOVE the permission
+  // request deliberately: a demo shouldn't even raise the notifications permission prompt, which is
+  // a one-shot system dialog the real app wants to ask for on its own terms.
+  if (isDemoModeActive()) {
+    return { scheduled: false, reason: "demo mode" };
   }
 
   const { status } = await Notifications.requestPermissionsAsync();
@@ -89,5 +99,12 @@ export async function scheduleQuarterlyReminders(): Promise<ScheduleResult> {
  * in Settings. No-op on web for the same reason scheduleQuarterlyReminders is. */
 export async function cancelQuarterlyReminders(): Promise<void> {
   if (Platform.OS === "web") return;
+
+  // ⚠️ Guarded for the OPPOSITE reason to the scheduler, and it is the easier one to miss. This
+  // cancels *all* scheduled notifications, so a visitor flicking the reminders toggle inside the
+  // demo would silently delete the real user's genuine quarterly reminders — data-loss dressed as a
+  // no-op. Demo mode has nothing scheduled of its own to cancel, so returning early loses nothing.
+  if (isDemoModeActive()) return;
+
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
