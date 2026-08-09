@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, resetAppStorage, visible } from "./helpers";
+import { completeOnboarding, grossPayField, resetAppStorage, visible } from "./helpers";
 
 /**
  * Demo mode's enter/exit wiring (1.2.1.4).
@@ -45,21 +45,59 @@ test("the demo can be left from Settings, and offers no exit when not in one", a
   await expect(visible(page.getByText("Explore with sample data")).first()).toBeVisible();
 });
 
-test("an onboarded account sees no demo affordance, and keeps its own data", async ({ page }) => {
+test("an onboarded account is offered the demo, not an exit from one", async ({ page }) => {
   await completeOnboarding(page, { name: REAL_NAME, state: "TX", filingStatus: "Single" });
 
-  // A real account reaches the demo only from onboarding, which it no longer sees. So the claim
-  // here is the inverse of the tests above: no exit control appears when no demo is running — which
-  // also proves the control is driven by demo state rather than merely always rendered.
   await visible(page.getByLabel("Settings")).first().click();
-  await expect(visible(page.getByLabel("Exit sample data")).first()).toHaveCount(0);
+  // The same row, in its other state — which proves it is driven by demo state rather than always
+  // rendered with one label.
+  await expect(visible(page.getByLabel("Explore sample data")).first()).toBeVisible();
+  await expect(visible(page.getByLabel("Exit sample data"))).toHaveCount(0);
   await expect(visible(page.getByLabel("Name", { exact: true })).first()).toHaveValue(REAL_NAME);
+});
 
-  // And nothing from the demo has leaked into the real account's storage. Close Settings first:
-  // expo-router keeps the URL on web, so reloading from here would land back on /settings and the
-  // dashboard assertions below would fail for a reason that has nothing to do with demo mode.
-  await visible(page.getByLabel("Close")).first().click();
-  await page.reload();
-  await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
+/**
+ * The item's exit line, end to end and through the UI only: enter a demo from a real account, change
+ * things inside it, leave, and find the real account exactly as it was. Nothing here reaches into
+ * storage to set up or to assert — that is the point. Only possible at all since [D6] gave an
+ * onboarded account a way in.
+ */
+test("a demo session leaves the real account provably untouched", async ({ page }) => {
+  await completeOnboarding(page, { name: REAL_NAME, state: "TX", filingStatus: "Single" });
+
+  // A real entry of the user's own, so there is something specific to lose.
+  await visible(page.getByText("Log Earnings", { exact: true })).first().click();
+  await visible(page.getByText("Spark", { exact: true })).first().click();
+  await grossPayField(page).fill("77");
+  await visible(page.getByText("Save Entry", { exact: true })).first().click();
+  await expect(visible(page.getByLabel(/Edit Spark entry/)).first()).toBeVisible();
+
+  // Into the demo, from Settings.
+  await visible(page.getByLabel("Settings")).first().click();
+  await visible(page.getByLabel("Explore sample data")).first().click();
+
+  // The demo's world: its entries are here, the real one is not.
+  await expect(visible(page.getByLabel(/Edit Uber entry/)).first()).toBeVisible();
+  await expect(visible(page.getByLabel(/Edit Spark entry/))).toHaveCount(0);
+
+  // Scribble on the demo — this is what must not survive.
+  await visible(page.getByText("Log Earnings", { exact: true })).first().click();
+  await visible(page.getByText("DoorDash", { exact: true })).first().click();
+  await grossPayField(page).fill("999");
+  await visible(page.getByText("Save Entry", { exact: true })).first().click();
+  await expect(visible(page.getByText(/\$999/)).first()).toBeVisible();
+
+  // Back out.
+  await visible(page.getByLabel("Settings")).first().click();
+  await visible(page.getByLabel("Exit sample data")).first().click();
+
+  // The real account, unchanged: its entry is back, and nothing from the demo came with it.
+  await expect(visible(page.getByLabel(/Edit Spark entry/)).first()).toBeVisible();
   await expect(visible(page.getByLabel(/Edit Uber entry/))).toHaveCount(0);
+  await expect(visible(page.getByText(/\$999/))).toHaveCount(0);
+
+  // And it survives a reload, so this is the persisted state rather than a lucky in-memory render.
+  await page.reload();
+  await expect(visible(page.getByLabel(/Edit Spark entry/)).first()).toBeVisible();
+  await expect(visible(page.getByText(/\$999/))).toHaveCount(0);
 });

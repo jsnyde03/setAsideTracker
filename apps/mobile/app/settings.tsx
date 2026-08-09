@@ -21,7 +21,7 @@ export default function SettingsRoute() {
   const router = useRouter();
   const goBack = useGoBack();
   const { scheme, setScheme } = useTheme();
-  const { isDemo, exitDemo } = useDemo();
+  const { isDemo, enterDemo, exitDemo } = useDemo();
   const {
     entries,
     localUserProfile,
@@ -118,6 +118,19 @@ export default function SettingsRoute() {
     router.replace(restored.localUserProfile && restored.taxProfile ? "/" : "/onboarding");
   }
 
+  async function handleEnterDemo() {
+    try {
+      await enterDemo();
+      // Straight to the dashboard. Staying on Settings would leave the visitor looking at a screen
+      // whose profile name has quietly changed to someone else's, which reads as a bug rather than
+      // as "you are now in a demo" — the populated dashboard is the thing worth showing.
+      router.replace("/");
+    } catch (error) {
+      reportError(error, { where: "handleEnterDemo" });
+      Alert.alert("Couldn't start the demo", error instanceof Error ? error.message : SAVE_FAILED);
+    }
+  }
+
   async function handleExitDemo() {
     try {
       await exitDemo();
@@ -153,6 +166,7 @@ export default function SettingsRoute() {
         onRestoreBackup={handleRestoreBackup}
         onClose={goBack}
         isDemo={isDemo}
+        onEnterDemo={handleEnterDemo}
         onExitDemo={handleExitDemo}
       />
       </ScreenFrame>

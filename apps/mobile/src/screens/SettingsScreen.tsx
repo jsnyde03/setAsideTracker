@@ -38,6 +38,7 @@ interface SettingsScreenProps {
   /** Whether a demo session is running. Optional so this screen still renders anywhere without a
    *  demo provider above it — see the same choice on OnboardingScreen. */
   isDemo?: boolean;
+  onEnterDemo?: () => void;
   onExitDemo?: () => void;
 }
 
@@ -69,6 +70,7 @@ export function SettingsScreen({
   onToggleReminders,
   onClearAllData,
   isDemo,
+  onEnterDemo,
   onExitDemo,
   onRestoreBackup,
   onClose,
@@ -238,26 +240,33 @@ export function SettingsScreen({
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* First, above Premium, and only while the demo is running. Once someone is in a demo the
-            single most important thing this screen offers is the way back out of it. */}
-        {isDemo && onExitDemo ? (
+        {/* First, above Premium. One section with two states rather than two sections: in a demo the
+            single most important thing this screen offers is the way back out, and outside one the
+            same row is the way in ([D6] — an onboarded account can explore too, which is also what
+            makes store screenshots shootable without wiping real data). */}
+        {onEnterDemo || onExitDemo ? (
           <>
             <Text style={styles.sectionLabel}>Sample data</Text>
             <Pressable
-              onPress={onExitDemo}
-              style={styles.row}
+              onPress={isDemo ? onExitDemo : onEnterDemo}
               accessibilityRole="button"
-              accessibilityLabel="Exit sample data"
-              accessibilityHint="Returns to your own account. Nothing from the sample is kept."
+              accessibilityLabel={isDemo ? "Exit sample data" : "Explore sample data"}
+              accessibilityHint={
+                isDemo
+                  ? "Returns to your own account. Nothing from the sample is kept."
+                  : "Fills the app with an example person's earnings so you can look around. Your own data is not affected."
+              }
+              style={styles.row}
             >
               <View style={styles.rowText}>
-                <Text style={styles.rowLabel}>Exit sample data</Text>
+                <Text style={styles.rowLabel}>{isDemo ? "Exit sample data" : "Explore sample data"}</Text>
                 <Text style={styles.rowHint}>
-                  You're exploring an example account. Nothing here is saved, and your own data hasn't
-                  been touched.
+                  {isDemo
+                    ? "You're exploring an example account. Nothing here is saved, and your own data hasn't been touched."
+                    : "Look around a fully populated example account. Your own data stays exactly as it is, and comes back when you exit."}
                 </Text>
               </View>
-              <Ionicons name="exit-outline" size={20} color={colors.primary} />
+              <Ionicons name={isDemo ? "exit-outline" : "eye-outline"} size={20} color={colors.primary} />
             </Pressable>
           </>
         ) : null}

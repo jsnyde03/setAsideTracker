@@ -11,6 +11,34 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.1.4 EXTENDED — demo entry for onboarded users ([D6]) · 2026-08-08
+
+**Jason, 2026-08-08:** *"There should be a way to access the demo for already onboarded users."*
+Settled as **[D6]**; the backlog question raised at the after-scan is closed and removed from it.
+
+**Shipped.** One Settings section with two states rather than two sections — the same row enters or
+exits depending on `isDemo`. Entering from Settings routes to the dashboard rather than staying put:
+a Settings screen whose profile name has quietly become someone else's reads as a bug, not as "you
+are now in a demo". No confirmation Alert: real data is genuinely safe, so a warning would be
+dishonest — and `Alert` doesn't render under react-native-web, so it would also be untestable here.
+
+⭐ **This is what made the item's exit line testable.** "Real data provably untouched" could only be
+asserted at the unit level while the demo was reachable solely from onboarding — a real account had
+no way in, so no test could round-trip. There is now an e2e that onboards, logs a real entry, enters
+the demo from Settings, adds a $999 entry inside it, exits, and finds the real entry back and the
+demo's gone — **through the UI only, never touching storage to set up or to assert** — then reloads
+to prove it is persisted state rather than a lucky in-memory render. **28/28.**
+
+**Two test-authoring corrections, both mine, both worth recording:**
+
+1. **The persona uses Instacart.** The first version had the "real" entry on Instacart and asserted it
+   was absent inside the demo — but the demo has three Instacart entries, so the locator resolved to
+   4 elements. The real entry is now **Spark**, which the persona deliberately does not use. A test
+   distinguishing two data sets has to pick a value only one of them can produce.
+2. **A `sed` left a `/g` flag** on the label regexes. A global regex carries `lastIndex` between
+   calls, so it matches inconsistently across repeated locator evaluations — a flake generator.
+   Removed. Bulk-editing test selectors by regex is how that gets introduced silently.
+
 ### 🔎 1.2.1.4 Enter/exit wiring — SUB-TASK after-scan · 2026-08-08
 
 **Shipped.** `src/demo/DemoContext.tsx` — a provider inside `AppDataProvider` (both transitions must

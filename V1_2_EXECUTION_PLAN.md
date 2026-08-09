@@ -14,7 +14,7 @@
 > The scan killed the spec's central premise — persistence does **not** all funnel through
 > `repository.ts` — and found the persona already exists as a valid backup file. Record →
 > [V1_2_LOG.md](V1_2_LOG.md). **1.2.1.1–1.2.1.4 closed 2026-08-08; next action: 1.2.1.5.**
-> _(Health moved: **27/27** Playwright (was 23) · **190** mobile unit (was 144) · typecheck clean ·
+> _(Health moved: **28/28** Playwright (was 23) · **190** mobile unit (was 144) · typecheck clean ·
 > lint still 14, none introduced.)_
 > ⚠️ **Still web/unit-verified only** — the leak guards are asserted against mocks. The review prompt,
 > the notification permission dialog and real scheduling are device-owed, at 1.2.9.
@@ -102,7 +102,7 @@ bypass it. Isolation is a **three-file** guarantee, not one. Full record → [V1
 | **1.2.1.1** | ✅ **Demo store — DONE 2026-08-08.** In-memory `demoStore.ts` + a one-function `backend()` switch; `repository.ts` now has **zero** direct `AsyncStorage.` calls. Premium cache deliberately exempt. 8 tests, verified by mutation. | ✅ |
 | **1.2.1.2** | ✅ **Seed generator — DONE 2026-08-08.** `buildDemoSeed(now)` with day-offset dates, compressed (not spilled) when the tax year is too young — `entriesForYear` would otherwise drop the whole persona on 1 Jan. 29 tests across 7 calendar dates; totals verified against the plan's $6,213. | ✅ |
 | **1.2.1.3** | ✅ **Leaks plugged — DONE 2026-08-08.** Guards at 4 choke points (review prompt · schedule · **cancel** · analytics), flag moved to a pure `demo/demoMode.ts`. ⭐ The scan found a **fourth** leak: `cancelQuarterlyReminders` wipes *all* device notifications, so a demo toggle would have deleted the real user's reminders. 9 paired tests. | ✅ |
-| **1.2.1.4** | ✅ **Enter/exit — DONE 2026-08-08.** `DemoContext` inside `AppDataProvider`; entry on onboarding, exit first in Settings; entry rolls back if the re-read fails. ⭐ **`RequireTaxProfile` needed NO widening** — the demo seeds a profile, so the Debt `3.5.4.3` premise doesn't transfer and no guard was weakened. 4 new e2e → 27/27. | ✅ |
+| **1.2.1.4** | ✅ **Enter/exit — DONE 2026-08-08.** `DemoContext` inside `AppDataProvider`; entry on onboarding, exit first in Settings; entry rolls back if the re-read fails. ⭐ **`RequireTaxProfile` needed NO widening** — the demo seeds a profile, so the Debt `3.5.4.3` premise doesn't transfer and no guard was weakened. **Extended for [D6]:** one Settings row that enters or exits, so an onboarded account can explore — which is what made the item's exit line testable end-to-end. 5 new e2e → 28/28. | ✅ |
 | **1.2.1.5** | **Mark every demo surface** — on screen **and** in the a11y tree | ⬜ |
 | **1.2.1.6** | **Premium preview without entitlement** — per **[D5]**: `isDemoPreview` alongside `isPremium` at the 4 gate sites; purchase + PDF export still check `isPremium` alone | ⬜ |
 | **1.2.1.7** | **Tests** — Playwright enter/exit + real-data-untouched · Maestro flow · unit tests for seed + isolation | ⬜ |
@@ -159,6 +159,7 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 | **[D3]** | **A premium slice joins v1.2** ("Both"). **Standing: every version carries a premium line.** | Jason 2026-08-07 |
 | **[D4]** | **v1.2 stays INTACT, targets August.** | Jason 2026-08-07 |
 | **[D5]** | **Demo previews premium via a separate `isDemoPreview`, never by faking `isPremium`.** The entitlement boolean stays honest; purchase + export keep checking it alone. | Jason 2026-08-08 |
+| **[D6]** | **Already-onboarded users can reach the demo too** — one Settings section that enters or exits. Also makes store screenshots shootable without wiping real data. | Jason 2026-08-08 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
@@ -176,14 +177,6 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
 
-- **🟠 [DECISION — Jason] Can an already-onboarded user reach the demo?** Today: **no.** The affordance
-  lives only on onboarding, so the demo serves the not-yet-onboarded visitor and a fresh App Review
-  install, but an existing account has no way in. That is defensible, and it also means **you cannot
-  shoot store screenshots from the demo without wiping your own data first** — the exact chore
-  1.2.1.1's spec said demo mode would retire. _Recommendation: add "Explore sample data" to Settings
-  too_ — the machinery is built, it's a few lines, and it makes premium previews reachable for anyone
-  evaluating the app. **Not folded, because it widens who the feature is for, which is a product call
-  rather than a wiring detail.** _(Found 2026-08-08 at the 1.2.1.4 after-scan.)_
 - **Nothing *enforces* that persistence goes through `repository.ts` → 1.2.8.** Add an ESLint
   `no-restricted-imports` rule allowing `@react-native-async-storage/async-storage` only in
   `src/storage/`, so demo mode's isolation guarantee is checked by CI rather than requested by a
