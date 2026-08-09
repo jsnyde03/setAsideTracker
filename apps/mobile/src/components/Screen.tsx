@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Animated, Platform, StyleSheet, ViewStyle } from "react-native";
 import { SafeAreaView, Edge } from "react-native-safe-area-context";
+import { DemoBanner } from "../demo/DemoBanner";
 import type { Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
 
@@ -30,6 +31,10 @@ export function Screen({ children, style, edges = ["top", "bottom", "left", "rig
 
   return (
     <SafeAreaView edges={edges} style={[styles.safeArea, style]}>
+      {/* First, and inside the safe area so it clears the notch. Every screen gets the demo marker
+          without opting in, and a VoiceOver user reaches it before any figure it qualifies.
+          Renders nothing at all outside a demo. */}
+      <DemoBanner />
       <Animated.View style={[styles.flex, { opacity, transform: [{ translateY }] }]}>
         {children}
       </Animated.View>

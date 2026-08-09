@@ -1,5 +1,6 @@
+import { computeTaxEstimate } from "../calculations";
 import type { DemoSeed } from "../storage/repository";
-import type { CustomExpense, Entry, GigPlatform, MileageLog } from "../types";
+import type { CustomExpense, Entry, GigPlatform, MileageLog, TaxProfile } from "../types";
 
 /**
  * The demo persona: **Maya Rodriguez**, a Los Angeles gig worker (rideshare + delivery) who also
@@ -10,7 +11,7 @@ import type { CustomExpense, Entry, GigPlatform, MileageLog } from "../types";
  * under-withheld W2 leaves a genuine uncovered gap (which is what makes the W-4 optimizer and
  * safe-harbor screens non-trivial), the prior-year figure makes the prior-year safe-harbor leg bind,
  * and the amount-set-aside lands just above target so the dashboard reads green "on track" rather
- * than a warning.
+ * than a warning — that last one **computed here, not copied**, for the reason given further down.
  *
  * ## Why the dates are offsets and not dates
  *
@@ -26,9 +27,12 @@ import type { CustomExpense, Entry, GigPlatform, MileageLog } from "../types";
  * The persona spans 52 days. Early in a calendar year there isn't 52 days of room before the tax
  * year starts, so the span is **compressed proportionally** into whatever room exists rather than
  * being allowed to spill into December of the previous tax year. The entries stay in order, stay in
- * the past, and stay inside the current tax year. Totals are unaffected — all 20 entries are always
- * present with their original amounts — so the "on track" green state and every headline figure hold
- * regardless of when the demo is entered.
+ * the past, and stay inside the current tax year. Earnings totals are unaffected — all 20 entries are
+ * always present with their original amounts.
+ *
+ * ⚠️ **Equal earnings do NOT imply an equal set-aside target.** The target subtracts a W2 withholding
+ * projection derived from today's date, so it moves through the year even though the entries don't.
+ * That is why the amount-set-aside is computed from the engine below rather than fixed.
  *
  * ⚠️ The trade-off is visual: a demo entered in the first days of January shows the entries bunched
  * together. That matters for store screenshots (`SCREENSHOT_PLAN.md`), not for the demo's job of
@@ -59,8 +63,9 @@ interface EntrySpec {
 
 /**
  * 20 full-day totals across four platforms, oldest first. Expected totals, as a sanity check on any
- * future edit: **≈ $6,213** earnings · **≈ $1,384** set-aside target · **≈ $33/hr** effective ·
- * **1,662** business miles · **~137** hours · **≈ $1,429** deductible expenses.
+ * future edit: **≈ $6,213** earnings · **≈ $33/hr** effective · **1,662** business miles · **~137**
+ * hours · **≈ $1,429** deductible expenses. _(`SCREENSHOT_PLAN.md` also lists a ≈ $1,384 set-aside
+ * target; that one is date-dependent and deliberately not restated here — see the buffer below.)_
  */
 const ENTRY_SPECS: EntrySpec[] = [
   { daysAgo: 54, platform: "doordash", grossPay: 244, tips: 52, mileage: 80, phone: 3, hoursWorked: 6.5 },
@@ -154,9 +159,19 @@ const ENTRY_SPECS: EntrySpec[] = [
 /** Number of entries a demo session starts with. Exported so tests and UI copy can't drift from it. */
 export const DEMO_ENTRY_COUNT = ENTRY_SPECS.length;
 
-/** Amount-set-aside for the current year — tuned just above the ≈ $1,384 target so the dashboard
- *  reads green "on track". A warning state is a worse first impression than a reassurance. */
-const DEMO_AMOUNT_SET_ASIDE = 1400;
+/**
+ * How far above the computed target to land the amount-set-aside, so the dashboard reads green
+ * "on track" rather than a red catch-up warning. Reassurance is a better first impression than a
+ * deficit, and a demo that opens on a warning misrepresents the app's normal state.
+ *
+ * ⚠️ **This is derived, never hardcoded, and that is not a refinement — a constant is wrong here.**
+ * `SCREENSHOT_PLAN.md` specified a literal $1,400 against a target of ≈ $1,384, which held on the day
+ * it was measured. The target is **date-dependent**: `netAmountToSetAside` subtracts a W2 withholding
+ * projection that `w2WithholdingYearFraction` computes from *today*, so as the year advances the same
+ * persona needs more set aside. Carried over literally, the demo opened on
+ * **"You're $85.63 behind — set aside an extra $14.27/week to catch up."**
+ */
+const DEMO_SET_ASIDE_BUFFER = 25;
 
 /** Prior-year total federal tax. Low enough against this year's that the prior-year safe-harbor leg
  *  binds — the "your income jumped, pay far less" story the safe-harbor screen exists to tell. */
@@ -221,6 +236,25 @@ export function buildDemoSeed(now: Date = new Date()): DemoSeed {
     };
   });
 
+  const taxProfile: TaxProfile = {
+    filingStatus: "single",
+    dependents: 0,
+    hasW2Job: true,
+    w2GrossPayPerPeriod: 900,
+    w2PayFrequency: "biweekly",
+    w2YtdFederalWithheld: 250,
+    w2YtdStateWithheld: 60,
+    state: "CA",
+    filedTaxByYear: { [year - 1]: { totalTax: DEMO_PRIOR_YEAR_TOTAL_TAX } },
+  };
+
+  // Ask the real engine what this persona owes, then set aside a little more than that. Running the
+  // app's own calculation rather than restating a number measured once is what keeps "on track" true
+  // on every future date — and `amountSetAsideByYear` is self-reported savings that the estimate
+  // never reads, so computing it from a profile that doesn't carry it yet is not circular.
+  const target = computeTaxEstimate(entries, taxProfile, year).netAmountToSetAside;
+  const amountSetAside = Math.ceil((target + DEMO_SET_ASIDE_BUFFER) / 10) * 10;
+
   return {
     localUserProfile: {
       id: "demo-user",
@@ -228,18 +262,7 @@ export function buildDemoSeed(now: Date = new Date()): DemoSeed {
       email: "maya.rodriguez@example.com",
       createdAt: `${year}-01-05T10:00:00.000Z`,
     },
-    taxProfile: {
-      filingStatus: "single",
-      dependents: 0,
-      hasW2Job: true,
-      w2GrossPayPerPeriod: 900,
-      w2PayFrequency: "biweekly",
-      w2YtdFederalWithheld: 250,
-      w2YtdStateWithheld: 60,
-      state: "CA",
-      amountSetAsideByYear: { [year]: DEMO_AMOUNT_SET_ASIDE },
-      filedTaxByYear: { [year - 1]: { totalTax: DEMO_PRIOR_YEAR_TOTAL_TAX } },
-    },
+    taxProfile: { ...taxProfile, amountSetAsideByYear: { [year]: amountSetAside } },
     entries,
     appSettings: {
       appLockEnabled: false,

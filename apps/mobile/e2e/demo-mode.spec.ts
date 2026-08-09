@@ -32,6 +32,33 @@ test("entering the demo populates the app with the seeded persona", async ({ pag
   await expect(visible(page.getByLabel(/Edit DoorDash entry/)).first()).toBeVisible();
 });
 
+test("every screen is marked while the demo runs, and unmarked when it isn't", async ({ page }) => {
+  const banner = () => visible(page.getByLabel(/Sample data\. This is an example account/));
+
+  await expect(banner()).toHaveCount(0);
+  await visible(page.getByText("Explore with sample data")).first().click();
+
+  // The dashboard, and then a screen that isn't it — the claim is about the shared wrapper covering
+  // every screen, not about one of them remembering to render a marker.
+  await expect(banner().first()).toBeVisible();
+  await visible(page.getByLabel("Settings")).first().click();
+  await expect(banner().first()).toBeVisible();
+  await visible(page.getByLabel("Close")).first().click();
+  await visible(page.getByText("Log Earnings", { exact: true })).first().click();
+  await expect(banner().first()).toBeVisible();
+});
+
+test("the banner is itself the way out", async ({ page }) => {
+  await visible(page.getByText("Explore with sample data")).first().click();
+  await expect(visible(page.getByText("Sample data — not your account")).first()).toBeVisible();
+
+  await visible(page.getByLabel(/Sample data\. This is an example account/)).first().click();
+
+  // Back to onboarding (no real profile exists), and the marker is gone with the demo.
+  await expect(visible(page.getByText("Explore with sample data")).first()).toBeVisible();
+  await expect(visible(page.getByLabel(/Sample data\. This is an example account/))).toHaveCount(0);
+});
+
 test("the demo can be left from Settings, and offers no exit when not in one", async ({ page }) => {
   await visible(page.getByText("Explore with sample data")).first().click();
   await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();

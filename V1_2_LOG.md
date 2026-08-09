@@ -11,6 +11,59 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.1.5 Mark every demo surface — SUB-TASK after-scan · 2026-08-08
+
+**Shipped.** `src/demo/DemoBanner.tsx`, rendered by `src/components/Screen.tsx`. Both candidate seams
+were complete (13/13 screens use `Screen`, 12/12 routes use `ScreenFrame`); `Screen` won because it
+is **inside** the `SafeAreaView`, so the bar clears the notch, and it is the same wrapper 1.2.3 will
+use for size classes. No screen opts in and none can forget.
+
+**A banner, not per-figure badges.** The confusing state isn't a number, it's a whole app — someone
+entering from their own account sees a dashboard, a safe-harbor screen and a year-over-year chart all
+showing a stranger's finances. Badging figures would be noise where it's least needed and would still
+miss the charts. **Rendered first inside `Screen`**, which is the accessibility half of the exit line:
+a VoiceOver user reaches it before any figure it qualifies. A marker placed after the content would
+be technically "in the tree" and useless. **Tappable to exit** — a permanent bar announcing a state
+with no way out of it sends people hunting through Settings. `primarySoft`, not `danger`: nothing is
+wrong, and a red bar on every screen would read as an error for a healthy way to use the app.
+
+---
+
+### ⚠️ ⭐ The screenshot caught a defect four suites could not — and it was mine
+
+The banner render looked right. The rest of the screen did not: the demo opened on
+**"You're $85.63 behind — set aside an extra $14.27/week until Sep 15, 2026 to catch up."** Red
+warning state, where `SCREENSHOT_PLAN.md` deliberately specifies green "on track" because a
+reassurance sells better than a deficit — and because a demo opening on a warning misrepresents the
+app's normal state.
+
+**Mechanism.** `netAmountToSetAside = totalEstimatedTax − w2WithholdingYtdEstimate`, and that second
+term is computed from **today** via `w2WithholdingYearFraction`. The target therefore moves through
+the year while the entries do not. `SCREENSHOT_PLAN.md`'s literal **$1,400** was measured against a
+≈ $1,384 target on one day in early July; by August the target was **$1,485.63** and the same
+constant was $85 short.
+
+⚡ **This is a correction to my own 1.2.1.2 after-scan.** It claimed *"Totals are unaffected … so the
+green 'on track' state and every headline figure hold whenever the demo is entered."* The earnings
+half is true and tested. The "on track" half was **false**, and asserting it is what let the defect
+ship past a mutation-verified suite: the test I wrote checked earnings totals, which never moved, so
+it could not fail. That test has been renamed to claim only what it proves.
+
+**Fix.** The amount-set-aside is now **derived, not stated**: `buildDemoSeed` runs the app's own
+`computeTaxEstimate` over the seeded entries and lands just above the result. Not circular —
+`amountSetAsideByYear` is self-reported savings the estimate never reads. Regression test added and
+**mutation-verified**: restoring the literal 1400 fails it and nothing else.
+
+**The transferable lesson:** *a number copied from a document is a measurement, and measurements
+have a date on them.* Both defects in this item came from the same place — absolute dates in the
+persona (caught at 1.2.1.2) and an absolute dollar figure calibrated against them (caught only by
+looking). The second was invisible to every automated check because the suites asserted the inputs,
+which were faithful, rather than the rendered outcome, which was wrong.
+
+---
+
+**Health:** 30/30 Playwright (2 new) · 191 unit · typecheck clean · lint 14, none introduced.
+
 ### 🔎 1.2.1.4 EXTENDED — demo entry for onboarded users ([D6]) · 2026-08-08
 
 **Jason, 2026-08-08:** *"There should be a way to access the demo for already onboarded users."*
