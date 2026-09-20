@@ -415,10 +415,34 @@ workflows:
           fi
 
       - name: Run Maestro native flows
+        # ⚠️ Every failure must arrive WITH its evidence. Five dispatches on 2026-09-20 were spent
+        # narrowing a failure by inference because the run reported only which assertion failed and
+        # never what was on screen. A screenshot costs nothing and ends that loop.
         script: |
           export PATH="$PATH:$HOME/.maestro/bin"
+
+          # Print the commit first. A build of old code brings its own old flows, and a fix that
+          # "didn't work" is indistinguishable from a fix that was never in the binary.
+          echo "=== Building commit: $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s) ==="
+
           cd apps/mobile
-          maestro test .maestro
+          MAESTRO_EXIT=0
+          maestro test .maestro || MAESTRO_EXIT=$?
+
+          if [ "$MAESTRO_EXIT" -ne 0 ]; then
+            echo "=== Flows failed. Capturing the simulator's final frame. ==="
+            # The screen as it actually was, not as an assertion described it.
+            xcrun simctl io booted screenshot .maestro/diag-final-screen.png || \
+              echo "(could not capture the simulator screen)"
+
+            # Maestro writes a screenshot AND a view hierarchy per failure. Say where they are, so
+            # the artifact list is readable rather than a haystack.
+            echo "=== Maestro's own per-failure artifacts ==="
+            find "$HOME/.maestro/tests" -type f \( -name '*.png' -o -name '*.json' \) 2>/dev/null \
+              | tail -40 || echo "(none found)"
+          fi
+
+          exit $MAESTRO_EXIT
 
     artifacts:
       - apps/mobile/.maestro/**/*.png
