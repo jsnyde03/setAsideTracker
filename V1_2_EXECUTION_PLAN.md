@@ -109,25 +109,17 @@ bypass it. Isolation is a **three-file** guarantee, not one. Full record → [V1
 showing demo money is marked as such **on screen and in the accessibility tree**; premium screens
 preview populated while `subscribe`/`export` still route to the real paywall.
 
-### 🟠 [DECISION — Jason] Should the demo persona span two tax years?
+### ✅ [D11] The demo persona stays at ONE tax year — settled 2026-09-20
 
-**Found at 1.2.1.7 by a test that failed for the right reason.** Every premium card carries a *data*
-precondition on top of the premium gate, and year-over-year's is `yearsTracked >= 2`
-(`DashboardScreen.tsx:516`). **The persona seeds exactly one tax year, deliberately** — `buildDemoSeed`
-compresses rather than spills, because `entriesForYear` silently drops anything landing in the
-previous year. So **the card never renders in a demo and the fourth premium screen cannot be
-previewed at all.**
-
-- **Leave it (my recommendation).** The gate is about *data*, not about paying — a real one-year user
-  doesn't see that card either, so the demo is being truthful. Seeding a second year means the demo
-  persona stops representing a new gig worker, and it touches `demoSeed`'s 29 tests, the compression
-  logic, and `SCREENSHOT_PLAN.md`. **The cost is that one of four premium screens is unsellable in
-  the demo.**
-- **Seed a prior year.** All four premium screens preview, which is what a demo exists for. Costs the
-  seed rework above, and the persona becomes a second-year worker.
-
-Asserted either way: an e2e now **fails** if the card silently appears or disappears, so this cannot
-rot while the decision is open.
+Year-over-year is gated on `yearsTracked >= 2` (`DashboardScreen.tsx:516`) and `buildDemoSeed` keeps
+the persona inside one tax year deliberately, so **the fourth premium screen cannot be previewed.**
+**Accepted.** The gate is about *data*, not about paying — a real one-year user does not see that
+card either, so the demo is being truthful rather than incomplete. Seeding a second year would make
+the persona a second-year worker and would touch 29 seed tests, the compression logic and
+`SCREENSHOT_PLAN.md`. **Known cost, knowingly taken: one of four premium screens is unsellable in
+the demo.** ⚠️ **Revisit if the demo ever becomes the primary premium sales surface** — that is the
+condition that flips this, not a change in the code. An e2e asserts the absence, so a silent
+reappearance fails the suite.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
@@ -201,6 +193,7 @@ map is at the head of the log's item-spec section._
 | **[D7]** | **The set-aside splits per entry, rolling up to weekly** — not a derived weekly view alone. Each shift carries its own figure, **frozen at the rate in effect when logged**, so history never moves retroactively; the existing catch-up line reconciles the drift. | Jason 2026-09-20 |
 | **[D8]** | **Mileage gets a start/stop toggle in v1.2 on when-in-use location; auto-detection waits for v1.3.** The **widget is cut to v1.3** so v1.2 carries one native item, not two. | Jason 2026-09-20 |
 | **[D9]** | ✅ **NO SHIP DATE. Work through the queue and ship ASAP.** August is retired and not replaced — the version is paced by the work, not by a date. ⚠️ **Do not reintroduce a target date**; the correctness exposure from [D10] is the reason to go fast, not a reason to set one and cut against it. | Jason 2026-09-20 |
+| **[D11]** | **The demo persona stays at ONE tax year.** Year-over-year therefore cannot be previewed — accepted, because the gate is about data, not payment. Revisit only if the demo becomes the primary premium sales surface. | Jason 2026-09-20 |
 | **[D10]** | **No interim patch release — the three live money-wrong bugs are fixed in v1.2, not in a v1.1.2.** Recommendation on record was a cheap disclosure patch (MFJ warning + safe-harbor caveat) while the real fixes were built; **Jason chose the single correct release instead.** Tradeoff accepted knowingly: v1.1.1 keeps understating what users owe until v1.2 ships. | Jason 2026-09-20 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
