@@ -84,26 +84,57 @@ describe("calculateStateTax (2026)", () => {
   });
 
   describe("nonrefundable state tax credits", () => {
-    it("applies Georgia's $4,000/dependent credit, which is material (not a rounding error)", () => {
-      // High enough income that the $8,000 credit isn't capped by the gross tax owed — the
-      // capped/floored scenario is covered separately below.
+    /**
+     * ⚠️ The two tests that used to live here asserted the DEFECT, and are the reason it survived
+     * a green suite. One was named "applies Georgia's $4,000/dependent credit, which is material
+     * (not a rounding error)" — the author noticed the figure was unusually large for a credit and
+     * wrote a test celebrating it instead of asking why. GA, SC and MN model dependent EXEMPTIONS
+     * (subtracted from income), not credits (subtracted from tax). Fixed at 1.2.2.1, 2026-09-20.
+     *
+     * A per-dependent credit that large does not exist anywhere: the real ones modeled here are
+     * AR $29, DE $110, NE $176, OR $256.
+     */
+    it("GA/SC/MN dependents reduce INCOME, never the tax owed directly", () => {
+      for (const state of ["GA", "SC", "MN"]) {
+        const noKids = calculateStateTax(300000, 3000, 0, "single", state, taxYear2026, undefined, 0);
+        const twoKids = calculateStateTax(300000, 3000, 0, "single", state, taxYear2026, undefined, 2);
+
+        // The mechanism: nothing reaches creditApplied for these three, ever.
+        expect(noKids.creditApplied).toBe(0);
+        expect(twoKids.creditApplied).toBe(0);
+
+        // Dependents shrink the taxable base, so the GROSS tax moves too — the precise inverse of
+        // the old behaviour, where stateLevelTax was asserted to be identical either way.
+        expect(twoKids.taxableIncome).toBeLessThan(noKids.taxableIncome);
+        expect(twoKids.stateLevelTax).toBeLessThan(noKids.stateLevelTax);
+      }
+    });
+
+    it("subtracts exactly perDependent x dependents from taxable income", () => {
+      // GA's exemption rose $4,000 -> $5,000 effective TY2026 (HB 463 / Georgia Economic Growth and
+      // Tax Relief Act of 2026), rising $125/yr from 2027 to a $6,000 cap. The 2025 config keeps
+      // $4,000, and a test below pins that the two years genuinely differ.
       const noKids = calculateStateTax(300000, 3000, 0, "single", "GA", taxYear2026, undefined, 0);
       const twoKids = calculateStateTax(300000, 3000, 0, "single", "GA", taxYear2026, undefined, 2);
 
-      expect(noKids.creditApplied).toBe(0);
-      expect(twoKids.creditApplied).toBeCloseTo(8000, 2);
-      expect(noKids.stateTax - twoKids.stateTax).toBeCloseTo(8000, 2);
-      // stateLevelTax (the gross, pre-credit figure) must be identical regardless of dependents —
-      // only stateTax (the net total) should differ.
-      expect(noKids.stateLevelTax).toBeCloseTo(twoKids.stateLevelTax, 2);
-    });
+      expect(twoKids.dependentExemptionUsed).toBeCloseTo(10000, 2);
+      expect(noKids.dependentExemptionUsed).toBe(0);
+      expect(noKids.taxableIncome - twoKids.taxableIncome).toBeCloseTo(10000, 2);
 
-    it("applies Minnesota's and South Carolina's per-dependent credits", () => {
       const mn = calculateStateTax(200000, 3000, 0, "single", "MN", taxYear2026, undefined, 1);
-      expect(mn.creditApplied).toBeCloseTo(5300, 2);
+      expect(mn.dependentExemptionUsed).toBeCloseTo(5300, 2);
 
       const sc = calculateStateTax(150000, 3000, 0, "single", "SC", taxYear2026, undefined, 1);
-      expect(sc.creditApplied).toBeCloseTo(4930, 2);
+      expect(sc.dependentExemptionUsed).toBeCloseTo(4930, 2);
+    });
+
+    it("the GA fix is worth real money: two dependents no longer zero out the bill", () => {
+      // The gap scan's worked example, re-derived here rather than quoted. Under the old credit
+      // modelling a $40k GA filer with 2 dependents was handed an $8,000 credit against a ~$891
+      // bill and told they owed $0.
+      const twoKids = calculateStateTax(40000, 3000, 0, "single", "GA", taxYear2026, undefined, 2);
+      expect(twoKids.stateTax).toBeGreaterThan(0);
+      expect(twoKids.creditApplied).toBe(0);
     });
 
     it("combines a per-filer credit with a per-dependent credit (Arkansas)", () => {

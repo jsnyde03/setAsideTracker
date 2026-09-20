@@ -4,6 +4,7 @@ import type {
   LocalTaxConfig,
   StandardDeductionPhaseout,
   StateCreditConfig,
+  StateExemptionConfig,
   StateTaxResult,
   TaxYearConfig,
 } from "./types";
@@ -21,6 +22,18 @@ function applyStandardDeductionPhaseout(
   const additionalLimit = phaseout.additionalLimit[filingStatus];
   const ratio = Math.min(1, Math.max(0, (stateAdjustedGrossIncome - threshold) / additionalLimit));
   return standardDeduction * (1 - ratio);
+}
+
+/**
+ * Per-dependent exemption subtracted from INCOME, before brackets. Distinct from the credit helper
+ * below, which reduces tax OWED — conflating the two is the defect this pair exists to keep apart.
+ */
+function calculateDependentExemption(
+  exemption: StateExemptionConfig | undefined,
+  numberOfChildren: number
+): number {
+  if (!exemption) return 0;
+  return (exemption.perDependent ?? 0) * Math.max(0, numberOfChildren);
 }
 
 /** Nonrefundable credit available before capping against tax owed — perFiler + perDependent. */
@@ -109,6 +122,7 @@ export function calculateStateTax(
       stateTax: 0,
       creditApplied: 0,
       standardDeductionUsed: 0,
+      dependentExemptionUsed: 0,
       bracketsApplied: [],
     };
   }
@@ -129,9 +143,14 @@ export function calculateStateTax(
       stateTax: 0,
       creditApplied: 0,
       standardDeductionUsed: 0,
+      dependentExemptionUsed: 0,
       bracketsApplied: [],
     };
   }
+
+  // Computed once for both branches: a dependent exemption reduces the income a state taxes,
+  // exactly like its standard deduction, and applies whether the state is flat or bracketed.
+  const dependentExemptionUsed = calculateDependentExemption(stateConfig.exemption, numberOfChildren);
 
   let taxableIncome: number;
   let stateLevelTax: number;
@@ -140,7 +159,7 @@ export function calculateStateTax(
 
   if (stateConfig.type === "flat") {
     standardDeductionUsed = stateConfig.standardDeduction?.[filingStatus] ?? 0;
-    taxableIncome = Math.max(0, stateAdjustedGrossIncome - standardDeductionUsed);
+    taxableIncome = Math.max(0, stateAdjustedGrossIncome - standardDeductionUsed - dependentExemptionUsed);
     stateLevelTax = taxableIncome * stateConfig.rate;
     // A flat tax has no brackets, but exposing it as a single synthetic "applied bracket" lets the
     // show-your-math UI render flat and progressive states through the same code path.
@@ -156,7 +175,7 @@ export function calculateStateTax(
       filingStatus,
       stateAdjustedGrossIncome
     );
-    taxableIncome = Math.max(0, stateAdjustedGrossIncome - standardDeductionUsed);
+    taxableIncome = Math.max(0, stateAdjustedGrossIncome - standardDeductionUsed - dependentExemptionUsed);
     const detailed = applyBracketsDetailed(taxableIncome, stateConfig.brackets[filingStatus]);
     stateLevelTax = detailed.tax;
     bracketsApplied = detailed.applied;
@@ -181,6 +200,7 @@ export function calculateStateTax(
     localTaxSupported: local.localTaxSupported,
     stateTax: stateLevelTax - creditApplied + local.localTax,
     standardDeductionUsed,
+    dependentExemptionUsed,
     bracketsApplied,
   };
 }

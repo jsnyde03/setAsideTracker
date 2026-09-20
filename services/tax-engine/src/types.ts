@@ -67,6 +67,30 @@ export interface StandardDeductionPhaseout {
   additionalLimit: Record<FilingStatus, number>;
 }
 
+/**
+ * A per-dependent **exemption**, subtracted from income *before* brackets apply — which is a
+ * different mechanism from {@link StateCreditConfig}, and the distinction is worth thousands.
+ *
+ * ⚠️ **This type exists because three states had it wrong.** GA, SC and MN model dependent
+ * exemptions of $4,000–$5,300, and those figures were sitting in `credit.perDependent`, i.e. being
+ * applied as dollar-for-dollar reductions of **tax owed**. A GA filer with two dependents on $40k
+ * of profit was told **$0** state tax instead of roughly $891 — an understatement, the dangerous
+ * direction. Found by the 2026-09-20 gap scan and confirmed against O.C.G.A. §48-7-26, SC Code
+ * §12-6-1140 and the Minnesota Department of Revenue.
+ *
+ * **The tell, if you are adding a state:** a real per-dependent *credit* is small — the ones modeled
+ * here are AR $29, DE $110, NE $176, OR $256. A four-figure per-dependent number is almost certainly
+ * an exemption and belongs here instead.
+ *
+ * Note that a state's *personal* (per-filer) exemption is folded into `standardDeduction` rather
+ * than modeled here — see VT, whose `7650 + 5300` doubles for MFJ because two filers claim it.
+ * Only the part that scales with dependents belongs in this type.
+ */
+export interface StateExemptionConfig {
+  /** Dollars subtracted from state taxable income for each dependent. */
+  perDependent?: number;
+}
+
 /** A single flat rate applied to taxable income regardless of filing status (e.g. PA). */
 export interface FlatStateTax {
   type: "flat";
@@ -77,6 +101,8 @@ export interface FlatStateTax {
   localTaxJurisdictions?: Record<string, LocalTaxConfig>;
   /** Nonrefundable per-filer/per-dependent tax credit, if this state has one modeled. */
   credit?: StateCreditConfig;
+  /** Per-dependent exemption subtracted from INCOME, not from tax owed. See {@link StateExemptionConfig}. */
+  exemption?: StateExemptionConfig;
 }
 
 /** Progressive brackets, keyed by filing status (e.g. CA, NY, MD). */
@@ -90,6 +116,8 @@ export interface BracketStateTax {
   localTaxJurisdictions?: Record<string, LocalTaxConfig>;
   /** Nonrefundable per-filer/per-dependent tax credit, if this state has one modeled. */
   credit?: StateCreditConfig;
+  /** Per-dependent exemption subtracted from INCOME, not from tax owed. See {@link StateExemptionConfig}. */
+  exemption?: StateExemptionConfig;
 }
 
 export type StateTaxConfig = NoStateTax | FlatStateTax | BracketStateTax;
@@ -181,6 +209,12 @@ export interface StateTaxResult {
   /** State standard deduction subtracted to reach taxableIncome (after any income-based phaseout).
    * 0 for no-income-tax states, unsupported states, and flat-tax states with no standard deduction. */
   standardDeductionUsed: number;
+  /** Per-dependent exemption subtracted to reach taxableIncome, alongside the standard deduction —
+   * `exemption.perDependent × dependents`. 0 for states with no dependent exemption modeled, and
+   * for filers with no dependents. Exposed separately from standardDeductionUsed so "show your
+   * math" can name it, and so a regression that silently drops it is visible in the result rather
+   * than only in the final dollar figure. */
+  dependentExemptionUsed: number;
   /** Per-bracket detail behind stateLevelTax. For a flat-tax state, a single synthetic entry
    * spanning the whole taxable base at the flat rate. Empty for no-tax/unsupported states or when
    * taxableIncome is 0. */

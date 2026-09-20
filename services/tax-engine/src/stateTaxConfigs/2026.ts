@@ -188,7 +188,7 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
     rate: 0.0519,
     standardDeduction: { single: 12000, marriedFilingJointly: 24000, headOfHousehold: 18000, marriedFilingSeparately: 12000 },
     // Georgia's $4,000/dependent credit — genuinely material for a parent, not a rounding error.
-    credit: { perDependent: 4000 },
+    exemption: { perDependent: 5000 },
   },
   IN: {
     type: "flat",
@@ -746,7 +746,7 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
     type: "bracket",
     standardDeduction: { single: 15300, marriedFilingJointly: 30600, headOfHousehold: 15300, marriedFilingSeparately: 15300 },
     // Minnesota's $5,300/dependent credit — genuinely material for a parent, not a rounding error.
-    credit: { perDependent: 5300 },
+    exemption: { perDependent: 5300 },
     brackets: {
       single: [
         { min: 0, max: 33310, rate: 0.0535 },
@@ -1078,7 +1078,7 @@ export const stateTaxConfigs2026: Record<string, StateTaxConfig> = {
     type: "bracket",
     standardDeduction: { single: 8350, marriedFilingJointly: 16700, headOfHousehold: 8350, marriedFilingSeparately: 8350 },
     // South Carolina's $4,930/dependent credit — genuinely material for a parent.
-    credit: { perDependent: 4930 },
+    exemption: { perDependent: 4930 },
     brackets: {
       single: [
         { min: 0, max: 3640, rate: 0 },

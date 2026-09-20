@@ -201,7 +201,7 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
       type: "flat",
       rate: 0.0539,
       standardDeduction: { single: 12000, marriedFilingJointly: 24000, headOfHousehold: 18000, marriedFilingSeparately: 12000 },
-      credit: { perDependent: 4000 },
+      exemption: { perDependent: 4000 },
     },
     IN: {
       type: "flat",
@@ -747,7 +747,7 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
     MN: {
       type: "bracket",
       standardDeduction: { single: 14950, marriedFilingJointly: 29900, headOfHousehold: 14950, marriedFilingSeparately: 14950 },
-      credit: { perDependent: 5300 },
+      exemption: { perDependent: 5300 },
       brackets: {
         single: [
           { min: 0, max: 32570, rate: 0.0535 },
@@ -1091,7 +1091,7 @@ function buildStateTaxConfigs2025(): Record<string, StateTaxConfig> {
       // South Carolina has no standard deduction of its own — it starts from federal taxable
       // income, so the federal standard deduction applies directly (confirmed via SC DOR).
       standardDeduction: { single: 15750, marriedFilingJointly: 31500, headOfHousehold: 23625, marriedFilingSeparately: 15750 },
-      credit: { perDependent: 4930 },
+      exemption: { perDependent: 4930 },
       brackets: {
         single: [
           { min: 0, max: 3560, rate: 0 },
