@@ -703,25 +703,101 @@ later item, not by this one.
 > **Any reference dated before 2026-09-20 — in this log, in a scan record, in a commit message — uses
 > the OLD numbering.** Read it through this map:
 >
-> | old | new | item |
+> _This is the **single** map for 2026-09-20 — old number → **final** number. The queue was edited
+> twice today (Jason's two items, then the gap-scan restructure); only the end state is recorded, so
+> there is one mapping to apply rather than a chain._
+>
+> | old | final | item |
 > |---|---|---|
-> | — | **1.2.2** | ⭐ Set-aside split by date and week _(new)_ |
-> | — | **1.2.3** | ⭐ Mileage trip toggle _(new)_ |
-> | 1.2.2 | 1.2.4 | Premium slice |
-> | 1.2.3 | 1.2.5 | Native iPad |
-> | 1.2.4 | 1.2.6 | Guided onboarding tour |
-> | 1.2.5 | 1.2.7 | Accessibility depth audit |
+> | — | **1.2.2** | 🔴 Tax-correctness block _(new — gap scan)_ |
+> | — | **1.2.3** | 🔴 Data-safety block _(new — gap scan)_ |
+> | — | **1.2.4** | ⭐ Set-aside split by date and week _(new — [D7])_ |
+> | — | **1.2.5** | ⭐ Mileage trip toggle _(new — [D8])_ |
+> | 1.2.2 | 1.2.6 | Premium slice |
+> | 1.2.3 | 1.2.7 | Native iPad |
+> | 1.2.4 | 1.2.8 | Guided onboarding tour |
+> | 1.2.5 | 1.2.9 | Accessibility depth audit |
 > | 1.2.6 | — | iOS widget → **cut to v1.3** |
-> | 1.2.7 | 1.2.8 | Filed correctness backlog |
-> | 1.2.8 | 1.2.9 | Lint ledger → CI gate |
-> | 1.2.9 | 1.2.10 | Verify · device QA · phase after-scan |
+> | 1.2.7 | 1.2.10 | Filed correctness + submission-compliance backlog |
+> | 1.2.8 | 1.2.11 | Lint ledger → CI gate |
+> | 1.2.9 | 1.2.12 | Verify · device QA · phase after-scan |
 
 ### 1.2.1 — Demo mode
 ⬆️ **Retrieved and superseded 2026-08-08.** It is the active item; its decomposition lives in
 [V1_2_EXECUTION_PLAN.md](V1_2_EXECUTION_PLAN.md) and its before-scan record is above. _(The spec's
 "no other persistence path" claim was measured false at switch-in — do not re-import it from here.)_
 
-### 1.2.2 — ⭐ Set-aside split by date and week _(new 2026-09-20, [D7])_
+### 1.2.2 — 🔴 Tax-correctness block _(new 2026-09-20, gap scan)_
+
+**Four findings, every one understating what the user owes. All live in v1.1.1.** Each was
+re-verified by this session against the code before admission — the agents' stated mechanisms are
+recorded as hypotheses that happened to hold, not as authority.
+
+**(a) Safe harbor compares a partial-year tax to a full-year withholding. ✅ VERIFIED.**
+`estimatedPaymentsNeeded = Math.max(0, requiredAnnualPayment - federalWithholding)`
+(`calculations.ts:511`). The required payment is 90% of a tax built from `computeTaxEstimate(entries,
+…)` — entries logged **so far** (`SafeHarborScreen.tsx:60`). `federalWithholding` is
+`w2FederalWithholdingYtdEstimate`, which in the no-pay-stub path is assigned `annualFederalEstimate`,
+the **whole year's** (`calculations.ts:312`). ⚠️ **The variable says Ytd; the value is annual.** In
+March a W2+gig user gets `estimatedPaymentsNeeded = 0` and `noPenaltyExpected = true` (`:515`) — and
+`underDeMinimis` on the line above fires independently, so both routes to "you're fine" are open.
+Through both spring deadlines, on the one premium screen whose whole job is penalty avoidance.
+⭐ **Blast radius checked, not assumed:** the same asymmetry does **not** break the headline
+`netAmountToSetAside` — there full-year W2 tax and full-year W2 withholding sit on opposite sides of
+one subtraction and cancel to gig-only tax, which is correct. Confined to safe harbor.
+
+**(b) Married Filing Jointly collects no spouse income. ✅ VERIFIED.** `grep -ri spouse` across
+`apps/` and `services/` returns **nothing**. MFJ is offered (`OnboardingScreen.tsx:33`) and
+`TaxProfile` (`types.ts:12-46`) carries one set of W2 fields — the user's own. A married gig worker's
+profit is taxed from the bottom of the MFJ brackets instead of stacking on the spouse's income.
+Systematically low, silently, for most married users.
+
+**(c) GA, SC and MN dependent exemptions are modelled as dollar-for-dollar tax CREDITS. ✅ VERIFIED
+ON BOTH HALVES.** `calculateAvailableStateCredit` computes `perDependent × numberOfChildren`
+(`stateTax.ts:34`) and it lands as `creditApplied = Math.min(availableCredit, stateLevelTax)`
+(`:171`) — a direct reduction of **tax owed**. Configured GA `4000` (`stateTaxConfigs/2026.ts:191`),
+MN `5300` (`:749`), SC `4930` (`:1081`). ⚠️ **The agent cited `taxYears/2026.ts`; the file is
+`stateTaxConfigs/2026.ts` — line numbers exactly right, directory wrong.** Internal evidence: the
+genuine credits in the same file are AR 29, DE 110, NE 176, OR 256, two orders of magnitude smaller;
+and VT already models an exemption correctly by folding it into `standardDeduction`. **Tax law
+confirmed against sources, not recall:** all three are subtractions from income — GA per O.C.G.A.
+§48-7-26 ("allowed as a deduction in computing Georgia taxable income"), MN and SC per their
+departments of revenue and SC Code §12-6-1140. **The values are right; the SLOT is wrong.** Effect: a
+GA single filer with 2 dependents on $40k profit is told **$0** Georgia tax instead of ~$891.
+🔍 **Surfaced while confirming:** GA's exemption is rising $4,000 → $5,000 (then +$125/yr to $6,000
+from 2027) and the config still says 4000 — **effective year not yet confirmed; check it with the
+fix.** There is no staleness review over the state configs at all.
+
+**(d) Dependents are counted in the tax owed but not in the withholding credited.** `calculations.ts:316`
+subtracts a W2-withholding estimate that omits the CTC and state dependent credits
+(`w2Withholding.ts:27-33`; `numberOfChildren` defaults to 0 at `stateTax.ts:96`) from a combined total
+that includes both (`estimate.ts:65,71-77`). The module's "accurate W-4" assumption omits W-4 Step 3,
+which is $2,000/child. Agent's worked example — **not independently re-derived by this session, treat
+as indicative**: MFJ, 2 kids, $60k W2 + $20k gig → app says set aside $656, true balance due ~$3,496.
+
+**Exit line:** all four corrected with tests that would have caught them; the GA/SC/MN fix moves those
+three to the income-subtraction path VT already uses; no feature item renders a number this block
+has not corrected first.
+
+### 1.2.3 — 🔴 Data-safety block _(new 2026-09-20, gap scan)_
+
+**(a) A decryption failure has no recovery path, and the key can be silently replaced.**
+`repository.ts:99-106` falls back to `JSON.parse(raw)` on ciphertext, which throws and escapes as a
+generic `loadError`. Worse: `getOrCreateEncryptionKey` **mints a fresh key** when SecureStore returns
+null (`encryption.ts:44-48`) — so a Keystore reset makes existing data permanently unreadable on the
+next write. AES-CBC with no MAC (`cryptoCore.ts:13-19`) means wrong key, truncation and tampering are
+indistinguishable from each other.
+
+**(b) No write anywhere is error-handled.** Load is wrapped; no write is (`AppDataContext.tsx:112-160`).
+`setAppLockEnabled` and `setRemindersEnabled` set state **before** awaiting the write (`:162-169`), so
+a failed write shows the user an app lock they do not have. Entry writes are unguarded
+read-modify-write over the whole array — while `updateAppSettings` was explicitly hardened against
+exactly that (`repository.ts:170-182`), so the pattern was known and not generalised.
+
+⚠️ **Pairs with the backup-restore validation hole** already filed at 1.2.10: together they are the
+whole data-durability story, and the app currently has no automatic backup either (deferred).
+
+### 1.2.4 — ⭐ Set-aside split by date and week _(new 2026-09-20, [D7])_
 
 **The gap, in Jason's words:** *"Having one big lump sum to set aside makes it hard to keep track."*
 
@@ -737,7 +813,7 @@ later item, not by this one.
   `candidate.entries` through wholesale after an `Array.isArray` check (`backup.ts:51`, `:60`) — no
   per-field reconstruction — so a new optional `Entry` field round-trips through backup for free,
   exactly as `hoursWorked` / `customExpenses` / `mileageLog` already do. ⚠️ The same read surfaced the
-  restore-validation hole now filed against 1.2.8; **the fix there must stay forward-compatible or it
+  restore-validation hole now filed against 1.2.10; **the fix there must stay forward-compatible or it
   breaks this property.**
 
 **The design rule that makes it trustworthy — [D7].** Tax is progressive, so a per-period figure
@@ -754,7 +830,7 @@ instead of, the YTD lump. Free tier — this is the core set-aside job, not the 
 pre-existing entry with no frozen field back-fills at the current rate or renders as "—" · whether the
 weekly row is on the dashboard or a drill-down.
 
-### 1.2.3 — ⭐ Mileage trip toggle 🔧 _(new 2026-09-20, [D8])_
+### 1.2.5 — ⭐ Mileage trip toggle 🔧 _(new 2026-09-20, [D8])_
 
 **The gap:** mileage is a **hand-typed number** — a text input at `AddEntryScreen.tsx:61`, parsed at
 `:138`. That is the entire mechanism. Free tier.
@@ -781,7 +857,7 @@ on one slipped version was the thing to avoid. Prerequisites → the plan's Exte
 lands squarely in the standing web-verified-only trap. Device verification is not optional here; it is
 the only verification that means anything.
 
-### 1.2.4 — Premium slice
+### 1.2.6 — Premium slice
 **Shift/earnings optimizer** (headline; pulled from v1.3; also delivers the owed earning-optimization
 repositioning; soft-gate below ~30 entries — demo mode is what makes it demoable) · **safe-harbor
 payment tracker** (payments made vs. required; completes what v1.1 half-built; needs a per-year
@@ -791,46 +867,46 @@ surfacing fix; amount is premium, date stays free) · **expense-breakdown drill-
 four sit on the tax-time/complexity axis, never on the core set-aside job; additive, never blurring an
 already-free section.
 
-### 1.2.5 — Native iPad
+### 1.2.7 — Native iPad
 Flip `ios.supportsTablet` (`false` today), unlock `orientation` (`portrait` today). Adaptive
 split-view/sidebar, multi-column dashboard, size classes, Split View / Stage Manager, hardware-keyboard
 niceties, native-layout screenshots. `src/components/Screen.tsx` is the single wrapper for every screen
 — the natural size-class seam. ~2× the original estimate.
 
-### 1.2.6 — Guided onboarding (full coachmark tour)
+### 1.2.8 — Guided onboarding (full coachmark tour)
 Value-prop intro + interactive first-run tour over **populated** views (hence demo mode first). Overlay/
 tooltip system built **reusable across the three finance apps**. ⚠️ Render coach-marks **outside**
 gesture handlers — a `GestureDetector` swallows taps on native, and a tour whose tooltips don't respond
 on device is the failure mode. Calm, one-at-a-time, replayable, skippable.
 
-### 1.2.7 — Accessibility depth audit
+### 1.2.9 — Accessibility depth audit
 Dynamic Type · VoiceOver order and labels · 44pt touch targets · high-contrast · reduce-motion. Runs
 **after** the layout work so it sweeps the final surface. ~2× original estimate. VoiceOver end-to-end is
-device-owed (1.2.10).
+device-owed (1.2.12).
 
 ### ⛔ iOS home-screen widget — CUT TO v1.3 on 2026-09-20 ([D8]) _(was 1.2.6)_
 Today's earnings + running set-aside. WidgetKit target mirroring Freedom v1. It was on record as the
-#1 risk to the August date, with a standing *"cut this before cutting the date"* — and 1.2.3 made
+#1 risk to the August date, with a standing *"cut this before cutting the date"* — and 1.2.5 made
 mileage v1.2's native item, so carrying both meant two capability chains on an already-slipped
 version. **The recommendation was standing since 2026-08-07; this is it being taken.** Its external
 prerequisites (App Group → profile regeneration → CI signing) move to v1.3 with it. Cost is external,
 not build time — so it is no cheaper later, just less concurrent.
 
-### 1.2.8 — Filed correctness backlog
+### 1.2.10 — Filed correctness + submission-compliance backlog
 🔴 **IRS due dates don't shift for weekends/holidays** — `quarterlyDueDates.ts` uses the fixed
-Apr15/Jun15/Sep15/Jan15 rule, so reminders can fire on the wrong day. ⚠️ **Higher-stakes now that 1.2.4
+Apr15/Jun15/Sep15/Jan15 rule, so reminders can fire on the wrong day. ⚠️ **Higher-stakes now that 1.2.6
 puts a dollar amount in those reminders** — a wrong date carries a wrong payment instruction; consider
-pulling into 1.2.4. Plus: tax-profile completeness prompt · analytics/crash opt-out toggle (restore the
+pulling into 1.2.6. Plus: tax-profile completeness prompt · analytics/crash opt-out toggle (restore the
 privacy-policy line if added) · privacy/support pages single source of truth (⚠️ interacts with
 repo→private: Pages-on-private needs a paid plan, and a dead privacy URL is a compliance issue).
 
-### 1.2.9 — Lint ledger → CI gate
+### 1.2.11 — Lint ledger → CI gate
 14 findings: 1 dead export (`totalCustomExpenses`), 4 `setState`-in-effect, and the
 `useRef(new Animated.Value()).current` idiom in `Screen.tsx`. **Rules-of-React violations, not observed
-defects** — nothing misbehaves today. Runs late because 1.2.0–1.2.5 rewrite these files. Then add
+defects** — nothing misbehaves today. Runs late because 1.2.0–1.2.7 rewrite these files. Then add
 `npm run lint` to `web-e2e`.
 
-### 1.2.10 — Verify · device QA · phase after-scan
+### 1.2.12 — Verify · device QA · phase after-scan
 Playwright + Maestro green, both themes at parity (**light held to the same bar as dark**) ·
 **real-device TestFlight QA against a per-version full-surface checklist, native paths first — hard
 gate** · pre-submit functional-correctness audit · Apple guideline pass incl. paywall findability ·

@@ -11,16 +11,21 @@
 > dispatch #2 would otherwise clone a tree with no demo mode in it. _(The previous resume block
 > asserted the opposite. Committing is not shipping.)_
 >
-> ⚠️ **The August date is gone.** [D4] targeted live by Aug 31; last commit is 2026-08-08 and nothing
-> has moved in six weeks. A new date is owed → **[D9]**.
+> 🔴 **THREE MONEY-WRONG BUGS ARE LIVE IN v1.1.1**, all understating what the user owes the IRS:
+> safe harbor reports "no penalty expected" through both spring deadlines · MFJ ignores spouse income ·
+> GA/SC/MN dependent exemptions are applied as tax credits. All confirmed against the code, all now
+> **1.2.2**, which runs **before every feature item**. Per [D10] there is no interim patch.
+>
+> ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
+> ship as soon as it is done.** Do not reintroduce a target.
 >
 > **▶ ACTIVE = 1.2.1 (demo mode), 5/7 sub-steps. Next action: 1.2.1.6** (premium preview per [D5]).
 > Health at 1.2.1.5: **30/30** Playwright · **191** mobile unit · typecheck clean · lint 14 (all
-> pre-existing, ledger clears at 1.2.9).
+> pre-existing, ledger clears at 1.2.11).
 >
-> **Three new items admitted 2026-09-20** (Jason): **1.2.2** per-entry/weekly set-aside split ·
-> **1.2.3** mileage trip toggle · and the widget **cut to v1.3**. See [D7]/[D8], and the renumber
-> map in [V1_2_LOG.md](V1_2_LOG.md).
+> **Queue restructured 2026-09-20** — two items Jason raised ([D7] split, [D8] mileage), two
+> correctness blocks from the gap scan, and the widget **cut to v1.3**. Renumber map (original →
+> final, one hop) → [V1_2_LOG.md](V1_2_LOG.md).
 >
 > ⚠️ **Standing caveat: everything in v1.2 is WEB/UNIT-VERIFIED ONLY.** react-native-web renders no
 > `Alert`, no biometrics, no document picker, no real navigation stack. **Green here means "nothing
@@ -29,11 +34,12 @@
 > unsent**; its still-live triage rule (the swallowed `iPhone 15` boot failure that misreads as an app
 > problem) is in [V1_2_LOG.md](V1_2_LOG.md).
 
-**Branch:** `v1.2` (pushed) · **Target:** live on the App Store by **end of August 2026** ([D4])
-**Structural audit:** [`docs/audits/2026-08-07-v1.2-structural/`](docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md) · **Ladder rationale:** [BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md)
+**Branch:** `v1.2` · **Target: none — ship ASAP** ([D9], superseding [D4]'s August)
+**Structural audit:** [`docs/audits/2026-08-07-v1.2-structural/`](docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md) · **Gap scan:** [`docs/audits/2026-09-20-v1.2-gap-scan/`](docs/audits/2026-09-20-v1.2-gap-scan/README.md) · **Ladder rationale:** [BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md)
 
-**Backwards from Aug 31:** live Aug 31 ← Apple review + resubmit buffer (~1wk) ⇒ **submit ~Aug 24**
-← TestFlight device-QA pass, a hard gate (~1wk) ⇒ **feature-complete ~Aug 20** ⇒ **~13 build days.**
+⛔ **The backwards-from-Aug-31 schedule is retired**, not rescheduled. There is no date to work back
+from and none is wanted. **What replaces it: the queue order below, correctness first.** The one hard
+gate that survives is the TestFlight device-QA pass at 1.2.12 — that is a gate, not a date.
 
 ---
 
@@ -99,15 +105,22 @@ _1.2.1 is not listed here — it is the active item above. An item appears in ex
 
 | # | item | notes |
 |---|---|---|
-| 1.2.2 | **⭐ Set-aside split by date and week** | NEW 2026-09-20 ([D7]). Per-entry set-aside rolling up to weekly, replacing the YTD lump as the actionable unit. Rate **frozen at log time** via one optional `Entry` field. |
-| 1.2.3 | **⭐ Mileage trip toggle** 🔧 | NEW 2026-09-20 ([D8]). Start/stop capture on **when-in-use** location, populating the existing `MileageLog` shape. **v1.2's only native item.** Auto-detection → v1.3. |
-| 1.2.4 | **Premium slice** | Optimizer (headline) · safe-harbor payment tracker · per-quarter amounts in reminders · expense drill-down. **Before the screen passes** so each walks the final surface once. |
-| 1.2.5 | **Native iPad** | Adaptive split-view/sidebar. ~2× its original estimate (scoped at 6 screens, now 13). |
-| 1.2.6 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
-| 1.2.7 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. |
-| 1.2.8 | **Filed correctness backlog** | IRS due-date business-day shift 🔴 · backup-restore validation · completeness prompt · analytics opt-out · privacy-page single source. ⚠️ **Pull the due-date fix into 1.2.4** — that item puts a dollar amount in those reminders, so a wrong date carries a wrong payment instruction. |
-| 1.2.9 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.5 rewrite those files. |
-| 1.2.10 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
+| 1.2.2 | **🔴 Tax-correctness block** | **NEW 2026-09-20, from the gap scan. Three confirmed money-wrong bugs, all understating what is owed**, plus the dependent asymmetry. Live in v1.1.1. **Precedes every feature item** — see the sequencing note below. |
+| 1.2.3 | **🔴 Data-safety block** | NEW 2026-09-20. A decryption failure has no recovery path and key regeneration makes old data permanently unreadable; **no write anywhere is error-handled.** |
+| 1.2.4 | **⭐ Set-aside split by date and week** | NEW 2026-09-20 ([D7]). Per-entry set-aside rolling up to weekly, replacing the YTD lump as the actionable unit. Rate **frozen at log time** via one optional `Entry` field. |
+| 1.2.5 | **⭐ Mileage trip toggle** 🔧 | NEW 2026-09-20 ([D8]). Start/stop capture on **when-in-use** location, populating the existing `MileageLog` shape. **v1.2's only native item.** Auto-detection → v1.3. |
+| 1.2.6 | **Premium slice** | Optimizer (headline) · safe-harbor payment tracker · per-quarter amounts in reminders · expense drill-down. **Before the screen passes** so each walks the final surface once. ⚠️ **Depends on 1.2.2** — the safe-harbor tracker cannot be built on the broken safe-harbor math. |
+| 1.2.7 | **Native iPad** | Adaptive split-view/sidebar. ~2× its original estimate (scoped at 6 screens, now 13). |
+| 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
+| 1.2.9 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. |
+| 1.2.10 | **Filed correctness + submission-compliance backlog** | IRS due-date business-day shift 🔴 · backup-restore validation · **iOS privacy manifest (may block upload — ITMS-91053)** · `ITSAppUsesNonExemptEncryption` declared false while the app does AES-256 · `clearAllLocalData` omits `appSettings` against the stated policy · completeness prompt · analytics opt-out · privacy-page single source. ⚠️ **Pull the due-date fix into 1.2.6** — that item puts a dollar amount in those reminders, so a wrong date carries a wrong payment instruction. |
+| 1.2.11 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.7 rewrite those files. |
+| 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
+
+⚠️ **Sequencing, and it is the point of the restructure:** the correctness blocks run **before** the
+feature items, not after. 1.2.4 renders a per-entry set-aside in ~52 rows a year — building it on an
+under-bracketed number multiplies one wrong figure into fifty-two wrong ones. **Fix the math, then
+build the display on it.**
 
 ⛔ **Cut to v1.3 on 2026-09-20 ([D8]):** the **iOS home-screen widget** (was 1.2.6). It was on record
 as the #1 risk to the date, with a standing "cut this before cutting the date"; 1.2.3 makes mileage
@@ -151,7 +164,8 @@ map is at the head of the log's item-spec section._
 | **[D6]** | **Already-onboarded users can reach the demo too** — one Settings section that enters or exits. Also makes store screenshots shootable without wiping real data. | Jason 2026-08-08 |
 | **[D7]** | **The set-aside splits per entry, rolling up to weekly** — not a derived weekly view alone. Each shift carries its own figure, **frozen at the rate in effect when logged**, so history never moves retroactively; the existing catch-up line reconciles the drift. | Jason 2026-09-20 |
 | **[D8]** | **Mileage gets a start/stop toggle in v1.2 on when-in-use location; auto-detection waits for v1.3.** The **widget is cut to v1.3** so v1.2 carries one native item, not two. | Jason 2026-09-20 |
-| **[D9]** | 🟠 **OPEN — a new ship date is owed.** August is gone and scope grew by two items. Not re-decided yet. | — |
+| **[D9]** | ✅ **NO SHIP DATE. Work through the queue and ship ASAP.** August is retired and not replaced — the version is paced by the work, not by a date. ⚠️ **Do not reintroduce a target date**; the correctness exposure from [D10] is the reason to go fast, not a reason to set one and cut against it. | Jason 2026-09-20 |
+| **[D10]** | **No interim patch release — the three live money-wrong bugs are fixed in v1.2, not in a v1.1.2.** Recommendation on record was a cheap disclosure patch (MFJ warning + safe-harbor caveat) while the real fixes were built; **Jason chose the single correct release instead.** Tradeoff accepted knowingly: v1.1.1 keeps understating what users owe until v1.2 ships. | Jason 2026-09-20 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
@@ -177,6 +191,50 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From the 2026-09-20 gap scan _(full findings → [docs/audits/2026-09-20-v1.2-gap-scan/](docs/audits/2026-09-20-v1.2-gap-scan/))_
+
+**Folded into v1.2 rather than deferred** _(recorded here so the routing is auditable)_: the **state
+picker** → 1.2.2 (free text produces a `$0` state tax and a "CALIFORNIA isn't supported yet" warning
+over a config that has all 51 — it is the same wrong-state-tax family) · the **"how to pay" card +
+federal/state split** → 1.2.4 (that item reworks how the set-aside is presented; *where to send it*
+belongs beside *how much*, and the federal slice already exists in the model) · **per-platform gross
+receipts in the export** and the **closed-year due-date mismatch** → 1.2.10 (both trivial, data
+already present).
+
+**Deferred to v1.3+:**
+- **CSV import from the platforms' own earnings exports.** `DocumentPicker` appears **once**, for
+  backup restore — three export paths, one import, and that import is a destructive whole-device
+  replace. Highest retention value of anything the scan found **and** the largest build, which is
+  exactly why it is not a v1.2 squeeze.
+- **1099-NEC/1099-K reconciliation screen** — the January moment the app exists for. The cheap export
+  half folds into 1.2.10; the enter-and-compare screen is its own item.
+- **The tax profile has no history.** One `state`/`filingStatus`/`dependents` applied to every year, so
+  moving TX→CA retroactively taxes a Texas year at California rates on the Premium year-over-year
+  screen. ⚠️ `amountSetAsideByYear` and `filedTaxByYear` show the year-keying pattern was available and
+  was not applied to the profile. Needs a migration.
+- **No automatic backup and nothing prompts for one.** Manual JSON export is the entire recovery
+  story; `AppSettings` has no last-backup field. ⚠️ **Compounds 1.2.3** — the data-safety block fixes
+  *losing* data, this fixes *recovering* it.
+- **Section 199A / QBI is not modelled at all.** Zero hits repo-wide; `federalIncomeTax.ts:15-24` goes
+  AGI → standard deduction → brackets with nothing between. Overstates federal income tax ~22% (~$506
+  on $40k single). ⭐ **The only finding that errs toward over-collecting** — safe for the user, wrong
+  against any competitor or preparer.
+- **No staleness review over the state tax configs.** Surfaced while confirming the GA/SC/MN fix: GA's
+  dependent exemption is rising $4,000 → $5,000 and the config still says 4000. **The individual value
+  is 1.2.2's problem; the absence of any process that would have caught it is this item.**
+- **Only the standard mileage method exists**, and the app never asks which method the user elected in
+  year one — an election that is binding in later years. Store the election in 1.2.5 if cheap;
+  actual-expense math is its own workstream.
+- **Schedule C Part IV vehicle info** (total/commuting miles, in-service date) is never collected.
+  ⚠️ **Total annual mileage is unrecoverable in April if not captured contemporaneously** — consider
+  pulling just that field into 1.2.5.
+- **A loss year is floored to zero** (`estimate.ts:12-15`, `:71-77`), so the app can never show that
+  gig work reduced a W2 tax bill. ⭐ **Both lenses found this independently**, from opposite directions —
+  the strongest signal the scan produced.
+- **Clawbacks, chargebacks and reversals cannot be recorded** — every money field is clamped
+  non-negative. Pair with the 1099 reconciliation item; both are the logged total not matching reality.
+- **No multi-state or part-year residency** — a single state of residence only.
 
 - **🔴 Backup restore does no validation of entry contents → 1.2.8.** `parseBackupSnapshot` checks
   `Array.isArray(candidate.entries)` ([backup.ts:51](apps/mobile/src/backup.ts#L51)) and then passes
