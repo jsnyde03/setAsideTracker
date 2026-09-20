@@ -11,6 +11,50 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.2 Tax-correctness block — TASK before-scan · 2026-09-20
+
+**Method:** the gap scan's findings are hypotheses like any other plan. Each was traced through the
+arithmetic before it earned a sub-step. **Two of the four needed correcting, and neither correction
+would have surfaced by reading the findings again.**
+
+**Verified true, mechanism intact**
+- **Dependent asymmetry (finding d) — confirmed.** `w2Withholding.ts:28` calls
+  `calculateStateTax(0, 0, annualW2Income, filingStatus, stateCode, config, county)` with **no
+  `numberOfChildren`**, so it takes the parameter default of 0; the federal leg likewise applies no
+  CTC. Meanwhile `estimate.ts:33,49` *does* pass `input.numberOfChildren ?? 0` into both. So the
+  withholding estimate models a W-4 with no dependents claimed while the total it is subtracted from
+  credits them — withholding overstated, set-aside understated. Direction confirmed.
+- **The GA/SC/MN slot error — confirmed**, and the fix site is `stateTax.ts:152`, where
+  `taxableIncome = max(0, stateAGI − standardDeductionUsed)`. An exemption belongs in that
+  subtraction; the config currently routes it to `creditApplied` at `:171`.
+
+**⚠️ Correction 1 — the audit's own precedent is only half right.** Lens B cited VT as the state that
+*"already models an exemption the right way"*, folding `7650 + 5300` into `standardDeduction`. Reading
+it: single `7650 + 5300`, **MFJ `15300 + 10600`** — the second term doubles with the number of
+**filers**, so what is modelled is the **per-filer personal exemption**, correctly. VT's **dependent**
+exemptions are not modelled at all. So VT is a valid precedent for the fixed per-filer part and **not**
+for the per-dependent part, which must scale with `numberOfChildren`. _(Direction is safe — it
+overstates VT tax — but it is the same class of defect, one state over.)_
+
+**⚠️ Correction 2, and it resizes the item: nobody has checked the other 47 states.** The finding
+names three states because three were *looked at*. GA, SC and MN were found by noticing their credit
+values were two orders of magnitude larger than AR/DE/NE/OR — a heuristic that catches states whose
+exemption is large, and silently passes any state whose exemption happens to look credit-sized, or
+which omits a dependent mechanism entirely (as VT does). **Fixing three and shipping would leave the
+class unmeasured**, which is why 1.2.2.2 exists as its own sub-step. This is the hand-built-site-list
+undercount again, at audit scale rather than at grep scale.
+
+**⚠️ Not re-derived, and flagged as such:** lens B's worked example for the asymmetry (MFJ, 2 kids,
+$60k W2 + $20k gig → app says $656, true ≈ $3,496). The *mechanism* is confirmed; the *figure* is the
+agent's and is carried as indicative until 1.2.2.5 derives it.
+
+**Surfaced → routed:** the state configs have **no staleness review** — GA's $4,000 → $5,000 rise was
+found by a web search during verification, not by anything in the repo. Folded into 1.2.2.7 rather
+than deferred, because the item is already in those files and a fix that can silently rot is half a
+fix.
+
+---
+
 ### 🔎 1.2.1.7 Tests — SUB-TASK before-scan + partial after-scan · 2026-09-20
 
 ⭐ **The before-scan found most of this sub-step already shipped.** The spec reads *"Playwright

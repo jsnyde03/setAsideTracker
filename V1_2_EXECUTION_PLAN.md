@@ -24,14 +24,14 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> **▶ ACTIVE = 1.2.1 (demo mode), 6/7 sub-steps. Next action: 1.2.1.7** — tests: Playwright
-> enter/exit + real-data-untouched, the Maestro flow, and **the owed dispatch #2**.
-> Health at 1.2.1.6: **197** mobile unit (was 191) · typecheck clean · Playwright 30/30 as of
-> 1.2.1.5, **not re-run since** · lint 14 (all pre-existing, ledger clears at 1.2.11).
+> **▶ ACTIVE = 1.2.2 (tax-correctness block), decomposed into 7 sub-steps. Next action: 1.2.2.1.**
+> **⏸ 1.2.1 is 7/7 built and blocked on Maestro dispatch #2** — manual-only, Jason-side; it closes
+> the moment those flows pass. Working 1.2.2 during that wait rather than idling.
+> Health: **197** mobile unit · **34/34** Playwright · typecheck clean · lint 14 (pre-existing).
 >
-> ⚠️ **Constraint on 1.2.1.7 from the restructure: do not assert absolute dollar figures.** 1.2.2
-> changes the tax math, which changes what `buildDemoSeed` produces. Derived assertions survive it;
-> a hardcoded `$1,400` does not — which is the defect 1.2.1.5 already had to fix once.
+> ⚠️ **Constraint carried into 1.2.4 and beyond: do not assert absolute dollar figures in tests.**
+> 1.2.2 changes the tax math, which changes what `buildDemoSeed` produces. Derived assertions
+> survive it; a hardcoded `$1,400` does not — the defect 1.2.1.5 already had to fix once.
 >
 > **Queue restructured 2026-09-20** — two items Jason raised ([D7] split, [D8] mileage), two
 > correctness blocks from the gap scan, and the widget **cut to v1.3**. Renumber map (original →
@@ -84,42 +84,39 @@ dependency — 1.2.3 (location) is the next one.
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ▶ **1.2.1 — Demo mode** · 🔵 before-scan done 2026-08-08 · **5/7 sub-steps**
+### ⏸ **1.2.1 — Demo mode** · **7/7 built, BLOCKED on external validation**
 
-**Why it is next:** the bundle's lead item — reusable seed infrastructure the others consume. The
-premium slice (**1.2.4**) is unshowable on an empty account, the tour (**1.2.6**) needs populated
-views to teach over, and iPad (**1.2.5**) needs realistic content to lay out. _(Renumbered
-2026-09-20 — this line previously pointed at three wrong items.)_
+In-memory store · offset-dated persona · 4 leak guards · enter/exit + [D6] Settings row · banner on
+all 13 screens · premium preview ([D5]) · 34/34 Playwright. **⛔ Blocked only on Maestro dispatch #2**,
+which is manual-only and Jason-side; `.maestro/demo-mode.yaml` is unrun and that run is its
+validation. **Closes the moment the flows pass.** Detail + all 9 scan records → [V1_2_LOG.md](V1_2_LOG.md).
 
-⚠️ **The before-scan killed the spec's central premise.** Persistence does **not** all funnel through
-`repository.ts` — `appReview.ts` (one-shot review flag), notification scheduling and analytics all
-bypass it. Isolation is a **three-file** guarantee, not one. Full record → [V1_2_LOG.md](V1_2_LOG.md).
+✅ **[D11] the persona stays at ONE tax year** — year-over-year therefore cannot be previewed, accepted
+because the gate is about data, not payment. An e2e asserts the absence.
+
+---
+
+### ▶ **1.2.2 — Tax-correctness block** · 🔵 before-scan done 2026-09-20
+
+**Why it is next:** three confirmed money-wrong bugs, live in v1.1.1, all understating what the user
+owes the IRS — and **every feature item after this renders numbers this block corrects.** 1.2.4 puts a
+per-entry set-aside in ~52 rows a year; building it first multiplies one wrong figure into fifty-two.
+
+⚠️ **The before-scan corrected the audit twice. Both corrections are in the sub-steps below.**
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.1.1** | ✅ **Demo store — DONE 2026-08-08.** In-memory `demoStore.ts` + a one-function `backend()` switch; `repository.ts` now has **zero** direct `AsyncStorage.` calls. Premium cache deliberately exempt. 8 tests, verified by mutation. | ✅ |
-| **1.2.1.2** | ✅ **Seed generator — DONE 2026-08-08.** `buildDemoSeed(now)` with day-offset dates, compressed (not spilled) when the tax year is too young — `entriesForYear` would otherwise drop the whole persona on 1 Jan. 29 tests across 7 calendar dates; totals verified against the plan's $6,213. | ✅ |
-| **1.2.1.3** | ✅ **Leaks plugged — DONE 2026-08-08.** Guards at 4 choke points (review prompt · schedule · **cancel** · analytics), flag moved to a pure `demo/demoMode.ts`. ⭐ The scan found a **fourth** leak: `cancelQuarterlyReminders` wipes *all* device notifications, so a demo toggle would have deleted the real user's reminders. 9 paired tests. | ✅ |
-| **1.2.1.4** | ✅ **Enter/exit — DONE 2026-08-08.** `DemoContext` inside `AppDataProvider`; entry on onboarding, exit first in Settings; entry rolls back if the re-read fails. ⭐ **`RequireTaxProfile` needed NO widening** — the demo seeds a profile, so the Debt `3.5.4.3` premise doesn't transfer and no guard was weakened. **Extended for [D6]:** one Settings row that enters or exits, so an onboarded account can explore — which is what made the item's exit line testable end-to-end. 5 new e2e → 28/28. | ✅ |
-| **1.2.1.5** | ✅ **Marking — DONE 2026-08-08.** `DemoBanner` rendered by `Screen`, so all 13 screens get it and none opts in; first in the tree, so VoiceOver reaches it before any figure; tappable to exit. ⭐ **The screenshot caught a defect 4 suites couldn't** — the demo opened in the red "behind" state because the set-aside target is date-dependent and the seeded amount was a copied constant. Now derived from the engine, mutation-verified. | ✅ |
-| **1.2.1.6** | ✅ **Premium preview — DONE 2026-09-20.** Pure `resolvePremiumAccess` + a `usePremiumAccess` adapter; 6 gate sites now read `canUsePremium`, while purchase, PDF export and "Premium active" keep the honest `isPremium`. ⭐ The spec said **4** gate sites; there are **7 consumers, 6 previewable** — and `isDemoPreview` **cannot** live on `PremiumContext`, which sits above `DemoProvider`. 6 tests, both plants caught. | ✅ |
-| **1.2.1.7** | ⚙️ **Tests — code DONE 2026-09-20, dispatch owed.** ⭐ The before-scan found most of this spec **already shipped** inside 1.2.1.4/.5 (enter/exit, real-data-untouched, seed + isolation units). What was actually missing was 1.2.1.6's preview: **4 new Playwright specs → 34/34**, incl. a free-account **control** and the [D5] honesty test. New `.maestro/demo-mode.yaml`. ⛔ **The Maestro flow is UNRUN** — dispatch #2 is its validation, not a regression check. 🔴 **Found: year-over-year cannot be previewed at all** — see the [DECISION] below. | 🔵 |
+| **1.2.2.1** | **GA/SC/MN exemptions → income subtraction.** Add an `exemption` slot to `StateTaxConfig`, subtract `perDependent × numberOfChildren` alongside the standard deduction (`stateTax.ts:152`), move the three states off `credit.perDependent`. ⚠️ **Confirm GA's $4,000 → $5,000 effective year** while in here. | ⬜ |
+| **1.2.2.2** | **Audit every state's dependent mechanism, not just the three.** ⭐ The audit called VT the correct precedent; it is **half** correct — `7650 + 5300` folds the **per-filer** exemption into the standard deduction (MFJ doubles it, consistent), but VT's **dependent** exemptions are not modelled at all. **Nobody has checked the other 47.** A fix to three states that leaves the same class unmeasured elsewhere is not a fix. | ⬜ |
+| **1.2.2.3** | **Safe harbor: annualize, or state what it is measuring.** `estimatedPaymentsNeeded` compares a 90% requirement built from YTD entries against a full-year withholding (`calculations.ts:511`, `:312`). **Design question in the sub-step:** project gig income to year-end, or scope the test to the period elapsed. ⚠️ `w2FederalWithholdingYtdEstimate` is **misnamed** — it holds an annual figure — and renaming it is part of the fix, not cosmetic. | ⬜ |
+| **1.2.2.4** | **MFJ spouse income.** New `TaxProfile` field (+ onboarding + edit); `grep -ri spouse` is currently empty repo-wide. Feeds `otherTaxableIncome` so gig profit stacks on top instead of starting at 10%. ⚠️ **Additive-optional, so it round-trips through backup for free** — measured at `backup.ts:51`,`:60`, same property 1.2.4 depends on. | ⬜ |
+| **1.2.2.5** | **Dependent asymmetry in the withholding credit.** ✅ **Confirmed this scan:** `w2Withholding.ts:28` calls `calculateStateTax(...)` with **no `numberOfChildren`**, and `calculateFederalIncomeTax` with no CTC — while the total it is subtracted from includes both. ⚠️ **Lens B's worked example ($656 vs ~$3,496) was NOT re-derived** — derive it here before quoting it. | ⬜ |
+| **1.2.2.6** | **State picker** _(folded from the gap scan)_. Free text at `OnboardingScreen.tsx:181` means a typo yields `$0` state tax and "CALIFORNIA isn't supported yet" over a config holding all 51. | ⬜ |
+| **1.2.2.7** | **Regression tests + a staleness gate.** Every fix above gets a test that would have caught it, each mutation-verified. ⭐ Plus the thing that lets this recur: **nothing reviews the state configs for staleness** — GA's rise was found by a web search, not by the repo. | ⬜ |
 
-**Exit line:** demo enters and exits clean with the real data **provably untouched**; every surface
-showing demo money is marked as such **on screen and in the accessibility tree**; premium screens
-preview populated while `subscribe`/`export` still route to the real paywall.
-
-### ✅ [D11] The demo persona stays at ONE tax year — settled 2026-09-20
-
-Year-over-year is gated on `yearsTracked >= 2` (`DashboardScreen.tsx:516`) and `buildDemoSeed` keeps
-the persona inside one tax year deliberately, so **the fourth premium screen cannot be previewed.**
-**Accepted.** The gate is about *data*, not about paying — a real one-year user does not see that
-card either, so the demo is being truthful rather than incomplete. Seeding a second year would make
-the persona a second-year worker and would touch 29 seed tests, the compression logic and
-`SCREENSHOT_PLAN.md`. **Known cost, knowingly taken: one of four premium screens is unsellable in
-the demo.** ⚠️ **Revisit if the demo ever becomes the primary premium sales surface** — that is the
-condition that flips this, not a change in the code. An e2e asserts the absence, so a silent
-reappearance fails the suite.
+**Exit line:** all four money-wrong bugs corrected with mutation-verified tests; the dependent
+mechanism checked across **all 51** configs, not three; no feature item renders a figure this block
+has not already fixed.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
