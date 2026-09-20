@@ -435,9 +435,42 @@ workflows:
             xcrun simctl io booted screenshot .maestro/diag-final-screen.png || \
               echo "(could not capture the simulator screen)"
 
-            # Maestro writes a screenshot AND a view hierarchy per failure. Say where they are, so
-            # the artifact list is readable rather than a haystack.
-            echo "=== Maestro's own per-failure artifacts ==="
+            # ⚠️ PRINT THE HIERARCHY INTO THIS LOG. Maestro writes a view hierarchy per failure, and
+            # it answers in one read what a failing assertion never can — an assertion says what was
+            # ABSENT, the hierarchy says what was PRESENT. Chasing those JSON files out of the
+            # artifact zip cost several round-trips on 2026-09-20, while the step log was always to
+            # hand. So the evidence goes where the reader already is.
+            cat > /tmp/dump_hierarchy.py <<'PYEOF'
+          import json, sys
+
+          def walk(node, out):
+              attrs = node.get("attributes") or {}
+              shown = [attrs.get(k) for k in ("accessibilityText", "text", "hintText", "value")]
+              shown = [str(v) for v in shown if v]
+              if shown:
+                  label = " | ".join(dict.fromkeys(shown))
+                  out.append("    %-62s %s" % (label[:62], attrs.get("bounds", "")))
+              for child in (node.get("children") or []):
+                  walk(child, out)
+
+          out = []
+          walk(json.load(open(sys.argv[1], encoding="utf-8")), out)
+          if not out:
+              out = ["    (no text nodes)"]
+          for line in out[:150]:
+              print(line)
+          PYEOF
+
+            echo "=== ON-SCREEN TEXT AT EACH FAILURE (from Maestro's view hierarchy) ==="
+            find "$HOME/.maestro/tests" -type f -name '*.json' -path '*screen-hierarchy*' 2>/dev/null \
+              | head -4 | while read -r h; do
+                  echo ""
+                  echo "--- $(basename "$(dirname "$(dirname "$h")")") / $(basename "$h") ---"
+                  python3 /tmp/dump_hierarchy.py "$h" 2>&1 | head -60
+                done
+
+            echo ""
+            echo "=== All per-failure artifacts (screenshots + hierarchies) ==="
             find "$HOME/.maestro/tests" -type f \( -name '*.png' -o -name '*.json' \) 2>/dev/null \
               | tail -40 || echo "(none found)"
           fi
