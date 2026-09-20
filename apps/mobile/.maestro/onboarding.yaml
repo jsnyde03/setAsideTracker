@@ -13,8 +13,19 @@ name: Onboarding → Dashboard
 - tapOn: "e.g. CA"
 - inputText: "TX"
 - hideKeyboard
+# ⚠️ Onboarding is a ScrollView (OnboardingScreen.tsx:140) and its lower half is below the fold on
+# a shorter device. `tapOn` does NOT scroll, so tapping blind here is what failed 12/12 flows on
+# 2026-09-20 -- every one of them on this screen, most on "Continue". Scroll first, always.
+- scrollUntilVisible:
+    element:
+      text: "I understand this app provides estimates, not tax advice"
+    direction: DOWN
 # Disclaimer checkbox — matched by the Pressable's accessibilityLabel.
 - tapOn: "I understand this app provides estimates, not tax advice"
+- scrollUntilVisible:
+    element:
+      text: "Continue"
+    direction: DOWN
 - tapOn: "Continue"
 - assertVisible: "Your earnings"
 - assertVisible: "Set aside for taxes"

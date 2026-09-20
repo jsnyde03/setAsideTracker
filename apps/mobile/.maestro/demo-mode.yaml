@@ -17,6 +17,13 @@ name: Demo mode (enter, preview premium, exit)
 - launchApp
 
 # ── 1. Enter from onboarding ────────────────────────────────────────────────────────────────────
+# ⚠️ Below the fold on a shorter device — it sits BELOW "Continue" on the onboarding ScrollView,
+# so it is the last thing on the screen. Scroll to it rather than assuming it is in view; asserting
+# blind here is what failed this flow on 2026-09-20.
+- scrollUntilVisible:
+    element:
+      text: "Explore with sample data"
+    direction: DOWN
 - assertVisible: "Explore with sample data"
 - tapOn: "Explore with sample data"
 
@@ -75,5 +82,9 @@ name: Demo mode (enter, preview premium, exit)
 - tapOn: "Exit sample data"
 
 # No real profile was ever created, so leaving lands back on onboarding with the marker gone.
+- scrollUntilVisible:
+    element:
+      text: "Explore with sample data"
+    direction: DOWN
 - assertVisible: "Explore with sample data"
 - assertNotVisible: "Sample data — not your account"
