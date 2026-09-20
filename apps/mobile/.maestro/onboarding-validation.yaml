@@ -16,6 +16,11 @@ name: Onboarding validation (native Alert dialogs)
 - tapOn: "Continue"
 - assertVisible: "Name required"
 - tapOn: "OK"
+# Wait for the alert to actually be gone before touching the form again. Tapping a field
+# while the alert is still dismissing means focus never lands, no keyboard opens, and the
+# following hideKeyboard fails with "Couldn't hide the keyboard" — which reads like a custom
+# input problem and is really a timing one.
+- assertNotVisible: "Name required"
 # Enter a name but no state → native "State required" alert.
 # ⚠️ Scroll back UP first. The scroll to "Continue" above left the form at its bottom, so a
 # blind tap here lands on empty space, no keyboard opens, and `hideKeyboard` then fails with

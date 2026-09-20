@@ -12,6 +12,17 @@ name: Safe-harbor gating (locked card → paywall)
 - tapOn: "Your name"
 - inputText: "Maestro Tester"
 - tapOn: "Single"
+# ⚠️ hideKeyboard BEFORE reaching for the state field, not after. The field sits at y≈543 on
+# an 874-tall screen and the keyboard covers roughly the bottom third, so a blind tap lands on
+# the KEYBOARD: focus never leaves the name field and the next inputText appends there.
+# Proven, not guessed — dispatch #6's view hierarchy showed the name field holding
+# "Maestro Tester TX", the state field empty, and a native "State required" alert on screen.
+# That is why every flow "failed to reach the dashboard": onboarding was never valid.
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "State you primarily work in"
+    direction: DOWN
 - tapOn: "e.g. CA"
 - inputText: "TX"
 - hideKeyboard
