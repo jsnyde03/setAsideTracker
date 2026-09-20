@@ -103,11 +103,31 @@ bypass it. Isolation is a **three-file** guarantee, not one. Full record → [V1
 | **1.2.1.4** | ✅ **Enter/exit — DONE 2026-08-08.** `DemoContext` inside `AppDataProvider`; entry on onboarding, exit first in Settings; entry rolls back if the re-read fails. ⭐ **`RequireTaxProfile` needed NO widening** — the demo seeds a profile, so the Debt `3.5.4.3` premise doesn't transfer and no guard was weakened. **Extended for [D6]:** one Settings row that enters or exits, so an onboarded account can explore — which is what made the item's exit line testable end-to-end. 5 new e2e → 28/28. | ✅ |
 | **1.2.1.5** | ✅ **Marking — DONE 2026-08-08.** `DemoBanner` rendered by `Screen`, so all 13 screens get it and none opts in; first in the tree, so VoiceOver reaches it before any figure; tappable to exit. ⭐ **The screenshot caught a defect 4 suites couldn't** — the demo opened in the red "behind" state because the set-aside target is date-dependent and the seeded amount was a copied constant. Now derived from the engine, mutation-verified. | ✅ |
 | **1.2.1.6** | ✅ **Premium preview — DONE 2026-09-20.** Pure `resolvePremiumAccess` + a `usePremiumAccess` adapter; 6 gate sites now read `canUsePremium`, while purchase, PDF export and "Premium active" keep the honest `isPremium`. ⭐ The spec said **4** gate sites; there are **7 consumers, 6 previewable** — and `isDemoPreview` **cannot** live on `PremiumContext`, which sits above `DemoProvider`. 6 tests, both plants caught. | ✅ |
-| **1.2.1.7** | **Tests** — Playwright enter/exit + real-data-untouched · Maestro flow · unit tests for seed + isolation | ⬜ |
+| **1.2.1.7** | ⚙️ **Tests — code DONE 2026-09-20, dispatch owed.** ⭐ The before-scan found most of this spec **already shipped** inside 1.2.1.4/.5 (enter/exit, real-data-untouched, seed + isolation units). What was actually missing was 1.2.1.6's preview: **4 new Playwright specs → 34/34**, incl. a free-account **control** and the [D5] honesty test. New `.maestro/demo-mode.yaml`. ⛔ **The Maestro flow is UNRUN** — dispatch #2 is its validation, not a regression check. 🔴 **Found: year-over-year cannot be previewed at all** — see the [DECISION] below. | 🔵 |
 
 **Exit line:** demo enters and exits clean with the real data **provably untouched**; every surface
 showing demo money is marked as such **on screen and in the accessibility tree**; premium screens
 preview populated while `subscribe`/`export` still route to the real paywall.
+
+### 🟠 [DECISION — Jason] Should the demo persona span two tax years?
+
+**Found at 1.2.1.7 by a test that failed for the right reason.** Every premium card carries a *data*
+precondition on top of the premium gate, and year-over-year's is `yearsTracked >= 2`
+(`DashboardScreen.tsx:516`). **The persona seeds exactly one tax year, deliberately** — `buildDemoSeed`
+compresses rather than spills, because `entriesForYear` silently drops anything landing in the
+previous year. So **the card never renders in a demo and the fourth premium screen cannot be
+previewed at all.**
+
+- **Leave it (my recommendation).** The gate is about *data*, not about paying — a real one-year user
+  doesn't see that card either, so the demo is being truthful. Seeding a second year means the demo
+  persona stops representing a new gig worker, and it touches `demoSeed`'s 29 tests, the compression
+  logic, and `SCREENSHOT_PLAN.md`. **The cost is that one of four premium screens is unsellable in
+  the demo.**
+- **Seed a prior year.** All four premium screens preview, which is what a demo exists for. Costs the
+  seed rework above, and the persona becomes a second-year worker.
+
+Asserted either way: an e2e now **fails** if the card silently appears or disappears, so this cannot
+rot while the decision is open.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 

@@ -11,6 +11,44 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.1.7 Tests — SUB-TASK before-scan + partial after-scan · 2026-09-20
+
+⭐ **The before-scan found most of this sub-step already shipped.** The spec reads *"Playwright
+enter/exit + real-data-untouched · Maestro flow · unit tests for seed + isolation"* — but 1.2.1.4
+shipped the enter/exit specs **and** the real-data-untouched round-trip, 1.2.1.5 added two more, and
+`demoSeed`/`demoStore`/`demoLeaks` tests already cover seed and isolation. **A pre-authored sub-step
+spec went stale because its own siblings absorbed its work**, which is a drift mode distinct from the
+usual one: nothing about the code changed underneath it, the *plan* moved.
+
+**What was actually missing: 1.2.1.6's preview, which had no e2e coverage at all.** Added 4 specs →
+**34/34** (was 30).
+
+⚡ **A finding that outlives this item: the e2e suite has no way to grant a real entitlement.** Every
+premium spec asserts only the *locked* path, so until demo mode existed, W-4 optimizer, safe harbor,
+year-over-year and expense breakdown had **never been opened end-to-end in a browser**. These tests
+are those screens' first e2e coverage, which was not the sub-step's goal and is worth more than it.
+
+**The control is half the value.** "Premium cards open inside a demo" would pass identically if the
+cards had simply been unlocked for everyone, so a sibling test runs the same cards on a free account
+and asserts the paywall. Both directions, per the standing rule that a one-way fixture leaves a
+vacuous row reporting sound.
+
+🔴 **A test failed for the right reason, and found a real gap.** `Open year-over-year insights` never
+appears in a demo. Cause: every premium card has a **data** precondition on top of the premium gate,
+and year-over-year's is `yearsTracked >= 2` (`DashboardScreen.tsx:516`), while `buildDemoSeed` keeps
+the whole persona inside one tax year **on purpose** (it compresses rather than spills, because
+`entriesForYear` would silently drop prior-year entries). **So the fourth premium screen cannot be
+previewed at all.** Escalated as a `[DECISION]` rather than fixed unilaterally — seeding a second year
+changes what the persona *represents* and touches 29 seed tests plus `SCREENSHOT_PLAN.md`.
+⭐ **The absence is now itself asserted**, so the question cannot rot silently while it is open.
+
+⛔ **Not done: `.maestro/demo-mode.yaml` is UNRUN.** Dispatch #2 is its validation, not a regression
+check — the same status the 1.2.0.8 Maestro changes carried, and for the same reason.
+
+**Ports verified free after the Playwright runs** (8081 / 8082 / 19000 / 19001 / 19006), per standing.
+
+---
+
 ### 🔎 1.2.1.6 Premium preview without entitlement — SUB-TASK after-scan · 2026-09-20
 
 **Shipped.** `premium/premiumAccess.ts` (pure `resolvePremiumAccess`) + `premium/usePremiumAccess.ts`

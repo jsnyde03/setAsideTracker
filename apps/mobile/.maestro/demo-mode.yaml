@@ -1,0 +1,79 @@
+# Demo mode, on a real device (1.2.1).
+#
+# Why this flow exists when a 11-test Playwright suite already covers demo mode: the web suite runs
+# on react-native-web, which has no real navigation stack, no Alert and no persistence across a
+# process restart. This asserts the parts only a device can answer —
+#   1. entering from onboarding survives a REAL stacked-route push/pop, not a URL change
+#   2. the demo banner renders inside the real SafeAreaView, below the notch, on every screen
+#   3. premium previews open real native screens (1.2.1.6)
+#   4. exiting returns to onboarding with the demo gone
+#
+# ⚠️ Runs BEFORE clear-all-data.yaml but AFTER the gating flows: it deliberately starts from a
+# fresh, NOT-yet-onboarded state, so it must not inherit an onboarded session.
+appId: com.gigtaxtracker.app
+name: Demo mode (enter, preview premium, exit)
+---
+- clearState
+- launchApp
+
+# ── 1. Enter from onboarding ────────────────────────────────────────────────────────────────────
+- assertVisible: "Explore with sample data"
+- tapOn: "Explore with sample data"
+
+# Seeded content, not just a navigation — an empty demo would satisfy "we moved" and prove nothing.
+- assertVisible: "Set aside for taxes"
+- assertVisible:
+    text: "Edit Uber entry.*"
+
+# ── 2. The demo is marked, on more than one screen ──────────────────────────────────────────────
+- assertVisible: "Sample data — not your account"
+- tapOn:
+    id: "Settings"
+- assertVisible: "Sample data — not your account"
+- tapOn: "Close"
+
+# ── 3. Premium previews open the real screens (1.2.1.6, [D5]) ───────────────────────────────────
+# Web cannot prove these are native screens rather than a re-render; this can.
+- scrollUntilVisible:
+    element:
+      text: "Avoid the IRS penalty"
+    direction: DOWN
+- tapOn: "Avoid the IRS penalty"
+- assertVisible: "Safe harbor"
+- assertNotVisible: "SetAside Premium"
+- tapOn: "Close"
+
+- scrollUntilVisible:
+    element:
+      text: "Expense breakdown"
+    direction: DOWN
+- tapOn: "Expense breakdown"
+- assertVisible: "Expense breakdown"
+- assertNotVisible: "SetAside Premium"
+- tapOn: "Close"
+
+# ── 4. [D5]: previewing is not owning. PDF export writes a real file, so it still refuses. ───────
+# This is the one assertion here that a simulator proves better than the web suite ever could: the
+# export path reaches a real filesystem and a real share sheet on device.
+- tapOn:
+    id: "Settings"
+- assertNotVisible: "Premium active"
+- scrollUntilVisible:
+    element:
+      text: "Tax Summary \\(PDF\\).*Premium"
+    direction: DOWN
+- tapOn:
+    text: "Tax Summary \\(PDF\\).*Premium"
+- assertVisible: "SetAside Premium"
+- tapOn: "Close"
+
+# ── 5. Exit, and the demo is gone ───────────────────────────────────────────────────────────────
+- scrollUntilVisible:
+    element:
+      text: "Exit sample data"
+    direction: UP
+- tapOn: "Exit sample data"
+
+# No real profile was ever created, so leaving lands back on onboarding with the marker gone.
+- assertVisible: "Explore with sample data"
+- assertNotVisible: "Sample data — not your account"

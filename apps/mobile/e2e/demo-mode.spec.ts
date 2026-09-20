@@ -128,3 +128,90 @@ test("a demo session leaves the real account provably untouched", async ({ page 
   await expect(visible(page.getByLabel(/Edit Spark entry/)).first()).toBeVisible();
   await expect(visible(page.getByText(/\$999/))).toHaveCount(0);
 });
+
+/**
+ * Premium preview inside a demo (1.2.1.6, per [D5]).
+ *
+ * ⭐ These are also the FIRST end-to-end coverage the four premium screens have ever had. The suite
+ * has no way to grant a real entitlement — every other premium spec asserts only the *locked* path —
+ * so until demo mode existed, nothing could open W-4 optimizer, safe harbor, year-over-year or
+ * expense breakdown in a browser at all.
+ *
+ * The pair matters more than either half: the preview test alone would pass just as happily if the
+ * cards had always been unlocked, so the free-account control runs the same four cards and asserts
+ * the paywall. And the last test is [D5]'s actual guarantee — the entitlement stays honest, so the
+ * things that spend money or write a real file still refuse.
+ */
+const PREVIEWABLE_CARDS = [
+  { card: "Open the W-4 withholding optimizer", locked: "W-4 withholding optimizer (Premium)", screen: "W-4 optimizer" },
+  { card: "Open the safe-harbor calculator", locked: "Safe-harbor calculator (Premium)", screen: "Safe harbor" },
+  { card: "Open the expense breakdown", locked: "Expense breakdown (Premium)", screen: "Expense breakdown" },
+];
+
+/**
+ * ⚠️ Year-over-year is deliberately NOT in that list, and this test is why.
+ *
+ * Every premium card carries a *data* precondition on top of the premium gate, and year-over-year's
+ * is `yearsTracked >= 2` (`DashboardScreen.tsx:516`). The persona seeds exactly one tax year — on
+ * purpose: `buildDemoSeed` compresses rather than spills, because `entriesForYear` would silently
+ * drop anything landing in the previous year. So the card never renders in a demo, and the fourth
+ * premium screen cannot be previewed at all.
+ *
+ * That is arguably correct — a real one-year user doesn't see it either, and the gate is about data,
+ * not about paying. It is asserted here rather than left as a silent hole, so that whichever way the
+ * persona question is settled, this test has to be looked at.
+ */
+test("year-over-year cannot be previewed: the persona has only one year", async ({ page }) => {
+  await visible(page.getByText("Explore with sample data")).first().click();
+  await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
+
+  await expect(visible(page.getByLabel("Open year-over-year insights"))).toHaveCount(0);
+  await expect(visible(page.getByLabel("Year-over-year insights (Premium)"))).toHaveCount(0);
+});
+
+test("the premium cards open their real screens inside a demo", async ({ page }) => {
+  await visible(page.getByText("Explore with sample data")).first().click();
+  await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
+
+  for (const { card, screen } of PREVIEWABLE_CARDS) {
+    await visible(page.getByLabel(card)).first().click();
+    // The screen itself, not the paywall — and asserted by its own title rather than by the absence
+    // of the paywall, because "no paywall" is also true of a blank page.
+    await expect(visible(page.getByText(screen, { exact: true })).first()).toBeVisible();
+    await expect(visible(page.getByText("SetAside Premium"))).toHaveCount(0);
+    await visible(page.getByLabel("Close")).first().click();
+  }
+});
+
+test("CONTROL: the same cards send a free account to the paywall", async ({ page }) => {
+  // Without this the test above proves nothing — unlocked-for-everyone would pass it identically.
+  await completeOnboarding(page, { name: REAL_NAME, state: "TX", filingStatus: "Single" });
+  await visible(page.getByText("Log Earnings", { exact: true })).first().click();
+  await visible(page.getByText("DoorDash", { exact: true })).first().click();
+  await grossPayField(page).fill("4000");
+  await visible(page.getByText("Save Entry", { exact: true })).first().click();
+  await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
+
+  for (const { locked, screen } of PREVIEWABLE_CARDS) {
+    const lockedCard = visible(page.getByLabel(locked)).first();
+    if ((await lockedCard.count()) === 0) continue; // a card whose own precondition isn't met
+    await lockedCard.click();
+    await expect(visible(page.getByText("SetAside Premium")).first()).toBeVisible();
+    await expect(visible(page.getByText(screen, { exact: true }))).toHaveCount(0);
+    await visible(page.getByLabel("Close")).first().click();
+  }
+});
+
+test("[D5]: the demo previews premium WITHOUT claiming the entitlement", async ({ page }) => {
+  await visible(page.getByText("Explore with sample data")).first().click();
+  await visible(page.getByLabel("Settings")).first().click();
+
+  // Settings still reports the account as unsubscribed, because it is. A demo may lie about the
+  // data on screen; it may never lie about the user's own billing.
+  await expect(visible(page.getByText("Premium active"))).toHaveCount(0);
+
+  // And PDF export — which writes a real file to a real device — still routes to the paywall even
+  // though every viewing surface around it is previewing.
+  await visible(page.getByLabel("Export tax summary as PDF")).first().click();
+  await expect(visible(page.getByText("SetAside Premium")).first()).toBeVisible();
+});

@@ -11,6 +11,9 @@ flows:
   - safe-harbor-gating.yaml
   - year-over-year-gating.yaml
   - expense-breakdown-gating.yaml
+  # After the gating flows, because it opens its own `clearState` and must NOT inherit an onboarded
+  # session — it enters the demo from onboarding, which an onboarded account never sees.
+  - demo-mode.yaml
   # Runs last: it destroys the app's data on purpose, so anything after it would start from a
   # different state than it expects.
   - clear-all-data.yaml
