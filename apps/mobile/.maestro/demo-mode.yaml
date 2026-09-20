@@ -36,6 +36,13 @@ name: Demo mode (enter, preview premium, exit)
 # the button, so "Welcome" is off-screen whether or not the demo opened, and would pass either
 # way. The affordance we just tapped is the honest probe — it is in view on the screen we are
 # trying to leave, so it can only be gone if we actually left.
+# 🔎 Which failure is this? The two look identical from outside:
+#   (a) the tap never landed — a flow problem; or
+#   (b) the tap DID land, enterDemo() threw, and app/onboarding.tsx:54 caught it and showed
+#       "Couldn't start the demo" — which leaves us on onboarding with the button still
+#       visible, i.e. demo mode is broken ON DEVICE and the web suite cannot see it.
+# Asserting the Alert FIRST makes the log say which, instead of us inferring it again.
+- assertNotVisible: "Couldn't start the demo"
 - assertNotVisible: "Explore with sample data"
 - assertNotVisible: "Something went wrong"
 
