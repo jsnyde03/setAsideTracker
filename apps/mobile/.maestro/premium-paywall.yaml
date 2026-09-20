@@ -35,6 +35,10 @@ name: Premium Paywall (smoke)
       text: "Continue"
     direction: DOWN
 - tapOn: "Continue"
+- scrollUntilVisible:
+    element:
+      text: "Set aside for taxes"
+    direction: DOWN
 - assertVisible: "Set aside for taxes"
 # Open Settings → the premium upsell row → the paywall.
 - tapOn: "Settings"

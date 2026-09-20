@@ -18,6 +18,10 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
 - inputText: "5000"
 - hideKeyboard
 - tapOn: "Save Entry"
+- scrollUntilVisible:
+    element:
+      text: "Set aside for taxes"
+    direction: DOWN
 - assertVisible: "Set aside for taxes"
 
 # --- Entry 2: drive the native date picker back one full year, then log it ---
@@ -36,6 +40,10 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
 - inputText: "3000"
 - hideKeyboard
 - tapOn: "Save Entry"
+- scrollUntilVisible:
+    element:
+      text: "Set aside for taxes"
+    direction: DOWN
 - assertVisible: "Set aside for taxes"
 
 # The card now appears (entries span two years); tapping it opens the paywall directly.

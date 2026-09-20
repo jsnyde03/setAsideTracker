@@ -39,6 +39,10 @@ name: W-4 optimizer gating (locked card → paywall)
       text: "Continue"
     direction: DOWN
 - tapOn: "Continue"
+- scrollUntilVisible:
+    element:
+      text: "Set aside for taxes"
+    direction: DOWN
 - assertVisible: "Set aside for taxes"
 
 # Log gig income so there's tax to cover.
@@ -49,6 +53,10 @@ name: W-4 optimizer gating (locked card → paywall)
 - inputText: "4000"
 - hideKeyboard
 - tapOn: "Save Entry"
+- scrollUntilVisible:
+    element:
+      text: "Set aside for taxes"
+    direction: DOWN
 - assertVisible: "Set aside for taxes"
 
 # The optimizer card is present but locked behind Premium; tapping it opens the paywall directly.

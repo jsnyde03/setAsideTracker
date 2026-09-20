@@ -16,10 +16,22 @@ name: Expense breakdown gating (locked card → paywall)
 - tapOn: "DoorDash"
 - tapOn: "Gross pay"
 - inputText: "4000"
+# Same class as the onboarding defect: AddEntryScreen is also a ScrollView under a
+# KeyboardAvoidingView (AddEntryScreen.tsx:203,234), so a tap aimed at a field the keyboard
+# covers silently lands on the keyboard and the next inputText appends to the WRONG field.
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "Mileage (business miles driven)"
+    direction: DOWN
 - tapOn: "Mileage (business miles driven)"
 - inputText: "500"
 - hideKeyboard
 - tapOn: "Save Entry"
+- scrollUntilVisible:
+    element:
+      text: "Set aside for taxes"
+    direction: DOWN
 - assertVisible: "Set aside for taxes"
 
 # The breakdown card is present but locked behind Premium; tapping it opens the paywall directly.

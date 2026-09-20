@@ -55,4 +55,8 @@ name: Onboarding → Dashboard
 # this title — so this failing both names the cause AND puts the real message in the shot.
 - assertNotVisible: "Something went wrong"
 - assertVisible: "Your earnings"
+- scrollUntilVisible:
+    element:
+      text: "Set aside for taxes"
+    direction: DOWN
 - assertVisible: "Set aside for taxes"

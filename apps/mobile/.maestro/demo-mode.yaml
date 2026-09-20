@@ -30,18 +30,25 @@ name: Demo mode (enter, preview premium, exit)
 # 🔎 Same diagnostic: if entering the demo bounced back to onboarding, say so here
 # rather than reporting a confusing "Set aside for taxes is not visible" two lines later.
 - takeScreenshot: .maestro/diag-02-after-enter-demo
-- assertNotVisible: "Welcome"
+# ⚠️ "Welcome" is the WRONG probe here: this flow scrolls to the bottom of onboarding to reach
+# the button, so "Welcome" is off-screen whether or not the demo opened, and would pass either
+# way. The affordance we just tapped is the honest probe — it is in view on the screen we are
+# trying to leave, so it can only be gone if we actually left.
+- assertNotVisible: "Explore with sample data"
 - assertNotVisible: "Something went wrong"
 
 # Seeded content, not just a navigation — an empty demo would satisfy "we moved" and prove nothing.
+- scrollUntilVisible:
+    element:
+      text: "Set aside for taxes"
+    direction: DOWN
 - assertVisible: "Set aside for taxes"
 - assertVisible:
     text: "Edit Uber entry.*"
 
 # ── 2. The demo is marked, on more than one screen ──────────────────────────────────────────────
 - assertVisible: "Sample data — not your account"
-- tapOn:
-    id: "Settings"
+- tapOn: "Settings"
 - assertVisible: "Sample data — not your account"
 - tapOn: "Close"
 
@@ -68,8 +75,7 @@ name: Demo mode (enter, preview premium, exit)
 # ── 4. [D5]: previewing is not owning. PDF export writes a real file, so it still refuses. ───────
 # This is the one assertion here that a simulator proves better than the web suite ever could: the
 # export path reaches a real filesystem and a real share sheet on device.
-- tapOn:
-    id: "Settings"
+- tapOn: "Settings"
 - assertNotVisible: "Premium active"
 - scrollUntilVisible:
     element:

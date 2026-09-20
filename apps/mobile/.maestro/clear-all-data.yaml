@@ -21,6 +21,10 @@ name: Clear all data (destructive confirm + return to onboarding)
 - inputText: "250"
 - hideKeyboard
 - tapOn: "Save Entry"
+- scrollUntilVisible:
+    element:
+      text: "Set aside for taxes"
+    direction: DOWN
 - assertVisible: "Set aside for taxes"
 - assertVisible:
     text: "Edit DoorDash entry.*"
@@ -45,6 +49,10 @@ name: Clear all data (destructive confirm + return to onboarding)
 # And the data must be genuinely gone, not merely navigated away from: re-onboarding lands on an
 # empty dashboard with no trace of the entry logged above.
 - runFlow: onboarding.yaml
+- scrollUntilVisible:
+    element:
+      text: "Set aside for taxes"
+    direction: DOWN
 - assertVisible: "Set aside for taxes"
 - assertNotVisible:
     text: "Edit DoorDash entry.*"
