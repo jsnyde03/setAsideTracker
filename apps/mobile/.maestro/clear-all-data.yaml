@@ -25,6 +25,8 @@ name: Clear all data (destructive confirm + return to onboarding)
     element:
       text: "Set aside for taxes"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 - assertVisible:
     text: "Edit DoorDash entry.*"
@@ -35,6 +37,8 @@ name: Clear all data (destructive confirm + return to onboarding)
 - scrollUntilVisible:
     element: "Clear all data"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "Clear all data"
 - assertVisible: "Clear all data?"
 # "Clear Everything" is the destructive button's exact label — verified against SettingsScreen rather
@@ -53,6 +57,8 @@ name: Clear all data (destructive confirm + return to onboarding)
     element:
       text: "Set aside for taxes"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 - assertNotVisible:
     text: "Edit DoorDash entry.*"

@@ -22,6 +22,8 @@ name: Premium Paywall (smoke)
     element:
       text: "State you primarily work in"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "e.g. CA"
 - inputText: "TX"
 - hideKeyboard
@@ -29,16 +31,22 @@ name: Premium Paywall (smoke)
     element:
       text: "I understand this app provides estimates, not tax advice"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "I understand this app provides estimates, not tax advice"
 - scrollUntilVisible:
     element:
       text: "Continue"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "Continue"
 - scrollUntilVisible:
     element:
       text: "Set aside for taxes"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 # Open Settings → the premium upsell row → the paywall.
 - tapOn: "Settings"

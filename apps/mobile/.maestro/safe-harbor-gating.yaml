@@ -23,6 +23,8 @@ name: Safe-harbor gating (locked card → paywall)
     element:
       text: "State you primarily work in"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "e.g. CA"
 - inputText: "TX"
 - hideKeyboard
@@ -30,16 +32,22 @@ name: Safe-harbor gating (locked card → paywall)
     element:
       text: "I understand this app provides estimates, not tax advice"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "I understand this app provides estimates, not tax advice"
 - scrollUntilVisible:
     element:
       text: "Continue"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "Continue"
 - scrollUntilVisible:
     element:
       text: "Set aside for taxes"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 
 # Log gig income so there's tax to set aside (and the safe-harbor card appears).
@@ -54,6 +62,8 @@ name: Safe-harbor gating (locked card → paywall)
     element:
       text: "Set aside for taxes"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 
 # The safe-harbor card is present but locked behind Premium; tapping it opens the paywall directly.
@@ -61,6 +71,8 @@ name: Safe-harbor gating (locked card → paywall)
     element:
       text: "Avoid the IRS penalty.*Premium"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn:
     text: "Avoid the IRS penalty.*Premium"
 - assertVisible: "SetAside Premium"

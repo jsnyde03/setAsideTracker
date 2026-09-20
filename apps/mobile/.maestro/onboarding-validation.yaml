@@ -13,6 +13,8 @@ name: Onboarding validation (native Alert dialogs)
     element:
       text: "Continue"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "Continue"
 - assertVisible: "Name required"
 - tapOn: "OK"
@@ -30,6 +32,8 @@ name: Onboarding validation (native Alert dialogs)
     element:
       text: "Your name"
     direction: UP
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "Your name"
 - inputText: "Maestro Tester"
 - hideKeyboard
@@ -37,6 +41,8 @@ name: Onboarding validation (native Alert dialogs)
     element:
       text: "Continue"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "Continue"
 - assertVisible: "State required"
 - tapOn: "OK"

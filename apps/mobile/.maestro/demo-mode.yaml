@@ -24,6 +24,8 @@ name: Demo mode (enter, preview premium, exit)
     element:
       text: "Explore with sample data"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - assertVisible: "Explore with sample data"
 - tapOn: "Explore with sample data"
 
@@ -42,6 +44,8 @@ name: Demo mode (enter, preview premium, exit)
     element:
       text: "Set aside for taxes"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 - assertVisible:
     text: "Edit Uber entry.*"
@@ -58,6 +62,8 @@ name: Demo mode (enter, preview premium, exit)
     element:
       text: "Avoid the IRS penalty"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "Avoid the IRS penalty"
 - assertVisible: "Safe harbor"
 - assertNotVisible: "SetAside Premium"
@@ -67,6 +73,8 @@ name: Demo mode (enter, preview premium, exit)
     element:
       text: "Expense breakdown"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "Expense breakdown"
 - assertVisible: "Expense breakdown"
 - assertNotVisible: "SetAside Premium"
@@ -81,6 +89,8 @@ name: Demo mode (enter, preview premium, exit)
     element:
       text: "Tax Summary \\(PDF\\).*Premium"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn:
     text: "Tax Summary \\(PDF\\).*Premium"
 - assertVisible: "SetAside Premium"
@@ -91,6 +101,8 @@ name: Demo mode (enter, preview premium, exit)
     element:
       text: "Exit sample data"
     direction: UP
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "Exit sample data"
 
 # No real profile was ever created, so leaving lands back on onboarding with the marker gone.
@@ -98,5 +110,7 @@ name: Demo mode (enter, preview premium, exit)
     element:
       text: "Explore with sample data"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - assertVisible: "Explore with sample data"
 - assertNotVisible: "Sample data — not your account"

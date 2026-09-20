@@ -16,6 +16,8 @@ name: IRS mileage log gating (native Alert → paywall)
     element:
       text: "IRS mileage log.*Premium"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn:
     text: "IRS mileage log.*Premium"
 - assertVisible: "IRS mileage log"

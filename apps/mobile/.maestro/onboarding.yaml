@@ -21,6 +21,8 @@ name: Onboarding → Dashboard
     element:
       text: "State you primarily work in"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "e.g. CA"
 - inputText: "TX"
 - hideKeyboard
@@ -31,12 +33,16 @@ name: Onboarding → Dashboard
     element:
       text: "I understand this app provides estimates, not tax advice"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 # Disclaimer checkbox — matched by the Pressable's accessibilityLabel.
 - tapOn: "I understand this app provides estimates, not tax advice"
 - scrollUntilVisible:
     element:
       text: "Continue"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn: "Continue"
 # 🔎 DIAGNOSTIC (2026-09-20). Two hypotheses produce an identical "Your earnings is not
 # visible" failure, and this separates them in the log without anyone downloading a screenshot:
@@ -59,4 +65,6 @@ name: Onboarding → Dashboard
     element:
       text: "Set aside for taxes"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"

@@ -23,6 +23,8 @@ name: Log + delete entry (native picker + confirm dialog)
     element:
       text: "Set aside for taxes"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 - assertVisible:
     text: "Edit DoorDash entry.*"
@@ -38,6 +40,8 @@ name: Log + delete entry (native picker + confirm dialog)
     element:
       text: "Set aside for taxes"
     direction: DOWN
+    centerElement: true
+- waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 - assertNotVisible:
     text: "Edit DoorDash entry.*"
