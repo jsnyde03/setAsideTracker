@@ -11,6 +11,49 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.1.6 Premium preview without entitlement — SUB-TASK after-scan · 2026-09-20
+
+**Shipped.** `premium/premiumAccess.ts` (pure `resolvePremiumAccess`) + `premium/usePremiumAccess.ts`
+(the React adapter). Six gate sites read `canUsePremium`; purchase, PDF export and the "Premium
+active" row keep reading `usePremium().isPremium`. **197 unit (was 191) · typecheck clean.**
+
+⭐ **The before-scan corrected the spec's count: "the 4 gate sites" is wrong.** There are **seven**
+`isPremium` consumers across three screens — Dashboard's four premium cards, AddEntry's mileage-log
+and custom-expenses sections, and Settings' PDF export. Six take the preview; export does not, per
+[D5]. **The spec was written before anyone counted**, and this is the same undercount that hand-built
+site lists produce every time they are measured.
+
+⚡ **A second before-scan finding changed the design, not just the count: `isDemoPreview` cannot live
+on `PremiumContext`.** `PremiumProvider` sits **above** `DemoProvider` in `app/_layout.tsx` — it has
+to, because both demo transitions re-read through `AppDataProvider`, which is below premium. A parent
+context cannot read a child's, so premium genuinely cannot know a demo is running. [D5]'s "alongside
+`isPremium`" is therefore a **composing hook**, not a field. Had this been implemented on faith, it
+would have failed at the import.
+
+⭐ **What only surfaced during implementation: there is no React test infrastructure in this project
+at all.** No testing-library, and `vitest.config.ts` collects `src/**/*.{test,spec}.ts` — `.ts` only,
+so a `.tsx` hook test would not even be picked up. Every existing unit test is plain logic. **So the
+decision was split into a dependency-free pure module and the hook became a two-line adapter** —
+which is the better shape regardless, and is precisely the precedent `demo/demoMode.ts` set for the
+same reason (importing the context drags AsyncStorage and react-native into a plain-Node test).
+
+**Mutation-verified, one plant per claim:**
+- **Plant A** — `isPremium: isPremium || isDemo`, i.e. exactly the entitlement-faking [D5] forbids.
+  Caught by **3** tests.
+- **Plant B** — `isDemoPreview = isDemo`, dropping `&& !isPremium`, mislabelling a subscriber in a
+  demo as previewing. Caught by **exactly 1** — the assertion written for that claim, which is the
+  point of planting separately rather than once.
+- Both restored and **re-verified green afterwards**. ⚠️ Worth noting: `premiumAccess.ts` was
+  untracked at plant time, so `git checkout --` could not have restored it — the reversal had to be
+  an explicit inverse edit with its own anchor assertion.
+
+**Corrected in passing:** `PremiumContext`'s doc comment claimed *"Feature code reads a single
+`isPremium` boolean via `usePremium()`"*. True when written, false the moment this landed, and it is
+the comment a future reader would have trusted. Rewritten to name the three sites that legitimately
+still read it.
+
+---
+
 ### 🔎 1.2.1.5 Mark every demo surface — SUB-TASK after-scan · 2026-08-08
 
 **Shipped.** `src/demo/DemoBanner.tsx`, rendered by `src/components/Screen.tsx`. Both candidate seams

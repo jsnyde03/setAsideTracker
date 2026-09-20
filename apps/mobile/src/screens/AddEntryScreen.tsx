@@ -17,7 +17,7 @@ import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
 import { todayIsoDate } from "../dateUtils";
-import { usePremium } from "../premium/PremiumContext";
+import { usePremiumAccess } from "../premium/usePremiumAccess";
 import { spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
 
@@ -51,7 +51,7 @@ const PLATFORM_OPTIONS: { label: string; value: GigPlatform }[] = [
 export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelete }: AddEntryScreenProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { isPremium } = usePremium();
+  const { canUsePremium } = usePremiumAccess();
   const isEditing = entry !== undefined;
 
   const [platform, setPlatform] = useState<GigPlatform>(entry?.platform ?? "amazonFlex");
@@ -117,7 +117,7 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
     const end = trimmedOrUndefined(endLocation);
     const hasMileageLog = Boolean(purpose || start || end);
     const mileageLog: MileageLog | undefined =
-      (isPremium || entry?.mileageLog) && hasMileageLog
+      (canUsePremium || entry?.mileageLog) && hasMileageLog
         ? { purpose, startLocation: start, endLocation: end }
         : undefined;
 
@@ -127,7 +127,7 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
       .map((r) => ({ label: r.label.trim(), amount: Math.max(0, parseFloat(r.amount) || 0) }))
       .filter((r) => r.label !== "" && r.amount > 0);
     const customExpenses: CustomExpense[] | undefined =
-      (isPremium || entry?.customExpenses) && cleanedCustom.length > 0 ? cleanedCustom : undefined;
+      (canUsePremium || entry?.customExpenses) && cleanedCustom.length > 0 ? cleanedCustom : undefined;
 
     const savedEntry: Entry = {
       id: entry?.id ?? `entry-${Date.now()}`,
@@ -152,7 +152,7 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
   }
 
   function handleMileageLogPress() {
-    if (isPremium) {
+    if (canUsePremium) {
       setShowMileageLog((shown) => !shown);
       return;
     }
@@ -169,7 +169,7 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
   }
 
   function handleCustomExpensesPress() {
-    if (isPremium) {
+    if (canUsePremium) {
       setShowCustomExpenses((shown) => {
         const next = !shown;
         // Seed a first empty row when opening an empty section so there's somewhere to type.
@@ -304,12 +304,12 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
             style={styles.expensesToggle}
             onPress={handleMileageLogPress}
             accessibilityRole="button"
-            accessibilityState={{ expanded: isPremium ? showMileageLog : undefined }}
-            accessibilityLabel={isPremium ? undefined : "IRS mileage log (Premium)"}
+            accessibilityState={{ expanded: canUsePremium ? showMileageLog : undefined }}
+            accessibilityLabel={canUsePremium ? undefined : "IRS mileage log (Premium)"}
           >
             <Ionicons
               name={
-                !isPremium
+                !canUsePremium
                   ? "lock-closed-outline"
                   : showMileageLog
                     ? "chevron-up"
@@ -319,7 +319,7 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
               color={colors.primary}
             />
             <Text style={styles.expensesToggleText}>
-              {!isPremium
+              {!canUsePremium
                 ? "IRS mileage log  ·  Premium"
                 : showMileageLog
                   ? "Hide IRS mileage log"
@@ -327,7 +327,7 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
             </Text>
           </Pressable>
 
-          {isPremium && showMileageLog && (
+          {canUsePremium && showMileageLog && (
             <>
               <Text style={styles.mileageLogHint}>
                 Substantiates the standard mileage deduction — the IRS expects each trip's business
@@ -361,12 +361,12 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
             style={styles.expensesToggle}
             onPress={handleCustomExpensesPress}
             accessibilityRole="button"
-            accessibilityState={{ expanded: isPremium ? showCustomExpenses : undefined }}
-            accessibilityLabel={isPremium ? undefined : "Custom expense categories (Premium)"}
+            accessibilityState={{ expanded: canUsePremium ? showCustomExpenses : undefined }}
+            accessibilityLabel={canUsePremium ? undefined : "Custom expense categories (Premium)"}
           >
             <Ionicons
               name={
-                !isPremium
+                !canUsePremium
                   ? "lock-closed-outline"
                   : showCustomExpenses
                     ? "chevron-up"
@@ -376,7 +376,7 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
               color={colors.primary}
             />
             <Text style={styles.expensesToggleText}>
-              {!isPremium
+              {!canUsePremium
                 ? "Custom expense categories  ·  Premium"
                 : showCustomExpenses
                   ? "Hide custom categories"
@@ -384,7 +384,7 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
             </Text>
           </Pressable>
 
-          {isPremium && showCustomExpenses && (
+          {canUsePremium && showCustomExpenses && (
             <>
               <Text style={styles.mileageLogHint}>
                 Track expenses beyond the four buckets — health insurance, car washes, hot bags, and

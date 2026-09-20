@@ -20,7 +20,7 @@ import { BreakdownDetailSheet } from "../components/BreakdownDetailSheet";
 import { ShareEarningsModal } from "../components/ShareEarningsModal";
 import { buildBreakdownDetail, type BreakdownRowKey } from "../breakdownDetails";
 import { PLATFORM_ICONS, PLATFORM_LABELS } from "../platforms";
-import { usePremium } from "../premium/PremiumContext";
+import { usePremiumAccess } from "../premium/usePremiumAccess";
 import { radius, shadow, shadowSm, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
 
@@ -97,7 +97,7 @@ export function DashboardScreen({
 }: DashboardScreenProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { isPremium } = usePremium();
+  const { canUsePremium } = usePremiumAccess();
 
   // The current calendar year is always selectable, even before any entry exists for it yet —
   // otherwise a brand-new year would have no way to be picked until an entry is logged for it.
@@ -471,17 +471,17 @@ export function DashboardScreen({
 
             {taxProfile.hasW2Job && netAmountToSetAside > 0 && (
               <Pressable
-                onPress={isPremium ? onOpenW4Optimizer : onOpenPaywall}
+                onPress={canUsePremium ? onOpenW4Optimizer : onOpenPaywall}
                 style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
                 accessibilityRole="button"
-                accessibilityLabel={isPremium ? "Open the W-4 withholding optimizer" : "W-4 withholding optimizer (Premium)"}
+                accessibilityLabel={canUsePremium ? "Open the W-4 withholding optimizer" : "W-4 withholding optimizer (Premium)"}
               >
                 <View style={styles.insightIconWrap}>
-                  <Ionicons name={isPremium ? "options-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                  <Ionicons name={canUsePremium ? "options-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
                 </View>
                 <View style={styles.insightInfo}>
                   <Text style={styles.insightTitle}>
-                    Skip quarterly payments{isPremium ? "" : "  ·  Premium"}
+                    Skip quarterly payments{canUsePremium ? "" : "  ·  Premium"}
                   </Text>
                   <Text style={styles.insightSub}>
                     Cover your gig taxes through your W2 paycheck instead — see the W-4 amount.
@@ -493,17 +493,17 @@ export function DashboardScreen({
 
             {netAmountToSetAside > 0 && (
               <Pressable
-                onPress={isPremium ? onOpenSafeHarbor : onOpenPaywall}
+                onPress={canUsePremium ? onOpenSafeHarbor : onOpenPaywall}
                 style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
                 accessibilityRole="button"
-                accessibilityLabel={isPremium ? "Open the safe-harbor calculator" : "Safe-harbor calculator (Premium)"}
+                accessibilityLabel={canUsePremium ? "Open the safe-harbor calculator" : "Safe-harbor calculator (Premium)"}
               >
                 <View style={styles.insightIconWrap}>
-                  <Ionicons name={isPremium ? "shield-checkmark-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                  <Ionicons name={canUsePremium ? "shield-checkmark-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
                 </View>
                 <View style={styles.insightInfo}>
                   <Text style={styles.insightTitle}>
-                    Avoid the IRS penalty{isPremium ? "" : "  ·  Premium"}
+                    Avoid the IRS penalty{canUsePremium ? "" : "  ·  Premium"}
                   </Text>
                   <Text style={styles.insightSub}>
                     See the safe-harbor minimum to pay in — often less than your full bill.
@@ -515,17 +515,17 @@ export function DashboardScreen({
 
             {yearsTracked >= 2 && (
               <Pressable
-                onPress={isPremium ? onOpenYearOverYear : onOpenPaywall}
+                onPress={canUsePremium ? onOpenYearOverYear : onOpenPaywall}
                 style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
                 accessibilityRole="button"
-                accessibilityLabel={isPremium ? "Open year-over-year insights" : "Year-over-year insights (Premium)"}
+                accessibilityLabel={canUsePremium ? "Open year-over-year insights" : "Year-over-year insights (Premium)"}
               >
                 <View style={styles.insightIconWrap}>
-                  <Ionicons name={isPremium ? "trending-up-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                  <Ionicons name={canUsePremium ? "trending-up-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
                 </View>
                 <View style={styles.insightInfo}>
                   <Text style={styles.insightTitle}>
-                    Year-over-year insights{isPremium ? "" : "  ·  Premium"}
+                    Year-over-year insights{canUsePremium ? "" : "  ·  Premium"}
                   </Text>
                   <Text style={styles.insightSub}>
                     See how this year compares to last — earnings, miles, and tax.
@@ -537,17 +537,17 @@ export function DashboardScreen({
 
             {(aggregate.totalExpenses > 0 || estimate.mileageDeduction.deductionAmount > 0) && (
               <Pressable
-                onPress={isPremium ? onOpenExpenseBreakdown : onOpenPaywall}
+                onPress={canUsePremium ? onOpenExpenseBreakdown : onOpenPaywall}
                 style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
                 accessibilityRole="button"
-                accessibilityLabel={isPremium ? "Open the expense breakdown" : "Expense breakdown (Premium)"}
+                accessibilityLabel={canUsePremium ? "Open the expense breakdown" : "Expense breakdown (Premium)"}
               >
                 <View style={styles.insightIconWrap}>
-                  <Ionicons name={isPremium ? "receipt-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                  <Ionicons name={canUsePremium ? "receipt-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
                 </View>
                 <View style={styles.insightInfo}>
                   <Text style={styles.insightTitle}>
-                    Expense breakdown{isPremium ? "" : "  ·  Premium"}
+                    Expense breakdown{canUsePremium ? "" : "  ·  Premium"}
                   </Text>
                   <Text style={styles.insightSub}>
                     See your write-offs grouped by Schedule C line — including custom categories.

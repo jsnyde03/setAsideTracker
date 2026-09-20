@@ -6,10 +6,15 @@
 
 > ## ⏭️ RESUME HERE — 2026-09-20
 >
-> ⛔ **8 commits are LOCAL-ONLY.** `origin/v1.2` is at `dbafca7`; all of 1.2.1.1–1.2.1.5 plus the
-> Sentry CI fix exist only on this machine. **Push before asking for any build** — the owed Maestro
-> dispatch #2 would otherwise clone a tree with no demo mode in it. _(The previous resume block
-> asserted the opposite. Committing is not shipping.)_
+> ✅ **Pushed and verified** (`git rev-list --count origin/v1.2..HEAD` = 0). The 8 local-only commits
+> that were stranded here — all of 1.2.1.1–1.2.1.5 — are on the remote. ⚠️ **Committing is not
+> shipping; check the count, don't assume it.** A previous resume block asserted "clean and pushed"
+> while eight commits sat local.
+>
+> ⛔ **STOP RENUMBERING THE QUEUE.** Two renumbers on 2026-09-20 broke **thirteen** cross-references
+> between them, every one found only by grepping afterwards. Item numbers are now **stable IDs** —
+> a new item takes the next free number and the build order is the table's row order, not the
+> numbering. See the note above the queue table.
 >
 > 🔴 **THREE MONEY-WRONG BUGS ARE LIVE IN v1.1.1**, all understating what the user owes the IRS:
 > safe harbor reports "no penalty expected" through both spring deadlines · MFJ ignores spouse income ·
@@ -19,9 +24,14 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> **▶ ACTIVE = 1.2.1 (demo mode), 5/7 sub-steps. Next action: 1.2.1.6** (premium preview per [D5]).
-> Health at 1.2.1.5: **30/30** Playwright · **191** mobile unit · typecheck clean · lint 14 (all
-> pre-existing, ledger clears at 1.2.11).
+> **▶ ACTIVE = 1.2.1 (demo mode), 6/7 sub-steps. Next action: 1.2.1.7** — tests: Playwright
+> enter/exit + real-data-untouched, the Maestro flow, and **the owed dispatch #2**.
+> Health at 1.2.1.6: **197** mobile unit (was 191) · typecheck clean · Playwright 30/30 as of
+> 1.2.1.5, **not re-run since** · lint 14 (all pre-existing, ledger clears at 1.2.11).
+>
+> ⚠️ **Constraint on 1.2.1.7 from the restructure: do not assert absolute dollar figures.** 1.2.2
+> changes the tax math, which changes what `buildDemoSeed` produces. Derived assertions survive it;
+> a hardcoded `$1,400` does not — which is the defect 1.2.1.5 already had to fix once.
 >
 > **Queue restructured 2026-09-20** — two items Jason raised ([D7] split, [D8] mileage), two
 > correctness blocks from the gap scan, and the widget **cut to v1.3**. Renumber map (original →
@@ -92,7 +102,7 @@ bypass it. Isolation is a **three-file** guarantee, not one. Full record → [V1
 | **1.2.1.3** | ✅ **Leaks plugged — DONE 2026-08-08.** Guards at 4 choke points (review prompt · schedule · **cancel** · analytics), flag moved to a pure `demo/demoMode.ts`. ⭐ The scan found a **fourth** leak: `cancelQuarterlyReminders` wipes *all* device notifications, so a demo toggle would have deleted the real user's reminders. 9 paired tests. | ✅ |
 | **1.2.1.4** | ✅ **Enter/exit — DONE 2026-08-08.** `DemoContext` inside `AppDataProvider`; entry on onboarding, exit first in Settings; entry rolls back if the re-read fails. ⭐ **`RequireTaxProfile` needed NO widening** — the demo seeds a profile, so the Debt `3.5.4.3` premise doesn't transfer and no guard was weakened. **Extended for [D6]:** one Settings row that enters or exits, so an onboarded account can explore — which is what made the item's exit line testable end-to-end. 5 new e2e → 28/28. | ✅ |
 | **1.2.1.5** | ✅ **Marking — DONE 2026-08-08.** `DemoBanner` rendered by `Screen`, so all 13 screens get it and none opts in; first in the tree, so VoiceOver reaches it before any figure; tappable to exit. ⭐ **The screenshot caught a defect 4 suites couldn't** — the demo opened in the red "behind" state because the set-aside target is date-dependent and the seeded amount was a copied constant. Now derived from the engine, mutation-verified. | ✅ |
-| **1.2.1.6** | **Premium preview without entitlement** — per **[D5]**: `isDemoPreview` alongside `isPremium` at the 4 gate sites; purchase + PDF export still check `isPremium` alone | ⬜ |
+| **1.2.1.6** | ✅ **Premium preview — DONE 2026-09-20.** Pure `resolvePremiumAccess` + a `usePremiumAccess` adapter; 6 gate sites now read `canUsePremium`, while purchase, PDF export and "Premium active" keep the honest `isPremium`. ⭐ The spec said **4** gate sites; there are **7 consumers, 6 previewable** — and `isDemoPreview` **cannot** live on `PremiumContext`, which sits above `DemoProvider`. 6 tests, both plants caught. | ✅ |
 | **1.2.1.7** | **Tests** — Playwright enter/exit + real-data-untouched · Maestro flow · unit tests for seed + isolation | ⬜ |
 
 **Exit line:** demo enters and exits clean with the real data **provably untouched**; every surface
@@ -102,6 +112,12 @@ preview populated while `subscribe`/`export` still route to the real paywall.
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
 _1.2.1 is not listed here — it is the active item above. An item appears in exactly one place._
+
+⛔ **Numbers are STABLE IDs — do not renumber on insert.** A new item takes the **next free number**
+and is placed in the right row; **build order is this table's row order**, never the numbering. Two
+renumbers on 2026-09-20 broke 13 cross-references between them — a backlog entry pointing at "the
+a11y audit" silently came to mean the iPad item, and only a grep caught it. The one-line cost of an
+out-of-order number is worth less than one more round of that.
 
 | # | item | notes |
 |---|---|---|
@@ -236,7 +252,7 @@ already present).
   non-negative. Pair with the 1099 reconciliation item; both are the logged total not matching reality.
 - **No multi-state or part-year residency** — a single state of residence only.
 
-- **🔴 Backup restore does no validation of entry contents → 1.2.8.** `parseBackupSnapshot` checks
+- **🔴 Backup restore does no validation of entry contents → 1.2.10.** `parseBackupSnapshot` checks
   `Array.isArray(candidate.entries)` ([backup.ts:51](apps/mobile/src/backup.ts#L51)) and then passes
   `candidate.entries` straight through as `Entry[]` ([:60](apps/mobile/src/backup.ts#L60)) — no
   per-field validation, no type coercion, no bounds. A truncated, hand-edited or foreign JSON file
@@ -245,19 +261,26 @@ already present).
   1.2.2 depends on — so the fix must preserve forward-compatibility rather than whitelist known keys.
   **Deferred, not folded:** it is a correctness fix to a path 1.2.2 only reads.
   _(Found 2026-09-20 while verifying 1.2.2's schema cost — by reading the parser, not its docstring.)_
-- **Nothing *enforces* that persistence goes through `repository.ts` → 1.2.9.** Add an ESLint
+- **Nothing stops a money-spending site from reading `canUsePremium` → 1.2.11.** [D5]'s guarantee is
+  currently held by a doc comment: purchase, PDF export and the "Premium active" row must read
+  `usePremium().isPremium`, and nothing checks that they still do. An ESLint `no-restricted-imports`
+  or a targeted lint rule over `PaywallScreen`/`handleExportPdf` would make it a CI fact rather than
+  a request. **Deferred, not folded:** 1.2.11 is already the lint-rule/CI-gate item, and this is the
+  same family as the AsyncStorage restriction filed there. _(Found 2026-09-20 at the 1.2.1.6
+  after-scan — the second guarantee in this item held only by comment.)_
+- **Nothing *enforces* that persistence goes through `repository.ts` → 1.2.11.** Add an ESLint
   `no-restricted-imports` rule allowing `@react-native-async-storage/async-storage` only in
   `src/storage/`, so demo mode's isolation guarantee is checked by CI rather than requested by a
-  comment. **Deferred, not folded:** 1.2.9 is already the lint-rule/CI-gate item, and it runs after the
+  comment. **Deferred, not folded:** 1.2.11 is already the lint-rule/CI-gate item, and it runs after the
   files in question stop being rewritten. _(Found 2026-08-08 at the 1.2.1.1 after-scan.)_
-- **`appReview.ts` writes AsyncStorage directly, outside the repository and unencrypted → 1.2.9.**
+- **`appReview.ts` writes AsyncStorage directly, outside the repository and unencrypted → 1.2.11.**
   1.2.1.3 neutralizes it *in demo*; consolidating it (and any sibling) into `repository.ts` so the
   "one persistence path" claim becomes true is the broader fix. **Deferred, not folded:** it touches a
   path demo mode doesn't need changed. _(Found 2026-08-08 at the 1.2.1 before-scan.)_
-- **`SCREENSHOT_PLAN.md`'s persona will have two sources of truth once 1.2.1.2 lands → 1.2.10.** Point
+- **`SCREENSHOT_PLAN.md`'s persona will have two sources of truth once 1.2.1.2 lands → 1.2.12.** Point
   the plan at the demo seed (one-tap, as it already anticipates) instead of the hand-maintained
   `maya-persona-backup.json`. _(Same provenance.)_
-- **🔴 `Chip` announces no selected state to screen readers → 1.2.7 (a11y audit).** `Chip` sets
+- **🔴 `Chip` announces no selected state to screen readers → 1.2.9 (a11y audit).** `Chip` sets
   `accessibilityState={{ selected }}` with `accessibilityRole="button"`, and **RN-Web drops it** —
   ARIA doesn't allow `aria-selected` on `button`, so the accessibility tree renders a bare
   `button "Dark"` with no indication it's the active choice. **`Chip` is the app's selection primitive**
@@ -266,7 +289,7 @@ already present).
   sets, or `aria-pressed` for toggles. **Deferred, not folded:** it changes a shared primitive used
   across every screen, so it belongs in the audit that sweeps them all. _(Found 2026-08-07 at 1.2.0.2,
   by reading the a11y snapshot after a test assertion failed against it.)_
-- **Settings `Switch`es carry no `accessibilityLabel` → 1.2.7 (a11y audit).** App Lock and Quarterly
+- **Settings `Switch`es carry no `accessibilityLabel` → 1.2.9 (a11y audit).** App Lock and Quarterly
   Due Date Reminders are labelled only by adjacent `Text`, so they announce as bare switches. _(Same
   provenance. Note `TextField` was fixed at 1.2.0.8 — the `Switch` and `Chip` cases remain.)_
 - ~~**Clear-all-data, restore-from-backup and app-lock have NO automated coverage**~~ → ✅ **CLOSED

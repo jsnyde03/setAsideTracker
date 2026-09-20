@@ -5,9 +5,14 @@ import { getCachedPremium, saveCachedPremium } from "../storage/repository";
 import { getPurchasesClient, isPremiumActive } from "./purchases";
 
 /**
- * App-wide premium entitlement gate. Feature code reads a single `isPremium` boolean via
- * `usePremium()` and never touches RevenueCat internals, keeping the paid/free line in one place
- * and trivially mockable in tests.
+ * App-wide premium **entitlement**, and only that: whether this account has actually paid. Nothing
+ * here knows about demo mode, and it cannot — `PremiumProvider` sits above `DemoProvider` in
+ * `app/_layout.tsx`. Feature code never touches RevenueCat internals, keeping the paid/free line in
+ * one place and trivially mockable in tests.
+ *
+ * ⚠️ **Most feature gates should read `usePremiumAccess()`, not this**, so a demo can preview
+ * premium UI without an entitlement ([D5]). Read `usePremium().isPremium` directly only where the
+ * honest entitlement is the actual question — purchase, PDF export, and the "Premium active" row.
  *
  * Offline trust is the core design rule: a failed network call must NEVER lock a paying user out of
  * premium features. So the boolean is hydrated instantly from the encrypted offline cache, then
