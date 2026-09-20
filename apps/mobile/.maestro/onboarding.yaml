@@ -27,5 +27,14 @@ name: Onboarding → Dashboard
       text: "Continue"
     direction: DOWN
 - tapOn: "Continue"
+# 🔎 DIAGNOSTIC (2026-09-20). Two hypotheses produce an identical "Your earnings is not
+# visible" failure, and this separates them in the log without anyone downloading a screenshot:
+#   (a) onboarding wrote the profile but the read came back empty, so app/index.tsx hit its
+#       `if (!localUserProfile || !taxProfile) return <Redirect href="/onboarding" />` and bounced
+#       straight back here — in which case "Welcome" is on screen and THIS line fails first.
+#   (b) the dashboard mounted but rendered nothing — "Welcome" is gone and the next line fails.
+# "Your earnings" is the first text in ListHeaderComponent (DashboardScreen.tsx:183), so it is not
+# a scroll problem either way.
+- assertNotVisible: "Welcome"
 - assertVisible: "Your earnings"
 - assertVisible: "Set aside for taxes"

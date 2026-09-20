@@ -9,6 +9,10 @@ name: Onboarding validation (native Alert dialogs)
     clearState: true
 - assertVisible: "Welcome"
 # Continue with no name entered → native "Name required" alert.
+- scrollUntilVisible:
+    element:
+      text: "Continue"
+    direction: DOWN
 - tapOn: "Continue"
 - assertVisible: "Name required"
 - tapOn: "OK"
@@ -16,6 +20,10 @@ name: Onboarding validation (native Alert dialogs)
 - tapOn: "Your name"
 - inputText: "Maestro Tester"
 - hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "Continue"
+    direction: DOWN
 - tapOn: "Continue"
 - assertVisible: "State required"
 - tapOn: "OK"

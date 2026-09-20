@@ -18,7 +18,15 @@ name: W-4 optimizer gating (locked card → paywall)
 - hideKeyboard
 # Flip on the W2 job (no paycheck details needed to surface the card).
 - tapOn: "I also have a W2 job"
+- scrollUntilVisible:
+    element:
+      text: "I understand this app provides estimates, not tax advice"
+    direction: DOWN
 - tapOn: "I understand this app provides estimates, not tax advice"
+- scrollUntilVisible:
+    element:
+      text: "Continue"
+    direction: DOWN
 - tapOn: "Continue"
 - assertVisible: "Set aside for taxes"
 
