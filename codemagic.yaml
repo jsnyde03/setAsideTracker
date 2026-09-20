@@ -360,9 +360,51 @@ workflows:
             CODE_SIGNING_ALLOWED=NO build
 
       - name: Boot a simulator and install the app
+        # ⚠️ Do NOT hardcode a simulator name here. The runner's Xcode image decides which devices
+        # exist, and "iPhone 15" is absent from the Xcode 26.4 image — which cost dispatch #2 an
+        # entire mac build on 2026-09-20. The old line was:
+        #     xcrun simctl boot "iPhone 15" || true
+        # and the `|| true` is what made it expensive rather than obvious: the boot failure was
+        # swallowed, then `simctl install booted` died two lines later with "No devices are booted",
+        # so a missing-device problem presented as an install problem. Nothing is swallowed now.
         script: |
-          xcrun simctl boot "iPhone 15" || true
-          xcrun simctl install booted \
+          set -euo pipefail
+
+          # Whatever iPhone this image actually has. Maestro does not care which model, only that
+          # one is booted, so this takes the LAST iPhone listed — simctl groups by runtime in
+          # ascending order, so that is the newest available. `tail` rather than `head` is a
+          # preference, not a requirement; any iPhone here is a valid target.
+          # The sed tolerates a model name carrying its own parentheses, e.g.
+          # "iPhone SE (3rd generation) (<udid>) (Shutdown)" — greedy `.*` lands on the UDID.
+          DEVICE_ID=$(xcrun simctl list devices available \
+            | grep -E '^[[:space:]]+iPhone' \
+            | tail -1 \
+            | sed -E 's/.*\(([0-9A-Fa-f-]{36})\).*/\1/')
+
+          if [ -z "$DEVICE_ID" ]; then
+            echo "No iPhone simulator is available on this runner. Devices present:"
+            xcrun simctl list devices available
+            exit 1
+          fi
+
+          # Name the device in the log, so the next person reading a failure knows what ran.
+          echo "Booting: $(xcrun simctl list devices available | grep "$DEVICE_ID" | sed 's/^[[:space:]]*//')"
+
+          # Tolerate ONLY the already-booted case, and prove it by reading the device's actual
+          # state rather than assuming. Any other boot failure must fail the step — hiding one
+          # behind `|| true` is what made this cost a build in the first place.
+          if ! xcrun simctl boot "$DEVICE_ID"; then
+            if xcrun simctl list devices | grep "$DEVICE_ID" | grep -q "(Booted)"; then
+              echo "Device was already booted — continuing."
+            else
+              echo "Boot failed and the device is not booted. Aborting rather than masking it."
+              exit 1
+            fi
+          fi
+
+          xcrun simctl bootstatus "$DEVICE_ID" -b
+
+          xcrun simctl install "$DEVICE_ID" \
             apps/mobile/ios/build/Build/Products/Release-iphonesimulator/SetAsideTracker.app
 
       - name: Install Maestro

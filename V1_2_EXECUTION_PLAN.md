@@ -40,9 +40,14 @@
 > ⚠️ **Standing caveat: everything in v1.2 is WEB/UNIT-VERIFIED ONLY.** react-native-web renders no
 > `Alert`, no biometrics, no document picker, no real navigation stack. **Green here means "nothing
 > else broke", not "this works on a phone"** — that happened three times in 1.2.1 alone. Device gates
-> → [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md). **Maestro dispatch #2 is owed and
-> unsent**; its still-live triage rule (the swallowed `iPhone 15` boot failure that misreads as an app
-> problem) is in [V1_2_LOG.md](V1_2_LOG.md).
+> → [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
+>
+> ⛔ **MAESTRO DISPATCH #3 IS OWED — Jason-side, manual-only.** #2 failed 2026-09-20 at **step 8**,
+> the simulator boot, so the flows **never ran**: the migration's native paths and `demo-mode.yaml`
+> are still entirely unvalidated. Cause was a hardcoded `"iPhone 15"` absent from the Xcode 26.4
+> image, masked by `|| true`. **Fixed** — the step now discovers an available iPhone and swallows
+> nothing. Triage → [V1_2_LOG.md](V1_2_LOG.md). ⚠️ **Still true for #3: read WHICH STEP failed.**
+> Only a failure inside `Run Maestro native flows` says anything about the app.
 
 **Branch:** `v1.2` · **Target: none — ship ASAP** ([D9], superseding [D4]'s August)
 **Structural audit:** [`docs/audits/2026-08-07-v1.2-structural/`](docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md) · **Gap scan:** [`docs/audits/2026-09-20-v1.2-gap-scan/`](docs/audits/2026-09-20-v1.2-gap-scan/README.md) · **Ladder rationale:** [BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md)

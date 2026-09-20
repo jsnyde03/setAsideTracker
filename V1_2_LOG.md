@@ -11,6 +11,48 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 Maestro dispatch #2 — FAILED, INFRASTRUCTURE, fixed · 2026-09-20
+
+**The predicted failure, predicted for the right reason.** Died at **step 8, `Boot a simulator and
+install the app`** — *not* inside `Run Maestro native flows` — so **the twelve flows never executed
+and nothing about the app was tested.** `demo-mode.yaml` remains unrun; the expo-router migration's
+native paths remain unvalidated. **Dispatch #3 is owed.**
+
+```
+Invalid device or device pair: iPhone 15
+No devices are booted.
+Step 8 script `Boot a simulator and install the app` exited with status code 148
+```
+
+**Mechanism, confirmed by reading the step rather than inferring it:**
+
+```bash
+xcrun simctl boot "iPhone 15" || true      # ← fails: no such device on the Xcode 26.4 image
+xcrun simctl install booted ...            # ← "No devices are booted", exit 148
+```
+
+⚡ **The `|| true` is what made this expensive rather than obvious.** A missing-device problem
+presented as an *install* problem two lines later — exactly the misread the plan's standing triage
+note warned about, which is the only reason it took one read instead of a diagnosis. **The note
+earned its keep; the build it warned about was still spent.**
+
+**Fixed — and the fix is the general form, not a newer model number.** Hardcoding `iPhone 16` would
+fail identically on the next Xcode bump. The step now *discovers* an available iPhone, names it in
+the log, and **removes the `|| true`**: only the already-booted case is tolerated, and only after
+reading the device's actual state. `bootstatus -b` waits for boot rather than racing the install.
+
+⚠️ **Verified as far as it can be offline, which is not all the way.** There is no macOS or `xcrun`
+here, so the selection pipeline was tested against realistic `simctl list devices available` sample
+text: it picks a valid UDID, excludes iPad and Apple Watch rows, and survives a model name carrying
+its own parentheses (`iPhone SE (3rd generation)`). The YAML re-parses with all 8 steps. **What
+cannot be checked here is whether the real runner image has any iPhone at all** — hence the explicit
+guard that prints the full device list and exits 1, so dispatch #3 fails *legibly* if it fails.
+
+**Also confirmed clean:** the build step uses `-destination 'generic/platform=iOS Simulator'`, so
+nothing else in the workflow names a device.
+
+---
+
 ### 🔎 1.2.2 Tax-correctness block — TASK before-scan · 2026-09-20
 
 **Method:** the gap scan's findings are hypotheses like any other plan. Each was traced through the
