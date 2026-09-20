@@ -697,12 +697,91 @@ later item, not by this one.
 
 ## Queued item specs — retrieved at switch-in
 
+> ### ⚠️ Renumber map — 2026-09-20
+>
+> Two items were admitted ([D7]/[D8]) and the widget was cut, which shifted everything after 1.2.1.
+> **Any reference dated before 2026-09-20 — in this log, in a scan record, in a commit message — uses
+> the OLD numbering.** Read it through this map:
+>
+> | old | new | item |
+> |---|---|---|
+> | — | **1.2.2** | ⭐ Set-aside split by date and week _(new)_ |
+> | — | **1.2.3** | ⭐ Mileage trip toggle _(new)_ |
+> | 1.2.2 | 1.2.4 | Premium slice |
+> | 1.2.3 | 1.2.5 | Native iPad |
+> | 1.2.4 | 1.2.6 | Guided onboarding tour |
+> | 1.2.5 | 1.2.7 | Accessibility depth audit |
+> | 1.2.6 | — | iOS widget → **cut to v1.3** |
+> | 1.2.7 | 1.2.8 | Filed correctness backlog |
+> | 1.2.8 | 1.2.9 | Lint ledger → CI gate |
+> | 1.2.9 | 1.2.10 | Verify · device QA · phase after-scan |
+
 ### 1.2.1 — Demo mode
 ⬆️ **Retrieved and superseded 2026-08-08.** It is the active item; its decomposition lives in
 [V1_2_EXECUTION_PLAN.md](V1_2_EXECUTION_PLAN.md) and its before-scan record is above. _(The spec's
 "no other persistence path" claim was measured false at switch-in — do not re-import it from here.)_
 
-### 1.2.2 — Premium slice
+### 1.2.2 — ⭐ Set-aside split by date and week _(new 2026-09-20, [D7])_
+
+**The gap, in Jason's words:** *"Having one big lump sum to set aside makes it hard to keep track."*
+
+**Measured at admission — the premises, checked against the code, not assumed:**
+- The dashboard renders `netAmountToSetAside` — a **year-to-date cumulative** figure — as one 32pt
+  number (`DashboardScreen.tsx:282`). What's been saved is a single hand-typed total,
+  `amountSetAsideByYear[year]` (`:158`). One number owed, one number saved, for the whole year.
+- **There is no week or period concept anywhere in the app.** Grepped. The sole weekly figure is
+  `weeklyCatchUpAmount` (`calculations.ts:152`), and it only renders **when already behind**
+  (`DashboardScreen.tsx:412`) — a remediation message, not a rhythm. ⭐ This is the finding that makes
+  the item structural rather than a display tweak.
+- **The schema cost is small, and this was measured not inferred.** `parseBackupSnapshot` passes
+  `candidate.entries` through wholesale after an `Array.isArray` check (`backup.ts:51`, `:60`) — no
+  per-field reconstruction — so a new optional `Entry` field round-trips through backup for free,
+  exactly as `hoursWorked` / `customExpenses` / `mileageLog` already do. ⚠️ The same read surfaced the
+  restore-validation hole now filed against 1.2.8; **the fix there must stay forward-compatible or it
+  breaks this property.**
+
+**The design rule that makes it trustworthy — [D7].** Tax is progressive, so a per-period figure
+derived from the year's *average* rate **moves retroactively** every time the user earns more: open the
+app in November and last July's number has changed. That is the opposite of trackable. So each entry's
+set-aside is **frozen at the rate in effect when it was logged**, stored as one optional field; the
+weekly row sums its entries; the existing catch-up line reconciles the drift against the true year
+total. Stable history, and the reconciliation mechanism already exists.
+
+**Shape:** per-entry figure (by date) → rolls up to a weekly total → weekly sits alongside, not
+instead of, the YTD lump. Free tier — this is the core set-aside job, not the tax-time axis.
+
+**Open at switch-in:** which week boundary (ISO Mon–Sun vs. the user's own pay week) · whether a
+pre-existing entry with no frozen field back-fills at the current rate or renders as "—" · whether the
+weekly row is on the dashboard or a drill-down.
+
+### 1.2.3 — ⭐ Mileage trip toggle 🔧 _(new 2026-09-20, [D8])_
+
+**The gap:** mileage is a **hand-typed number** — a text input at `AddEntryScreen.tsx:61`, parsed at
+`:138`. That is the entire mechanism. Free tier.
+
+**Measured at admission:**
+- `MileageLog` (purpose / startLocation / endLocation) already exists as Premium free text
+  (`types.ts:98-106`), and its own docstring calls itself *"the data-model groundwork for v1.3
+  GPS-assisted mileage, which will populate the same shape."* ⚠️ **Flagged as a carried premise, not a
+  measurement** — the shape is there; whether it is the right shape for captured trips is a
+  switch-in question, not a settled one.
+- **Zero implementation groundwork.** No `expo-location`, nothing location-related in `app.json` —
+  both grepped. The type is all that exists.
+
+**Scope — [D8]: toggle only.** Start/stop trip capture on **when-in-use** location, populating the
+existing `MileageLog` shape. **Auto-detection is v1.3**, because that is where background location,
+battery tuning and real-road testing live — and background location is among Apple's most scrutinised
+permissions, on a version whose date has already slipped.
+
+⚠️ **This is v1.2's only native item, by deliberate trade.** The widget (old 1.2.6) was cut to v1.3 to
+keep it that way — it carried a standing "cut this before cutting the date", and two capability chains
+on one slipped version was the thing to avoid. Prerequisites → the plan's External prerequisites §.
+
+⛔ **Untestable in the web harness and barely testable in the simulator** (simulated routes only). This
+lands squarely in the standing web-verified-only trap. Device verification is not optional here; it is
+the only verification that means anything.
+
+### 1.2.4 — Premium slice
 **Shift/earnings optimizer** (headline; pulled from v1.3; also delivers the owed earning-optimization
 repositioning; soft-gate below ~30 entries — demo mode is what makes it demoable) · **safe-harbor
 payment tracker** (payments made vs. required; completes what v1.1 half-built; needs a per-year
@@ -712,43 +791,46 @@ surfacing fix; amount is premium, date stays free) · **expense-breakdown drill-
 four sit on the tax-time/complexity axis, never on the core set-aside job; additive, never blurring an
 already-free section.
 
-### 1.2.3 — Native iPad
+### 1.2.5 — Native iPad
 Flip `ios.supportsTablet` (`false` today), unlock `orientation` (`portrait` today). Adaptive
 split-view/sidebar, multi-column dashboard, size classes, Split View / Stage Manager, hardware-keyboard
 niceties, native-layout screenshots. `src/components/Screen.tsx` is the single wrapper for every screen
 — the natural size-class seam. ~2× the original estimate.
 
-### 1.2.4 — Guided onboarding (full coachmark tour)
+### 1.2.6 — Guided onboarding (full coachmark tour)
 Value-prop intro + interactive first-run tour over **populated** views (hence demo mode first). Overlay/
 tooltip system built **reusable across the three finance apps**. ⚠️ Render coach-marks **outside**
 gesture handlers — a `GestureDetector` swallows taps on native, and a tour whose tooltips don't respond
 on device is the failure mode. Calm, one-at-a-time, replayable, skippable.
 
-### 1.2.5 — Accessibility depth audit
+### 1.2.7 — Accessibility depth audit
 Dynamic Type · VoiceOver order and labels · 44pt touch targets · high-contrast · reduce-motion. Runs
 **after** the layout work so it sweeps the final surface. ~2× original estimate. VoiceOver end-to-end is
-device-owed (1.2.9).
+device-owed (1.2.10).
 
-### 1.2.6 — iOS home-screen widget 🔒
-Today's earnings + running set-aside. WidgetKit target mirroring Freedom v1. **The only native item in
-v1.2** and the #1 risk to the August date — its cost is external (capability → profile regeneration →
-CI), not build time.
+### ⛔ iOS home-screen widget — CUT TO v1.3 on 2026-09-20 ([D8]) _(was 1.2.6)_
+Today's earnings + running set-aside. WidgetKit target mirroring Freedom v1. It was on record as the
+#1 risk to the August date, with a standing *"cut this before cutting the date"* — and 1.2.3 made
+mileage v1.2's native item, so carrying both meant two capability chains on an already-slipped
+version. **The recommendation was standing since 2026-08-07; this is it being taken.** Its external
+prerequisites (App Group → profile regeneration → CI signing) move to v1.3 with it. Cost is external,
+not build time — so it is no cheaper later, just less concurrent.
 
-### 1.2.7 — Filed correctness backlog
+### 1.2.8 — Filed correctness backlog
 🔴 **IRS due dates don't shift for weekends/holidays** — `quarterlyDueDates.ts` uses the fixed
-Apr15/Jun15/Sep15/Jan15 rule, so reminders can fire on the wrong day. ⚠️ **Higher-stakes now that 1.2.2
+Apr15/Jun15/Sep15/Jan15 rule, so reminders can fire on the wrong day. ⚠️ **Higher-stakes now that 1.2.4
 puts a dollar amount in those reminders** — a wrong date carries a wrong payment instruction; consider
-pulling into 1.2.2. Plus: tax-profile completeness prompt · analytics/crash opt-out toggle (restore the
+pulling into 1.2.4. Plus: tax-profile completeness prompt · analytics/crash opt-out toggle (restore the
 privacy-policy line if added) · privacy/support pages single source of truth (⚠️ interacts with
 repo→private: Pages-on-private needs a paid plan, and a dead privacy URL is a compliance issue).
 
-### 1.2.8 — Lint ledger → CI gate
+### 1.2.9 — Lint ledger → CI gate
 14 findings: 1 dead export (`totalCustomExpenses`), 4 `setState`-in-effect, and the
 `useRef(new Animated.Value()).current` idiom in `Screen.tsx`. **Rules-of-React violations, not observed
-defects** — nothing misbehaves today. Runs late because 1.2.0–1.2.3 rewrite these files. Then add
+defects** — nothing misbehaves today. Runs late because 1.2.0–1.2.5 rewrite these files. Then add
 `npm run lint` to `web-e2e`.
 
-### 1.2.9 — Verify · device QA · phase after-scan
+### 1.2.10 — Verify · device QA · phase after-scan
 Playwright + Maestro green, both themes at parity (**light held to the same bar as dark**) ·
 **real-device TestFlight QA against a per-version full-surface checklist, native paths first — hard
 gate** · pre-submit functional-correctness audit · Apple guideline pass incl. paywall findability ·

@@ -4,50 +4,30 @@
 > here and nowhere else. Detail of completed work → [V1_2_LOG.md](V1_2_LOG.md). Version ladder →
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Nothing else carries a v1.2 queue.
 
-> ## ⏭️ RESUME HERE — session closed 2026-08-08
+> ## ⏭️ RESUME HERE — 2026-09-20
 >
-> **Repo CLEAN and PUSHED on `v1.2`** — everything below is on the remote; nothing lives only on the
-> machine. _(Deliberately not pinning a commit hash here: it goes stale the next time anything lands,
-> and `git log -1` is always right.)_
+> ⛔ **8 commits are LOCAL-ONLY.** `origin/v1.2` is at `dbafca7`; all of 1.2.1.1–1.2.1.5 plus the
+> Sentry CI fix exist only on this machine. **Push before asking for any build** — the owed Maestro
+> dispatch #2 would otherwise clone a tree with no demo mode in it. _(The previous resume block
+> asserted the opposite. Committing is not shipping.)_
 >
-> **▶ ACTIVE = 1.2.1 (demo mode), before-scan DONE 2026-08-08, decomposed into 7 sub-steps below.**
-> The scan killed the spec's central premise — persistence does **not** all funnel through
-> `repository.ts` — and found the persona already exists as a valid backup file. Record →
-> [V1_2_LOG.md](V1_2_LOG.md). **1.2.1.1–1.2.1.5 closed 2026-08-08; next action: 1.2.1.6** (premium
-> preview per [D5]). _(Health moved: **30/30** Playwright (was 23) · **191** mobile unit (was 144) ·
-> typecheck clean · lint still 14, none introduced.)_
-> ⚠️ **Still web/unit-verified only** — the leak guards are asserted against mocks. The review prompt,
-> the notification permission dialog and real scheduling are device-owed, at 1.2.9.
+> ⚠️ **The August date is gone.** [D4] targeted live by Aug 31; last commit is 2026-08-08 and nothing
+> has moved in six weeks. A new date is owed → **[D9]**.
 >
-> **✅ Just finished: 1.2.0 (routing migration), 8 sub-steps, closed.** The app went from a
-> `useState<Screen>` machine in a 593-line `App.tsx` to real `expo-router` routes. `App.tsx` deleted.
+> **▶ ACTIVE = 1.2.1 (demo mode), 5/7 sub-steps. Next action: 1.2.1.6** (premium preview per [D5]).
+> Health at 1.2.1.5: **30/30** Playwright · **191** mobile unit · typecheck clean · lint 14 (all
+> pre-existing, ledger clears at 1.2.9).
 >
-> **✅ TestFlight build SUCCEEDED 2026-08-08** — `1.2.0` built, signed, uploaded and is installable.
-> The whole `expo-router` + `react-native-screens` stack packages correctly. **There is now a real
-> device build of the migration**, which is what unblocks everything in
-> [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) §A — the checks no harness can perform.
+> **Three new items admitted 2026-09-20** (Jason): **1.2.2** per-entry/weekly set-aside split ·
+> **1.2.3** mileage trip toggle · and the widget **cut to v1.3**. See [D7]/[D8], and the renumber
+> map in [V1_2_LOG.md](V1_2_LOG.md).
 >
-> **❌ Maestro dispatch #1 FAILED 2026-08-08 — INFRASTRUCTURE, triaged and fixed.** It died at **step 7
-> (`xcodebuild`)**, so the flows never ran: **the rewritten selectors and the stacked-route a11y
-> hierarchy are still entirely unvalidated.** Cause: the workflow omits the `AppleConnect` group (no
-> signing needed for a simulator), and that group is also where `SENTRY_AUTH_TOKEN` lives — so
-> `sentry-cli` failed and took the JS-bundle phase down with it. **Fixed:**
-> `SENTRY_DISABLE_AUTO_UPLOAD: "true"` on that workflow. Full triage → [V1_2_LOG.md](V1_2_LOG.md).
->
-> **▶ Dispatch #2 is owed and NOT yet sent** — batching it behind 1.2.1.7's demo flow so one mac run
-> validates the migration flows *and* demo mode. ⚠️ Still-live triage rule for that run: the recipe
-> boots **`"iPhone 15"`** with `|| true` on an **Xcode 26.4** runner — if that image has no iPhone 15,
-> the swallowed boot failure surfaces as an *install* failure and misreads as an app problem.
-> A failure inside **`Run Maestro native flows`** is the only outcome that is real signal.
->
-> **⚠️ Standing caveat: everything in v1.2 so far is WEB-VERIFIED ONLY.** react-native-web renders no
-> `Alert`, no biometrics, no document picker, no real navigation stack — and `react-native-screens`
-> now sits under every screen. **A green suite here means "nothing else broke", not "this works on a
-> phone."** That happened three times in this item alone. Device gates →
-> [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
->
-> **Health at close:** 23/23 Playwright · 245 unit (101 engine + 144 mobile) · typecheck clean · lint
-> at 14 pre-existing findings, none introduced (ledger clears at 1.2.8).
+> ⚠️ **Standing caveat: everything in v1.2 is WEB/UNIT-VERIFIED ONLY.** react-native-web renders no
+> `Alert`, no biometrics, no document picker, no real navigation stack. **Green here means "nothing
+> else broke", not "this works on a phone"** — that happened three times in 1.2.1 alone. Device gates
+> → [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md). **Maestro dispatch #2 is owed and
+> unsent**; its still-live triage rule (the swallowed `iPhone 15` boot failure that misreads as an app
+> problem) is in [V1_2_LOG.md](V1_2_LOG.md).
 
 **Branch:** `v1.2` (pushed) · **Target:** live on the App Store by **end of August 2026** ([D4])
 **Structural audit:** [`docs/audits/2026-08-07-v1.2-structural/`](docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md) · **Ladder rationale:** [BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md)
@@ -81,7 +61,8 @@ reads exactly like a change that didn't take. ⚠️ Identify a PID before killi
 Cloud runs its own `node.exe`.
 
 **⚙️ Environment:** npm and Playwright here need `NODE_OPTIONS=--use-system-ca`, or installs fail with
-`ERR_SSL_WRONG_VERSION_NUMBER`. Recurs on every install (1.2.3, 1.2.6).
+`ERR_SSL_WRONG_VERSION_NUMBER`. Recurs on **every** install, so expect it at each item that adds a
+dependency — 1.2.3 (location) is the next one.
 
 ---
 
@@ -89,9 +70,10 @@ Cloud runs its own `node.exe`.
 
 ### ▶ **1.2.1 — Demo mode** · 🔵 before-scan done 2026-08-08 · **5/7 sub-steps**
 
-**Why it is next:** the bundle's lead item — reusable seed infrastructure the others consume. 1.2.2 is
-unshowable on an empty account, 1.2.4 needs populated views to teach over, 1.2.3 needs realistic
-content to lay out.
+**Why it is next:** the bundle's lead item — reusable seed infrastructure the others consume. The
+premium slice (**1.2.4**) is unshowable on an empty account, the tour (**1.2.6**) needs populated
+views to teach over, and iPad (**1.2.5**) needs realistic content to lay out. _(Renumbered
+2026-09-20 — this line previously pointed at three wrong items.)_
 
 ⚠️ **The before-scan killed the spec's central premise.** Persistence does **not** all funnel through
 `repository.ts` — `appReview.ts` (one-shot review flag), notification scheduling and analytics all
@@ -117,16 +99,23 @@ _1.2.1 is not listed here — it is the active item above. An item appears in ex
 
 | # | item | notes |
 |---|---|---|
-| 1.2.2 | **⭐ Premium slice** | Optimizer (headline) · safe-harbor payment tracker · per-quarter amounts in reminders · expense drill-down. **Before the screen passes** so each walks the final surface once. |
-| 1.2.3 | **Native iPad** | Adaptive split-view/sidebar. ~2× its original estimate (scoped at 6 screens, now 13). |
-| 1.2.4 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
-| 1.2.5 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. |
-| 1.2.6 | **iOS home-screen widget** 🔒 | **Blocked on external prerequisites.** The #1 risk to the August date — cut this before cutting the date. |
-| 1.2.7 | **Filed correctness backlog** | IRS due-date business-day shift 🔴 · completeness prompt · analytics opt-out · privacy-page single source. |
-| 1.2.8 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.3 rewrite those files. |
-| 1.2.9 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
+| 1.2.2 | **⭐ Set-aside split by date and week** | NEW 2026-09-20 ([D7]). Per-entry set-aside rolling up to weekly, replacing the YTD lump as the actionable unit. Rate **frozen at log time** via one optional `Entry` field. |
+| 1.2.3 | **⭐ Mileage trip toggle** 🔧 | NEW 2026-09-20 ([D8]). Start/stop capture on **when-in-use** location, populating the existing `MileageLog` shape. **v1.2's only native item.** Auto-detection → v1.3. |
+| 1.2.4 | **Premium slice** | Optimizer (headline) · safe-harbor payment tracker · per-quarter amounts in reminders · expense drill-down. **Before the screen passes** so each walks the final surface once. |
+| 1.2.5 | **Native iPad** | Adaptive split-view/sidebar. ~2× its original estimate (scoped at 6 screens, now 13). |
+| 1.2.6 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
+| 1.2.7 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. |
+| 1.2.8 | **Filed correctness backlog** | IRS due-date business-day shift 🔴 · backup-restore validation · completeness prompt · analytics opt-out · privacy-page single source. ⚠️ **Pull the due-date fix into 1.2.4** — that item puts a dollar amount in those reminders, so a wrong date carries a wrong payment instruction. |
+| 1.2.9 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.5 rewrite those files. |
+| 1.2.10 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
 
-_Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in — not carried here._
+⛔ **Cut to v1.3 on 2026-09-20 ([D8]):** the **iOS home-screen widget** (was 1.2.6). It was on record
+as the #1 risk to the date, with a standing "cut this before cutting the date"; 1.2.3 makes mileage
+the native item instead. Its external prerequisites move with it.
+
+_Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in — not carried here.
+⚠️ **Numbers shifted 2026-09-20** — pre-2026-09-20 references in the log use the old numbering; the
+map is at the head of the log's item-spec section._
 
 ## ✅ Closed
 
@@ -160,16 +149,28 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 | **[D4]** | **v1.2 stays INTACT, targets August.** | Jason 2026-08-07 |
 | **[D5]** | **Demo previews premium via a separate `isDemoPreview`, never by faking `isPremium`.** The entitlement boolean stays honest; purchase + export keep checking it alone. | Jason 2026-08-08 |
 | **[D6]** | **Already-onboarded users can reach the demo too** — one Settings section that enters or exits. Also makes store screenshots shootable without wiping real data. | Jason 2026-08-08 |
+| **[D7]** | **The set-aside splits per entry, rolling up to weekly** — not a derived weekly view alone. Each shift carries its own figure, **frozen at the rate in effect when logged**, so history never moves retroactively; the existing catch-up line reconciles the drift. | Jason 2026-09-20 |
+| **[D8]** | **Mileage gets a start/stop toggle in v1.2 on when-in-use location; auto-detection waits for v1.3.** The **widget is cut to v1.3** so v1.2 carries one native item, not two. | Jason 2026-09-20 |
+| **[D9]** | 🟠 **OPEN — a new ship date is owed.** August is gone and scope grew by two items. Not re-decided yet. | — |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
 
 ## ⚠️ External prerequisites — Jason-side
 
-**Gating 1.2.6 (the widget) — start day one or cut it:**
-1. **App Group capability** → ⚠️ **regenerate provisioning profiles or CI signing fails.** Standing rule.
-2. **Mirror Freedom v1's widget template** (Expo 56 + Codemagic + widget target, Team `CVCY985YCD`).
-3. **Watch the Codemagic `xcodeproj` glob gotcha** — run a native build *early*, not at the end.
+**Gating 1.2.3 (the mileage toggle) — v1.2's only native item:**
+1. **`PRIVACY_POLICY.md` + the hosted privacy page must disclose location collection** before the
+   build that carries it goes to review. ⚠️ **Collides with 1.2.8's "privacy-page single source of
+   truth"** — do that consolidation first or the disclosure lands in one copy and not the other.
+2. **A `NSLocationWhenInUseUsageDescription` string that justifies the capture**, and App Store
+   review notes explaining it. When-in-use is a far lighter ask than background — **keep it that way**;
+   the moment this needs "Always", it is a different review and belongs in v1.3 with auto-detection.
+3. **Run a native build EARLY**, not at the end — a location dependency means a prebuild/config-plugin
+   change, and iOS CI has broken on exactly this class of change before.
+
+**Moved to v1.3 with the widget ([D8]):** App Group capability → provisioning-profile regeneration ·
+Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985YCD`) · the Codemagic
+`xcodeproj` glob gotcha.
 
 **Not gating v1.2, but start now** — external latency that doesn't compress:
 4. **Play Console account type** (personal ⇒ 12 testers × 14 days) + Play Billing + RevenueCat Android key → v1.3.
@@ -177,19 +178,28 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
 
-- **Nothing *enforces* that persistence goes through `repository.ts` → 1.2.8.** Add an ESLint
+- **🔴 Backup restore does no validation of entry contents → 1.2.8.** `parseBackupSnapshot` checks
+  `Array.isArray(candidate.entries)` ([backup.ts:51](apps/mobile/src/backup.ts#L51)) and then passes
+  `candidate.entries` straight through as `Entry[]` ([:60](apps/mobile/src/backup.ts#L60)) — no
+  per-field validation, no type coercion, no bounds. A truncated, hand-edited or foreign JSON file
+  imports garbage directly into the store, and restore **overwrites all current local data**. ⚠️ The
+  same wholesale pass-through is *why* new optional `Entry` fields round-trip for free — the property
+  1.2.2 depends on — so the fix must preserve forward-compatibility rather than whitelist known keys.
+  **Deferred, not folded:** it is a correctness fix to a path 1.2.2 only reads.
+  _(Found 2026-09-20 while verifying 1.2.2's schema cost — by reading the parser, not its docstring.)_
+- **Nothing *enforces* that persistence goes through `repository.ts` → 1.2.9.** Add an ESLint
   `no-restricted-imports` rule allowing `@react-native-async-storage/async-storage` only in
   `src/storage/`, so demo mode's isolation guarantee is checked by CI rather than requested by a
-  comment. **Deferred, not folded:** 1.2.8 is already the lint-rule/CI-gate item, and it runs after the
+  comment. **Deferred, not folded:** 1.2.9 is already the lint-rule/CI-gate item, and it runs after the
   files in question stop being rewritten. _(Found 2026-08-08 at the 1.2.1.1 after-scan.)_
-- **`appReview.ts` writes AsyncStorage directly, outside the repository and unencrypted → 1.2.8.**
+- **`appReview.ts` writes AsyncStorage directly, outside the repository and unencrypted → 1.2.9.**
   1.2.1.3 neutralizes it *in demo*; consolidating it (and any sibling) into `repository.ts` so the
   "one persistence path" claim becomes true is the broader fix. **Deferred, not folded:** it touches a
   path demo mode doesn't need changed. _(Found 2026-08-08 at the 1.2.1 before-scan.)_
-- **`SCREENSHOT_PLAN.md`'s persona will have two sources of truth once 1.2.1.2 lands → 1.2.9.** Point
+- **`SCREENSHOT_PLAN.md`'s persona will have two sources of truth once 1.2.1.2 lands → 1.2.10.** Point
   the plan at the demo seed (one-tap, as it already anticipates) instead of the hand-maintained
   `maya-persona-backup.json`. _(Same provenance.)_
-- **🔴 `Chip` announces no selected state to screen readers → 1.2.5 (a11y audit).** `Chip` sets
+- **🔴 `Chip` announces no selected state to screen readers → 1.2.7 (a11y audit).** `Chip` sets
   `accessibilityState={{ selected }}` with `accessibilityRole="button"`, and **RN-Web drops it** —
   ARIA doesn't allow `aria-selected` on `button`, so the accessibility tree renders a bare
   `button "Dark"` with no indication it's the active choice. **`Chip` is the app's selection primitive**
@@ -198,7 +208,7 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
   sets, or `aria-pressed` for toggles. **Deferred, not folded:** it changes a shared primitive used
   across every screen, so it belongs in the audit that sweeps them all. _(Found 2026-08-07 at 1.2.0.2,
   by reading the a11y snapshot after a test assertion failed against it.)_
-- **Settings `Switch`es carry no `accessibilityLabel` → 1.2.5 (a11y audit).** App Lock and Quarterly
+- **Settings `Switch`es carry no `accessibilityLabel` → 1.2.7 (a11y audit).** App Lock and Quarterly
   Due Date Reminders are labelled only by adjacent `Text`, so they announce as bare switches. _(Same
   provenance. Note `TextField` was fixed at 1.2.0.8 — the `Switch` and `Chip` cases remain.)_
 - ~~**Clear-all-data, restore-from-backup and app-lock have NO automated coverage**~~ → ✅ **CLOSED
