@@ -29,7 +29,9 @@ name: Demo mode (enter, preview premium, exit)
 
 # 🔎 Same diagnostic: if entering the demo bounced back to onboarding, say so here
 # rather than reporting a confusing "Set aside for taxes is not visible" two lines later.
+- takeScreenshot: .maestro/diag-02-after-enter-demo
 - assertNotVisible: "Welcome"
+- assertNotVisible: "Something went wrong"
 
 # Seeded content, not just a navigation — an empty demo would satisfy "we moved" and prove nothing.
 - assertVisible: "Set aside for taxes"

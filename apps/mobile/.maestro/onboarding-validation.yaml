@@ -17,6 +17,14 @@ name: Onboarding validation (native Alert dialogs)
 - assertVisible: "Name required"
 - tapOn: "OK"
 # Enter a name but no state → native "State required" alert.
+# ⚠️ Scroll back UP first. The scroll to "Continue" above left the form at its bottom, so a
+# blind tap here lands on empty space, no keyboard opens, and `hideKeyboard` then fails with
+# "Couldn't hide the keyboard" — which reads like an input bug and is really a position bug.
+# (Introduced by my own scroll fix on 2026-09-20; the flow passed this step before it.)
+- scrollUntilVisible:
+    element:
+      text: "Your name"
+    direction: UP
 - tapOn: "Your name"
 - inputText: "Maestro Tester"
 - hideKeyboard

@@ -35,6 +35,13 @@ name: Onboarding → Dashboard
 #   (b) the dashboard mounted but rendered nothing — "Welcome" is gone and the next line fails.
 # "Your earnings" is the first text in ListHeaderComponent (DashboardScreen.tsx:183), so it is not
 # a scroll problem either way.
+# 📸 Screenshot FIRST and unconditionally — the assertions below end the flow when they
+# fail, and this frame is what actually answers the question. Written under
+# apps/mobile/.maestro/, which the workflow already archives as an artifact.
+- takeScreenshot: .maestro/diag-01-after-continue
 - assertNotVisible: "Welcome"
+# If the dashboard threw, ErrorBoundary is on screen and renders error.message right below
+# this title — so this failing both names the cause AND puts the real message in the shot.
+- assertNotVisible: "Something went wrong"
 - assertVisible: "Your earnings"
 - assertVisible: "Set aside for taxes"
