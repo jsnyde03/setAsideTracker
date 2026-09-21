@@ -24,12 +24,14 @@
 > ship as soon as it is done.** Do not reintroduce a target.
 >
 > ✅ **1.2.2 through 1.2.5 ARE ALL COMPLETE** and closed. **▶ ACTIVE: 1.2.6, the premium slice**
-> ([D3]), decomposed below — pure JS, so every line is verifiable here. **▶ Next action: 1.2.6.1**,
-> whose premise (`perQuarter` already exists; this is a surfacing fix) is owed a check first.
+> ([D3]), decomposed below — pure JS, so every line is verifiable here. ✅ **1.2.6.2 is DONE** (the due-date
+> shift; its after-scan folded in a launch-time refresh without which the fix reached no existing
+> install). **▶ Next action: 1.2.6.1**, the per-quarter amount on the dashboard — scope already cut
+> to that one surface by [D18], so it needs no fresh premise check, only its before-scan.
 > ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
 > worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
-> Health: **306** mobile unit · **102** engine · **50/50** Playwright · typecheck clean · both tax-config
+> Health: **321** mobile unit · **102** engine · **50/50** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
@@ -140,8 +142,8 @@ blur or remove anything already free. An item that fails that test is cut, not s
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.6.1** | **Per-quarter amount in reminders + dashboard.** ⚠️ **Mostly a SURFACING fix, not a build** — `perQuarter` already exists on `SafeHarborScreen` and in the PDF. **Amount is premium; the DATE stays free**, because a due date is the core job. **Verify that premise first**, it was measured 2026-09-20. | ⬜ |
-| **1.2.6.2** | **🔴 The IRS due-date business-day shift**, pulled in from 1.2.10 on that item's own instruction. It runs **here and first**, because 1.2.6.1 puts a **dollar amount** next to those dates — a wrong date with a payment instruction attached is worse than a wrong date alone. | ⬜ |
+| **1.2.6.2** | ✅ **DONE 2026-09-21 — the IRS due-date business-day shift.** Dates now move past weekends, MLK Day and Emancipation Day; **the after-scan folded in a launch-time refresh**, without which the fix reached nobody already installed and the reminder queue drained after a year. **321 unit · 7 plants, 7 caught.** | ✅ |
+| **1.2.6.1** | **Per-quarter amount on the dashboard's due-date row.** ⚠️ Before-scan corrected the premise: `perQuarter` exists and `SafeHarborScreen` is **already** fully premium-gated, so this is not a gating change — it is a build in the one place the amount is absent. **[D18]: the notification carries no figure**; reminders are out of scope. | 🔵 |
 | **1.2.6.3** | **Safe-harbor payment tracker** — payments made vs. required, completing what v1.1 half-built. Needs a per-year payments-made model; `amountSetAsideByYear` is the shape to follow. ⚠️ **Depended on 1.2.2's safe-harbor fix** — built on the old maths this would have tracked payments against a target that said "no penalty expected" all spring. | ⬜ |
 | **1.2.6.4** | **Shift/earnings optimizer** — the headline, pulled from v1.3, and the owed earning-optimization repositioning. Soft-gate below ~30 entries; **demo mode is what makes it demoable**. | ⬜ |
 | **1.2.6.5** | **Expense-breakdown drill-down.** | ⬜ |
@@ -166,7 +168,7 @@ out-of-order number is worth less than one more round of that.
 | 1.2.7 | **Native iPad** | Adaptive split-view/sidebar. ~2× its original estimate (scoped at 6 screens, now 13). |
 | 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
 | 1.2.9 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. |
-| 1.2.10 | **Filed correctness + submission-compliance backlog** | IRS due-date business-day shift 🔴 · backup-restore validation · **iOS privacy manifest (may block upload — ITMS-91053)** · `ITSAppUsesNonExemptEncryption` declared false while the app does AES-256 · `clearAllLocalData` omits `appSettings` against the stated policy · completeness prompt · analytics opt-out · privacy-page single source. ⚠️ **Pull the due-date fix into 1.2.6** — that item puts a dollar amount in those reminders, so a wrong date carries a wrong payment instruction. |
+| 1.2.10 | **Filed correctness + submission-compliance backlog** | Backup-restore validation · **iOS privacy manifest (may block upload — ITMS-91053)** · `ITSAppUsesNonExemptEncryption` declared false while the app does AES-256 · `clearAllLocalData` omits `appSettings` against the stated policy · completeness prompt · analytics opt-out · privacy-page single source. _(The due-date shift left here for 1.2.6.2 and shipped 2026-09-21.)_ |
 | 1.2.11 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.7 rewrite those files. |
 | 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
 
@@ -252,19 +254,15 @@ map is at the head of the log's item-spec section._
 | **[D7]** | **The set-aside splits per entry, rolling up to weekly** — not a derived weekly view alone. Each shift carries its own figure, **frozen at the rate in effect when logged**, so history never moves retroactively; the existing catch-up line reconciles the drift. | Jason 2026-09-20 |
 | **[D8]** | **Mileage gets a start/stop toggle in v1.2 on when-in-use location; auto-detection waits for v1.3.** The **widget is cut to v1.3** so v1.2 carries one native item, not two. | Jason 2026-09-20 |
 | **[D9]** | ✅ **NO SHIP DATE. Work through the queue and ship ASAP.** August is retired and not replaced — the version is paced by the work, not by a date. ⚠️ **Do not reintroduce a target date**; the correctness exposure from [D10] is the reason to go fast, not a reason to set one and cut against it. | Jason 2026-09-20 |
-| **[D11]** | **The demo persona stays at ONE tax year.** Year-over-year therefore cannot be previewed — accepted, because the gate is about data, not payment. Revisit only if the demo becomes the primary premium sales surface. | Jason 2026-09-20 |
-| **[D17]** | **The tracker keeps measuring while the app is off screen — `UIBackgroundModes: location` plus the visible iOS indicator, on WHEN-IN-USE permission. No "Always" prompt, so [D8]'s line holds.** ⛔ **The alternative was a tracker that under-counts by design:** a gig worker's phone shows the delivery app, not this one, so foreground-only capture would quietly miss most of the drive — and under-claiming a deduction is the same shape of defect as the three understating bugs 1.2.2 exists to fix. Accepted costs: a TaskManager background task, more App Store review scrutiny, and **nothing here is provable without a device**. ⚠️ **Android stays foreground-only** — its background-location permission is a separately justified Play review and Android ships in v1.3. | Jason 2026-09-21 |
-
-| **[D16]** | **`docs/privacy.html` is the single privacy policy; the markdown copy is retired.** It is already what the app links to, what App Store Connect points at and what the code comments treat as canonical. **Rejected keeping both in sync via a generator** — the drift that prompted this was a *factual* contradiction about third-party data sharing, and the fix for that is one document, not tooling that keeps two. ⚠️ Three places state the same claims and all must move together: the policy, the App Store Connect privacy labels, and the permission usage strings in `app.json`. | Jason 2026-09-21 |
-
-| **[D13]** | **A week is Monday–Sunday, fixed.** DoorDash, Uber and Spark all run their pay weeks Mon–Sun, so the app's week matches the earnings statement the user is comparing it against. **Not configurable** — a user-chosen week start is a setting nobody asked for that every weekly figure would then depend on. | Jason 2026-09-21 |
-
-| **[D14]** | **Entries logged before the frozen field exists get a computed figure, and any week containing one is MARKED ESTIMATED.** Rejected both alternatives deliberately: "—" greets every existing user with a wall of blanks across data they really have, and a silent back-fill presents a reconstructed number as though it had been frozen at the time — **the exact thing [D7] exists to prevent**. The label is what makes the third option honest rather than convenient. | Jason 2026-09-21 |
-
-| **[D15]** | **"This week" sits on the dashboard beside the YTD total**, past weeks behind a drill-down. [D7]'s point is that the week becomes the unit the user acts on, and a figure behind a tap does not become anyone's rhythm. The year total stays — it is what is actually owed. | Jason 2026-09-21 |
-
-| **[D12]** | **The recovery surface offers three explicit routes — retry, restore-from-backup, erase — and nothing silent.** ⚠️ **Retry is not politeness:** `expo-secure-store` defaults to `WHEN_UNLOCKED`, so a launch before the device's first unlock can return null **transiently**, which is not key loss — erasing or re-keying on it would destroy good data. Restore is the only genuine recovery the app has, and a user stranded on this screen cannot reach Settings to find it. | Jason 2026-09-21 |
 | **[D10]** | **No interim patch release — the three live money-wrong bugs are fixed in v1.2, not in a v1.1.2.** Recommendation on record was a cheap disclosure patch (MFJ warning + safe-harbor caveat) while the real fixes were built; **Jason chose the single correct release instead.** Tradeoff accepted knowingly: v1.1.1 keeps understating what users owe until v1.2 ships. | Jason 2026-09-20 |
+| **[D11]** | **The demo persona stays at ONE tax year.** Year-over-year therefore cannot be previewed — accepted, because the gate is about data, not payment. Revisit only if the demo becomes the primary premium sales surface. | Jason 2026-09-20 |
+| **[D12]** | **The recovery surface offers three explicit routes — retry, restore-from-backup, erase — and nothing silent.** ⚠️ **Retry is not politeness:** `expo-secure-store` defaults to `WHEN_UNLOCKED`, so a launch before the device's first unlock can return null **transiently**, which is not key loss — erasing or re-keying on it would destroy good data. Restore is the only genuine recovery the app has, and a user stranded on this screen cannot reach Settings to find it. | Jason 2026-09-21 |
+| **[D13]** | **A week is Monday–Sunday, fixed.** DoorDash, Uber and Spark all run their pay weeks Mon–Sun, so the app's week matches the earnings statement the user is comparing it against. **Not configurable** — a user-chosen week start is a setting nobody asked for that every weekly figure would then depend on. | Jason 2026-09-21 |
+| **[D14]** | **Entries logged before the frozen field exists get a computed figure, and any week containing one is MARKED ESTIMATED.** Rejected both alternatives deliberately: "—" greets every existing user with a wall of blanks across data they really have, and a silent back-fill presents a reconstructed number as though it had been frozen at the time — **the exact thing [D7] exists to prevent**. The label is what makes the third option honest rather than convenient. | Jason 2026-09-21 |
+| **[D15]** | **"This week" sits on the dashboard beside the YTD total**, past weeks behind a drill-down. [D7]'s point is that the week becomes the unit the user acts on, and a figure behind a tap does not become anyone's rhythm. The year total stays — it is what is actually owed. | Jason 2026-09-21 |
+| **[D16]** | **`docs/privacy.html` is the single privacy policy; the markdown copy is retired.** It is already what the app links to, what App Store Connect points at and what the code comments treat as canonical. **Rejected keeping both in sync via a generator** — the drift that prompted this was a *factual* contradiction about third-party data sharing, and the fix for that is one document, not tooling that keeps two. ⚠️ Three places state the same claims and all must move together: the policy, the App Store Connect privacy labels, and the permission usage strings in `app.json`. | Jason 2026-09-21 |
+| **[D17]** | **The tracker keeps measuring while the app is off screen — `UIBackgroundModes: location` plus the visible iOS indicator, on WHEN-IN-USE permission. No "Always" prompt, so [D8]'s line holds.** ⛔ **The alternative was a tracker that under-counts by design:** a gig worker's phone shows the delivery app, not this one, so foreground-only capture would quietly miss most of the drive — and under-claiming a deduction is the same shape of defect as the three understating bugs 1.2.2 exists to fix. Accepted costs: a TaskManager background task, more App Store review scrutiny, and **nothing here is provable without a device**. ⚠️ **Android stays foreground-only** — its background-location permission is a separately justified Play review and Android ships in v1.3. | Jason 2026-09-21 |
+| **[D18]** | **The per-quarter figure goes on the DASHBOARD; the reminder notification carries no dollar amount.** A notification body is frozen when it is scheduled — only at onboarding or a Settings toggle, never on dashboard mount — and the OS delivers it up to a year later, while `perQuarter` moves with every entry logged. **A stale figure beside a payment instruction is the same defect class 1.2.6.2 exists to remove.** The existing "check your dashboard" pointer is the one part of a months-old message still true when it fires, and it routes to a number that recomputed today. Also sidesteps two entitlement edges: a lapsed subscriber still delivered premium content, and a later subscriber who is not. | Jason 2026-09-21 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
@@ -291,6 +289,16 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.6.2 _(2026-09-21)_
+
+- **`useReminderRefresh` has no test, and cannot get one here.** The rule it wraps is covered four
+  ways; the hook around it is not, because this project has no React renderer — vitest runs plain
+  Node and there is no testing-library. **Device/e2e-owed** → checklist. ⚠️ It is the same shape as
+  `loadError` having no consumer (1.2.3): a correct rule, wired by code nothing exercises.
+- **Consider a launch-time refresh for anything else scheduled from a one-off user action.** The
+  reminder queue drained because scheduling happened only at onboarding; nothing structural stops the
+  next such feature repeating it. Worth one grep at 1.2.11, not a rule yet.
 
 ### From the 2026-09-20 gap scan _(full findings → [docs/audits/2026-09-20-v1.2-gap-scan/](docs/audits/2026-09-20-v1.2-gap-scan/))_
 

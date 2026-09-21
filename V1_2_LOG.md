@@ -11,6 +11,82 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.6.2 IRS due-date business-day shift — after-scan · 2026-09-21 · ✅ DONE
+
+**321 unit (from 306) · 102 engine · 50/50 Playwright · typecheck clean · both tax-config gates
+green · lint 15, unchanged and none in the new files · ports verified free. 7 plants, 7 caught.**
+
+**Built:** `notifications/businessDays.ts` — the observed federal-holiday table plus
+`nextBusinessDay`, applied to all four 1040-ES dates. ⚡ **A weekend-only shift, which is what the
+retired docstring described and what a reasonable implementer would write, is wrong in three
+separate ways.** MLK Day catches **every** January 15 that falls Sat, Sun *or* Mon — Jan 15 being a
+Monday *is* Jan 15 being the third Monday, since the 1st is then a Monday too, so the January
+deadline is wrong three years in seven. Emancipation Day moves April even when the 15th is an
+ordinary weekday, as in 2022. And the shift has to **loop**, because both of those land the first
+hop on another holiday. The tests assert **published IRS deadlines** (Apr 18 2022, Apr 18 2023,
+Jan 16 2024, Jan 18 2022, Jan 17 2023), not values read back out of the implementation — a table
+derived from the code would have agreed with a weekend-only rule.
+
+🔴 **The after-scan found the fix reached nobody, and a live bug of the same shape beside it.**
+`scheduleQuarterlyReminders` was called from exactly two places — finishing onboarding and the
+Settings toggle — and notification content is frozen at schedule time. So (1) an existing v1.1.1 user
+upgrading would keep the **old wrong dates** until they happened to toggle reminders off and on, and
+(2) `MAX_UPCOMING_DUE_DATES = 4` is about a year, after which **the queue simply drains and the
+feature stops** with the switch still reading "on". The second is live in v1.1.1 today and no scan
+before this one had looked at *when* the scheduler runs, only at what it schedules. **One call fixes
+both**: `refreshQuarterlyReminders` + `useReminderRefresh`, once per launch below the providers.
+Folded into the item because a deadline fix that reaches no existing install is not a fix.
+
+⚠️ **Two traps inside that fix, both caught by writing the assertion rather than the code.**
+`refreshQuarterlyReminders` takes `remindersEnabled` as an **argument**: the OS permission survives
+the user switching reminders off, so a refresh gated on permission alone would silently re-create
+every reminder they had deliberately cancelled, on their next launch. And it first **delegated to
+the whole of `scheduleQuarterlyReminders`**, which reaches `requestPermissionsAsync` — harmless while
+iOS resolves an already-granted request without a dialog, and that is exactly the problem: it made
+*"the launch refresh never prompts"* a property of the OS instead of of this file. **A test counting
+the call is what surfaced it**; the body is now extracted so each caller owns its own permission step.
+
+⛔ **The honest gap: `useReminderRefresh` itself is untested and cannot be tested here** — no React
+renderer, no testing-library, vitest runs plain Node. The rule beneath it has four tests; the wiring
+has none. **Same shape as `loadError` having no consumer in 1.2.3** — a correct rule reached by code
+nothing exercises. Filed to the backlog and to the device checklist.
+
+### 🔎 1.2.6.1 Per-quarter amount — before-scan · 2026-09-21
+
+**The premise held and was still wrong about what the work is.** `perQuarter` exists
+(`calculations.ts:866`), renders at `SafeHarborScreen.tsx:226` — the plan said `:221`, line drift —
+and in `taxSummaryHtml.ts:92`. But **`SafeHarborScreen` is already a fully premium-gated screen**,
+reached through a `canUsePremium` row on the dashboard. So *"amount is premium, date stays free"* is
+**already true everywhere the amount currently lives**, and 1.2.6.1 is not a gating change at all. It
+is a build in the places the amount is absent. ⚡ **A premise can be literally true and still
+misdescribe the task** — "verify the premise" had to mean verifying what work it implied, not just
+whether `perQuarter` was there.
+
+🔴 **The rows were in the wrong order, and the plan said so itself.** 1.2.6.2's own cell read *"runs
+here and first"*, the promoting commit said the same, and the queue's standing rule is that **build
+order is row order, not numbering**. The table listed 1.2.6.1 first anyway. Swapped; IDs unchanged
+per the stable-ID rule. ⚠️ **This is the failure mode the stable-ID rule trades for** — it removes
+renumber rot and in exchange the rows must be *placed* correctly, which nothing checks.
+
+🔴 **[D18] — an amount inside a notification is stale before it fires.** `scheduleQuarterlyReminders`
+is called from **onboarding and the Settings toggle only** — never on dashboard mount, though its own
+docstring says *"e.g. on every dashboard mount"*, which is doc/behaviour drift worth its own look. So
+a body is frozen at schedule time and the OS delivers it up to a year later, while `perQuarter` moves
+with every entry logged. **That is precisely the defect 1.2.6.2 exists to remove** — a wrong figure
+carrying a payment instruction — arriving by a different route in the sub-step next door. Two
+entitlement edges fall out of the same hole: a lapsed subscriber still delivered premium content, and
+a user who subscribes afterwards who is not. **Jason chose dashboard-only**, keeping the
+"check your dashboard" pointer, which is the one part of a months-old message still true when it
+fires. Reminders are cut from 1.2.6.1's scope.
+
+⚠️ **Carried to 1.2.6.2: a weekend-only shift is wrong.** Emancipation Day, observed in DC on
+April 16, moves the federal Q1 deadline even when April 15 is an ordinary weekday. One fix reaches
+two consumers — the scheduler and the dashboard both read `getQuarterlyDueDatesForTaxYear`.
+
+🧹 **Folded in as adjacent polish:** the decision register had been broken into **five** tables by
+stray blank lines and its rows ran D1–D9, D11, D17, D16, D13, D14, D15, D12, D10. Reordered into one
+table. _(No row text changed; the reorder asserted the line multiset was preserved.)_
+
 ### 🔎 1.2.5 Mileage trip toggle — WHOLE-ITEM after-scan · 2026-09-21
 
 **COMPLETE, 6/6.** **306 mobile unit (from 272) · 102 engine · 50/50 Playwright · typecheck + lint

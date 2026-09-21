@@ -8,6 +8,7 @@ import { LockScreen } from "../screens/LockScreen";
 import { RecoveryScreen } from "../screens/RecoveryScreen";
 import { pickBackupFile } from "../backupFile";
 import { reportError } from "../errorReporting";
+import { useReminderRefresh } from "../hooks/useReminderRefresh";
 
 /**
  * Sits between the providers and the router: nothing routes until the app has loaded and, if the user
@@ -34,6 +35,10 @@ export function AppGate({ children }: { children: ReactNode }) {
   const [recovering, setRecovering] = useState(false);
   const [retryFailed, setRetryFailed] = useState(false);
   const isLocked = lockAvailable === true && appLockEnabled && !unlocked;
+
+  // The first consumer below the providers that runs on every launch regardless of route, which is
+  // what a once-per-launch refresh needs. It owns its own guards and never touches this render.
+  useReminderRefresh();
 
   useEffect(() => {
     let cancelled = false;

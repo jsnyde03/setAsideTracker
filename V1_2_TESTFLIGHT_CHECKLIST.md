@@ -35,6 +35,7 @@ prebuild-affecting change in v1.2: two native modules, a config plugin, a backgr
 | **6** | **The recovery screen's `Alert`s** (§A) | 1.2.3's entire `Alert` layer is unverified; web renders none. |
 | **7** | **The weekly sheet at phone width** with a full year of weeks | 1.2.4 is Playwright-covered for behaviour, never for a small screen. |
 | **8** | **Demo mode end-to-end** (§C) | 1.2.1 is 7/7 built and has never been device-validated. |
+| **9** | **Reminders survive a relaunch, and a disabled switch stays disabled.** With reminders ON, cold-start and confirm notifications are scheduled for the **shifted** dates; then turn the switch OFF, relaunch, and confirm **nothing is re-created**. | 1.2.6.2's launch refresh. **`useReminderRefresh` has no test and cannot get one here** — no React renderer. The rule underneath is covered four ways; the wiring is covered by this row alone. The off-then-relaunch half is the data-loss-shaped direction: the OS permission outlives the switch. |
 
 ⚠️ **Check first, before dispatching:** `git rev-list --count origin/v1.2..HEAD` is 0, and the
 workflow prints the commit it built. Two build cycles were once spent on a month-old tree.

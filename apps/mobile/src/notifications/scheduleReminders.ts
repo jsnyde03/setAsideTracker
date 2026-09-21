@@ -23,7 +23,7 @@ function atNineAm(date: Date): Date {
 /**
  * Schedules local reminders for upcoming quarterly estimated-tax due dates: one "heads up"
  * notification 7 days before each due date, and one on the due date itself. Idempotent — clears
- * any previously scheduled reminders first, so calling this again (e.g. on every dashboard mount)
+ * any previously scheduled reminders first, so calling this again (as the launch-time refresh does)
  * doesn't pile up duplicates.
  *
  * No-op on web: expo-notifications doesn't support reliable scheduled local notifications in a
@@ -50,6 +50,20 @@ export async function scheduleQuarterlyReminders(): Promise<ScheduleResult> {
     return { scheduled: false, reason: "permission not granted" };
   }
 
+  return scheduleGrantedReminders();
+}
+
+/**
+ * The scheduling itself, with **no permission step of its own** — each caller does its own, and they
+ * deliberately differ: a user action may raise the prompt, a launch-time refresh may only read it.
+ *
+ * ⚠️ Extracted because `refreshQuarterlyReminders` originally delegated to the whole of
+ * `scheduleQuarterlyReminders`, which meant it reached `requestPermissionsAsync` after all. That is
+ * harmless while iOS resolves an already-granted request without a dialog — and that is the problem:
+ * it made "the refresh never prompts" a property of the OS rather than of this file. A test asserting
+ * the call count is what surfaced it.
+ */
+async function scheduleGrantedReminders(): Promise<ScheduleResult> {
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
       name: "Tax reminders",
@@ -93,6 +107,43 @@ export async function scheduleQuarterlyReminders(): Promise<ScheduleResult> {
   }
 
   return { scheduled: true, notificationCount };
+}
+
+/**
+ * Rebuilds the scheduled reminders on app start, **without ever raising the permission prompt**.
+ *
+ * ## The two bugs this closes, both of which were invisible
+ *
+ * `scheduleQuarterlyReminders` is called from exactly two places — finishing onboarding, and the
+ * Settings toggle. Nothing else, ever. That means:
+ *
+ * 1. **A queue that drains.** Only `MAX_UPCOMING_DUE_DATES` are scheduled, about a year's worth. A
+ *    user who onboarded and never touched the toggle runs out of reminders after ~12 months and the
+ *    feature stops, silently, with the switch still showing "on".
+ * 2. **A fix that never arrives.** Notification content is frozen when it is scheduled, so an
+ *    existing user upgrading into the corrected due dates keeps the old wrong ones until they think
+ *    to toggle reminders off and on again. Shipping a deadline fix that reaches nobody already
+ *    installed is not shipping it.
+ *
+ * ⚠️ **It asks `getPermissionsAsync`, not `requestPermissionsAsync`.** The scheduler deliberately
+ * lets the *user's own action* raise the one-shot system dialog, on the app's terms; a refresh that
+ * happens on every cold start must not be what triggers it. Not yet granted → do nothing, and the
+ * next real toggle will ask properly.
+ */
+export async function refreshQuarterlyReminders(remindersEnabled: boolean): Promise<ScheduleResult> {
+  if (Platform.OS === "web") return { scheduled: false, reason: "not supported on web" };
+  if (isDemoModeActive()) return { scheduled: false, reason: "demo mode" };
+
+  // ⚠️ Taken as an argument rather than read here, and it is not optional. The OS permission can
+  // still be granted long after the user switched reminders OFF in Settings — that switch cancels
+  // the notifications, it cannot revoke the permission. Refreshing on permission alone would
+  // quietly re-create every reminder the user had deliberately turned off, on their next launch.
+  if (!remindersEnabled) return { scheduled: false, reason: "reminders disabled" };
+
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status !== "granted") return { scheduled: false, reason: "permission not granted" };
+
+  return scheduleGrantedReminders();
 }
 
 /** Cancels any previously scheduled quarterly reminders — used when the user turns reminders off
