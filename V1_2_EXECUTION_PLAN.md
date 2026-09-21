@@ -26,12 +26,13 @@
 > ✅ **1.2.2 through 1.2.5 ARE ALL COMPLETE** and closed. **▶ ACTIVE: 1.2.6, the premium slice**
 > ([D3]), decomposed below — pure JS, so every line is verifiable here. ✅ **1.2.6.2 is DONE** (the due-date
 > shift; its after-scan folded in a launch-time refresh without which the fix reached no existing
-> install). **▶ Next action: 1.2.6.1**, the per-quarter amount on the dashboard — scope already cut
-> to that one surface by [D18], so it needs no fresh premise check, only its before-scan.
+> install). ✅ **1.2.6.1 is DONE** — the amount is on the dashboard, premium, beside a free date.
+> **▶ Next action: 1.2.6.3**, the safe-harbor payment tracker (payments made vs. required). ⚠️ It
+> needs a **per-year payments-made model**; `amountSetAsideByYear` is the shape to follow.
 > ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
 > worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
-> Health: **321** mobile unit · **102** engine · **50/50** Playwright · typecheck clean · both tax-config
+> Health: **321** mobile unit · **102** engine · **53/53** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
@@ -143,7 +144,7 @@ blur or remove anything already free. An item that fails that test is cut, not s
 | # | sub-step | scan |
 |---|---|---|
 | **1.2.6.2** | ✅ **DONE 2026-09-21 — the IRS due-date business-day shift.** Dates now move past weekends, MLK Day and Emancipation Day; **the after-scan folded in a launch-time refresh**, without which the fix reached nobody already installed and the reminder queue drained after a year. **321 unit · 7 plants, 7 caught.** | ✅ |
-| **1.2.6.1** | **Per-quarter amount on the dashboard's due-date row.** ⚠️ Before-scan corrected the premise: `perQuarter` exists and `SafeHarborScreen` is **already** fully premium-gated, so this is not a gating change — it is a build in the one place the amount is absent. **[D18]: the notification carries no figure**; reminders are out of scope. | 🔵 |
+| **1.2.6.1** | ✅ **DONE 2026-09-21 — the per-quarter amount on the dashboard's due-date row**, premium, beside a date that stays free. Labelled as a projection. **53/53 Playwright (3 new) · 4 plants, 3 caught** — the one that passed is recorded as a coverage gap, not a pass. | ✅ |
 | **1.2.6.3** | **Safe-harbor payment tracker** — payments made vs. required, completing what v1.1 half-built. Needs a per-year payments-made model; `amountSetAsideByYear` is the shape to follow. ⚠️ **Depended on 1.2.2's safe-harbor fix** — built on the old maths this would have tracked payments against a target that said "no penalty expected" all spring. | ⬜ |
 | **1.2.6.4** | **Shift/earnings optimizer** — the headline, pulled from v1.3, and the owed earning-optimization repositioning. Soft-gate below ~30 entries; **demo mode is what makes it demoable**. | ⬜ |
 | **1.2.6.5** | **Expense-breakdown drill-down.** | ⬜ |
@@ -289,6 +290,14 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.6.1 _(2026-09-21)_
+
+- **The dashboard amount's zero-case and non-current-year guards are unverified.** A plant removing
+  `estimatedPaymentsNeeded > 0` was **not caught** — the web suite can only reach the premium side
+  through the demo persona, which always has income and always sits in the current year. So "≈ $0.00
+  per quarter" and a stale-year pairing are both reachable and untested. Cheap to cover if the demo
+  ever gains a second year ([D11] says it will not) — otherwise a device spot-check.
 
 ### From 1.2.6.2 _(2026-09-21)_
 

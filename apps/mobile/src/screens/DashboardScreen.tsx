@@ -7,6 +7,7 @@ import {
   aggregateEntries,
   comparePlatforms,
   computeCatchUpStatus,
+  computeSafeHarborFromEntries,
   computeTaxEstimate,
   effectiveHourlyRate,
   entriesForYear,
@@ -175,6 +176,22 @@ export function DashboardScreen({
   }, [amountSetAsideSoFar]);
   const nextDueDate = getUpcomingQuarterlyDueDates()[0];
   const catchUp = computeCatchUpStatus(netAmountToSetAside, amountSetAsideSoFar, nextDueDate);
+
+  // ─── The per-quarter estimated payment (Premium) ───────────────────────────────────────────────
+  //
+  // ⛔ `computeSafeHarborFromEntries`, NOT `computeSafeHarbor(taxEstimate, …)` — even though this
+  // screen already holds a `taxEstimate` and reusing it looks free. That entry point projects gig
+  // income to a full year FIRST, and Form 2210's 90% leg is defined on the full year's tax:
+  // comparing a year-to-date tax against a full-year withholding is exactly the defect 1.2.2.3
+  // fixed, which reported "no penalty expected" through both spring deadlines. The shortcut here
+  // would rebuild it silently, on a number that now carries a payment instruction.
+  const safeHarbor = computeSafeHarborFromEntries(entries, taxProfile, selectedYear);
+  // The date is the next one from TODAY; everything else in this card is scoped to the selected
+  // year. A bare date can carry that mismatch, a dollar figure cannot — so the amount only appears
+  // on the current year. The zero case is the same one `SafeHarborScreen` suppresses: nothing is
+  // owed in quarterly payments, and "≈ $0.00 per quarter" reads as a broken number, not an answer.
+  const showPerQuarter =
+    canUsePremium && selectedYear === currentCalendarYear && safeHarbor.estimatedPaymentsNeeded > 0;
 
   function handleSaveAmountSetAside() {
     const parsed = Math.max(0, parseFloat(amountSetAsideInput) || 0);
@@ -438,6 +455,26 @@ export function DashboardScreen({
                     {nextDueDate.label} — {formatDate(nextDueDate.dueDate)}
                   </Text>
                 </View>
+              )}
+
+              {/* Additive by construction: a free user sees the date row above exactly as before.
+                  The DATE is the core job and stays free ([D3]'s axis — premium is tax-time depth,
+                  never the set-aside itself); the amount is the premium line. */}
+              {nextDueDate && showPerQuarter && (
+                <View style={styles.progressRow}>
+                  <Text style={styles.progressRowLabel}>Estimated payment</Text>
+                  <Text style={styles.progressRowValue}>
+                    ≈ {formatCurrency(safeHarbor.perQuarter)} per quarter
+                  </Text>
+                </View>
+              )}
+              {nextDueDate && showPerQuarter && safeHarbor.isProjected && (
+                // Said, not implied. Before the year is out this is earnings-so-far scaled up, and
+                // it moves as more is logged — a figure sitting next to a deadline reads as an
+                // instruction, so the one word that makes it a forecast has to be on screen.
+                <Text style={styles.perQuarterNote}>
+                  Projected from your earnings so far — it moves as you log more.
+                </Text>
               )}
 
               {catchUp.gap <= 0 ? (
@@ -771,6 +808,7 @@ function createStyles(colors: Colors) {
   },
   progressRowLabel: { ...type.caption, color: colors.inkFaint },
   progressRowValue: { ...type.caption, color: colors.ink, fontWeight: "600" },
+  perQuarterNote: { ...type.micro, color: colors.inkFaint, marginTop: spacing.xs, lineHeight: 15 },
   statusBox: {
     flexDirection: "row",
     gap: 6,

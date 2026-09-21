@@ -11,6 +11,39 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.6.1 Per-quarter amount on the dashboard — after-scan · 2026-09-21 · ✅ DONE
+
+**321 unit · 53/53 Playwright (3 new) · typecheck clean · lint 15 unchanged · ports free.
+4 plants, 3 caught — and the fourth passing is recorded as a gap, not as a pass.**
+
+⛔ **The before-scan's most valuable finding was a wrong path that was genuinely attractive.** The
+dashboard already holds a `computeTaxEstimate` result, so `computeSafeHarbor(taxEstimate, taxProfile)`
+is right there, free, and looks like the obvious way to avoid recomputing. It is the **1.2.2.3
+defect**: that entry point does not project gig income to a full year, and Form 2210's 90% leg is
+defined on the full year's tax — comparing a year-to-date tax against a full-year withholding is what
+reported *"no penalty expected"* through both spring deadlines. ⚡ **Planted it, and the suite caught
+it** — though by the symptom rather than the sum: the un-projected call leaves `isProjected` false, so
+the "Projected from your earnings so far" label vanishes and that assertion reds. The figure itself is
+asserted only as a *shape* (`≈ $N per quarter`), deliberately — 1.2.2 and 1.2.4 both moved what the
+demo seed produces, and a hardcoded dollar amount is a test that fails the next time the tax maths is
+corrected. **A comment now sits on the call saying why the shortcut is wrong.**
+
+**Gating, and it needed no new mechanism.** `SafeHarborScreen` was already premium behind a
+`canUsePremium` dashboard row, so nothing that was free became paid: the date row renders exactly as
+before and the amount is an additional row beneath it. On web there is no RevenueCat SDK, so the paid
+side is reachable in the suite **only through demo mode's premium preview ([D5])** — which is 1.2.1
+paying for itself in a place it was not built for.
+
+⚠️ **Both absence assertions are paired with a positive one on the same card.** `toHaveCount(0)` is
+equally true of a page that never rendered, and this suite has been fooled by that before.
+
+🔴 **The plant that PASSED, reported as a gap:** removing the `estimatedPaymentsNeeded > 0` guard
+changed nothing the tests could see. The demo persona always has income and, per [D11], always sits
+in one current tax year — so the zero case (*"≈ $0.00 per quarter"*, which reads as a broken number
+rather than an answer) and the selected-year-vs-today's-date pairing are both reachable and
+unverified. Filed to the backlog. **The guards are in the code and correct; what is missing is
+anything that would notice if they left.**
+
 ### 🔎 1.2.6.2 IRS due-date business-day shift — after-scan · 2026-09-21 · ✅ DONE
 
 **321 unit (from 306) · 102 engine · 50/50 Playwright · typecheck clean · both tax-config gates
