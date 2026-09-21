@@ -135,7 +135,7 @@
   <section>
     <p style="font-size:14px; color:#9aa1ac; margin-bottom:16px;">Last updated: September 21, 2026</p>
     <div class="summary-box">
-      <p>SetAsideTracker stores everything you enter — your earnings, tax profile, and settings — <strong>only on your own device</strong>. We don't have a server or user accounts, and your financial data is never transmitted anywhere. If you use the mileage trip tracker, the app reads your location <strong>only while a trip is running</strong>, and keeps the distance rather than the locations. To keep the app reliable and understand which features are used, we do collect <strong>anonymous crash reports and basic usage analytics</strong> — this never includes the contents of your entries, your earnings, your name, or your email. The details are below.</p>
+      <p>SetAsideTracker stores everything you enter — your earnings, tax profile, and settings — <strong>only on your own device</strong>. We don't have a server or user accounts, and your financial data is never transmitted anywhere. If you use the mileage trip tracker, the app reads your location <strong>only while a trip is running</strong> &mdash; with an on-screen indicator while it does &mdash; and keeps the distance rather than the locations. To keep the app reliable and understand which features are used, we do collect <strong>anonymous crash reports and basic usage analytics</strong> — this never includes the contents of your entries, your earnings, your name, or your email. The details are below.</p>
     </div>
   </section>
 
@@ -152,7 +152,8 @@
 
   <section>
     <h2>Location</h2>
-    <p>If you use the mileage trip tracker, the app reads your device's location <strong>while you have a trip running and the app is open</strong>, and uses it for one thing: measuring how far you drove. The app asks for &ldquo;when in use&rdquo; access only &mdash; it cannot read your location in the background, and it never reads it when no trip is running.</p>
+    <p>If you use the mileage trip tracker, the app reads your device's location <strong>while a trip is running</strong>, and uses it for one thing: measuring how far you drove. It keeps reading while you drive even if you switch to another app &mdash; otherwise it could not measure the trip &mdash; and <strong>iOS displays a location indicator the entire time</strong>, so it is always visible when the app is reading your location.</p>
+    <p>The app asks for &ldquo;when in use&rdquo; access only. It <strong>never</strong> reads your location when no trip is running: starting a trip is the only thing that turns it on, and stopping the trip turns it off.</p>
     <p>Your location is used on your device to calculate a distance, and <strong>the locations themselves are never stored and never transmitted</strong>. What is saved is the resulting mileage number on the entry you attach it to &mdash; the same number you could type in yourself. You can edit or delete that number like any other entry detail.</p>
     <p>The tracker is optional. If you decline the location permission, or turn it off later, the rest of the app works exactly as before and you can enter mileage by hand.</p>
   </section>

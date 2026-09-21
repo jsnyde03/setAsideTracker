@@ -43,8 +43,8 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "SetAside uses your location only while you have a mileage trip running, to measure how far you drove. It never reads your location in the background or when no trip is running.",
-          "isIosBackgroundLocationEnabled": false,
+          "locationWhenInUsePermission": "SetAside uses your location only while you have a mileage trip running, to measure how far you drove. iOS shows a location indicator the whole time a trip is running, and the app stops reading your location the moment you stop the trip.",
+          "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": false
         }
       ]
