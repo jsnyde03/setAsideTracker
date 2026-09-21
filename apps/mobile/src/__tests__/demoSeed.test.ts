@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeTaxEstimate, entriesForYear } from "../calculations";
+import { computeTaxEstimate, entriesForYear, weeklySetAsides } from "../calculations";
 import { DEMO_ENTRY_COUNT, buildDemoSeed } from "../demo/demoSeed";
 
 /**
@@ -130,4 +130,29 @@ describe("buildDemoSeed", () => {
     expect(new Set(ids).size).toBe(DEMO_ENTRY_COUNT);
     expect(ids.every((id) => id.startsWith("demo-entry-"))).toBe(true);
   });
+
+  /**
+   * ⭐ Found at 1.2.4's whole-item after-scan. The seed built entries with no frozen set-aside rate,
+   * so every demo week rendered as *estimated* ([D14]) under a footnote saying the entries "were
+   * logged before this app started recording a set-aside rate" — false about a persona this build
+   * generates, and shown on the surface App Store screenshots are shot from.
+   */
+  it("freezes a set-aside rate on every entry, as the app does when a user logs one", () => {
+    const seed = buildDemoSeed(new Date("2026-06-15T12:00:00.000Z"));
+
+    for (const entry of seed.entries) {
+      expect(typeof entry.setAsideRate, `entry ${entry.id} carries no frozen rate`).toBe("number");
+    }
+  });
+
+  it("shows no estimated weeks, so the demo does not describe itself as pre-dating the feature", () => {
+    const now = new Date("2026-06-15T12:00:00.000Z");
+    const seed = buildDemoSeed(now);
+
+    const weeks = weeklySetAsides(seed.entries, seed.taxProfile, now.getFullYear());
+
+    expect(weeks.length).toBeGreaterThan(0);
+    expect(weeks.some((week) => week.estimated)).toBe(false);
+  });
+
 });

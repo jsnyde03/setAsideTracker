@@ -11,6 +11,46 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.4 Set-aside split by date and week — WHOLE-ITEM after-scan · 2026-09-21
+
+**COMPLETE, 6/6.** **272 mobile unit (from 248) · 102 engine · 50/50 Playwright (from 43) ·
+typecheck + lint clean · both tax-config gates green · ports verified free.** **11 plants across 4
+sub-steps; 9 caught, and the 2 that PASSED each changed something.**
+
+🔴 **The find only a whole-item pass could make: the demo persona would have shown every week as
+"estimated".** `buildDemoSeed` builds entries directly and carried no `setAsideRate`, so all twenty
+fell to [D14]'s fallback and the sheet rendered a footnote saying they *"were logged before this app
+started recording a set-aside rate"* — **false about a persona this build generates**, on the
+surface App Store screenshots are shot from (`SCREENSHOT_PLAN.md`) and the one a premium preview
+shows. Invisible from any sub-step: 1.2.4.2 owned the provider's save path, 1.2.4.3 the arithmetic,
+1.2.4.4 the rendering — and the demo goes through **none** of them. Folded in: the seed now freezes
+rates in order exactly as the app does, with a plant confirming it.
+
+⚡ **Two plants passed in this item, and neither was a shrug.** 1.2.4.4's asserted on the
+*accessibility label* while the visible figure was hardcoded to `$0.00` — the label kept telling the
+truth while the screen lied. 1.2.4.5's was **circular**: `weeksTotal + adjustment === yearTotal`
+held when all three came from one source. **The running tally for v1.2 is now five tests that looked
+like coverage and were not**, and the three in this item were each found by a plant rather than by
+re-reading.
+
+⚠️ **Two of the item's own premises were wrong, in opposite ways.** The spec's *"the schema cost is
+small"* held exactly as measured. But **the entry form drops any field it does not name** (1.2.4.2),
+which no one had reason to know until a non-user-edited field existed; and the plan's *"the catch-up
+line already reconciles this"* (1.2.4.5) confused the user's **savings behaviour** with the
+display's **internal arithmetic** — building it as written would have told someone perfectly on
+track that they were behind.
+
+**What is genuinely owed on a device:** nothing new that is not already in the checklist. The
+feature is pure arithmetic plus two rendered surfaces, both Playwright-covered including the
+reconciliation path. ⚠️ Worth a look during the 1.2.12 pass anyway: the sheet on a small screen with
+a full year of weeks, which no web run judges.
+
+**Deferred from this item, all filed in the same edits:** the drop-on-edit **class** (any future
+non-user-edited `Entry` field) · `vitest` not typechecking · ten `formatCurrency` copies in two
+signatures.
+
+---
+
 ### 🔎 1.2.4.5 Reconcile the drift — SUB-TASK before + after-scan · 2026-09-21
 
 **Shipped.** `summarizeWeeklySetAsides` returns the weeks, `weeksTotal`, `yearTotal` and the

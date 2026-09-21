@@ -1,4 +1,4 @@
-import { computeTaxEstimate } from "../calculations";
+import { computeSetAsideRate, computeTaxEstimate } from "../calculations";
 import type { DemoSeed } from "../storage/repository";
 import type { CustomExpense, Entry, GigPlatform, MileageLog, TaxProfile } from "../types";
 
@@ -248,11 +248,21 @@ export function buildDemoSeed(now: Date = new Date()): DemoSeed {
     filedTaxByYear: { [year - 1]: { totalTax: DEMO_PRIOR_YEAR_TOTAL_TAX } },
   };
 
+  // ⛔ **Freeze each entry's set-aside rate, exactly as the app does when a user logs one (1.2.4.2).**
+  // Without this every demo week renders as *estimated* ([D14]) under a footnote saying the entries
+  // "were logged before this app started recording a set-aside rate" — which is false about a
+  // persona this build generated, and it is the surface App Store screenshots are shot from
+  // (SCREENSHOT_PLAN). Rated in order against what came before, because that is what the rate means.
+  const ratedEntries = entries.reduce<Entry[]>((sofar, next) => {
+    sofar.push({ ...next, setAsideRate: computeSetAsideRate(sofar, next, taxProfile, year) });
+    return sofar;
+  }, []);
+
   // Ask the real engine what this persona owes, then set aside a little more than that. Running the
   // app's own calculation rather than restating a number measured once is what keeps "on track" true
   // on every future date — and `amountSetAsideByYear` is self-reported savings that the estimate
   // never reads, so computing it from a profile that doesn't carry it yet is not circular.
-  const target = computeTaxEstimate(entries, taxProfile, year).netAmountToSetAside;
+  const target = computeTaxEstimate(ratedEntries, taxProfile, year).netAmountToSetAside;
   const amountSetAside = Math.ceil((target + DEMO_SET_ASIDE_BUFFER) / 10) * 10;
 
   return {
@@ -263,7 +273,7 @@ export function buildDemoSeed(now: Date = new Date()): DemoSeed {
       createdAt: `${year}-01-05T10:00:00.000Z`,
     },
     taxProfile: { ...taxProfile, amountSetAsideByYear: { [year]: amountSetAside } },
-    entries,
+    entries: ratedEntries,
     appSettings: {
       appLockEnabled: false,
       // Deliberately omitted: `colorScheme`. The theme is the visitor's own preference and lives

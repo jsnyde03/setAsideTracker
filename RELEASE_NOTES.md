@@ -33,9 +33,22 @@ Your tax estimate just got more accurate.
 • New: explore the app with sample data before entering anything real.
 • If the app ever can't open your saved data, it now tells you and helps you
   recover it, instead of starting you over.
+• See what to set aside from each week's work, not just one figure for the
+  whole year — and last week's number stays put once the week is over.
 ```
 
 ### Completed in this release
+
+**⭐ Set aside by the week (1.2.4) — the lump sum stops being the only number:**
+
+- **Every shift now carries its own set-aside, and shifts add up into weeks.** "This week" sits on
+  the dashboard next to your year total, and tapping it shows every week you've worked.
+- **Last week's number never changes.** Each shift's figure is locked in at the rate that applied
+  when you logged it, so earning more in November doesn't quietly rewrite what July said. Editing a
+  shift's pay updates its amount — at the rate it was logged under.
+- **The weeks always add up.** If something changes what you owe — you move state, your situation
+  changes — the difference is shown as its own line rather than leaving the weekly figures quietly
+  disagreeing with your year total.
 
 **🔴 Data safety (1.2.3) — your data can no longer be quietly lost:**
 
