@@ -367,8 +367,23 @@ workflows:
         # `CODE_SIGN_IDENTITY="-"` is ad-hoc signing: no certificate, no provisioning profile, no
         # AppleConnect group needed (which this workflow deliberately omits), but the entitlements
         # are present so the simulator Keychain answers.
+        # ⚠️ SENTRY_DISABLE_AUTO_UPLOAD is passed as a BUILD SETTING, not left to the workflow's
+        # env vars. It is declared in `environment.vars` above, and on 2026-09-21 the bundle phase
+        # still received it EMPTY and ran sentry-cli anyway, which has no auth token here (this
+        # workflow deliberately omits the AppleConnect group) and failed the whole build:
+        #
+        #     error: sentry-cli - To disable source maps auto upload, set SENTRY_DISABLE_AUTO_UPLOAD=true
+        #     + '[' '' '!=' true ']'          <- the variable arrived empty
+        #
+        # ⛔ I do not know why env inheritance stopped working — it demonstrably worked for
+        # dispatches #3-#12. So rather than theorise, this uses the channel the trace PROVES
+        # reaches the script phase: build settings. The same phase reads CONFIGURATION, DEST and
+        # friends, so a build setting cannot silently go missing the way the env var just did.
+        # The echo makes the value visible in the log either way.
         script: |
           cd apps/mobile
+          export SENTRY_DISABLE_AUTO_UPLOAD=true
+          echo "SENTRY_DISABLE_AUTO_UPLOAD (env) = [${SENTRY_DISABLE_AUTO_UPLOAD}]"
           xcodebuild \
             -workspace ios/SetAsideTracker.xcworkspace \
             -scheme SetAsideTracker \
@@ -376,6 +391,7 @@ workflows:
             -sdk iphonesimulator \
             -derivedDataPath ios/build \
             -destination 'generic/platform=iOS Simulator' \
+            SENTRY_DISABLE_AUTO_UPLOAD=true \
             CODE_SIGNING_ALLOWED=YES \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="-" \
