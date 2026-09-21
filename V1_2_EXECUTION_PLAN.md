@@ -24,10 +24,13 @@
 > ship as soon as it is done.** Do not reintroduce a target.
 >
 > ✅ **1.2.2 (7/7) and 1.2.3 (5/5) ARE COMPLETE** and closed. **▶ ACTIVE: 1.2.4, the set-aside split
-> by date and week** ([D7]), decomposed below. **1.2.4.1 is answered — [D13]/[D14]/[D15], 2026-09-21.
-> ▶ Next action: 1.2.4.2, and its before-scan is owed first.** **⏸ 1.2.1 is 7/7 built**, deferred to ~November with Maestro.
-> Health: **102** engine · **248** mobile unit · **43/43** Playwright · typecheck clean · both tax-config
-> gates green · lint 15 _(the ledger says 14 — drift, all in `components/`, re-count at 1.2.11)_.
+> by date and week** ([D7]) — **4 of 6 done.** The frozen per-entry rate, the Monday–Sunday roll-up and
+> the dashboard surface are all built and on the branch. **▶ Next action: 1.2.4.5, reconcile the drift**
+> — frozen figures stop summing to the year total once rates move, and `weeklyCatchUpAmount` already
+> exists to say so but renders **only when already behind**. **⏸ 1.2.1 is 7/7 built**, deferred to
+> ~November with Maestro.
+> Health: **102** engine · **266** mobile unit · **48/48** Playwright · typecheck clean · both tax-config
+> gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
 > **1.2.3 is the data-safety block; mileage is 1.2.5** — the queue table and the log's renumber map
