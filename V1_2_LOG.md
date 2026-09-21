@@ -11,6 +11,39 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.4.3 The weekly roll-up — SUB-TASK before + after-scan · 2026-09-21
+
+**Shipped**, all pure: `weeklySetAsides`, `weekStartOf`, `fallbackSetAsideRate`. Monday–Sunday
+([D13]), most recent week first, and **no row for a week with no work** — an empty row is not
+information and the user did not work that week. **266 unit (was 256) · typecheck + lint clean.**
+No UI yet, so no Playwright change; 1.2.4.4 owns the surface.
+
+⚠️ **The before-scan's find: this file has no date parsing, and that is deliberate.** `entriesForYear`
+matches a **string prefix**; `yearsWithEntries` slices four characters. Nothing converts an entry
+date to a `Date`. So week bucketing had to either adopt that discipline or break it —
+`new Date("2026-06-22")` is parsed as midnight **UTC**, which is Sunday *evening* anywhere in the
+Americas, so a local-time implementation files every Sunday entry into the previous week for most of
+this app's users. All week maths is UTC and never touches local time.
+
+⭐ **And that was confirmed by planting the local-time version rather than reasoned about** — it
+reddens three date tests in the machine's own timezone.
+
+⚠️ **A test of mine was nearly vacuous and the plant is what showed it.** The timezone test
+originally set `process.env.TZ = "America/Los_Angeles"` inside itself. **V8 does not reliably pick
+that up mid-process**, so the switch may have done nothing at all — the test would have looked like
+timezone coverage while being an ordinary assertion. Since the plant reds it in the ambient timezone
+anyway, the forcing was removed and the comment now says what actually protects it. *Claiming
+coverage you do not have is worse than not claiming it.*
+
+**[D14]'s marking has a control.** One test asserts a legacy week **is** estimated; the next asserts
+a fully frozen week is **not**. Without the second, an implementation that marked every week would
+have passed — the same shape as the vacuous tests found in 1.2.2 and 1.2.3.1.
+
+**Three plants, all caught:** local-time week starts (3 red) · never marking a week estimated
+(1 red) · Sunday-start weeks (6 red).
+
+---
+
 ### 🔎 1.2.4.2 Freeze the set-aside at log time — SUB-TASK before + after-scan · 2026-09-21
 
 **Before-scan: all three of the spec's premises re-verified against the current code**, since they

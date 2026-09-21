@@ -279,6 +279,110 @@ export function entrySetAside(entry: Entry, fallbackRate?: number): number | und
   return Math.max(0, entryNetProfit(entry)) * rate;
 }
 
+/** One week's worth of logged work, and what it says to set aside. Weeks are Monday–Sunday ([D13]). */
+export interface WeeklySetAside {
+  /** `YYYY-MM-DD` of the Monday that opens the week. Also the sort key. */
+  weekStart: string;
+  /** `YYYY-MM-DD` of the Sunday that closes it. */
+  weekEnd: string;
+  entryCount: number;
+  /** Sum of {@link entryNetProfit} across the week's entries, floored at 0 per entry. */
+  netProfit: number;
+  setAside: number;
+  /**
+   * True when at least one entry in this week predates the frozen rate and had its figure derived
+   * from the year's current rate instead ([D14]).
+   *
+   * ⚠️ **The label is what makes deriving those figures honest rather than convenient.** Showing
+   * "—" for every pre-v1.2 week greets an existing user with a wall of blanks over data they really
+   * have; back-filling silently presents a reconstructed number as though it had been frozen at the
+   * time, which is the exact thing [D7] exists to prevent. Marking it says which is which.
+   */
+  estimated: boolean;
+}
+
+/**
+ * The Monday that opens the week containing `date`, as `YYYY-MM-DD`.
+ *
+ * ⚠️ **Computed in UTC on purpose.** `new Date("2026-06-14")` is parsed as midnight *UTC*, so in any
+ * timezone behind it that instant is the 13th locally — and a Sunday entry would land in the wrong
+ * week for every user west of Greenwich. Entry dates are calendar dates with no time and no zone,
+ * and the rest of this file treats them as strings (`entriesForYear` matches on a prefix) for the
+ * same reason. Nothing here converts to local time.
+ */
+export function weekStartOf(date: string): string {
+  const [year, month, day] = date.split("-").map(Number);
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  // getUTCDay: 0 = Sunday. Monday-based offset, so Sunday is 6 days into its week, not 0.
+  const offset = (utc.getUTCDay() + 6) % 7;
+  utc.setUTCDate(utc.getUTCDate() - offset);
+  return utc.toISOString().slice(0, 10);
+}
+
+function addUtcDays(date: string, days: number): string {
+  const [year, month, day] = date.split("-").map(Number);
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  utc.setUTCDate(utc.getUTCDate() + days);
+  return utc.toISOString().slice(0, 10);
+}
+
+/**
+ * The rate to apply to entries logged before the frozen field existed ([D14]) — the year's own
+ * effective rate, derived from the same pipeline everything else uses.
+ *
+ * Returns `undefined` when the year has no positive profit to divide by, in which case there is no
+ * meaningful figure to show for a legacy entry and the caller leaves it out rather than inventing 0.
+ */
+export function fallbackSetAsideRate(
+  entries: Entry[],
+  taxProfile: TaxProfile,
+  year: number
+): number | undefined {
+  const forYear = entriesForYear(entries, year);
+  const profit = forYear.reduce((sum, entry) => sum + Math.max(0, entryNetProfit(entry)), 0);
+  if (profit <= 0) return undefined;
+  return computeTaxEstimate(forYear, taxProfile, year).netAmountToSetAside / profit;
+}
+
+/**
+ * Groups a year's entries into Monday–Sunday weeks and totals what each says to set aside.
+ *
+ * Most recent week first, matching {@link yearsWithEntries}. Weeks with no entries are **not**
+ * emitted — an empty row is not information, and the user did not work that week.
+ */
+export function weeklySetAsides(
+  entries: Entry[],
+  taxProfile: TaxProfile,
+  year: number = new Date().getFullYear()
+): WeeklySetAside[] {
+  const forYear = entriesForYear(entries, year);
+  const fallback = fallbackSetAsideRate(entries, taxProfile, year);
+
+  const byWeek = new Map<string, WeeklySetAside>();
+  for (const entry of forYear) {
+    const weekStart = weekStartOf(entry.date);
+    const week = byWeek.get(weekStart) ?? {
+      weekStart,
+      weekEnd: addUtcDays(weekStart, 6),
+      entryCount: 0,
+      netProfit: 0,
+      setAside: 0,
+      estimated: false,
+    };
+
+    week.entryCount += 1;
+    week.netProfit += Math.max(0, entryNetProfit(entry));
+    week.setAside += entrySetAside(entry, fallback) ?? 0;
+    // An entry with its own frozen rate is exact; one leaning on the fallback is not, and one whole
+    // estimated entry is enough to make the week's total an estimate.
+    if (entry.setAsideRate === undefined && entryNetProfit(entry) > 0) week.estimated = true;
+
+    byWeek.set(weekStart, week);
+  }
+
+  return Array.from(byWeek.values()).sort((a, b) => b.weekStart.localeCompare(a.weekStart));
+}
+
 export function effectiveHourlyRate(
   totalEarnings: number,
   totalExpenses: number,
