@@ -23,10 +23,16 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> ✅ **1.2.2 IS COMPLETE (7/7).** All three live money-wrong bugs are fixed, each
-> mutation-verified. **▶ Next action: promote and decompose 1.2.3** (mileage trip toggle, [D8]) —
-> v1.2's only native item. **⏸ 1.2.1 is 7/7 built**, deferred to ~November with Maestro.
+> ✅ **1.2.2 IS COMPLETE (7/7)** and closed. All three live money-wrong bugs fixed, each
+> mutation-verified. **▶ ACTIVE: 1.2.3, the data-safety block**, decomposed below.
+> **⏸ 1.2.1 is 7/7 built**, deferred to ~November with Maestro.
 > Health: **102** engine · **226** mobile unit · **38/38** Playwright · typecheck clean · lint 14.
+>
+> ⚠️ **Fixed 2026-09-21: this block and three other lines said "1.2.3 = the mileage toggle."**
+> **1.2.3 is the data-safety block; mileage is 1.2.5** — the queue table and the log's renumber map
+> always said so. More renumber rot, found at the 1.2.3 switch-in. Mileage was additionally the wrong
+> pick: `expo-location` is not installed anywhere in the repo, and all three of its Jason-side
+> prerequisites are still open. **Data-safety chosen 2026-09-21 (Jason), on row order + correctness-first.**
 >
 > ⚠️ **Constraint carried into 1.2.4 and beyond: do not assert absolute dollar figures in tests.**
 > 1.2.2 changes the tax math, which changes what `buildDemoSeed` produces. Derived assertions
@@ -94,7 +100,7 @@ Cloud runs its own `node.exe`.
 
 **⚙️ Environment:** npm and Playwright here need `NODE_OPTIONS=--use-system-ca`, or installs fail with
 `ERR_SSL_WRONG_VERSION_NUMBER`. Recurs on **every** install, so expect it at each item that adds a
-dependency — 1.2.3 (location) is the next one.
+dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2026-09-21.)_
 
 ---
 
@@ -113,31 +119,32 @@ because the gate is about data, not payment. An e2e asserts the absence.
 
 ---
 
-### ✅ **1.2.2 — Tax-correctness block** · **COMPLETE 2026-09-21, 7/7**
+### 🔴 **1.2.3 — Data-safety block** · **ACTIVE**
 
-**Why it is next:** three confirmed money-wrong bugs, live in v1.1.1, all understating what the user
-owes the IRS — and **every feature item after this renders numbers this block corrects.** 1.2.4 puts a
-per-entry set-aside in ~52 rows a year; building it first multiplies one wrong figure into fifty-two.
+**Why it is next:** a decryption failure has no recovery path *and* no visible symptom — the app
+sends a user whose data cannot be read to the **onboarding screen**. Correctness before features, the
+same reason 1.2.2 preceded them.
 
-⚠️ **The before-scan corrected the audit twice. Both corrections are in the sub-steps below.**
+⚠️ **The before-scan corrected the spec twice and found a third thing bigger than either.**
+Measured, not re-read: a wrong key **does not reliably throw** (189 of 200 trials silently return an
+empty string), and *"no write anywhere is error-handled"* is **false** — all nine call sites
+alert. Record → [V1_2_LOG.md](V1_2_LOG.md).
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.2.1** | ✅ **DONE 2026-09-20.** New `StateExemptionConfig` + `dependentExemptionUsed` on the result; subtracted from income in **both** the flat and bracket branches; GA/SC/MN moved off `credit`. ⭐ **The bug had TESTS PROTECTING IT** — two asserted the credit behaviour, one named *"which is material (not a rounding error)"*. Rewritten as 4. ✅ **GA $4,000→$5,000 confirmed effective TY2026** (HB 463), so the 2026 config's `4000` was a *second*, separate bug. 102 engine tests, both plants caught. | ✅ |
-| **1.2.2.2** | ✅ **DONE 2026-09-21.** `scripts/dependent-audit.mjs` (`npm run audit:dependents`) — inventory from the configs, not by hand. 🔴 **The finding is far bigger than three states: only 7 of 42 taxing states model ANY dependent mechanism; 35 model none**, incl. CA ($489/dep credit), NJ ($1,500), MA ($1,000) — all confirmed against sources. ⚠️ Direction is **safe** (overstates tax) unlike GA/SC/MN, so the 35-state fix is **deferred as its own workstream**, not folded. Cross-year drift clean (only GA's intended change). Script **exits 1** on any per-dependent credit ≥ $1,000, so the original class can never silently return. | ✅ |
-| **1.2.2.3** | ✅ **DONE 2026-09-21.** `projectAggregateToFullYear` + `computeSafeHarborFromEntries` scale gig income to a full year through the **same** `estimateFromAggregate` pipeline the What-if screen uses — no parallel tax path. ⭐ **Not a policy call: the result type's own docstrings already said "current-year" and "full-year"** — only the computation disagreed. Early-January multiplier **capped at 12.5×** so one $500 day doesn't annualise to $36,500. Screen now says *"projected"* and discloses the assumption. 202 unit (was 197) · 34/34 Playwright · plant caught by exactly the blocker test. | ✅ |
-| **1.2.2.4** | ✅ **DONE 2026-09-21.** `spouseAnnualIncome` on `TaxProfile`, joint-filers-only field in onboarding **and** edit (existing married users need the route), fed to `otherTaxableIncome`. ⛔ **The before-scan caught a worse bug than the one being fixed:** `netAmountToSetAside = tax − withholding`, so counting spouse income *without* crediting their withholding hands the user their spouse's **entire tax bill**. Both move together, and the credit is **ungated by `hasW2Job`** — a gig worker whose spouse holds the W2 is the case this exists for. ⭐ Spouse income is kept **out of `otherFicaWages`**: the SS wage base is per-person, so routing it there would silently cut the user's SE tax. 207 unit (was 202) · 34/34 Playwright · both traps mutation-verified. | ✅ |
-| **1.2.2.5** | ✅ **DONE 2026-09-21.** `estimateW2Withholding` now takes `numberOfChildren` — W-4 Step 3 — applying the CTC and state dependent credits/exemptions, and dependents are claimed on **exactly one** W-4. ⛔ **Its before-scan caught a double-count I introduced in 1.2.2.4**: `estimateTax` derives withholding from `otherTaxableIncome`, which now includes the spouse, so my separate spouse estimate counted them twice whenever the user also had a W2 — every 1.2.2.4 test used `hasW2Job: false`. Replaced with one per-job path. ⚠️ **Three test versions before a plant was caught** — see the log. 212 unit · 102 engine · 34/34 Playwright. | ✅ |
-| **1.2.2.6** | ✅ **DONE 2026-09-21.** `US_STATES` + `StatePicker`, search by name or code, in onboarding **and** edit. ⭐ **All 51 were always supported** — the engine has 50 states + DC and always did; the *input* was broken, so "California" became an unmatched key, `$0` state tax, and a warning that California wasn't supported. ⭐ **A hand-written list is what drifts, so a test asserts it matches the engine's keys exactly, both directions, for every tax year.** ⚠️ Placeholder and a11y name kept **unchanged** and an exact code auto-selects — Maestro is out of minutes until ~November and could not re-validate a renamed selector. 226 unit (was 212) · **38/38** Playwright (was 34) · both plants caught. | ✅ |
-| **1.2.2.7** | ✅ **DONE 2026-09-21.** Both audits wired into CI's cheap gate step and **both exit non-zero** — gates, not reports. New `reviewedOn` on `TaxYearConfig` + `audit:staleness`: fails when a live year's figures are unreviewed for 6 months, or when the current calendar year has no config and the engine would **silently fall back** to another year's brackets. ⭐ **Every 1.2.2 fix is mutation-verified** — 9 plants across 6 sub-steps, each caught. ⚠️ Both gates were themselves planted against, because an unverified gate is the defect it is meant to prevent. | ✅ |
+| **1.2.3.1** | ✅ **DONE 2026-09-21.** `UnreadableDataError` + `isCipherText` (the `U2FsdGVkX1` marker) + a pure `decode.ts`, extracted so it is testable at all — `repository` imports AsyncStorage and `encryption` imports `Platform`, which Vitest cannot parse. The "legacy plaintext" fallback is **deleted**: it protected data that cannot exist. ⭐ **The error is deliberately NOT sub-classified by cause** — wrong key, truncation and garbage are measured to be indistinguishable without the integrity tag filed to v1.3. **236 unit (was 226) · 3 plants, all caught** — and plant 1 exposed a **vacuous assertion** in a test written minutes earlier, which only checked `.cause` and so stayed green against a completely different error. | ✅ |
+| **1.2.3.2** | **Never mint a new key over existing data.** Split `getOrCreateEncryptionKey` into a read-only get and an explicit create; `repository` mints only when storage is genuinely empty and raises a named key-lost error otherwise. Today a Keychain reset silently re-keys, and the next write makes the old data unreadable forever. | ⬜ |
+| **1.2.3.3** | **Stop sending a user with unreadable data to onboarding.** `loadError` has **no consumer** — `AppGate` reads `ready` and `appLockEnabled` only, so [index.tsx:16](apps/mobile/app/index.tsx#L16) redirects on a null profile. A recovery surface above the router: say what happened, offer restore-from-backup and erase-and-start-over, and **never** write over what could not be read. ⚠️ **[D12] decides what it offers.** | ⬜ |
+| **1.2.3.4** | **The two optimistic toggles roll back.** `setAppLockEnabled` / `setRemindersEnabled` set React state *before* awaiting the write ([AppDataContext.tsx:163](apps/mobile/src/state/AppDataContext.tsx#L163)). The caller alerts, but the switch stays where the user put it — showing them an app lock they do not have. | ⬜ |
+| **1.2.3.5** | **Verify + whole-item after-scan.** A plant against each of the four; Playwright over the recovery surface; full suites green. | ⬜ |
 
-**Exit line:** all four money-wrong bugs corrected with mutation-verified tests; the dependent
-mechanism checked across **all 51** configs, not three; no feature item renders a figure this block
-has not already fixed.
+**Exit line:** a key or ciphertext failure is named, surfaced and recoverable; nothing re-keys or
+overwrites data it could not read; no setting can display a state that was never stored.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
-_1.2.1 is not listed here — it is the active item above. An item appears in exactly one place._
+_1.2.1 (parked) and 1.2.3 (active) are not listed here — they are above. 1.2.2 is in **Closed**.
+An item appears in exactly one place._
 
 ⛔ **Numbers are STABLE IDs — do not renumber on insert.** A new item takes the **next free number**
 and is placed in the right row; **build order is this table's row order**, never the numbering. Two
@@ -147,8 +154,6 @@ out-of-order number is worth less than one more round of that.
 
 | # | item | notes |
 |---|---|---|
-| 1.2.2 | **🔴 Tax-correctness block** | **NEW 2026-09-20, from the gap scan. Three confirmed money-wrong bugs, all understating what is owed**, plus the dependent asymmetry. Live in v1.1.1. **Precedes every feature item** — see the sequencing note below. |
-| 1.2.3 | **🔴 Data-safety block** | NEW 2026-09-20. A decryption failure has no recovery path and key regeneration makes old data permanently unreadable; **no write anywhere is error-handled.** |
 | 1.2.4 | **⭐ Set-aside split by date and week** | NEW 2026-09-20 ([D7]). Per-entry set-aside rolling up to weekly, replacing the YTD lump as the actionable unit. Rate **frozen at log time** via one optional `Entry` field. |
 | 1.2.5 | **⭐ Mileage trip toggle** 🔧 | NEW 2026-09-20 ([D8]). Start/stop capture on **when-in-use** location, populating the existing `MileageLog` shape. **v1.2's only native item.** Auto-detection → v1.3. |
 | 1.2.6 | **Premium slice** | Optimizer (headline) · safe-harbor payment tracker · per-quarter amounts in reminders · expense drill-down. **Before the screen passes** so each walks the final surface once. ⚠️ **Depends on 1.2.2** — the safe-harbor tracker cannot be built on the broken safe-harbor math. |
@@ -165,7 +170,7 @@ under-bracketed number multiplies one wrong figure into fifty-two wrong ones. **
 build the display on it.**
 
 ⛔ **Cut to v1.3 on 2026-09-20 ([D8]):** the **iOS home-screen widget** (was 1.2.6). It was on record
-as the #1 risk to the date, with a standing "cut this before cutting the date"; 1.2.3 makes mileage
+as the #1 risk to the date, with a standing "cut this before cutting the date"; **1.2.5** makes mileage
 the native item instead. Its external prerequisites move with it.
 
 _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in — not carried here.
@@ -173,6 +178,13 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.2 — Tax-correctness block ✅ DONE 2026-09-21, 7/7.** Three money-wrong bugs that were live in
+  v1.1.1, all understating what the user owed — safe harbor's "no penalty expected", MFJ ignoring
+  spouse income, GA/SC/MN exemptions applied as credits — plus the state picker (all 51 were always
+  supported; the *input* was not) and both tax-config audits made CI gates. **226 unit · 102 engine ·
+  38/38 Playwright · 9 plants across 6 sub-steps, every one caught.** _Sub-step detail + scan records
+  → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.0.8 — Close the native-verification gap ✅ DONE 2026-08-08.** ⭐ **Root cause found: `TextField`
   never labelled its input** — every text field in the app was an unnamed box to VoiceOver, which is
@@ -208,6 +220,7 @@ map is at the head of the log's item-spec section._
 | **[D8]** | **Mileage gets a start/stop toggle in v1.2 on when-in-use location; auto-detection waits for v1.3.** The **widget is cut to v1.3** so v1.2 carries one native item, not two. | Jason 2026-09-20 |
 | **[D9]** | ✅ **NO SHIP DATE. Work through the queue and ship ASAP.** August is retired and not replaced — the version is paced by the work, not by a date. ⚠️ **Do not reintroduce a target date**; the correctness exposure from [D10] is the reason to go fast, not a reason to set one and cut against it. | Jason 2026-09-20 |
 | **[D11]** | **The demo persona stays at ONE tax year.** Year-over-year therefore cannot be previewed — accepted, because the gate is about data, not payment. Revisit only if the demo becomes the primary premium sales surface. | Jason 2026-09-20 |
+| **[D12]** | **The recovery surface offers three explicit routes — retry, restore-from-backup, erase — and nothing silent.** ⚠️ **Retry is not politeness:** `expo-secure-store` defaults to `WHEN_UNLOCKED`, so a launch before the device's first unlock can return null **transiently**, which is not key loss — erasing or re-keying on it would destroy good data. Restore is the only genuine recovery the app has, and a user stranded on this screen cannot reach Settings to find it. | Jason 2026-09-21 |
 | **[D10]** | **No interim patch release — the three live money-wrong bugs are fixed in v1.2, not in a v1.1.2.** Recommendation on record was a cheap disclosure patch (MFJ warning + safe-harbor caveat) while the real fixes were built; **Jason chose the single correct release instead.** Tradeoff accepted knowingly: v1.1.1 keeps understating what users owe until v1.2 ships. | Jason 2026-09-20 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
@@ -215,7 +228,7 @@ map is at the head of the log's item-spec section._
 
 ## ⚠️ External prerequisites — Jason-side
 
-**Gating 1.2.3 (the mileage toggle) — v1.2's only native item:**
+**Gating 1.2.5 (the mileage toggle) — v1.2's only native item** _(said "1.2.3"; corrected 2026-09-21)_**:**
 1. **`PRIVACY_POLICY.md` + the hosted privacy page must disclose location collection** before the
    build that carries it goes to review. ⚠️ **Collides with 1.2.8's "privacy-page single source of
    truth"** — do that consolidation first or the disclosure lands in one copy and not the other.
@@ -279,6 +292,18 @@ already present).
   non-negative. Pair with the 1099 reconciliation item; both are the logged total not matching reality.
 - **No multi-state or part-year residency** — a single state of residence only.
 
+- **🔴 The stored ciphertext has no MAC, and the key is used as a PASSPHRASE → v1.3, as one format
+  change.** Two findings that must land together because both rewrite the on-disk payload.
+  **(i) No integrity tag.** Measured: a wrong key, a truncated payload and outright garbage all
+  return the *same* empty string from `decryptText` — corruption, tampering and key loss are
+  indistinguishable. Encrypt-then-MAC (HMAC-SHA256) would separate them. **(ii) The 256-bit key is
+  passed to `CryptoJS.AES.encrypt` as a string**, so CryptoJS treats it as a *passphrase* and derives
+  the real key with OpenSSL's `EVP_BytesToKey` — MD5, one iteration, which is why every ciphertext
+  starts `U2FsdGVkX1` ("Salted__"). The entropy is fine; the derivation is weak for no benefit.
+  Passing a `WordArray` key + explicit IV uses the 256 bits directly. **Deferred, not folded:** 1.2.3
+  makes a read failure *recoverable*, and the recovery is identical whichever of the three caused it
+  — a MAC buys a better *diagnosis*, not a different action. Both need a read-both-formats migration.
+  _(Found 2026-09-21 at the 1.2.3 before-scan, by measuring CryptoJS's behaviour rather than reading it.)_
 - **🔴 Backup restore does no validation of entry contents → 1.2.10.** `parseBackupSnapshot` checks
   `Array.isArray(candidate.entries)` ([backup.ts:51](apps/mobile/src/backup.ts#L51)) and then passes
   `candidate.entries` straight through as `Entry[]` ([:60](apps/mobile/src/backup.ts#L60)) — no

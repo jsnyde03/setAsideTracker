@@ -3,7 +3,8 @@ import type { AppSettings, Entry, LocalUserProfile, TaxProfile } from "../types"
 import { buildBackupSnapshot, parseBackupSnapshot, type BackupSnapshot } from "../backup";
 import { getDemoStore, startDemoStore, stopDemoStore } from "../demo/demoMode";
 import type { KeyValueStore } from "./demoStore";
-import { decryptText, encryptText, getOrCreateEncryptionKey } from "./encryption";
+import { encryptText, getOrCreateEncryptionKey } from "./encryption";
+import { decodeStoredValue } from "./decode";
 
 const KEYS = {
   localUserProfile: "gigTaxTracker:localUserProfile",
@@ -92,18 +93,10 @@ async function readJson<T>(key: string, store: KeyValueStore = backend()): Promi
   if (raw === null) return null;
 
   const encryptionKey = await getEncryptionKey();
-  if (!encryptionKey) {
-    return JSON.parse(raw) as T;
-  }
-
-  try {
-    const decrypted = decryptText(raw, encryptionKey);
-    return JSON.parse(decrypted) as T;
-  } catch {
-    // Defensive fallback for data written before encryption was added — not a formal migration
-    // system, just enough to not lose data written under an earlier version of the app.
-    return JSON.parse(raw) as T;
-  }
+  // Throws `UnreadableDataError` rather than returning null or falling back to parsing ciphertext —
+  // "could not be read" and "was never written" are different answers and the caller must be able to
+  // tell them apart. See decode.ts for what this replaced.
+  return decodeStoredValue<T>(key, raw, encryptionKey);
 }
 
 async function writeJson<T>(key: string, value: T, store: KeyValueStore = backend()): Promise<void> {

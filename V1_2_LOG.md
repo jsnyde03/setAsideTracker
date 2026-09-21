@@ -11,6 +11,113 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.3.1 A typed decryption failure — SUB-TASK after-scan · 2026-09-21
+
+**Shipped.** `storageErrors.ts` (`UnreadableDataError`, carrying the *storage* key and never the
+encryption key), `isCipherText` in `cryptoCore.ts`, and `decode.ts` holding the whole decision.
+`readJson` is now four lines. **236 unit (was 226) · 102 engine · typecheck + lint clean.**
+
+**Why a new module rather than fixing `readJson` in place:** `repository.ts` imports AsyncStorage and
+`encryption.ts` imports react-native's `Platform`, so neither can be loaded by Vitest — which is why
+no `repository.test.ts` has ever existed. The decision logic was untestable *where it lived*. This is
+the same split, for the same reason, that already put `cryptoCore.ts` beside `encryption.ts`.
+
+**Three plants, all caught:**
+1. **The old fallback restored** (`catch { JSON.parse(raw) }`) → 3 tests red.
+2. **The empty-string check removed** → 1 test red. It is load-bearing for the *cause chain*: without
+   it the empty decrypt reaches `JSON.parse` and the error arrives carrying a `SyntaxError` about
+   JSON — the misleading diagnosis, one level down, which is what a reader sees in Sentry.
+3. **`isCipherText` forced to `false`** → 3 tests red.
+
+⭐ **Plant 1 caught a vacuous test written minutes earlier.** *"Attributes a wrong key to the key,
+not to JSON"* asserted only `error.cause === undefined` — and the old fallback throws a bare
+`SyntaxError`, which also has no cause. It stayed **green** against the exact defect it was written
+for. Now asserts the error *type* as well. **This is the third vacuous test in v1.2** (two in 1.2.2),
+and all three looked like coverage.
+
+**After-scan, and it feeds 1.2.3.3 rather than the backlog:**
+- **One unreadable key fails the whole load.** `load()` is a `Promise.all` of four reads, so entries
+  being readable while the profile is not still lands on the recovery surface with nothing salvaged.
+  All-or-nothing is the right default, but 1.2.3.3 should decide it **knowingly** rather than inherit
+  it — "restore from backup" is a different offer when half the data was fine.
+- **Nothing reports these to Sentry today.** `loadError` has no consumer, so there is no figure at all
+  for how often this happens in the wild. 1.2.3.3 is where that starts being measured.
+- ⚠️ **No change to writes**, deliberately. `writeJson` is not guarded here; 1.2.3.2 and 1.2.3.4 own
+  the write side, and mixing them into this step would have put the plants on two subjects at once.
+
+---
+
+### 🔎 1.2.3 Data-safety block — TASK before-scan · 2026-09-21
+
+**Method:** the gap scan's two findings are hypotheses. Each was traced to the line, and where the
+finding named a *behaviour* ("throws"), the behaviour was **measured** rather than read. **Both
+findings needed correcting, one of them fundamentally, and a third thing was found that is worse
+than either.**
+
+**⚠️ The item was nearly the wrong one.** The `RESUME HERE` block and three other lines said
+*"1.2.3 = the mileage toggle"*; the queue table and this log's own renumber map both say **1.2.3 is
+data-safety and mileage is 1.2.5**. More 2026-09-20 renumber rot — the same class that broke 13
+cross-references then, and it survived a grep sweep because these four read as prose, not as
+references. All four corrected. Jason chose data-safety 2026-09-21 on row order + correctness-first;
+mileage was independently blocked (`expo-location` is not installed anywhere in the repo, and all
+three of its Jason-side prerequisites are open).
+
+**(a) "A decryption failure has no recovery path." ✅ TRUE, but the stated mechanism is wrong, and
+the real symptom is far worse than the one described.**
+
+- ⛔ **A wrong key does not reliably throw. Measured: 189 of 200 trials returned an empty string;
+  11 threw.** `decryptText` ends in `bytes.toString(CryptoJS.enc.Utf8)`, which throws "Malformed
+  UTF-8 data" only when the garbage plaintext happens to be invalid UTF-8. **Truncated ciphertext
+  and outright garbage behave identically** — all three return `""`. So the failure reaches the user
+  as a `SyntaxError` from `JSON.parse("")`, then a *second* `SyntaxError` from `JSON.parse(raw)` on
+  the ciphertext — two layers from its cause, and carrying none of it.
+  ⭐ **The existing `encryption.test.ts` already knew this** — its wrong-key test has a `try`/`catch`
+  with a comment saying CryptoJS "throws on most (but not all) random byte sequences". True, and
+  the right call for *that* test; but nothing downstream was built for the "not all" case.
+- ⭐ **There is a deterministic marker and the code never uses it.** Every CryptoJS ciphertext begins
+  `U2FsdGVkX1` (base64 "Salted__"), so "is this ciphertext?" is decidable without `try`/`catch`.
+- ⛔ **The "legacy plaintext" fallback at `repository.ts:104-106` protects data that cannot exist.**
+  Its comment says "data written before encryption was added" — but `encryption.ts` **and** its
+  wiring into `repository.ts` are both in the **initial commit** (`6e4afa4`, 2026-06-24), before any
+  release, so no device ever wrote plaintext. The one real plaintext path is **web**, where the key
+  is `null` and the `if (!encryptionKey)` branch above it already returns first. It is dead code
+  whose only live effect is converting a diagnosable failure into a generic one.
+- 🔴 **The symptom nobody wrote down: `loadError` has NO CONSUMER.** `grep -rn loadError` returns
+  four hits, all inside `AppDataContext.tsx` — its type, its state, and twice in the context value.
+  The comment at the `catch` says *"The consumer decides what to show; this layer doesn't own the
+  UI"*, and **there is no consumer**. `AppGate` reads `ready` and `appLockEnabled` only. So on a
+  decryption failure `ready` flips true with a null profile, and [index.tsx:16](apps/mobile/app/index.tsx#L16)
+  redirects to **onboarding** — a user whose data cannot be read is shown a welcome screen. This is
+  the actual catastrophe in (a), and the gap scan did not have it.
+- ✅ **Key regeneration confirmed** (`encryption.ts:39-48`): SecureStore returning null mints a fresh
+  key with no check for existing data. ⭐ **Partial mercy, worth knowing before designing the fix:**
+  entry writes go through `getEntries()` first, which *throws* on the unreadable ciphertext, so
+  `addEntry` fails loudly rather than overwriting. `completeOnboarding` has no such read and **does**
+  write over the profile keys. So the damage is real but narrower than "the next write destroys
+  everything": profile yes, entries no.
+
+**(b) "No write anywhere is error-handled." ⛔ FALSE.** Every one of the nine write call sites is
+wrapped in `try`/`catch` with `reportError` + an `Alert`: entry save and delete, onboarding,
+amount-set-aside, filed tax, tax profile, profile, app lock, reminders, theme, clear-all. The
+provider methods are indeed bare — but they are *callers*' business, and the callers handle it. The
+finding appears to have read `AppDataContext.tsx` and stopped there.
+**What survives is narrower and real:** `setAppLockEnabled` and `setRemindersEnabled` set React
+state **before** awaiting the write (`:163-171`), and nothing rolls back — the caller alerts, and
+the switch stays where the user put it. The user is shown an app lock they do not have.
+⚠️ Also checked and **not** a defect: the read-modify-write in `addEntry`/`updateEntry`/`deleteEntry`
+is sequential and provider-owned, unlike the multi-writer `AppSettings` case that forced
+`updateAppSettings`'s read-then-merge. Left alone.
+
+**Routed to the deferred backlog, immediately:** the missing MAC **and** the passphrase-KDF key
+handling, as **one** v1.3 format change — see the backlog entry. Deferred rather than folded because
+the recovery 1.2.3 builds is the same action whichever of wrong-key / truncation / tampering
+occurred; a MAC buys a diagnosis, not a different outcome.
+
+**Sub-steps:** five, in [V1_2_EXECUTION_PLAN.md](V1_2_EXECUTION_PLAN.md). **[D12] is Jason's** —
+what the recovery surface offers a user whose data cannot be read.
+
+---
+
 ### 🔎 1.2.2 Tax-correctness block — WHOLE-ITEM after-scan · 2026-09-21
 
 **COMPLETE, 7/7.** All three live money-wrong bugs fixed, each mutation-verified.
@@ -1258,6 +1365,12 @@ has not corrected first.
 
 ### 1.2.3 — 🔴 Data-safety block _(new 2026-09-20, gap scan)_
 
+⬆️ **Retrieved and SUPERSEDED 2026-09-21.** It is the active item; its decomposition lives in
+[V1_2_EXECUTION_PLAN.md](V1_2_EXECUTION_PLAN.md) and its before-scan record is above. ⚠️ **Do not
+re-import the two claims below** — the before-scan measured both wrong. A wrong key does not
+reliably throw (189/200 trials returned an empty string), and "no write anywhere is error-handled"
+is false: all nine call sites alert. Kept verbatim as the record of what was believed at admission.
+
 **(a) A decryption failure has no recovery path, and the key can be silently replaced.**
 `repository.ts:99-106` falls back to `JSON.parse(raw)` on ciphertext, which throws and escapes as a
 generic `loadError`. Worse: `getOrCreateEncryptionKey` **mints a fresh key** when SecureStore returns
@@ -1393,4 +1506,28 @@ gate** · pre-submit functional-correctness audit · Apple guideline pass incl. 
 
 ## Completed-item detail
 
-_(none yet)_
+### 1.2.2 — Tax-correctness block · ✅ DONE 2026-09-21, 7/7
+
+_Moved verbatim from the plan at the 1.2.3 switch-in — the queue keeps one line and the
+sub-step detail lives here. This item's scan records are in the section above._
+
+**Why it is next:** three confirmed money-wrong bugs, live in v1.1.1, all understating what the user
+owes the IRS — and **every feature item after this renders numbers this block corrects.** 1.2.4 puts a
+per-entry set-aside in ~52 rows a year; building it first multiplies one wrong figure into fifty-two.
+
+⚠️ **The before-scan corrected the audit twice. Both corrections are in the sub-steps below.**
+
+| # | sub-step | scan |
+|---|---|---|
+| **1.2.2.1** | ✅ **DONE 2026-09-20.** New `StateExemptionConfig` + `dependentExemptionUsed` on the result; subtracted from income in **both** the flat and bracket branches; GA/SC/MN moved off `credit`. ⭐ **The bug had TESTS PROTECTING IT** — two asserted the credit behaviour, one named *"which is material (not a rounding error)"*. Rewritten as 4. ✅ **GA $4,000→$5,000 confirmed effective TY2026** (HB 463), so the 2026 config's `4000` was a *second*, separate bug. 102 engine tests, both plants caught. | ✅ |
+| **1.2.2.2** | ✅ **DONE 2026-09-21.** `scripts/dependent-audit.mjs` (`npm run audit:dependents`) — inventory from the configs, not by hand. 🔴 **The finding is far bigger than three states: only 7 of 42 taxing states model ANY dependent mechanism; 35 model none**, incl. CA ($489/dep credit), NJ ($1,500), MA ($1,000) — all confirmed against sources. ⚠️ Direction is **safe** (overstates tax) unlike GA/SC/MN, so the 35-state fix is **deferred as its own workstream**, not folded. Cross-year drift clean (only GA's intended change). Script **exits 1** on any per-dependent credit ≥ $1,000, so the original class can never silently return. | ✅ |
+| **1.2.2.3** | ✅ **DONE 2026-09-21.** `projectAggregateToFullYear` + `computeSafeHarborFromEntries` scale gig income to a full year through the **same** `estimateFromAggregate` pipeline the What-if screen uses — no parallel tax path. ⭐ **Not a policy call: the result type's own docstrings already said "current-year" and "full-year"** — only the computation disagreed. Early-January multiplier **capped at 12.5×** so one $500 day doesn't annualise to $36,500. Screen now says *"projected"* and discloses the assumption. 202 unit (was 197) · 34/34 Playwright · plant caught by exactly the blocker test. | ✅ |
+| **1.2.2.4** | ✅ **DONE 2026-09-21.** `spouseAnnualIncome` on `TaxProfile`, joint-filers-only field in onboarding **and** edit (existing married users need the route), fed to `otherTaxableIncome`. ⛔ **The before-scan caught a worse bug than the one being fixed:** `netAmountToSetAside = tax − withholding`, so counting spouse income *without* crediting their withholding hands the user their spouse's **entire tax bill**. Both move together, and the credit is **ungated by `hasW2Job`** — a gig worker whose spouse holds the W2 is the case this exists for. ⭐ Spouse income is kept **out of `otherFicaWages`**: the SS wage base is per-person, so routing it there would silently cut the user's SE tax. 207 unit (was 202) · 34/34 Playwright · both traps mutation-verified. | ✅ |
+| **1.2.2.5** | ✅ **DONE 2026-09-21.** `estimateW2Withholding` now takes `numberOfChildren` — W-4 Step 3 — applying the CTC and state dependent credits/exemptions, and dependents are claimed on **exactly one** W-4. ⛔ **Its before-scan caught a double-count I introduced in 1.2.2.4**: `estimateTax` derives withholding from `otherTaxableIncome`, which now includes the spouse, so my separate spouse estimate counted them twice whenever the user also had a W2 — every 1.2.2.4 test used `hasW2Job: false`. Replaced with one per-job path. ⚠️ **Three test versions before a plant was caught** — see the log. 212 unit · 102 engine · 34/34 Playwright. | ✅ |
+| **1.2.2.6** | ✅ **DONE 2026-09-21.** `US_STATES` + `StatePicker`, search by name or code, in onboarding **and** edit. ⭐ **All 51 were always supported** — the engine has 50 states + DC and always did; the *input* was broken, so "California" became an unmatched key, `$0` state tax, and a warning that California wasn't supported. ⭐ **A hand-written list is what drifts, so a test asserts it matches the engine's keys exactly, both directions, for every tax year.** ⚠️ Placeholder and a11y name kept **unchanged** and an exact code auto-selects — Maestro is out of minutes until ~November and could not re-validate a renamed selector. 226 unit (was 212) · **38/38** Playwright (was 34) · both plants caught. | ✅ |
+| **1.2.2.7** | ✅ **DONE 2026-09-21.** Both audits wired into CI's cheap gate step and **both exit non-zero** — gates, not reports. New `reviewedOn` on `TaxYearConfig` + `audit:staleness`: fails when a live year's figures are unreviewed for 6 months, or when the current calendar year has no config and the engine would **silently fall back** to another year's brackets. ⭐ **Every 1.2.2 fix is mutation-verified** — 9 plants across 6 sub-steps, each caught. ⚠️ Both gates were themselves planted against, because an unverified gate is the defect it is meant to prevent. | ✅ |
+
+**Exit line:** all four money-wrong bugs corrected with mutation-verified tests; the dependent
+mechanism checked across **all 51** configs, not three; no feature item renders a figure this block
+has not already fixed.
+
