@@ -764,6 +764,84 @@ describe("computeW4Optimization", () => {
   });
 });
 
+describe("dependents in the withholding credit (1.2.2.5)", () => {
+  const mfjTwoKids: TaxProfile = {
+    filingStatus: "marriedFilingJointly",
+    dependents: 2,
+    hasW2Job: true,
+    w2GrossPayPerPeriod: 60000 / 26,
+    w2PayFrequency: "biweekly",
+    state: "TX",
+  };
+  const gig20k = [makeEntry({ date: "2026-03-01", grossPay: 20000, tips: 0, mileage: 0 })];
+
+  /**
+   * The asymmetry: the TOTAL tax applied the Child Tax Credit, but the WITHHOLDING estimate
+   * modelled a W-4 claiming no dependents. Subtracting an inflated withholding from a credited
+   * total understated what the user still owes.
+   */
+  it("claiming dependents lowers the withholding estimate — W-4 Step 3", () => {
+    const noKids = computeTaxEstimate(gig20k, { ...mfjTwoKids, dependents: 0 }, 2026);
+    const twoKids = computeTaxEstimate(gig20k, mfjTwoKids, 2026);
+
+    // A W-4 claiming two children withholds less, so the credited figure must fall.
+    expect(twoKids.w2WithholdingYtdEstimate).toBeLessThan(noKids.w2WithholdingYtdEstimate);
+  });
+
+  /**
+   * ⚠️ REWRITTEN after a plant walked straight through the first version. That test compared the
+   * withholding jump against a spouse-alone baseline which ALSO claimed the children, so both
+   * sides moved together and claiming the kids on BOTH W-4s passed cleanly. A comparison whose two
+   * sides carry the same defect cannot detect it.
+   *
+   * This measures the credit's effect directly instead: with both a user W-2 and a spouse income,
+   * going from 0 to 2 dependents must lower total withholding by about ONE child credit
+   * (2 x $2,000), not two.
+   */
+  /**
+   * ⚠️ THIRD version. The first compared two baselines that both carried the defect. The second
+   * measured the right thing but through too small a lever: at $40k of spouse income the child
+   * credit is capped near $1,000 by `nonrefundableCredit`, so double-claiming moved the number by
+   * far less than the threshold allowed and the plant walked through again.
+   *
+   * This one is cap-independent. Claiming the children costs the household a fixed amount of
+   * withholding; adding a SPOUSE must not increase that cost, because the same children cannot be
+   * claimed a second time. So the drop with a spouse must match the drop without one.
+   */
+  it("adding a spouse does not let the same children be claimed twice", () => {
+    const soloDrop =
+      computeTaxEstimate(gig20k, { ...mfjTwoKids, dependents: 0 }, 2026).w2WithholdingYtdEstimate -
+      computeTaxEstimate(gig20k, mfjTwoKids, 2026).w2WithholdingYtdEstimate;
+
+    const withSpouse = { ...mfjTwoKids, spouseAnnualIncome: 120000 };
+    const spouseDrop =
+      computeTaxEstimate(gig20k, { ...withSpouse, dependents: 0 }, 2026).w2WithholdingYtdEstimate -
+      computeTaxEstimate(gig20k, withSpouse, 2026).w2WithholdingYtdEstimate;
+
+    expect(soloDrop).toBeGreaterThan(0); // the credit reaches withholding at all
+    // Claimed twice, spouseDrop picks up a second (uncapped, at $120k) credit and roughly doubles.
+    expect(spouseDrop).toBeCloseTo(soloDrop, 0);
+  });
+
+  it("the gap-scan worked example: direction only, since the figure was never measured", () => {
+    // Lens B reported "app says $656, true balance due ~$3,496" for MFJ, 2 kids, $60k W2 + $20k
+    // gig. That number was never re-derived and the log records it as indicative. What is
+    // assertable is that the user is told to set aside something, and that dependents no longer
+    // inflate the withholding credit.
+    const result = computeTaxEstimate(gig20k, mfjTwoKids, 2026);
+    expect(result.netAmountToSetAside).toBeGreaterThan(0);
+  });
+
+  it("dependents are claimed on the SPOUSE's W-4 when the user has no job", () => {
+    const base: TaxProfile = { ...mfjTwoKids, hasW2Job: false, spouseAnnualIncome: 60000 };
+    const noKids = computeTaxEstimate(gig20k, { ...base, dependents: 0 }, 2026);
+    const twoKids = computeTaxEstimate(gig20k, base, 2026);
+
+    // Otherwise a household whose only W-4 belongs to the spouse would never claim its children.
+    expect(twoKids.w2WithholdingYtdEstimate).toBeLessThan(noKids.w2WithholdingYtdEstimate);
+  });
+});
+
 describe("MFJ spouse income (1.2.2.4)", () => {
   const mfjNoW2: TaxProfile = {
     filingStatus: "marriedFilingJointly",
@@ -829,6 +907,40 @@ describe("MFJ spouse income (1.2.2.4)", () => {
       // A stale value left behind by a filing-status change must not keep inflating the estimate.
       expect(withValue.netAmountToSetAside).toBeCloseTo(without.netAmountToSetAside, 6);
     }
+  });
+
+  /**
+   * ⛔ REGRESSION, and the defect was mine. 1.2.2.4 added spouse income to `otherTaxableIncome`,
+   * which is what `estimateTax` derives `w2WithholdingEstimate` from — then ALSO added a separate
+   * spouse estimate on top, counting the spouse twice whenever the user had a W2 job too. Every
+   * 1.2.2.4 test used `hasW2Job: false`, so none of them could see it. Found by 1.2.2.5's
+   * before-scan. Overstates withholding, understates the set-aside: the same dangerous direction
+   * as the bug 1.2.2.4 existed to fix.
+   */
+  it("does not double-count the spouse's withholding when the user ALSO has a W2", () => {
+    const userW2Mfj: TaxProfile = {
+      filingStatus: "marriedFilingJointly",
+      dependents: 0,
+      hasW2Job: true,
+      w2GrossPayPerPeriod: 2000,
+      w2PayFrequency: "biweekly",
+      state: "TX",
+    };
+    const noSpouse = computeTaxEstimate(gig, userW2Mfj, 2026);
+    const withSpouse = computeTaxEstimate(gig, { ...userW2Mfj, spouseAnnualIncome: 90000 }, 2026);
+
+    // Withholding should rise by roughly the tax on the spouse's own income -- ONCE.
+    const withholdingIncrease =
+      withSpouse.w2WithholdingYtdEstimate - noSpouse.w2WithholdingYtdEstimate;
+    const spouseOnly = computeTaxEstimate([], {
+      ...userW2Mfj,
+      hasW2Job: false,
+      spouseAnnualIncome: 90000,
+    }, 2026);
+    const spouseAlone = spouseOnly.w2WithholdingYtdEstimate;
+
+    // If the spouse is counted twice, the increase is ~2x what the spouse alone withholds.
+    expect(withholdingIncrease).toBeLessThan(spouseAlone * 1.6);
   });
 
   it("works when the SPOUSE has the W2 job and the user has none — the case it exists for", () => {

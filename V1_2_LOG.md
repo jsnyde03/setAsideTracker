@@ -11,6 +11,54 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.2.5 Dependents in the withholding credit — SUB-TASK after-scan · 2026-09-21
+
+**Shipped.** `estimateW2Withholding` takes `numberOfChildren`, applies the CTC (W-4 Step 3) and
+passes dependents to the state leg — which matters more since 1.2.2.1 made three states' dependent
+figures income subtractions. **212 mobile unit · 102 engine · 34/34 Playwright.**
+
+⛔ **The before-scan found a defect I had introduced the day before, in 1.2.2.4.** `estimateTax`
+derives `w2WithholdingEstimate` from `otherTaxableIncome` — which 1.2.2.4 made include the spouse.
+So the engine was *already* estimating withholding on combined income, and my separate spouse
+estimate added it **again**. Measured: 18,040 where ~6,400 was right. **Overstates withholding,
+understates the set-aside — the same dangerous direction as the bug 1.2.2.4 existed to fix.**
+
+⚠️ **My own tests could not have caught it: every 1.2.2.4 spouse test used `hasW2Job: false`**, and
+the double-count only fires when the user *also* has a W2. The gap was in the fixture, not the
+assertions — which is why it took a different item's scan to surface it. **The fix was not to patch
+the addition but to delete the second path**: each job's withholding is now estimated on its own
+income, which is the model's own documented isolation assumption, and `estimate.w2WithholdingEstimate`
+is deliberately no longer used for this.
+
+⚡ **Dependents are claimed on exactly ONE W-4** — the user's when they have a job, otherwise the
+spouse's. Claiming the same children on both would double the credit against withholding. A
+household whose only W-4 belongs to the spouse would otherwise never claim its children at all.
+
+### ⚠️ Three test versions before a plant was caught — the most useful thing here
+
+Planting "claim dependents on BOTH W-4s" passed cleanly **twice**:
+
+1. **v1 compared two baselines that both carried the defect.** The jump was measured against a
+   spouse-alone figure that *also* claimed the children, so both sides moved together. ⛔ **A
+   comparison whose two sides share the defect cannot detect it** — the same shape as a round-trip
+   through one encoder.
+2. **v2 measured the right thing through too small a lever.** At $40k of spouse income the child
+   credit is capped near $1,000 by `nonrefundableCredit`, so double-claiming moved the total by far
+   less than the threshold allowed. **The test was sound and the fixture was too weak** — diagnosed
+   rather than fixed by loosening the bound.
+3. **v3 is cap-independent:** claiming the children costs the household a fixed amount of
+   withholding, so adding a spouse must not increase that cost. `spouseDrop` must equal `soloDrop`.
+   Plant caught.
+
+**The transferable point: a plant that passes is information about the TEST, not permission to move
+on.** Both earlier versions would have shipped as green coverage of a claim they could not check.
+
+**Not re-derived, and still recorded as such:** lens B's "$656 vs ~$3,496" worked example. The
+mechanism is fixed and asserted; the *figure* was never measured and its test now asserts direction
+only, with a comment saying why.
+
+---
+
 ### 🔎 1.2.2.4 MFJ spouse income — SUB-TASK after-scan · 2026-09-21
 
 **Shipped.** `spouseAnnualIncome` on `TaxProfile`; joint-filers-only field in **both** onboarding and

@@ -302,60 +302,70 @@ export function estimateFromAggregate(
     config
   );
 
-  // Withholding credit — how much W2 employer withholding will cover this year's tax bill.
-  // The old approach (prorate by elapsed time) was wrong: it implied the user owed the
-  // "not-yet-withheld" portion themselves, when future paychecks will withhold it automatically.
+  // Withholding credit — how much employer withholding will cover this year's tax bill.
+  // Prorating by elapsed time was wrong: it implied the user owed the "not-yet-withheld" portion
+  // themselves, when future paychecks withhold it automatically. So: YTD actuals when supplied,
+  // plus the model's estimate for the remaining pay periods; otherwise the full annual estimate.
   //
-  // Correct approach:
-  // - If YTD actuals are available: ytdActual (already withheld) + model estimate for remaining
-  //   pay periods (1 - elapsedFraction of the annual estimate).
-  // - Otherwise: credit the full annual estimate — the gap between gig income tax and $0 is
-  //   what the user actually needs to set aside, not a partial-year proration.
+  // ⛔ Each job is estimated on ITS OWN income, and deliberately NOT from
+  // `estimate.w2WithholdingEstimate`. That figure is derived from `otherTaxableIncome`, which since
+  // 1.2.2.4 includes the spouse — so using it AND adding a separate spouse estimate counted the
+  // spouse's withholding TWICE, overstating withholding and understating the set-aside. That is the
+  // same dangerous direction as the bug 1.2.2.4 set out to fix. Caught by 1.2.2.5's before-scan;
+  // every 1.2.2.4 test used `hasW2Job: false`, so none of them could see it.
+  //
+  // Per-job isolation is also the model's own documented assumption (see estimateW2Withholding):
+  // each employer withholds as if its pay were the household's only income, which is how a default
+  // W-4 behaves.
+  //
+  // ⚠️ Dependents are claimed on exactly ONE W-4. Claiming the same children on both would
+  // double-count the credit and overstate withholding. IRS guidance is to claim on one job — the
+  // user's when they have one, otherwise the spouse's.
+  const dependentsOnUserW4 = w2Active ? taxProfile.dependents : 0;
+  const dependentsOnSpouseW4 = w2Active ? 0 : taxProfile.dependents;
+
+  const zeroWithholding = { annualFederalEstimate: 0, annualStateEstimate: 0, annualTotalEstimate: 0 };
+  const estimateFor = (income: number, children: number) =>
+    income > 0
+      ? estimateW2Withholding(
+          income,
+          taxProfile.filingStatus,
+          taxProfile.state,
+          config,
+          taxProfile.county,
+          children
+        )
+      : zeroWithholding;
+
+  const userWithholding = w2Active
+    ? estimateFor(w2FederalTaxableIncome, dependentsOnUserW4)
+    : zeroWithholding;
+  const spouseWithholding = estimateFor(spouseIncome, dependentsOnSpouseW4);
+
   let w2WithholdingYtdEstimate = 0;
   let w2FederalWithholdingYtdEstimate = 0;
   if (w2Active) {
-    const annualEstimate = estimate.w2WithholdingEstimate.annualTotalEstimate;
-    const annualFederalEstimate = estimate.w2WithholdingEstimate.annualFederalEstimate;
     const hasYtdActuals =
       taxProfile.w2YtdFederalWithheld !== undefined || taxProfile.w2YtdStateWithheld !== undefined;
     if (hasYtdActuals) {
       const ytdActual = (taxProfile.w2YtdFederalWithheld ?? 0) + (taxProfile.w2YtdStateWithheld ?? 0);
       const elapsedFraction = w2WithholdingYearFraction(year, taxProfile.w2EndDate);
       const remainingFraction = Math.max(0, 1 - elapsedFraction);
-      w2WithholdingYtdEstimate = ytdActual + annualEstimate * remainingFraction;
+      w2WithholdingYtdEstimate = ytdActual + userWithholding.annualTotalEstimate * remainingFraction;
       w2FederalWithholdingYtdEstimate =
-        (taxProfile.w2YtdFederalWithheld ?? 0) + annualFederalEstimate * remainingFraction;
+        (taxProfile.w2YtdFederalWithheld ?? 0) +
+        userWithholding.annualFederalEstimate * remainingFraction;
     } else {
-      w2WithholdingYtdEstimate = annualEstimate;
-      w2FederalWithholdingYtdEstimate = annualFederalEstimate;
+      w2WithholdingYtdEstimate = userWithholding.annualTotalEstimate;
+      w2FederalWithholdingYtdEstimate = userWithholding.annualFederalEstimate;
     }
   }
 
-  // ⛔ The spouse's withholding is NOT optional once their income is counted. Their employer
-  // withholds against their own pay all year, exactly as the user's does. Counting the income
-  // without the withholding would hand the user their spouse's entire tax bill to set aside —
-  // strictly worse than the under-bracketing this fixes. The two move together or not at all.
-  //
-  // Estimated on the same "as if it were the only income" basis the user's own W2 uses
-  // (see estimateW2Withholding's docstring) — which is how a default W-4 actually behaves.
-  // Deliberately NOT gated on `w2Active`: a gig worker whose spouse has the W2 job is the exact
-  // case this exists for, and that user has no W2 job of their own.
-  let spouseWithholding = 0;
-  let spouseFederalWithholding = 0;
-  if (spouseIncome > 0) {
-    const spouseEstimate = estimateW2Withholding(
-      spouseIncome,
-      taxProfile.filingStatus,
-      taxProfile.state,
-      config,
-      taxProfile.county
-    );
-    spouseWithholding = spouseEstimate.annualTotalEstimate;
-    spouseFederalWithholding = spouseEstimate.annualFederalEstimate;
-  }
-
-  w2WithholdingYtdEstimate += spouseWithholding;
-  w2FederalWithholdingYtdEstimate += spouseFederalWithholding;
+  // The spouse's employer withholds all year regardless of whether the USER has a job, and the YTD
+  // actuals above describe the user's pay stub only — so the spouse's full annual estimate is added
+  // here rather than being prorated against someone else's figures.
+  w2WithholdingYtdEstimate += spouseWithholding.annualTotalEstimate;
+  w2FederalWithholdingYtdEstimate += spouseWithholding.annualFederalEstimate;
 
   const netAmountToSetAside = Math.max(0, estimate.totalEstimatedTax - w2WithholdingYtdEstimate);
 
