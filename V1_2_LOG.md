@@ -11,6 +11,47 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.2.3 Safe-harbor full-year projection — SUB-TASK after-scan · 2026-09-21
+
+**Shipped.** `projectAggregateToFullYear` + `computeSafeHarborFromEntries` in `calculations.ts`;
+`SafeHarborScreen` now calls the latter. **202 unit (was 197) · 34/34 Playwright · typecheck clean.**
+
+⭐ **The before-scan turned this from a policy question into a bug fix, and that changed who decides
+it.** The plan framed it as *"project gig income to year-end, or scope the test to the period
+elapsed?"* — a product call. But `SafeHarborResult`'s own docstrings already answer it:
+`currentYearFederalTax` is *"Estimated **current-year** federal tax"* and `federalWithholding` is
+*"Expected **full-year** federal W2 withholding"*. **Both are documented as full-year figures; only
+the computation disagreed.** Projecting restores the contract rather than choosing a new one — so it
+did not need escalating, and did not get escalated.
+
+**The seam was already there.** `estimateFromAggregate` exists precisely so the What-if screen can
+run hypothetical income through the real pipeline instead of a drift-prone copy. A projected
+aggregate is just another hypothetical, so the projection reuses it and **no second tax path was
+created** — which is the failure mode that would have made this fix worse than the bug.
+
+⚠️ **The one genuine judgement call, made explicit rather than buried: the early-January cap.**
+Linear projection divides by the elapsed fraction of the year, so on 5 January a single $500 day
+annualises to **$36,500**. The multiplier is capped at **12.5×** (`MIN_ELAPSED_FRACTION_FOR_PROJECTION
+= 0.08`). ⭐ **The cap is deliberately the only place that errs toward understating** — and it is
+bounded to roughly the first month, when the de-minimis floor is doing the real work anyway.
+Capping *higher* would understate for longer; not capping produces a number nobody would believe.
+
+**Mutation-verified:** removing the projection — restoring exactly what shipped in v1.1.1 — fails
+**one** test, the March W2+gig regression, and no other. That is the right blast radius: the other
+four tests cover the projection maths, which the plant does not touch. Restored and re-verified.
+
+⚡ **The UI had to change too, and this is the half that would have been easy to skip.** A projected
+figure presented as settled is a new way of being wrong. The row now reads *"90% of this year's
+**projected** tax"* while the year is running, and the disclaimer says the figure scales from
+earnings so far and will move. `isProjected` and `projectionFactor` are on the result so the screen
+states the assumption instead of the code hiding it.
+
+**Checked, not assumed:** no Playwright or Maestro flow asserts the changed copy — only the screen
+title *"Safe harbor"*, which is untouched. Playwright re-run anyway because a screen changed: 34/34.
+Expo ports verified free afterwards.
+
+---
+
 ### 🔎 1.2.2.2 Dependent-mechanism sweep — SUB-TASK after-scan · 2026-09-21
 
 **Shipped.** `services/tax-engine/scripts/dependent-audit.mjs`, wired as `npm run audit:dependents`.

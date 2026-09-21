@@ -451,6 +451,14 @@ export interface SafeHarborResult {
   /** estimatedPaymentsNeeded spread over 4 equal quarterly installments (the default 1040-ES
    *  schedule). 0 when nothing extra is needed. */
   perQuarter: number;
+  /** True when `currentYearFederalTax` is a full-year PROJECTION from year-to-date income rather
+   *  than a settled figure. ⚠️ The UI must say so: this is a forecast of what the user will owe,
+   *  and it moves as they earn. False for a completed year, and false when `computeSafeHarbor` is
+   *  called directly without a projection. */
+  isProjected: boolean;
+  /** What year-to-date income was multiplied by to reach the full-year figure. 1 when not
+   *  projected. Exposed so "show your math" can state the assumption instead of hiding it. */
+  projectionFactor: number;
   /** True when current-year federal tax after withholding is under the $1,000 de-minimis floor —
    *  no penalty applies regardless of estimated payments (Form 2210's first stop). */
   underDeMinimis: boolean;
@@ -470,6 +478,80 @@ const SAFE_HARBOR_HIGH_INCOME_AGI = 150000;
 const SAFE_HARBOR_HIGH_INCOME_AGI_MFS = 75000;
 
 /**
+ * Below this much of the year elapsed, a linear projection is mostly noise: on 5 January a single
+ * $500 day annualises to $36,500. Capping the multiplier at 1/this (12.5x) keeps an early-year
+ * projection large enough to be honest without being absurd.
+ */
+const MIN_ELAPSED_FRACTION_FOR_PROJECTION = 0.08;
+
+/** A full-year projection of gig income, with the multiplier that produced it. */
+export interface ProjectedAggregate {
+  aggregate: EntryAggregate;
+  /** What year-to-date figures were multiplied by. 1 once the year is over (nothing to project). */
+  factor: number;
+  /** False when the year is complete, so the figures are actual rather than projected. */
+  isProjected: boolean;
+}
+
+/**
+ * Scales a year-to-date aggregate up to a full-year estimate.
+ *
+ * ⚠️ **Only the safe-harbor path wants this.** The dashboard's `netAmountToSetAside` answers "what
+ * should I set aside for what I have earned SO FAR", and is correct as-is; projecting there would
+ * tell a user to set aside money for income they have not earned yet.
+ *
+ * Form 2210's 90% leg is defined on the FULL year's tax, so comparing a year-to-date tax against a
+ * full-year withholding — which is what the code did until 1.2.2.3 — understates the requirement and
+ * reports "no penalty expected" through both spring deadlines. The type's own docstrings already
+ * described these as full-year figures; only the computation disagreed.
+ */
+export function projectAggregateToFullYear(
+  aggregate: EntryAggregate,
+  year: number,
+  now: Date = new Date()
+): ProjectedAggregate {
+  const elapsed = w2WithholdingYearFraction(year, undefined, now);
+
+  // The year is done (or this is a past year): the figures are actual, not a projection.
+  if (elapsed >= 1) {
+    return { aggregate, factor: 1, isProjected: false };
+  }
+
+  const factor = 1 / Math.max(elapsed, MIN_ELAPSED_FRACTION_FOR_PROJECTION);
+
+  return {
+    aggregate: {
+      netSelfEmploymentProfit: aggregate.netSelfEmploymentProfit * factor,
+      businessMiles: aggregate.businessMiles * factor,
+      totalExpenses: aggregate.totalExpenses * factor,
+      totalHoursWorked: aggregate.totalHoursWorked * factor,
+    },
+    factor,
+    isProjected: true,
+  };
+}
+
+/**
+ * The safe-harbor picture from raw entries — projecting gig income to a full year first, which is
+ * what makes the 90%-of-current-year leg mean what Form 2210 says it means.
+ *
+ * Kept separate from `computeSafeHarbor` so that function stays pure over an already-computed
+ * estimate (and so the projection itself is testable on its own).
+ */
+export function computeSafeHarborFromEntries(
+  entries: Entry[],
+  taxProfile: TaxProfile,
+  year: number = new Date().getFullYear(),
+  now: Date = new Date()
+): SafeHarborResult {
+  const ytd = aggregateEntries(entriesForYear(entries, year));
+  const projected = projectAggregateToFullYear(ytd, year, now);
+  const estimate = estimateFromAggregate(projected.aggregate, taxProfile, year);
+
+  return computeSafeHarbor(estimate, taxProfile, projected);
+}
+
+/**
  * Computes the federal safe-harbor / Form 2210 underpayment-penalty picture from an already-computed
  * tax estimate and the user's prior-year filed figures. Pure (reuses the estimate; reads prior-year
  * data from the profile rather than re-running anything). The prior-year leg only exists if the user
@@ -479,7 +561,8 @@ const SAFE_HARBOR_HIGH_INCOME_AGI_MFS = 75000;
  */
 export function computeSafeHarbor(
   taxEstimate: TaxEstimateForYear,
-  taxProfile: TaxProfile
+  taxProfile: TaxProfile,
+  projection?: ProjectedAggregate
 ): SafeHarborResult {
   const { estimate, year, w2FederalWithholdingYtdEstimate: federalWithholding } = taxEstimate;
 
@@ -528,6 +611,8 @@ export function computeSafeHarbor(
     perQuarter,
     underDeMinimis,
     noPenaltyExpected,
+    isProjected: projection?.isProjected ?? false,
+    projectionFactor: projection?.factor ?? 1,
   };
 }
 

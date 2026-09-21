@@ -6,6 +6,8 @@ import {
   comparePlatforms,
   computeCatchUpStatus,
   computeSafeHarbor,
+  computeSafeHarborFromEntries,
+  projectAggregateToFullYear,
   computeTaxEstimate,
   computeW4Optimization,
   computeWhatIfEstimate,
@@ -759,6 +761,86 @@ describe("computeW4Optimization", () => {
     const afterYearEnd = computeW4Optimization(estimate, w2Profile, new Date(2027, 0, 5));
     expect(afterYearEnd.remainingPayPeriods).toBe(1);
     expect(afterYearEnd.catchUpPerPaycheck).toBeCloseTo(afterYearEnd.remainingGigTaxThisYear, 6);
+  });
+});
+
+describe("safe-harbor full-year projection (1.2.2.3)", () => {
+  const txW2Gig: TaxProfile = {
+    filingStatus: "single",
+    dependents: 0,
+    hasW2Job: true,
+    w2GrossPayPerPeriod: 2500,
+    w2PayFrequency: "biweekly",
+    state: "TX",
+  };
+
+  /**
+   * ⚠️ THE BLOCKER, and the reason this whole sub-step exists.
+   *
+   * computeSafeHarbor compared a 90% requirement built from income logged SO FAR against a
+   * FULL-YEAR withholding figure. For a W2 + gig user in March that subtraction goes negative,
+   * clamps to zero, and the screen whose entire job is penalty avoidance reports "no penalty
+   * expected" — through both spring deadlines. Live in v1.1.1 until 2026-09-21.
+   */
+  it("a W2+gig user in MARCH is not told they are safe", () => {
+    const march = new Date(2026, 2, 15);
+    // Two months of gig work at a rate that annualises to real money.
+    const entries = [
+      makeEntry({ date: "2026-01-20", grossPay: 5000, tips: 0, mileage: 0 }),
+      makeEntry({ date: "2026-02-20", grossPay: 5000, tips: 0, mileage: 0 }),
+    ];
+
+    const projected = computeSafeHarborFromEntries(entries, txW2Gig, 2026, march);
+    expect(projected.isProjected).toBe(true);
+    expect(projected.projectionFactor).toBeGreaterThan(1);
+
+    // The un-projected path is what shipped, and it is the control: without projecting, the
+    // requirement is built from two months of gig income while withholding covers twelve.
+    const unprojected = computeSafeHarbor(computeTaxEstimate(entries, txW2Gig, 2026), txW2Gig);
+
+    expect(projected.currentYearFederalTax).toBeGreaterThan(unprojected.currentYearFederalTax);
+    expect(projected.estimatedPaymentsNeeded).toBeGreaterThan(unprojected.estimatedPaymentsNeeded);
+    // The headline claim: projecting stops the screen from saying "you're fine".
+    expect(projected.noPenaltyExpected).toBe(false);
+  });
+
+  it("scales year-to-date income by the elapsed fraction of the year", () => {
+    const ytd = { netSelfEmploymentProfit: 10000, businessMiles: 1000, totalExpenses: 500, totalHoursWorked: 200 };
+
+    // End of June ≈ half the year gone, so roughly a doubling.
+    const halfway = projectAggregateToFullYear(ytd, 2026, new Date(2026, 5, 30));
+    expect(halfway.isProjected).toBe(true);
+    expect(halfway.factor).toBeGreaterThan(1.9);
+    expect(halfway.factor).toBeLessThan(2.1);
+    expect(halfway.aggregate.netSelfEmploymentProfit).toBeCloseTo(10000 * halfway.factor, 6);
+    // Every component scales together, or the mileage deduction drifts away from the income.
+    expect(halfway.aggregate.businessMiles).toBeCloseTo(1000 * halfway.factor, 6);
+    expect(halfway.aggregate.totalExpenses).toBeCloseTo(500 * halfway.factor, 6);
+  });
+
+  it("does NOT project a completed year — those figures are actual", () => {
+    const ytd = { netSelfEmploymentProfit: 10000, businessMiles: 0, totalExpenses: 0, totalHoursWorked: 0 };
+    const done = projectAggregateToFullYear(ytd, 2025, new Date(2026, 5, 30));
+
+    expect(done.isProjected).toBe(false);
+    expect(done.factor).toBe(1);
+    expect(done.aggregate.netSelfEmploymentProfit).toBe(10000);
+  });
+
+  it("caps the early-January multiplier instead of annualising one day into a fortune", () => {
+    const ytd = { netSelfEmploymentProfit: 500, businessMiles: 0, totalExpenses: 0, totalHoursWorked: 0 };
+    const jan5 = projectAggregateToFullYear(ytd, 2026, new Date(2026, 0, 5));
+
+    // Uncapped, 5/365 elapsed would multiply by ~73x, turning $500 into $36,500.
+    expect(jan5.factor).toBeLessThanOrEqual(1 / 0.08);
+    expect(jan5.aggregate.netSelfEmploymentProfit).toBeLessThanOrEqual(500 * (1 / 0.08));
+  });
+
+  it("no entries projects to nothing, not to NaN", () => {
+    const empty = { netSelfEmploymentProfit: 0, businessMiles: 0, totalExpenses: 0, totalHoursWorked: 0 };
+    const p = projectAggregateToFullYear(empty, 2026, new Date(2026, 5, 30));
+    expect(p.aggregate.netSelfEmploymentProfit).toBe(0);
+    expect(Number.isFinite(p.factor)).toBe(true);
   });
 });
 

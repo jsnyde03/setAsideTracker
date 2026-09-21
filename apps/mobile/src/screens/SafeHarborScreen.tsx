@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import type { Entry, FiledYearTax, TaxProfile } from "../types";
-import { computeSafeHarbor, computeTaxEstimate, entriesForYear } from "../calculations";
+import { computeSafeHarborFromEntries, computeTaxEstimate, entriesForYear } from "../calculations";
 import { Screen } from "../components/Screen";
 import { radius, shadow, shadowSm, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
@@ -56,10 +56,13 @@ export function SafeHarborScreen({ entries, taxProfile, onClose, onUpdateFiledTa
     storedPrior?.agi !== undefined ? String(storedPrior.agi) : ""
   );
 
-  const result = useMemo(() => {
-    const estimate = computeTaxEstimate(entries, taxProfile, year);
-    return computeSafeHarbor(estimate, taxProfile);
-  }, [entries, taxProfile, year]);
+  // Projects gig income to a full year first — Form 2210's 90% leg is defined on the FULL year's
+  // tax, and comparing a year-to-date tax against a full-year withholding reported "no penalty
+  // expected" through both spring deadlines (fixed at 1.2.2.3).
+  const result = useMemo(
+    () => computeSafeHarborFromEntries(entries, taxProfile, year),
+    [entries, taxProfile, year]
+  );
 
   // A suggestion from the app's own prior-year data, shown only when the user logged enough of last
   // year here. It's the app's *estimate*, clearly labeled — the user should still confirm against
@@ -183,7 +186,9 @@ export function SafeHarborScreen({ entries, taxProfile, onClose, onUpdateFiledTa
               </Text>
 
               <View style={styles.resultRow}>
-                <Text style={styles.resultRowLabel}>90% of this year's tax</Text>
+                <Text style={styles.resultRowLabel}>
+                  {result.isProjected ? "90% of this year's projected tax" : "90% of this year's tax"}
+                </Text>
                 <Text style={[styles.resultRowValue, result.bindingTest === "currentYear" && styles.binding]}>
                   {formatCurrency(result.ninetyPctCurrent)}
                 </Text>
@@ -236,9 +241,14 @@ export function SafeHarborScreen({ entries, taxProfile, onClose, onUpdateFiledTa
         )}
 
         <Text style={styles.disclaimer}>
-          Federal estimate for planning only — not tax advice, and it doesn't cover state underpayment
-          rules, which differ. The prior-year safe harbor assumes last year's return covered all 12
-          months.
+          {result.isProjected
+            ? "This year's figure is a projection: your earnings so far, scaled to a full year. It " +
+              "moves as you log more, and a slow or busy stretch will move it. Federal estimate for " +
+              "planning only — not tax advice, and it doesn't cover state underpayment rules, which " +
+              "differ. The prior-year safe harbor assumes last year's return covered all 12 months."
+            : "Federal estimate for planning only — not tax advice, and it doesn't cover state " +
+              "underpayment rules, which differ. The prior-year safe harbor assumes last year's " +
+              "return covered all 12 months."}
         </Text>
       </ScrollView>
     </Screen>
