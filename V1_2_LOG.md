@@ -11,6 +11,42 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.5.1 One privacy policy, and the location disclosure — SUB-TASK before + after-scan · 2026-09-21
+
+**Shipped.** `docs/privacy.html` is the only privacy policy ([D16]); `PRIVACY_POLICY.md` is a
+pointer that explains why it stopped being a copy and lists the **three** places the same claims
+live — the policy, the App Store Connect privacy labels, and the permission strings in `app.json`.
+The location capture is disclosed, wording approved by Jason.
+
+🔴 **The before-scan found the two copies contradicting each other on whether the app shares data at
+all.** Not a stale date — a **factual** disagreement:
+
+| `PRIVACY_POLICY.md` (June 27) | `docs/privacy.html` (July 1, live) |
+|---|---|
+| crash reporting and analytics *"neither is currently active"* | *"we do collect anonymous crash reports and basic usage analytics"* |
+| *"we don't transmit your data anywhere at all"* | **Sentry** and **PostHog** named as processors |
+
+**The hosted one is correct** — `errorReporting.ts` says Sentry is **live in release builds**, DSN
+wired in `codemagic.yaml`, and its own comment already points at `docs/privacy.html` as the thing to
+keep true. Nothing links to the markdown (`PRIVACY_POLICY_URL` → the hosted page), so no user was
+ever shown the false version.
+
+⚠️ **But it inverted the obvious fix, and that is the finding worth keeping.** "Consolidate the
+privacy page" reads as *generate the HTML from the markdown* — the markdown being the source-looking
+artifact. Doing that would have **published a denial of third-party data sharing** over a correct
+disclosure. **Before picking a direction for a consolidation, check which copy is true.**
+
+**Why one document rather than a generator + gate:** the tax-config gates exist because two
+*mechanically checkable* values can drift. Here the drift was prose making a different claim about
+the world. A generator would have kept two files identical without making either correct, and the
+real fix is that there is nothing to keep in sync.
+
+⚠️ **The policy now constrains the code.** It states trip locations are never stored and never
+transmitted — only the distance is kept. That is a requirement on 1.2.5.3, recorded in both the
+pointer file and the plan, not a description written after the fact.
+
+---
+
 ### 🔎 1.2.4 Set-aside split by date and week — WHOLE-ITEM after-scan · 2026-09-21
 
 **COMPLETE, 6/6.** **272 mobile unit (from 248) · 102 engine · 50/50 Playwright (from 43) ·

@@ -141,7 +141,7 @@ re-decide rather than widening the ask.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.5.1** | **Privacy page → one source, then disclose location.** The prerequisite collision, and it runs first for the reason the prerequisite gives: `PRIVACY_POLICY.md` and the hosted page are two copies, so a disclosure written now lands in one and not the other. ⚠️ **Jason approves the wording** before any build goes to review. | ⬜ |
+| **1.2.5.1** | ✅ **DONE 2026-09-21.** **[D16]: `docs/privacy.html` is the only privacy policy**; `PRIVACY_POLICY.md` is now a pointer. 🔴 **The two copies had drifted on a MATERIAL point** — the markdown said crash reporting and analytics were "neither currently active" and that *"we don't transmit your data anywhere at all"*, while **Sentry is live in release builds** and the hosted page correctly names Sentry and PostHog. Nothing linked to the markdown, so nobody saw the false version — but it is the file anyone would have edited, and publishing from it would have replaced a correct disclosure with a denial of third-party sharing. Location disclosed on the canonical page, wording approved by Jason. ⚠️ **The wording binds 1.2.5.3**: coordinates are never stored or transmitted, only the distance. | ✅ |
 | **1.2.5.2** | **`expo-location` + the config change, ALONE in its own commit.** `NSLocationWhenInUseUsageDescription` that actually justifies the capture. ⚠️ Isolated deliberately: this is the class of change that has broken iOS CI here before, and a build failure needs exactly one suspect. ⚠️ `NODE_OPTIONS=--use-system-ca` or the install fails. | ⬜ |
 | **1.2.5.3** | **Trip capture: start → accumulate → stop**, populating the existing `MileageLog` shape rather than a new one. Pure distance maths kept out of the native layer so it is testable without a device. | ⬜ |
 | **1.2.5.4** | **The surface.** Where the toggle lives, what a running trip looks like, and how a finished trip becomes an entry's miles — which the user can still edit by hand, because the number is theirs. | ⬜ |
@@ -244,6 +244,7 @@ map is at the head of the log's item-spec section._
 | **[D8]** | **Mileage gets a start/stop toggle in v1.2 on when-in-use location; auto-detection waits for v1.3.** The **widget is cut to v1.3** so v1.2 carries one native item, not two. | Jason 2026-09-20 |
 | **[D9]** | ✅ **NO SHIP DATE. Work through the queue and ship ASAP.** August is retired and not replaced — the version is paced by the work, not by a date. ⚠️ **Do not reintroduce a target date**; the correctness exposure from [D10] is the reason to go fast, not a reason to set one and cut against it. | Jason 2026-09-20 |
 | **[D11]** | **The demo persona stays at ONE tax year.** Year-over-year therefore cannot be previewed — accepted, because the gate is about data, not payment. Revisit only if the demo becomes the primary premium sales surface. | Jason 2026-09-20 |
+| **[D16]** | **`docs/privacy.html` is the single privacy policy; the markdown copy is retired.** It is already what the app links to, what App Store Connect points at and what the code comments treat as canonical. **Rejected keeping both in sync via a generator** — the drift that prompted this was a *factual* contradiction about third-party data sharing, and the fix for that is one document, not tooling that keeps two. ⚠️ Three places state the same claims and all must move together: the policy, the App Store Connect privacy labels, and the permission usage strings in `app.json`. | Jason 2026-09-21 |
 | **[D13]** | **A week is Monday–Sunday, fixed.** DoorDash, Uber and Spark all run their pay weeks Mon–Sun, so the app's week matches the earnings statement the user is comparing it against. **Not configurable** — a user-chosen week start is a setting nobody asked for that every weekly figure would then depend on. | Jason 2026-09-21 |
 
 | **[D14]** | **Entries logged before the frozen field exists get a computed figure, and any week containing one is MARKED ESTIMATED.** Rejected both alternatives deliberately: "—" greets every existing user with a wall of blanks across data they really have, and a silent back-fill presents a reconstructed number as though it had been frozen at the time — **the exact thing [D7] exists to prevent**. The label is what makes the third option honest rather than convenient. | Jason 2026-09-21 |
@@ -259,11 +260,12 @@ map is at the head of the log's item-spec section._
 ## ⚠️ External prerequisites — Jason-side
 
 **Gating 1.2.5 (the mileage toggle) — v1.2's only native item** _(said "1.2.3"; corrected 2026-09-21)_**:**
-1. **`PRIVACY_POLICY.md` + the hosted privacy page must disclose location collection** before the
-   build that carries it goes to review. ⚠️ **Collides with 1.2.10’s "privacy-page single source of
-   truth"** — do that consolidation first or the disclosure lands in one copy and not the other.
-2. **A `NSLocationWhenInUseUsageDescription` string that justifies the capture**, and App Store
-   review notes explaining it. When-in-use is a far lighter ask than background — **keep it that way**;
+1. ✅ **DONE 2026-09-21 at 1.2.5.1.** The collision was real and worse than described — the two copies
+   disagreed about whether any data is shared with third parties at all. `docs/privacy.html` is now the
+   only policy ([D16]) and it discloses the location capture. **Nothing is owed here before review.**
+2. **A `NSLocationWhenInUseUsageDescription` string that justifies the capture** — built at 1.2.5.2 —
+   **plus App Store review notes**, and ⚠️ **the App Store Connect privacy labels updated to declare
+   location**, which is a third declaration that has to agree with the other two ([D16]). When-in-use is a far lighter ask than background — **keep it that way**;
    the moment this needs "Always", it is a different review and belongs in v1.3 with auto-detection.
 3. **Run a native build EARLY**, not at the end — a location dependency means a prebuild/config-plugin
    change, and iOS CI has broken on exactly this class of change before.
