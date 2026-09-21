@@ -11,6 +11,51 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.3 Data-safety block — WHOLE-ITEM after-scan · 2026-09-21
+
+**COMPLETE, 5/5.** **248 mobile unit (from 226) · 102 engine · 43/43 Playwright (from 38) ·
+typecheck clean · both tax-config gates green · lint unchanged.** **12 plants across 4 sub-steps;
+11 caught, and the 12th passing is what deleted a line of code.**
+
+**What the item actually was, versus what it was admitted as.** The gap scan filed two findings.
+**Both had the wrong mechanism, and the recommendation was right anyway** — the fourth time this
+pattern has been recorded here, and it is now the reason findings get re-derived rather than
+re-read:
+
+| filed as | measured to be |
+|---|---|
+| "decryption throws, which escapes as a generic `loadError`" | it **does not throw** — 189 of 200 wrong keys return an empty string, and the user's real symptom was **being shown onboarding**, which the finding never mentioned |
+| "no write anywhere is error-handled" | **all nine call sites alert.** The real defect was three setters ordering state before the write — one of them in a provider the scan never looked at |
+
+⭐ **The most useful thing found was in neither finding.** `loadError` had no consumer. The provider
+even said *"the consumer decides what to show"* — and nothing did, for the entire life of the file.
+A grep for a symbol's *readers*, not its writers, would have found it in seconds, and none of the
+document-level passes did.
+
+**Two defects existed only because of the sub-step before them:**
+- 1.2.3.2's cached-rejection was unreachable until 1.2.3.2 itself made key resolution *able* to
+  reject; the old code minted instead of failing. **Fixing one thing made a dormant one live.**
+- 1.2.3.3's recovery could not have worked on top of 1.2.3.2's rule without its own wipe, because
+  `hasStoredUserData` counts `appSettings` and `clearAllLocalData` spares it.
+**Neither is visible from a before-scan of the item.** They are the argument for the after-scan
+being mandatory rather than a formality.
+
+**Carried forward, filed to the backlog in this edit:** partial-readability recovery · React
+provider test tooling · the two clear-data paths that 1.2.10 should unify.
+
+⚠️ **Checked and found unreachable, so deliberately not handled:** entering demo mode calls
+`writeJson`, which needs the real key even though the demo writes to memory — so on a key-lost
+device demo entry would throw. It cannot be reached: the recovery screen renders *above the router*,
+so Settings, and with it the demo entry point, does not exist in that state. Recorded because the
+next person to move that gate will make it reachable.
+
+⏭ **Device-owed, and it is the whole `Alert` layer.** react-native-web renders no `Alert`, so the
+erase confirmation and both failure alerts are unverified — three checks added to
+[V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) §A, including how to *reach* a
+wrong-key device, which is the hardest state in the app to produce on purpose.
+
+---
+
 ### 🔎 1.2.3.4 A setting can no longer show a state that was never stored — SUB-TASK after-scan · 2026-09-21
 
 **Shipped.** `setAppLockEnabled`, `setRemindersEnabled` and `setScheme` all persist first, then set
@@ -1621,6 +1666,33 @@ gate** · pre-submit functional-correctness audit · Apple guideline pass incl. 
 ---
 
 ## Completed-item detail
+
+### 1.2.3 — Data-safety block · ✅ DONE 2026-09-21, 5/5
+
+_Moved verbatim from the plan at the 1.2.4 switch-in. Scan records for this item — four
+sub-task and one whole-item — are in the section above._
+
+**Why it is next:** a decryption failure has no recovery path *and* no visible symptom — the app
+sends a user whose data cannot be read to the **onboarding screen**. Correctness before features, the
+same reason 1.2.2 preceded them.
+
+⚠️ **The before-scan corrected the spec twice and found a third thing bigger than either.**
+Measured, not re-read: a wrong key **does not reliably throw** (189 of 200 trials silently return an
+empty string), and *"no write anywhere is error-handled"* is **false** — all nine call sites
+alert. Record → [V1_2_LOG.md](V1_2_LOG.md).
+
+| # | sub-step | scan |
+|---|---|---|
+| **1.2.3.1** | ✅ **DONE 2026-09-21.** `UnreadableDataError` + `isCipherText` (the `U2FsdGVkX1` marker) + a pure `decode.ts`, extracted so it is testable at all — `repository` imports AsyncStorage and `encryption` imports `Platform`, which Vitest cannot parse. The "legacy plaintext" fallback is **deleted**: it protected data that cannot exist. ⭐ **The error is deliberately NOT sub-classified by cause** — wrong key, truncation and garbage are measured to be indistinguishable without the integrity tag filed to v1.3. **236 unit (was 226) · 3 plants, all caught** — and plant 1 exposed a **vacuous assertion** in a test written minutes earlier, which only checked `.cause` and so stayed green against a completely different error. | ✅ |
+| **1.2.3.2** | ✅ **DONE 2026-09-21.** `getOrCreateEncryptionKey` split into `readEncryptionKey` + `createEncryptionKey`; the repository mints **only** when no user data exists, and raises `EncryptionKeyUnavailableError` otherwise. A null key now means exactly one thing — *this platform does not encrypt* — so `writeJson` can no longer mistake a missing key for permission to write plaintext. ⛔ **A key failure is no longer CACHED**: the module-level promise held a rejection for the life of the process, which would have made [D12]'s retry fail every time it was tapped. ⭐ **`repository.ts` has its first tests ever** (3 mocks; it imports AsyncStorage, and `encryption` imports `Platform`) — so the rule is pinned where it is *followed*, not where it is written. **245 unit (was 236) · 4 plants, all caught.** | ✅ |
+| **1.2.3.3** | ✅ **DONE 2026-09-21.** `RecoveryScreen` + `AppGate` wiring: `loadError` finally **has a consumer**, so an unreadable device no longer falls through to onboarding and gets written over. [D12]'s three routes, all working, and the load failure now reaches **Sentry** — nothing reported these before, so there is still no field figure for how often it happens. ⭐ **Recovery needed its own wipe**: restore writes through the same key path, and `clearAllLocalData` spares `appSettings`, so a recovery built on it would erase everything *and still refuse to mint* — stranding the user. ⭐ **The backup is parsed before anything is destroyed**, so a bad file costs nothing. **248 unit · 41/41 Playwright (was 38) · 4 plants; the 4th PASSED and a line came out because of it.** | ✅ |
+| **1.2.3.4** | ✅ **DONE 2026-09-21.** All three setters persist **first**, then set state — which is the contract `AppDataContext` already documented for every mutation and which these were the only exceptions to. ⭐ **Three, not two: `ThemeContext.setScheme` had the identical defect in a different provider**, and was not in the spec. Verified at the real boundary — `localStorage.setItem` made to throw for the settings key, so the write fails the way a disk does rather than the way a mock does. **43/43 Playwright (was 41), with a control asserting a successful write still moves the switch** — without it, a switch that ignored every tap would have passed. Plant caught. | ✅ |
+| **1.2.3.5** | **Verify + whole-item after-scan.** A plant against each of the four; Playwright over the recovery surface; full suites green. | ⬜ |
+
+**Exit line:** a key or ciphertext failure is named, surfaced and recoverable; nothing re-keys or
+overwrites data it could not read; no setting can display a state that was never stored.
+
+---
 
 ### 1.2.2 — Tax-correctness block · ✅ DONE 2026-09-21, 7/7
 

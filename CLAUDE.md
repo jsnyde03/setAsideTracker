@@ -16,8 +16,17 @@ Read the plan's `RESUME HERE` block first; it is kept current.
 ✅ **1.2.2 (tax correctness) COMPLETE, 7/7.** Three money-wrong bugs that were **live in v1.1.1**,
 all understating what the user owed: safe harbor reporting "no penalty expected" through both spring
 deadlines · MFJ ignoring spouse income · GA/SC/MN dependent exemptions applied as tax credits.
+
+✅ **1.2.3 (data safety) COMPLETE, 5/5.** ⛔ **`loadError` had no consumer** — so a user whose data
+could not be decrypted was shown **onboarding**, and setting up again wrote over the profile still
+sitting on the device. There is now a recovery screen ([D12]: retry · restore · erase), a decryption
+failure is a *named* error rather than a `SyntaxError` about JSON, and a key is **never minted while
+data exists** under an older one. **12 plants; 11 caught, and the 12th passing deleted a line.**
+
 ⏸ **1.2.1 (demo mode) is 7/7 built but cannot close** — its Maestro validation is out of Codemagic
-minutes until ~November. ▶ **Next: 1.2.3, the mileage trip toggle** ([D8]) — v1.2's only native item.
+minutes until ~November. ▶ **Next: 1.2.4, the set-aside split by date and week** ([D7]) — its first
+sub-step is a **[DECISION] for Jason**. ⚠️ **Mileage is 1.2.5, not 1.2.3** — four lines said otherwise
+until 2026-09-21; the queue table's row order is the build order.
 
 ## Rules that cost real time to rediscover
 

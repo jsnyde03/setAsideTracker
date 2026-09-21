@@ -31,9 +31,25 @@ Your tax estimate just got more accurate.
   you're on track when you aren't.
 • Pick your state from a list — no more two-letter codes.
 • New: explore the app with sample data before entering anything real.
+• If the app ever can't open your saved data, it now tells you and helps you
+  recover it, instead of starting you over.
 ```
 
 ### Completed in this release
+
+**🔴 Data safety (1.2.3) — your data can no longer be quietly lost:**
+
+- **If the app can't read your saved data, it says so and offers a way back.** It used to show the
+  welcome screen instead — as though you were a brand-new user — and setting up again wrote over
+  the profile that was still on the device. The new screen offers to try again, restore from a
+  backup file, or erase and start over, and nothing is deleted unless you choose it.
+- **Trying again is worth doing first.** The most common cause isn't damage: if your phone restarted
+  and hasn't been unlocked yet, the app genuinely can't reach its key for a moment.
+- **The app will never replace the key that protects your data while data is still stored under the
+  old one.** It used to create a new one whenever it couldn't find the old one, which made
+  everything already saved permanently unreadable on the next save.
+- **Settings switches now show what was actually saved.** If saving a setting failed, the switch
+  stayed where you put it — so App Lock could appear to be on when it wasn't.
 
 **🔴 Tax correctness (1.2.2) — three bugs that were live in v1.1.1, all understating what you owe:**
 

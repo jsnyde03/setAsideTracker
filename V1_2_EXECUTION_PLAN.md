@@ -15,20 +15,21 @@
 > a new item takes the next free number and the build order is the table's row order, not the
 > numbering. See the note above the queue table.
 >
-> 🔴 **THREE MONEY-WRONG BUGS ARE LIVE IN v1.1.1**, all understating what the user owes the IRS:
-> safe harbor reports "no penalty expected" through both spring deadlines · MFJ ignores spouse income ·
-> GA/SC/MN dependent exemptions are applied as tax credits. All confirmed against the code, all now
-> **1.2.2**, which runs **before every feature item**. Per [D10] there is no interim patch.
+> 🔴 **STILL LIVE IN v1.1.1, and fixed only on this branch:** three money-wrong bugs that understate
+> what the user owes the IRS, plus a data-loss path that greets a user whose data cannot be read as a
+> brand-new one and then writes over it. **All fixed in 1.2.2 and 1.2.3. None of it reaches anybody
+> until v1.2 ships** — that is [D10]'s accepted cost, and it is the reason to keep moving.
 >
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> ✅ **1.2.2 IS COMPLETE (7/7)** and closed. All three live money-wrong bugs fixed, each
-> mutation-verified. **▶ ACTIVE: 1.2.3, the data-safety block**, decomposed below.
-> **⏸ 1.2.1 is 7/7 built**, deferred to ~November with Maestro.
-> Health: **102** engine · **226** mobile unit · **38/38** Playwright · typecheck clean · lint 14.
+> ✅ **1.2.2 (7/7) and 1.2.3 (5/5) ARE COMPLETE** and closed. **▶ ACTIVE: 1.2.4, the set-aside split
+> by date and week** ([D7]), decomposed below — **1.2.4.1 is a [DECISION] and it is Jason's**, three
+> questions that shape everything after it. **⏸ 1.2.1 is 7/7 built**, deferred to ~November with Maestro.
+> Health: **102** engine · **248** mobile unit · **43/43** Playwright · typecheck clean · both tax-config
+> gates green · lint 15 _(the ledger says 14 — drift, all in `components/`, re-count at 1.2.11)_.
 >
-> ⚠️ **Fixed 2026-09-21: this block and three other lines said "1.2.3 = the mileage toggle."**
+> ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
 > **1.2.3 is the data-safety block; mileage is 1.2.5** — the queue table and the log's renumber map
 > always said so. More renumber rot, found at the 1.2.3 switch-in. Mileage was additionally the wrong
 > pick: `expo-location` is not installed anywhere in the repo, and all three of its Jason-side
@@ -119,31 +120,31 @@ because the gate is about data, not payment. An e2e asserts the absence.
 
 ---
 
-### 🔴 **1.2.3 — Data-safety block** · **ACTIVE**
+### ⭐ **1.2.4 — Set-aside split by date and week** · **ACTIVE**
 
-**Why it is next:** a decryption failure has no recovery path *and* no visible symptom — the app
-sends a user whose data cannot be read to the **onboarding screen**. Correctness before features, the
-same reason 1.2.2 preceded them.
+**Why it is next:** the correctness blocks are closed, so the feature items can now render figures
+that have already been corrected — which was the entire point of sequencing them first. In Jason's
+words ([D7]): *"having one big lump sum to set aside makes it hard to keep track."*
 
-⚠️ **The before-scan corrected the spec twice and found a third thing bigger than either.**
-Measured, not re-read: a wrong key **does not reliably throw** (189 of 200 trials silently return an
-empty string), and *"no write anywhere is error-handled"* is **false** — all nine call sites
-alert. Record → [V1_2_LOG.md](V1_2_LOG.md).
+⚠️ **The before-scan is owed at 1.2.4.2**, the first step that writes code. The spec's premises were
+measured on 2026-09-20 — **before 1.2.2 changed the tax math and 1.2.3 changed the storage path** — so
+they are a hypothesis again, not a finding. Spec → [V1_2_LOG.md](V1_2_LOG.md).
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.3.1** | ✅ **DONE 2026-09-21.** `UnreadableDataError` + `isCipherText` (the `U2FsdGVkX1` marker) + a pure `decode.ts`, extracted so it is testable at all — `repository` imports AsyncStorage and `encryption` imports `Platform`, which Vitest cannot parse. The "legacy plaintext" fallback is **deleted**: it protected data that cannot exist. ⭐ **The error is deliberately NOT sub-classified by cause** — wrong key, truncation and garbage are measured to be indistinguishable without the integrity tag filed to v1.3. **236 unit (was 226) · 3 plants, all caught** — and plant 1 exposed a **vacuous assertion** in a test written minutes earlier, which only checked `.cause` and so stayed green against a completely different error. | ✅ |
-| **1.2.3.2** | ✅ **DONE 2026-09-21.** `getOrCreateEncryptionKey` split into `readEncryptionKey` + `createEncryptionKey`; the repository mints **only** when no user data exists, and raises `EncryptionKeyUnavailableError` otherwise. A null key now means exactly one thing — *this platform does not encrypt* — so `writeJson` can no longer mistake a missing key for permission to write plaintext. ⛔ **A key failure is no longer CACHED**: the module-level promise held a rejection for the life of the process, which would have made [D12]'s retry fail every time it was tapped. ⭐ **`repository.ts` has its first tests ever** (3 mocks; it imports AsyncStorage, and `encryption` imports `Platform`) — so the rule is pinned where it is *followed*, not where it is written. **245 unit (was 236) · 4 plants, all caught.** | ✅ |
-| **1.2.3.3** | ✅ **DONE 2026-09-21.** `RecoveryScreen` + `AppGate` wiring: `loadError` finally **has a consumer**, so an unreadable device no longer falls through to onboarding and gets written over. [D12]'s three routes, all working, and the load failure now reaches **Sentry** — nothing reported these before, so there is still no field figure for how often it happens. ⭐ **Recovery needed its own wipe**: restore writes through the same key path, and `clearAllLocalData` spares `appSettings`, so a recovery built on it would erase everything *and still refuse to mint* — stranding the user. ⭐ **The backup is parsed before anything is destroyed**, so a bad file costs nothing. **248 unit · 41/41 Playwright (was 38) · 4 plants; the 4th PASSED and a line came out because of it.** | ✅ |
-| **1.2.3.4** | ✅ **DONE 2026-09-21.** All three setters persist **first**, then set state — which is the contract `AppDataContext` already documented for every mutation and which these were the only exceptions to. ⭐ **Three, not two: `ThemeContext.setScheme` had the identical defect in a different provider**, and was not in the spec. Verified at the real boundary — `localStorage.setItem` made to throw for the settings key, so the write fails the way a disk does rather than the way a mock does. **43/43 Playwright (was 41), with a control asserting a successful write still moves the switch** — without it, a switch that ignored every tap would have passed. Plant caught. | ✅ |
-| **1.2.3.5** | **Verify + whole-item after-scan.** A plant against each of the four; Playwright over the recovery surface; full suites green. | ⬜ |
+| **1.2.4.1** | **[DECISION] the three questions the spec left open**, all Jason's, all shaping what follows: **(a)** which week boundary — ISO Mon–Sun, or the user's own pay week · **(b)** an entry logged before this exists has no frozen figure: back-fill at today's rate, or render "—" · **(c)** does the weekly row sit on the dashboard or behind a drill-down. | ⬜ |
+| **1.2.4.2** | **Freeze the set-aside at log time** — one optional `Entry` field, written when the entry is saved. ⭐ **[D7]'s whole point:** a per-period figure derived from the year's *average* rate moves retroactively every time the user earns more, so opening the app in November would change last July's number. ⚠️ **Verify the round-trip premise first** — it rests on `parseBackupSnapshot` passing entries through wholesale, which is also the hole filed at 1.2.10. | ⬜ |
+| **1.2.4.3** | **The weekly roll-up**, as a pure function over entries — group by week, sum the frozen figures. Pure so it is testable without the app, the way `calculations.ts` already is. | ⬜ |
+| **1.2.4.4** | **The surface.** Weekly sits **alongside** the YTD lump, never instead of it — the year total is what is actually owed. Free tier: this is the core set-aside job, not the tax-time axis. | ⬜ |
+| **1.2.4.5** | **Reconcile the drift.** Frozen figures will not sum to the true year total once the rate moves; `weeklyCatchUpAmount` already exists to say so, and today renders **only when already behind**. | ⬜ |
+| **1.2.4.6** | **Verify + whole-item after-scan.** ⚠️ **Do not assert absolute dollar figures** — 1.2.2 moved what `buildDemoSeed` produces, and a hardcoded total is a defect 1.2.1.5 has already had to fix once. | ⬜ |
 
-**Exit line:** a key or ciphertext failure is named, surfaced and recoverable; nothing re-keys or
-overwrites data it could not read; no setting can display a state that was never stored.
+**Exit line:** each entry carries a set-aside frozen at the rate it was logged under, a week's worth
+sums to a figure that never moves retroactively, and the YTD total still says what is really owed.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
-_1.2.1 (parked) and 1.2.3 (active) are not listed here — they are above. 1.2.2 is in **Closed**.
+_1.2.1 (parked) and 1.2.4 (active) are not listed here — they are above. 1.2.2 and 1.2.3 are in **Closed**.
 An item appears in exactly one place._
 
 ⛔ **Numbers are STABLE IDs — do not renumber on insert.** A new item takes the **next free number**
@@ -154,7 +155,6 @@ out-of-order number is worth less than one more round of that.
 
 | # | item | notes |
 |---|---|---|
-| 1.2.4 | **⭐ Set-aside split by date and week** | NEW 2026-09-20 ([D7]). Per-entry set-aside rolling up to weekly, replacing the YTD lump as the actionable unit. Rate **frozen at log time** via one optional `Entry` field. |
 | 1.2.5 | **⭐ Mileage trip toggle** 🔧 | NEW 2026-09-20 ([D8]). Start/stop capture on **when-in-use** location, populating the existing `MileageLog` shape. **v1.2's only native item.** Auto-detection → v1.3. |
 | 1.2.6 | **Premium slice** | Optimizer (headline) · safe-harbor payment tracker · per-quarter amounts in reminders · expense drill-down. **Before the screen passes** so each walks the final surface once. ⚠️ **Depends on 1.2.2** — the safe-harbor tracker cannot be built on the broken safe-harbor math. |
 | 1.2.7 | **Native iPad** | Adaptive split-view/sidebar. ~2× its original estimate (scoped at 6 screens, now 13). |
@@ -178,6 +178,14 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.3 — Data-safety block ✅ DONE 2026-09-21, 5/5.** A decryption failure is now a **named** error
+  instead of a `SyntaxError` about JSON · a key is **never minted while data exists** under an older
+  one · `loadError` finally **has a consumer**, so a user whose data cannot be read gets a recovery
+  screen ([D12]: retry · restore · erase) instead of being greeted as a new user and written over ·
+  three setters can no longer show a state that was never stored. **248 unit · 43/43 Playwright · 12
+  plants, 11 caught and the 12th deleted a line.** ⏭ The `Alert` layer is device-owed → checklist §A.
+  _Sub-step detail + 5 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.2 — Tax-correctness block ✅ DONE 2026-09-21, 7/7.** Three money-wrong bugs that were live in
   v1.1.1, all understating what the user owed — safe harbor's "no penalty expected", MFJ ignoring
@@ -292,6 +300,25 @@ already present).
   non-negative. Pair with the 1099 reconciliation item; both are the logged total not matching reality.
 - **No multi-state or part-year residency** — a single state of residence only.
 
+- **Recovery is all-or-nothing: a device where only *some* keys are unreadable salvages none of it
+  → v1.3.** `load()` is a `Promise.all` of four reads, so one bad value lands on the recovery screen
+  with the other three discarded. "Restore from a backup" is a different offer when the entries were
+  fine and only the profile was not. **Deferred, not folded:** all-or-nothing was chosen knowingly at
+  1.2.3.3 and is the safe direction; partial recovery needs a per-key read result and a UI that can
+  say *what* was lost, which is its own item. _(Found 2026-09-21 at the 1.2.3.1 after-scan.)_
+- **No test in this repo renders a React provider → 1.2.11.** There is no `@testing-library/react`
+  and no `jsdom`, so `AppDataContext`, `ThemeContext` and `AppGate` are reachable only through
+  Playwright. That worked here — 1.2.3.4 injected a `localStorage` failure at the real boundary,
+  which is arguably *better* evidence — but it means every provider-level assertion costs a 3-minute
+  browser run, and props-level states (`busy`, `retryFailed`) are covered only incidentally.
+  **Deferred, not folded:** adding a test dependency mid-item, with this repo's `--use-system-ca`
+  install quirk, is its own change. _(Found 2026-09-21 at the 1.2.3.4 before-scan.)_
+- **⚠️ There are now TWO clear-data paths, and 1.2.10 must unify them, not just fix one.**
+  `clearAllLocalData` (3 keys, backs Settings' "clear all data") and `discardUnreadableLocalData`
+  (4 keys, backs recovery). 1.2.10 already carries *"`clearAllLocalData` omits `appSettings` against
+  the stated policy"* — **that entry now has a second half**: once it removes `appSettings` too, the
+  two functions are the same function and one should go. _(Found 2026-09-21 at the 1.2.3.3
+  before-scan.)_
 - **`vi.mock` factories are not type-checked, so a hand-written mock can outlive the module it
   stands for → 1.2.11.** Changing `encryption.ts`'s exports at 1.2.3.2 left `demoStore.test.ts`
   mocking functions that no longer exist: **`tsc` stayed clean while five tests went red**, and had
