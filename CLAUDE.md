@@ -28,10 +28,23 @@ data exists** under an older one. **12 plants; 11 caught, and the 12th passing d
 Monday–Sunday weeks, on the dashboard beside the year total, with an adjustment row so the list
 visibly adds up.
 
+✅ **1.2.5 (mileage trip toggle) COMPLETE, 6/6.** Start/stop capture that keeps measuring off screen
+([D17]: when-in-use + the visible iOS indicator, **no "Always" prompt**), with accuracy/jitter/speed
+filters — a naive sum inflates a **tax deduction** the user cannot tell is wrong. ⛔ **Coordinates are
+never persisted**, enforced by a test, because [D16]'s published policy says so.
+
 ⏸ **1.2.1 (demo mode) is 7/7 built but cannot close** — Maestro resumes ~November.
-▶ **Next: 1.2.5, the mileage trip toggle** ([D8]) — v1.2's only native item.
-⚠️ **Mileage is 1.2.5, not 1.2.3** — four lines said otherwise until 2026-09-21; the queue table's
-row order is the build order.
+▶ **Next: 1.2.6, the premium slice** ([D3]) — pure JS, verifiable here.
+
+⛔ **1.2.5 has ZERO device verification and no way to get any off-device.** Two native modules, a
+config plugin and a background location task, covered by tests that run in Node against mocks.
+**The one-build agenda is at the head of `V1_2_TESTFLIGHT_CHECKLIST.md`** — one build carrying what
+four items owe, ordered most-likely-broken first. **Do not spend a build on less.**
+
+⚠️ **One privacy policy only: `docs/privacy.html`** ([D16]). The markdown copy is retired — it had
+drifted into claiming the app transmits nothing while Sentry ships crash reports. **One claim lives
+in three places** — the policy, the App Store Connect labels, and `app.json`'s permission strings —
+and [D17] falsified two of them within hours of [D16] being written. Move them together.
 
 ⚠️ **"Out of Codemagic minutes" is wrong and it misled a session.** **~80% is consumed, and Jason
 stopped the Maestro work deliberately to RESERVE the rest for TestFlight** _(2026-09-21)_. A device

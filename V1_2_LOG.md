@@ -1985,6 +1985,36 @@ gate** · pre-submit functional-correctness audit · Apple guideline pass incl. 
 
 ## Completed-item detail
 
+### 1.2.5 — Mileage trip toggle · ✅ DONE 2026-09-21, 6/6
+
+_Moved verbatim from the plan at the 1.2.6 switch-in. Scan records — four sub-task and one
+whole-item — are in the section above._
+
+**Why it is next ([D8]):** it is the one item in the queue that **needs the build capacity Jason
+reserved**. ⚠️ **Codemagic is ~80% consumed and the remainder is deliberately held for TestFlight** —
+so the rule is *accumulate, then send one build carrying everything*. Mileage brings the only
+prebuild-affecting change in v1.2; landing it now means the next device build validates it **together
+with** 1.2.3's `Alert` layer, 1.2.4's weekly sheet and 1.2.1's demo flows, instead of spending a
+scarce cycle on any one of them.
+
+⛔ **When-in-use only.** Auto-detection is v1.3 ([D8]). **The moment this needs "Always" it is a
+different App Store review** — if a sub-step starts reaching for background location, stop and
+re-decide rather than widening the ask.
+
+| # | sub-step | scan |
+|---|---|---|
+| **1.2.5.1** | ✅ **DONE 2026-09-21.** **[D16]: `docs/privacy.html` is the only privacy policy**; `PRIVACY_POLICY.md` is now a pointer. 🔴 **The two copies had drifted on a MATERIAL point** — the markdown said crash reporting and analytics were "neither currently active" and that *"we don't transmit your data anywhere at all"*, while **Sentry is live in release builds** and the hosted page correctly names Sentry and PostHog. Nothing linked to the markdown, so nobody saw the false version — but it is the file anyone would have edited, and publishing from it would have replaced a correct disclosure with a denial of third-party sharing. Location disclosed on the canonical page, wording approved by Jason. ⚠️ **The wording binds 1.2.5.3**: coordinates are never stored or transmitted, only the distance. | ✅ |
+| **1.2.5.2** | ✅ **DONE 2026-09-21.** `expo-location@~56.0.26` (SDK-matched by `expo install`) and the config plugin, **alone in one commit** so a native build failure has exactly one suspect. `locationWhenInUsePermission` is worded to say the **same thing** as the policy's Location section ([D16]), ⚠️ **Superseded within the item by [D17]**: iOS background location is now **on** (when-in-use permission + the visible indicator, no "Always"), Android stays off. The usage string and the policy moved with it — three declarations, one claim. ⚠️ **Nothing imports it yet**, so the web bundle is untouched and this commit is only as risky as a prebuild: **272 unit · core-loop e2e green · typecheck clean.** The real verification is a device build, which 1.2.5.6 batches. | ✅ |
+| **1.2.5.3** | ✅ **DONE 2026-09-21.** `src/mileage/trip.ts` — pure, knows nothing of `expo-location`, so the maths is testable without a device. ⛔ **The spec's open question is answered and the answer is NO:** a trip yields **only a distance**, never `MileageLog`'s start/end places. [D16]'s published wording says locations are never stored or transmitted — writing a captured place would store one and geocoding it would transmit one. Those fields stay the user's own words. ⭐ **The filtering IS the feature:** accuracy, jitter and implausible-speed gates, because a naive sum inflates a **tax deduction** the user cannot tell is wrong. The anchor is **held, not advanced**, when a step is ignored — otherwise slow movement never accumulates. **286 unit (was 272) · 4 plants, each caught by exactly one test.** | ✅ |
+| **1.2.5.4** | ✅ **DONE 2026-09-21.** `tripTracker.ts` (the task, start/stop, a subscription) + `TripTrackerButton` under the mileage field. A finished trip **adds to** the field rather than replacing it — one entry can cover several trips, and the number stays the user's to correct, which is what the policy promises. ⛔ **Coordinates are never persisted**, so a termination loses the metres since the last fix; a test asserts nothing resembling a position reaches storage. Every start failure is **named** and alerted immediately — learning after the drive that nothing recorded means the trip is gone. ⚠️ Renders **nothing on web**, so the e2e suite cannot see it: covered by unit tests over the tracker, and the rest is device-owed. **296 unit (was 286) · 50/50 Playwright.** | ✅ |
+| **1.2.5.5** | ✅ **DONE 2026-09-21.** `tripHealth` + `diagnoseStall` + a warning line on the running trip. ⚠️ **This row's own "app backgrounded stops updates" premise was superseded by [D17]** mid-item — what survives is its principle, now aimed at the cases that remain. ⛔ **A stalled trip LOOKS like a working one**: the button still says "Stop trip", the miles just never rise. So staleness is detected **from the trip's START**, not only from the last fix — a trip that never received anything would otherwise never be called stale, which is the worst case of the set. ⭐ **The cause is ASKED of the platform, never inferred**: a parked car and a revoked permission look identical from the silence, and `no-signal` is returned only when permission and services are both fine — crying wolf at every long light teaches users to ignore the one warning that matters. **305 unit (was 296) · 50/50 Playwright · 2 plants caught.** | ✅ |
+| **1.2.5.6** | ✅ **DONE 2026-09-21.** All runnable gates green: **306 unit · 102 engine · 50/50 Playwright · typecheck + lint · both audits · ports free.** 🔴 **The after-scan found a FOURTH demo-mode leak** of the class 1.2.1.3 plugged — `persist()` wrote raw AsyncStorage outside the repository, so a demo trip left a key in **real** storage. Guarded and planted. ⛔ **The headline is what is NOT verified: none of 1.2.5 can be proven on this machine.** The one-build agenda now sits at the head of the TestFlight checklist, ordered most-likely-broken first. Release notes written as the work landed. | ✅ |
+
+**Exit line:** a user can start and stop a trip, the miles land on an entry they can still correct,
+and every way the capture can fall short is something the app says out loud rather than absorbs.
+
+---
+
 ### 1.2.4 — Set-aside split by date and week · ✅ DONE 2026-09-21, 6/6
 
 _Moved verbatim from the plan at the 1.2.5 switch-in. Scan records for this item — five

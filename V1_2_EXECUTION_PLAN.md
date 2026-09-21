@@ -23,12 +23,13 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> ✅ **1.2.2 (7/7), 1.2.3 (5/5) and 1.2.4 (6/6) ARE COMPLETE** and closed. **▶ ACTIVE: 1.2.5, the
-> mileage trip toggle** ([D8]) — v1.2's only native item, decomposed below. **▶ Next action: 1.2.5.1,
-> the privacy-page consolidation**, which its own prerequisite says must precede the disclosure.
-> ⚠️ **Jason owns the disclosure wording and the location usage string.** **⏸ 1.2.1 is 7/7 built**,
-> its Maestro validation waiting on ~November.
-> Health: **272** mobile unit · **102** engine · **50/50** Playwright · typecheck clean · both tax-config
+> ✅ **1.2.2 through 1.2.5 ARE ALL COMPLETE** and closed. **▶ ACTIVE: 1.2.6, the premium slice**
+> ([D3]), decomposed below — pure JS, so every line is verifiable here. **▶ Next action: 1.2.6.1**,
+> whose premise (`perQuarter` already exists; this is a surfacing fix) is owed a check first.
+> ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
+> the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
+> worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
+> Health: **306** mobile unit · **102** engine · **50/50** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
@@ -126,34 +127,32 @@ because the gate is about data, not payment. An e2e asserts the absence.
 
 ---
 
-### 🔧 **1.2.5 — Mileage trip toggle** · **ACTIVE** · v1.2's only native item
+### ⭐ **1.2.6 — Premium slice** · **ACTIVE**
 
-**Why it is next ([D8]):** it is the one item in the queue that **needs the build capacity Jason
-reserved**. ⚠️ **Codemagic is ~80% consumed and the remainder is deliberately held for TestFlight** —
-so the rule is *accumulate, then send one build carrying everything*. Mileage brings the only
-prebuild-affecting change in v1.2; landing it now means the next device build validates it **together
-with** 1.2.3's `Alert` layer, 1.2.4's weekly sheet and 1.2.1's demo flows, instead of spending a
-scarce cycle on any one of them.
+**Why it is next:** the correctness blocks and both feature items are closed, and [D3] is standing —
+**every version carries a premium line**. It also unblocks cleanly: its hard dependency was 1.2.2's
+safe-harbor maths, which shipped. ⚠️ **Pure JS, so unlike 1.2.5 every line of it is verifiable on
+this machine** — which is the right shape of work while a device build is being saved up for.
 
-⛔ **When-in-use only.** Auto-detection is v1.3 ([D8]). **The moment this needs "Always" it is a
-different App Store review** — if a sub-step starts reaching for background location, stop and
-re-decide rather than widening the ask.
+⛔ **The gating rule, applied to each of the four before it is built:** premium sits on the
+**tax-time / complexity** axis, never on the core set-aside job, and is **additive** — it may not
+blur or remove anything already free. An item that fails that test is cut, not shrunk.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.5.1** | ✅ **DONE 2026-09-21.** **[D16]: `docs/privacy.html` is the only privacy policy**; `PRIVACY_POLICY.md` is now a pointer. 🔴 **The two copies had drifted on a MATERIAL point** — the markdown said crash reporting and analytics were "neither currently active" and that *"we don't transmit your data anywhere at all"*, while **Sentry is live in release builds** and the hosted page correctly names Sentry and PostHog. Nothing linked to the markdown, so nobody saw the false version — but it is the file anyone would have edited, and publishing from it would have replaced a correct disclosure with a denial of third-party sharing. Location disclosed on the canonical page, wording approved by Jason. ⚠️ **The wording binds 1.2.5.3**: coordinates are never stored or transmitted, only the distance. | ✅ |
-| **1.2.5.2** | ✅ **DONE 2026-09-21.** `expo-location@~56.0.26` (SDK-matched by `expo install`) and the config plugin, **alone in one commit** so a native build failure has exactly one suspect. `locationWhenInUsePermission` is worded to say the **same thing** as the policy's Location section ([D16]), ⚠️ **Superseded within the item by [D17]**: iOS background location is now **on** (when-in-use permission + the visible indicator, no "Always"), Android stays off. The usage string and the policy moved with it — three declarations, one claim. ⚠️ **Nothing imports it yet**, so the web bundle is untouched and this commit is only as risky as a prebuild: **272 unit · core-loop e2e green · typecheck clean.** The real verification is a device build, which 1.2.5.6 batches. | ✅ |
-| **1.2.5.3** | ✅ **DONE 2026-09-21.** `src/mileage/trip.ts` — pure, knows nothing of `expo-location`, so the maths is testable without a device. ⛔ **The spec's open question is answered and the answer is NO:** a trip yields **only a distance**, never `MileageLog`'s start/end places. [D16]'s published wording says locations are never stored or transmitted — writing a captured place would store one and geocoding it would transmit one. Those fields stay the user's own words. ⭐ **The filtering IS the feature:** accuracy, jitter and implausible-speed gates, because a naive sum inflates a **tax deduction** the user cannot tell is wrong. The anchor is **held, not advanced**, when a step is ignored — otherwise slow movement never accumulates. **286 unit (was 272) · 4 plants, each caught by exactly one test.** | ✅ |
-| **1.2.5.4** | ✅ **DONE 2026-09-21.** `tripTracker.ts` (the task, start/stop, a subscription) + `TripTrackerButton` under the mileage field. A finished trip **adds to** the field rather than replacing it — one entry can cover several trips, and the number stays the user's to correct, which is what the policy promises. ⛔ **Coordinates are never persisted**, so a termination loses the metres since the last fix; a test asserts nothing resembling a position reaches storage. Every start failure is **named** and alerted immediately — learning after the drive that nothing recorded means the trip is gone. ⚠️ Renders **nothing on web**, so the e2e suite cannot see it: covered by unit tests over the tracker, and the rest is device-owed. **296 unit (was 286) · 50/50 Playwright.** | ✅ |
-| **1.2.5.5** | ✅ **DONE 2026-09-21.** `tripHealth` + `diagnoseStall` + a warning line on the running trip. ⚠️ **This row's own "app backgrounded stops updates" premise was superseded by [D17]** mid-item — what survives is its principle, now aimed at the cases that remain. ⛔ **A stalled trip LOOKS like a working one**: the button still says "Stop trip", the miles just never rise. So staleness is detected **from the trip's START**, not only from the last fix — a trip that never received anything would otherwise never be called stale, which is the worst case of the set. ⭐ **The cause is ASKED of the platform, never inferred**: a parked car and a revoked permission look identical from the silence, and `no-signal` is returned only when permission and services are both fine — crying wolf at every long light teaches users to ignore the one warning that matters. **305 unit (was 296) · 50/50 Playwright · 2 plants caught.** | ✅ |
-| **1.2.5.6** | ✅ **DONE 2026-09-21.** All runnable gates green: **306 unit · 102 engine · 50/50 Playwright · typecheck + lint · both audits · ports free.** 🔴 **The after-scan found a FOURTH demo-mode leak** of the class 1.2.1.3 plugged — `persist()` wrote raw AsyncStorage outside the repository, so a demo trip left a key in **real** storage. Guarded and planted. ⛔ **The headline is what is NOT verified: none of 1.2.5 can be proven on this machine.** The one-build agenda now sits at the head of the TestFlight checklist, ordered most-likely-broken first. Release notes written as the work landed. | ✅ |
+| **1.2.6.1** | **Per-quarter amount in reminders + dashboard.** ⚠️ **Mostly a SURFACING fix, not a build** — `perQuarter` already exists on `SafeHarborScreen` and in the PDF. **Amount is premium; the DATE stays free**, because a due date is the core job. **Verify that premise first**, it was measured 2026-09-20. | ⬜ |
+| **1.2.6.2** | **🔴 The IRS due-date business-day shift**, pulled in from 1.2.10 on that item's own instruction. It runs **here and first**, because 1.2.6.1 puts a **dollar amount** next to those dates — a wrong date with a payment instruction attached is worse than a wrong date alone. | ⬜ |
+| **1.2.6.3** | **Safe-harbor payment tracker** — payments made vs. required, completing what v1.1 half-built. Needs a per-year payments-made model; `amountSetAsideByYear` is the shape to follow. ⚠️ **Depended on 1.2.2's safe-harbor fix** — built on the old maths this would have tracked payments against a target that said "no penalty expected" all spring. | ⬜ |
+| **1.2.6.4** | **Shift/earnings optimizer** — the headline, pulled from v1.3, and the owed earning-optimization repositioning. Soft-gate below ~30 entries; **demo mode is what makes it demoable**. | ⬜ |
+| **1.2.6.5** | **Expense-breakdown drill-down.** | ⬜ |
+| **1.2.6.6** | **Verify + whole-item after-scan.** ⚠️ **Do not assert absolute dollar figures** — 1.2.2 and 1.2.4 both moved what the demo seed produces. | ⬜ |
 
-**Exit line:** a user can start and stop a trip, the miles land on an entry they can still correct,
-and every way the capture can fall short is something the app says out loud rather than absorbs.
+**Exit line:** four premium surfaces that each earn their gate on the tax-time axis, nothing that was
+free became paid, and the quarterly dates they attach money to are the correct ones.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
-_1.2.1 (parked) and 1.2.5 (active) are not listed here — they are above. 1.2.2, 1.2.3 and 1.2.4 are in **Closed**.
+_1.2.1 (parked) and 1.2.6 (active) are not listed here — they are above. 1.2.2–1.2.5 are in **Closed**.
 An item appears in exactly one place._
 
 ⛔ **Numbers are STABLE IDs — do not renumber on insert.** A new item takes the **next free number**
@@ -164,7 +163,6 @@ out-of-order number is worth less than one more round of that.
 
 | # | item | notes |
 |---|---|---|
-| 1.2.6 | **Premium slice** | Optimizer (headline) · safe-harbor payment tracker · per-quarter amounts in reminders · expense drill-down. **Before the screen passes** so each walks the final surface once. ⚠️ **Depends on 1.2.2** — the safe-harbor tracker cannot be built on the broken safe-harbor math. |
 | 1.2.7 | **Native iPad** | Adaptive split-view/sidebar. ~2× its original estimate (scoped at 6 screens, now 13). |
 | 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
 | 1.2.9 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. |
@@ -186,6 +184,17 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.5 — Mileage trip toggle ✅ DONE 2026-09-21, 6/6.** Start/stop trip capture that keeps
+  measuring while the app is off screen ([D17]: when-in-use + the visible iOS indicator, no
+  "Always" prompt), with accuracy/jitter/speed filters because a naive sum inflates a **tax
+  deduction**, and a warning when a trip has silently stopped counting. **Coordinates are never
+  persisted** — [D16]'s published wording, enforced by a test. Also **[D16]: one privacy
+  policy**, after the two copies were found disagreeing about whether the app shares data at all.
+  **306 unit · 50/50 Playwright · 10 plants, 9 caught.** ⛔ **Zero device verification and no way
+  to get any off-device** → the one-build agenda heads
+  [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
+  _Sub-step detail + 6 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.4 — Set-aside split by date and week ✅ DONE 2026-09-21, 6/6.** Every entry now freezes a
   set-aside rate at log time — **the tax it actually adds**, so the increments telescope to the
