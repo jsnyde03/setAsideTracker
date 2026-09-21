@@ -16,6 +16,7 @@ import { DateField } from "../components/DateField";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
+import { TripTrackerButton } from "../components/TripTrackerButton";
 import { todayIsoDate } from "../dateUtils";
 import { usePremiumAccess } from "../premium/usePremiumAccess";
 import { spacing, type, type Colors } from "../theme";
@@ -265,6 +266,15 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
             onChangeText={setMileage}
             placeholder="0"
             keyboardType="decimal-pad"
+          />
+          {/* Fills the field above rather than replacing it: a measured trip is a starting point the
+              user can still correct, which is also what the privacy policy promises about the
+              number being theirs. Adds to whatever is already there, because one entry can cover
+              several trips in a shift. */}
+          <TripTrackerButton
+            onTripFinished={(capturedMiles) =>
+              setMileage(String(Math.round(((parseFloat(mileage) || 0) + capturedMiles) * 10) / 10))
+            }
           />
           <TextField
             label="Hours worked (optional)"
