@@ -15,6 +15,11 @@ import { ThemeProvider } from "../src/ThemeContext";
 import { initAnalytics } from "../src/analyticsClient";
 import { initErrorReporting } from "../src/errorReporting";
 import { initPurchases } from "../src/premium/purchasesClient";
+// ⚠️ Imported HERE, not only where the button lives. `TaskManager.defineTask` runs at this
+// module's scope, and iOS can relaunch the app to deliver a location — at which point the task
+// has to already exist. Reached only through the entry route, it would not, and the delivery
+// would be dropped on exactly the cold start a trip in progress depends on.
+import { resumeTripIfRunning } from "../src/mileage/tripTracker";
 
 // Module-scope, so they run exactly once before the first render — same as when they sat at the top
 // of App.tsx. They stay side-effecting rather than becoming hooks: error reporting in particular has
@@ -22,6 +27,10 @@ import { initPurchases } from "../src/premium/purchasesClient";
 initErrorReporting();
 initAnalytics();
 initPurchases();
+
+// A trip that was running when the app was terminated: the OS may still hold the task, and the
+// distance so far was persisted. Fire-and-forget — nothing here should delay the first render.
+void resumeTripIfRunning();
 
 /**
  * The provider stack lives here, ABOVE the `Stack`, so every route sees it. Mounted inside a route
