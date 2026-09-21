@@ -42,12 +42,24 @@
 > else broke", not "this works on a phone"** — that happened three times in 1.2.1 alone. Device gates
 > → [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
 >
-> ⛔ **MAESTRO DISPATCH #3 IS OWED — Jason-side, manual-only.** #2 failed 2026-09-20 at **step 8**,
-> the simulator boot, so the flows **never ran**: the migration's native paths and `demo-mode.yaml`
-> are still entirely unvalidated. Cause was a hardcoded `"iPhone 15"` absent from the Xcode 26.4
-> image, masked by `|| true`. **Fixed** — the step now discovers an available iPhone and swallows
-> nothing. Triage → [V1_2_LOG.md](V1_2_LOG.md). ⚠️ **Still true for #3: read WHICH STEP failed.**
-> Only a failure inside `Run Maestro native flows` says anything about the app.
+> ⏸ **MAESTRO IS PAUSED — out of Codemagic minutes, resumes ~November 2026** _(Jason 2026-09-21)_.
+> **Next action when minutes return: dispatch `5d15e56` (or later) and read the log.** Nothing is
+> owed on this machine; everything is pushed. Full narrative → [V1_2_LOG.md](V1_2_LOG.md).
+>
+> **2 of 12 flows pass** (`Onboarding → Dashboard`, `Onboarding validation`). ⚡ **The app was never
+> broken** — thirteen dispatches diagnosed a *harness*, and the one real app question raised along
+> the way (does `enterDemo()` work on device?) resolved as **yes**.
+>
+> ⚡ **The single most useful thing built here: the Maestro step now prints every on-screen text
+> node into the build log on failure.** A failing assertion says what was ABSENT; that dump says
+> what was PRESENT, and it cracked the two hardest failures on its first run each. **Do not
+> diagnose from assertion text — read the dump.**
+>
+> **Three open questions, all answerable from the next log, none needing a code change first:**
+> 1. `custom-expenses-gating` / `mileage-log-gating` fail finding the Premium row — and they type
+>    nothing, so the numeric keypad cannot be the cause. Unknown; the dump now covers them.
+> 2. `Premium Paywall` — `Settings` not found on the dashboard.
+> 3. `Demo mode` — now enters the demo successfully, then cannot find the seeded Uber entry.
 
 **Branch:** `v1.2` · **Target: none — ship ASAP** ([D9], superseding [D4]'s August)
 **Structural audit:** [`docs/audits/2026-08-07-v1.2-structural/`](docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md) · **Gap scan:** [`docs/audits/2026-09-20-v1.2-gap-scan/`](docs/audits/2026-09-20-v1.2-gap-scan/README.md) · **Ladder rationale:** [BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md)
@@ -89,12 +101,13 @@ dependency — 1.2.3 (location) is the next one.
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ⏸ **1.2.1 — Demo mode** · **7/7 built, BLOCKED on external validation**
+### ⏸ **1.2.1 — Demo mode** · **7/7 built, validation DEFERRED to ~November**
 
 In-memory store · offset-dated persona · 4 leak guards · enter/exit + [D6] Settings row · banner on
-all 13 screens · premium preview ([D5]) · 34/34 Playwright. **⛔ Blocked only on Maestro dispatch #2**,
-which is manual-only and Jason-side; `.maestro/demo-mode.yaml` is unrun and that run is its
-validation. **Closes the moment the flows pass.** Detail + all 9 scan records → [V1_2_LOG.md](V1_2_LOG.md).
+all 13 screens · premium preview ([D5]) · 34/34 Playwright. **⏸ Cannot close until the Maestro suite
+is green**, and that is out of minutes until ~November. ⚡ **Its one genuine open risk is now
+answered:** `enterDemo()` works on a real simulator build, so demo mode is not broken on device.
+What remains unproven is the *flow*, not the feature. Detail + 10 scan records → [V1_2_LOG.md](V1_2_LOG.md).
 
 ✅ **[D11] the persona stays at ONE tax year** — year-over-year therefore cannot be previewed, accepted
 because the gate is about data, not payment. An e2e asserts the absence.

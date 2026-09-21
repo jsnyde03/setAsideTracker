@@ -11,6 +11,49 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 Maestro dispatches #2–#13 — PAUSED out of minutes · 2026-09-21
+
+**State: 2 of 12 flows pass.** Paused for Codemagic minutes, resumes ~November. Everything is
+pushed; **next action is simply to dispatch `5d15e56` or later and read the log.**
+
+⛔ **THE APP WAS NEVER BROKEN.** Thirteen dispatches diagnosed a **harness**. Every app-level
+hypothesis raised along the way — an `AppGate` spinner, a redirect loop on a failed profile write,
+`ErrorBoundary` catching a throw, a circular import from 1.2.1.6, `enterDemo()` failing on device —
+was **wrong**. The one real app question that surfaced (does demo entry work on a device?) resolved
+as **yes**.
+
+**What was actually wrong, in the order it was peeled back:**
+
+| # | cause | how it presented |
+|---|---|---|
+| 1 | Hardcoded `"iPhone 15"`, absent from the Xcode 26.4 image, masked by `\|\| true` | an *install* failure two lines later |
+| 2 | `scrollUntilVisible` stopping at the screen edge, and flows tapping blind below the fold | "element not found" on elements that were present |
+| 3 | `hideKeyboard` **after** reaching for the state field, so "TX" appended to the name | 12/12 "could not reach the dashboard" |
+| 4 | Four flows carrying their own inline copy of onboarding, untouched by the fix to the shared one | four flows lagging a round behind the rest |
+| 5 | ⚡ **`CODE_SIGNING_ALLOWED=NO`** — an unsigned app has no entitlements, so the Keychain refuses, so `expo-secure-store` throws and **nothing can be saved at all** | `Couldn't save your info` / `getValueWithKeyAsync` |
+| 6 | `SENTRY_DISABLE_AUTO_UPLOAD` reaching the script phase empty despite being declared | the JS-bundle phase failing the build |
+| 7 | iOS's **numeric** keypad has no Done key, so `hideKeyboard` fails and the keypad hides the Premium rows | "couldn't hide the keyboard" + phantom missing rows |
+
+⚡ **THE LESSON, and it is the transferable one: every step forward came from a DIAGNOSTIC, never
+from a theory.** The commit-SHA echo, the `assertNotVisible` probes, and above all the **on-screen
+text dump** each cracked something no amount of reasoning did — the dump twice, on its first run
+each time. Meanwhile every mechanism reasoned out in advance was wrong. ⛔ **A failing assertion
+tells you what was ABSENT; only the hierarchy tells you what was PRESENT.** The dump should have
+been built at dispatch #3, not #11; that delay is most of the cost of this sequence.
+
+**Now permanent in `codemagic.yaml`** (so the next session inherits it rather than rediscovering it):
+the step prints the building commit first, captures the simulator's final frame on failure, and
+dumps every on-screen text node with bounds for up to 12 failures.
+
+**Three open questions, all answerable from the next log without a code change:**
+1. `custom-expenses-gating` / `mileage-log-gating` cannot find the Premium row — **and they type
+   nothing**, so the keypad is ruled out. Genuinely unknown. The dump now covers them (it sampled
+   only 4 failures before, and neither was in the sample).
+2. `Premium Paywall` — `Settings` not found on the dashboard.
+3. `Demo mode` — enters the demo fine, then cannot find the seeded Uber entry.
+
+---
+
 ### 🔎 Maestro dispatch #2 — FAILED, INFRASTRUCTURE, fixed · 2026-09-20
 
 **The predicted failure, predicted for the right reason.** Died at **step 8, `Boot a simulator and
