@@ -135,7 +135,7 @@ they are a hypothesis again, not a finding. Spec → [V1_2_LOG.md](V1_2_LOG.md).
 | **1.2.4.1** | ✅ **DONE 2026-09-21.** All three answered by Jason — **[D13]** week is a fixed **Mon–Sun** · **[D14]** legacy entries get a computed figure and any week containing one is **marked estimated** · **[D15]** "this week" goes **on the dashboard** beside the YTD total, past weeks behind a drill-down. | ✅ |
 | **1.2.4.2** | ✅ **DONE 2026-09-21.** `setAsideRate` on `Entry`, frozen by the provider on create. ⭐ **It is the tax the entry ACTUALLY ADDS** — `f(existing + this) − f(existing)` through the same `netAmountToSetAside` the dashboard shows — so brackets, the SE wage base, state rules and the W2 credit are handled by construction, with no parallel tax path. The increments **telescope to the year's real total**, which is what will make the weekly rows add up, and a test pins that. A *rate* rather than a dollar amount, so an edit moves the dollars at the frozen rate. ⛔ **The e2e caught a defect no unit test could:** an edit DROPPED the field — the entry form builds a complete object literal, so anything it does not name is lost on save, and this is the app's first `Entry` field the user does not edit. Carried forward in the provider, not the form. **256 unit (was 248) · 45/45 Playwright (was 43) · 2 plants, both caught.** | ✅ |
 | **1.2.4.3** | ✅ **DONE 2026-09-21.** `weeklySetAsides` + `weekStartOf` + `fallbackSetAsideRate`, all pure. Monday–Sunday per [D13]; most recent week first; **no row for a week with no work** — an empty row is not information. [D14] handled: a legacy entry gets the year's own effective rate and its week is **marked estimated**, with a control asserting a fully frozen week is *not*. ⚠️ **All week maths is UTC** — `new Date("2026-06-22")` is midnight UTC, which is Sunday evening across the Americas, so a local-time version files every Sunday into the wrong week. Confirmed by planting it. **266 unit (was 256) · 3 plants, all caught.** | ✅ |
-| **1.2.4.4** | **The surface.** Weekly sits **alongside** the YTD lump, never instead of it — the year total is what is actually owed. Free tier: this is the core set-aside job, not the tax-time axis. | ⬜ |
+| **1.2.4.4** | ✅ **DONE 2026-09-21.** "This week" sits inside the set-aside card **beside** the year total, never instead of it ([D15]), and opens `WeeklySetAsideSheet` — every week worked, with [D14]'s estimated weeks labelled and a footnote saying what that means. **266 unit · 48/48 Playwright (was 45).** ⛔ **A plant PASSED and rewrote the test:** the spec asserted on the accessibility *label*, so hardcoding the displayed figure to `$0.00` went green — the label kept telling the truth while the screen lied. It now reads the **rendered text**, and keeps the label assertion for VoiceOver. ⚠️ A second assertion of mine would have reported a false defect: a loose match on "estimated" caught the dashboard's *"Q4 2026 estimated tax"*. | ✅ |
 | **1.2.4.5** | **Reconcile the drift.** Frozen figures will not sum to the true year total once the rate moves; `weeklyCatchUpAmount` already exists to say so, and today renders **only when already behind**. | ⬜ |
 | **1.2.4.6** | **Verify + whole-item after-scan.** ⚠️ **Do not assert absolute dollar figures** — 1.2.2 moved what `buildDemoSeed` produces, and a hardcoded total is a defect 1.2.1.5 has already had to fix once. | ⬜ |
 
@@ -306,6 +306,14 @@ already present).
   non-negative. Pair with the 1099 reconciliation item; both are the logged total not matching reality.
 - **No multi-state or part-year residency** — a single state of residence only.
 
+- **`formatCurrency` is defined TEN times across screens, in two different signatures → 1.2.11.**
+  Ten local copies (`DashboardScreen`, `ShareCard`, `OnboardingScreen`, …), four of which take a
+  `fractionDigits` argument and six of which do not — so the same dollar figure can render with or
+  without cents depending on which screen shows it. 1.2.4.4 added an eleventh rather than
+  consolidating, **deliberately**: the shared helpers this codebase does have (`totalEntryExpenses`)
+  were extracted when a second caller appeared, not retrofitted across ten files mid-feature.
+  ⚠️ Whoever does it must diff the two signatures' output first — this is a *presentation* change to
+  money figures on every screen. **Deferred, not folded.** _(Found 2026-09-21 at the 1.2.4.4 before-scan.)_
 - **⚠️ Any future non-user-edited `Entry` field will be DROPPED on edit, and nothing warns → 1.2.11.**
   `AddEntryScreen.handleSave` builds a complete `Entry` literal field by field; `id` and `createdAt`
   survive only because they are copied there by hand. 1.2.4.2 hit this with `setAsideRate` and fixed

@@ -11,6 +11,38 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.4.4 The weekly surface — SUB-TASK before + after-scan · 2026-09-21
+
+**Shipped.** A "This week" row **inside** the set-aside card — beside the year total, never instead
+of it ([D15]) — opening `WeeklySetAsideSheet`, which lists every week worked with [D14]'s estimated
+weeks labelled and a footnote explaining what the label means. **266 unit · 48/48 Playwright (was
+45) · typecheck clean · lint unchanged** _(the one error under the touched files is the pre-existing
+`amountSetAsideInput` resync effect, already in the 1.2.11 ledger)_.
+
+⛔ **A plant PASSED, and it rewrote the test rather than the code.** The spec asserted on the row's
+**accessibility label**; a plant hardcoding the *displayed* figure to `$0.00` went green, because the
+label is built from the same data and kept telling the truth while the screen did not. **A user
+reads the number, so the test now reads the rendered text** — and keeps the label assertion
+separately, because VoiceOver needs it too. This is the sharpest version of the vacuous-test pattern
+seen so far in v1.2: the assertion was on real data, of the real component, and still could not see
+the defect.
+
+⚠️ **And a second assertion of mine would have reported a false defect.** `getByText("estimated")`
+with a loose match found **"Q4 2026 estimated tax — Jan 15, 2027"** on the dashboard behind the
+modal, which read exactly like "the week was wrongly marked estimated". Diagnosed by dumping storage
+and the matched text rather than by reasoning: the entry carried `setAsideRate: 0.1412955` the whole
+time. Now asserted on the sheet's own footnote. _(Memory: a "not caught" over the wrong subject
+looks identical to a real finding.)_
+
+**Before-scan finding, filed rather than fixed:** `formatCurrency` is defined **ten times** across
+screens, in two different signatures — four take `fractionDigits`, six do not. Consolidating touches
+ten files and changes how money renders app-wide, so an eleventh copy was added **deliberately**,
+matching the dashboard's exact formatting so the feature is internally consistent, and the cleanup
+went to the backlog. The shared helpers this codebase *does* have were extracted when a second
+caller appeared — not retrofitted across ten files in the middle of a feature.
+
+---
+
 ### 🔎 1.2.4.3 The weekly roll-up — SUB-TASK before + after-scan · 2026-09-21
 
 **Shipped**, all pure: `weeklySetAsides`, `weekStartOf`, `fallbackSetAsideRate`. Monday–Sunday

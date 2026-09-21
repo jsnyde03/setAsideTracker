@@ -12,11 +12,14 @@ import {
   entriesForYear,
   totalEntryExpenses,
   yearsWithEntries,
+  weeklySetAsides,
+  weekStartOf,
 } from "../calculations";
 import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { BreakdownDetailSheet } from "../components/BreakdownDetailSheet";
+import { WeeklySetAsideSheet } from "../components/WeeklySetAsideSheet";
 import { ShareEarningsModal } from "../components/ShareEarningsModal";
 import { buildBreakdownDetail, type BreakdownRowKey } from "../breakdownDetails";
 import { PLATFORM_ICONS, PLATFORM_LABELS } from "../platforms";
@@ -111,6 +114,13 @@ export function DashboardScreen({
   const taxEstimate = computeTaxEstimate(entries, taxProfile, selectedYear);
   const { estimate, year, usedFallbackConfig, w2WithholdingYtdEstimate, netAmountToSetAside } =
     taxEstimate;
+
+  // The weekly split ([D7]). `weeklySetAsides` owns the arithmetic; this screen only picks the
+  // current week out of it and opens the sheet.
+  const [weeksOpen, setWeeksOpen] = useState(false);
+  const weeks = weeklySetAsides(entries, taxProfile, selectedYear);
+  const currentWeekStart = weekStartOf(new Date().toISOString().slice(0, 10));
+  const thisWeek = weeks.find((week) => week.weekStart === currentWeekStart);
 
   // "Show your math" — which breakdown row's detail sheet is open (null = closed).
   const [activeDetailKey, setActiveDetailKey] = useState<BreakdownRowKey | null>(null);
@@ -289,6 +299,35 @@ export function DashboardScreen({
                 ).toFixed(1)}
                 % of net earnings, tax year {estimate.taxYear}
               </Text>
+              {/* [D7]/[D15]: the week is the unit a gig worker can act on — one lump sum for the
+                  whole year is the thing that "makes it hard to keep track". It sits beside the year
+                  total rather than replacing it, because the year total is what is actually owed. */}
+              <Pressable
+                onPress={() => setWeeksOpen(true)}
+                style={styles.weekRow}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  thisWeek
+                    ? `Set aside for this week, ${formatCurrency(thisWeek.setAside)}. Tap to see every week.`
+                    : "See set aside by week"
+                }
+              >
+                <View style={styles.weekText}>
+                  <Text style={styles.weekLabel}>This week</Text>
+                  <Text style={styles.weekHint}>
+                    {thisWeek
+                      ? `${thisWeek.entryCount} ${thisWeek.entryCount === 1 ? "shift" : "shifts"} so far${
+                          thisWeek.estimated ? " · estimated" : ""
+                        }`
+                      : "No shifts logged yet this week"}
+                  </Text>
+                </View>
+                <Text style={styles.weekValue}>
+                  {thisWeek ? formatCurrency(thisWeek.setAside) : formatCurrency(0)}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.55)" />
+              </Pressable>
+
               <Text style={styles.breakdownHint}>Tap any line to see how it's calculated.</Text>
 
               <MathBreakdownRow
@@ -595,6 +634,11 @@ export function DashboardScreen({
         }
       />
       <BreakdownDetailSheet detail={activeDetail} onClose={() => setActiveDetailKey(null)} />
+      <WeeklySetAsideSheet
+        weeks={weeksOpen ? weeks : null}
+        year={year}
+        onClose={() => setWeeksOpen(false)}
+      />
       <ShareEarningsModal
         visible={showShare}
         onClose={() => setShowShare(false)}
@@ -673,6 +717,21 @@ function createStyles(colors: Colors) {
   },
   breakdownRowPressed: { opacity: 0.6 },
   breakdownValueWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
+  // The weekly row lives inside the dark set-aside card, so its colours are the card's, not the
+  // theme's — same as the breakdown rows below it.
+  weekRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.18)",
+  },
+  weekText: { flex: 1 },
+  weekLabel: { ...type.caption, color: "#fff", fontWeight: "600" },
+  weekHint: { ...type.micro, color: "#9CA3AF", marginTop: 2 },
+  weekValue: { ...type.subtitle, color: "#fff" },
   breakdownHint: { ...type.micro, color: "#9CA3AF", marginTop: spacing.md, fontStyle: "italic" },
   breakdownLabel: { ...type.caption, color: "#D1D5DB" },
   breakdownValue: { ...type.caption, color: "#fff", fontWeight: "600" },
