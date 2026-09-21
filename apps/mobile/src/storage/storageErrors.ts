@@ -30,3 +30,23 @@ export class UnreadableDataError extends Error {
 export function isUnreadableDataError(error: unknown): error is UnreadableDataError {
   return error instanceof UnreadableDataError;
 }
+
+/**
+ * The device has stored data but the key that opens it is not available right now.
+ *
+ * ⚠️ **Not the same as "the key is gone", and the difference is the whole reason this is its own
+ * error.** `expo-secure-store` defaults to `WHEN_UNLOCKED` accessibility, so a read before the
+ * device's first unlock after a reboot returns nothing *transiently*. Minting a replacement key at
+ * that moment — which is what the old `getOrCreateEncryptionKey` did — makes every existing value
+ * permanently unreadable on the next write. So this is raised instead, and a retry is offered.
+ */
+export class EncryptionKeyUnavailableError extends Error {
+  constructor(options?: { cause?: unknown }) {
+    super("The encryption key for this device's stored data is not available.", options);
+    this.name = "EncryptionKeyUnavailableError";
+  }
+}
+
+export function isEncryptionKeyUnavailableError(error: unknown): error is EncryptionKeyUnavailableError {
+  return error instanceof EncryptionKeyUnavailableError;
+}

@@ -31,16 +31,27 @@ function bytesToHex(bytes: Uint8Array): string {
  * first use. react-native-get-random-values is a simpler, narrowly-scoped, very widely-used
  * polyfill for exactly this one need, sidestepping that autolinking issue entirely.
  */
-export async function getOrCreateEncryptionKey(): Promise<string | null> {
-  if (Platform.OS === "web") {
-    return null;
-  }
+export function platformEncrypts(): boolean {
+  return Platform.OS !== "web";
+}
 
-  const existingKey = await SecureStore.getItemAsync(SECURE_STORE_KEY_NAME);
-  if (existingKey) {
-    return existingKey;
-  }
+/**
+ * Reads the stored key, or null if this device has never had one.
+ *
+ * ⛔ **Split out of the old `getOrCreateEncryptionKey`, and the split is the point.** That function
+ * minted a fresh key whenever SecureStore came back empty, with no idea whether there was already
+ * data the old key was holding — so a Keystore reset, a restore onto a new device, or simply a read
+ * before the first unlock after a reboot would silently re-key, and the next write would make
+ * everything already stored permanently unreadable. Deciding *whether to mint* needs to know what
+ * is in storage, which is `repository.ts`'s business, not this module's. Here: read, or create,
+ * never both behind one name.
+ */
+export async function readEncryptionKey(): Promise<string | null> {
+  return SecureStore.getItemAsync(SECURE_STORE_KEY_NAME);
+}
 
+/** Mints and stores a new key. ⚠️ Only safe when nothing is already encrypted under an older one. */
+export async function createEncryptionKey(): Promise<string> {
   const randomBytes = new Uint8Array(RANDOM_KEY_BYTE_LENGTH);
   crypto.getRandomValues(randomBytes);
   const newKey = bytesToHex(randomBytes);

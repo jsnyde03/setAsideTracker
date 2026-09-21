@@ -133,8 +133,8 @@ alert. Record → [V1_2_LOG.md](V1_2_LOG.md).
 | # | sub-step | scan |
 |---|---|---|
 | **1.2.3.1** | ✅ **DONE 2026-09-21.** `UnreadableDataError` + `isCipherText` (the `U2FsdGVkX1` marker) + a pure `decode.ts`, extracted so it is testable at all — `repository` imports AsyncStorage and `encryption` imports `Platform`, which Vitest cannot parse. The "legacy plaintext" fallback is **deleted**: it protected data that cannot exist. ⭐ **The error is deliberately NOT sub-classified by cause** — wrong key, truncation and garbage are measured to be indistinguishable without the integrity tag filed to v1.3. **236 unit (was 226) · 3 plants, all caught** — and plant 1 exposed a **vacuous assertion** in a test written minutes earlier, which only checked `.cause` and so stayed green against a completely different error. | ✅ |
-| **1.2.3.2** | **Never mint a new key over existing data.** Split `getOrCreateEncryptionKey` into a read-only get and an explicit create; `repository` mints only when storage is genuinely empty and raises a named key-lost error otherwise. Today a Keychain reset silently re-keys, and the next write makes the old data unreadable forever. | ⬜ |
-| **1.2.3.3** | **Stop sending a user with unreadable data to onboarding.** `loadError` has **no consumer** — `AppGate` reads `ready` and `appLockEnabled` only, so [index.tsx:16](apps/mobile/app/index.tsx#L16) redirects on a null profile. A recovery surface above the router: say what happened, offer restore-from-backup and erase-and-start-over, and **never** write over what could not be read. ⚠️ **[D12] decides what it offers.** | ⬜ |
+| **1.2.3.2** | ✅ **DONE 2026-09-21.** `getOrCreateEncryptionKey` split into `readEncryptionKey` + `createEncryptionKey`; the repository mints **only** when no user data exists, and raises `EncryptionKeyUnavailableError` otherwise. A null key now means exactly one thing — *this platform does not encrypt* — so `writeJson` can no longer mistake a missing key for permission to write plaintext. ⛔ **A key failure is no longer CACHED**: the module-level promise held a rejection for the life of the process, which would have made [D12]'s retry fail every time it was tapped. ⭐ **`repository.ts` has its first tests ever** (3 mocks; it imports AsyncStorage, and `encryption` imports `Platform`) — so the rule is pinned where it is *followed*, not where it is written. **245 unit (was 236) · 4 plants, all caught.** | ✅ |
+| **1.2.3.3** | **Stop sending a user with unreadable data to onboarding.** `loadError` has **no consumer** — `AppGate` reads `ready` and `appLockEnabled` only, so [index.tsx:16](apps/mobile/app/index.tsx#L16) redirects on a null profile. A recovery surface above the router, per [D12]: retry · restore · erase, and **never** write over what could not be read. ⚠️ **Carried in from 1.2.3.2:** retry must call `forgetCachedEncryptionKey()` (exported, deliberately unused until here — a helper that is tested but never called is the defect it was meant to prevent) · it must render on **defaults**, since the settings it would theme itself from are part of what cannot be read · and it is where these failures first reach Sentry at all. | ⬜ |
 | **1.2.3.4** | **The two optimistic toggles roll back.** `setAppLockEnabled` / `setRemindersEnabled` set React state *before* awaiting the write ([AppDataContext.tsx:163](apps/mobile/src/state/AppDataContext.tsx#L163)). The caller alerts, but the switch stays where the user put it — showing them an app lock they do not have. | ⬜ |
 | **1.2.3.5** | **Verify + whole-item after-scan.** A plant against each of the four; Playwright over the recovery surface; full suites green. | ⬜ |
 
@@ -292,6 +292,17 @@ already present).
   non-negative. Pair with the 1099 reconciliation item; both are the logged total not matching reality.
 - **No multi-state or part-year residency** — a single state of residence only.
 
+- **`vi.mock` factories are not type-checked, so a hand-written mock can outlive the module it
+  stands for → 1.2.11.** Changing `encryption.ts`'s exports at 1.2.3.2 left `demoStore.test.ts`
+  mocking functions that no longer exist: **`tsc` stayed clean while five tests went red**, and had
+  those tests been less thorough it could as easily have gone green against an API the app no longer
+  has. Only two suites mock this way today, so the fix is small — `vi.mock(import("..."), async
+  (importOriginal) => …)`, which fails on a missing export. **Deferred, not folded:** 1.2.11 is the
+  CI-gate/test-infra item and this is the same family. _(Found 2026-09-21 at the 1.2.3.2 after-scan.)_
+- **⚠️ The lint ledger says 14; `npx eslint src/` now reports 15 (13 errors, 2 warnings) → 1.2.11.**
+  All in `components/` and `app/` — none in anything 1.2.3 touched — so it is ledger drift, not a
+  regression. Re-count at 1.2.11 rather than trusting the number in the resume block.
+  _(Found 2026-09-21 at the 1.2.3.2 after-scan.)_
 - **🔴 The stored ciphertext has no MAC, and the key is used as a PASSPHRASE → v1.3, as one format
   change.** Two findings that must land together because both rewrite the on-disk payload.
   **(i) No integrity tag.** Measured: a wrong key, a truncated payload and outright garbage all

@@ -28,7 +28,14 @@ vi.mock("@react-native-async-storage/async-storage", () => ({ default: realStore
 // and it has its own test (encryption.test.ts). A null key is the app's real "store plaintext" path,
 // which also keeps the stored values readable in the assertions below.
 vi.mock("../storage/encryption", () => ({
-  getOrCreateEncryptionKey: async () => null,
+  // `platformEncrypts` false is the web path — no key, values stored as-is — which is why the
+  // assertions below can read them. 1.2.3.2 split the old `getOrCreateEncryptionKey` into a read and
+  // a create so the repository can refuse to mint over existing data; neither is reached from here.
+  platformEncrypts: () => false,
+  readEncryptionKey: async () => null,
+  createEncryptionKey: async () => {
+    throw new Error("demo isolation test must never mint a key");
+  },
   encryptText: (text: string) => text,
   decryptText: (text: string) => text,
 }));

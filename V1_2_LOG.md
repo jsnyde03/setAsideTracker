@@ -11,6 +11,45 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.3.2 Never mint a key over existing data — SUB-TASK after-scan · 2026-09-21
+
+**Shipped.** `getOrCreateEncryptionKey` is gone, split into `readEncryptionKey` and
+`createEncryptionKey` — the name was the bug in miniature, since "get or create" is precisely the
+decision that needs to know what is in storage, which `encryption.ts` cannot see.
+`resolveEncryptionKey` in the repository now mints only when `hasStoredUserData()` is false.
+**245 unit (was 236) · typecheck clean · lint unchanged.**
+
+**Two things found while building, neither in the spec:**
+
+1. 🔴 **A key failure was cached for the life of the process.** `encryptionKeyPromise` holds the
+   *promise*, so a rejection is handed to every later caller forever. **[D12]'s retry would have been
+   guaranteed to fail** — the user taps "Try again", the same rejected promise comes back, and the
+   only escape is killing the app. This is a defect introduced by nothing: the caching predates the
+   item and was harmless only because the old code *never rejected* (it minted instead). **Fixing one
+   made the other reachable**, which is the argument for the after-scan being mandatory. Cleared on
+   rejection, and `forgetCachedEncryptionKey()` exported for the retry button to call at 1.2.3.3.
+2. ⚠️ **A null key used to mean two different things** — "web, nothing is encrypted here" and "the
+   key is missing" — and `writeJson`'s `encryptionKey ? encrypt : json` treated both as permission to
+   **write plaintext**. Now null means only the first. Planted: returning null instead of throwing
+   silently wrote plaintext over encrypted data, and the test caught it.
+
+⭐ **`repository.ts` has tests for the first time.** Three `vi.mock`s (AsyncStorage, expo-secure-store,
+react-native) make it loadable. This mattered more than usual here: the guarantee is about what the
+**repository** decides, so a pure helper tested in isolation would have proved the rule is written
+down rather than that it is the rule being followed.
+
+**Four plants, all caught:** mint unconditionally · cache the rejection · count the premium cache as
+user data · return null instead of raising. ⭐ **And one assertion of mine was simply wrong about the
+code** — I expected a *read* to fail on a broken keystore, and it correctly returns empty, because a
+key that holds nothing needs no decryption. Kept as an explicit test with the reasoning, rather than
+deleted, so it is not "fixed" later.
+
+⚠️ **The API change silently broke five tests in another item's suite.** `demoStore.test.ts` mocks
+`../storage/encryption` by hand, and `vi.mock` factories are **not type-checked** — `tsc` was clean
+while the suite was red. Updated, and filed to the backlog.
+
+---
+
 ### 🔎 1.2.3.1 A typed decryption failure — SUB-TASK after-scan · 2026-09-21
 
 **Shipped.** `storageErrors.ts` (`UnreadableDataError`, carrying the *storage* key and never the

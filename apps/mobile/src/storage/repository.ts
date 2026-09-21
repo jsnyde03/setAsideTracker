@@ -3,8 +3,9 @@ import type { AppSettings, Entry, LocalUserProfile, TaxProfile } from "../types"
 import { buildBackupSnapshot, parseBackupSnapshot, type BackupSnapshot } from "../backup";
 import { getDemoStore, startDemoStore, stopDemoStore } from "../demo/demoMode";
 import type { KeyValueStore } from "./demoStore";
-import { encryptText, getOrCreateEncryptionKey } from "./encryption";
+import { createEncryptionKey, encryptText, platformEncrypts, readEncryptionKey } from "./encryption";
 import { decodeStoredValue } from "./decode";
+import { EncryptionKeyUnavailableError } from "./storageErrors";
 
 const KEYS = {
   localUserProfile: "gigTaxTracker:localUserProfile",
@@ -81,9 +82,67 @@ let encryptionKeyPromise: Promise<string | null> | null = null;
 
 function getEncryptionKey(): Promise<string | null> {
   if (!encryptionKeyPromise) {
-    encryptionKeyPromise = getOrCreateEncryptionKey();
+    const pending = resolveEncryptionKey();
+    // ⚠️ A FAILURE MUST NOT BE CACHED. The cache above holds the promise, so a rejected one would be
+    // handed to every later caller for the life of the process — and the retry [D12] puts in front
+    // of the user, for the transient locked-keystore case this exists to survive, would be
+    // guaranteed to fail. Clearing on rejection is what makes retrying mean anything.
+    pending.catch(() => {
+      encryptionKeyPromise = null;
+    });
+    encryptionKeyPromise = pending;
   }
   return encryptionKeyPromise;
+}
+
+/**
+ * The rule: **never mint a key while there is data a previous key was holding.**
+ *
+ * @returns the key, or `null` — and null means exactly one thing, *this platform does not encrypt*
+ *   (web, which has no keystore). It never means "the key is missing"; that raises instead, so
+ *   `writeJson` cannot mistake an unavailable key for permission to write plaintext.
+ * @throws {EncryptionKeyUnavailableError} when data exists and its key does not.
+ */
+async function resolveEncryptionKey(): Promise<string | null> {
+  if (!platformEncrypts()) return null;
+
+  let existing: string | null;
+  try {
+    existing = await readEncryptionKey();
+  } catch (error) {
+    // A keystore that errors is in the same position as one that is empty while data exists: the
+    // one thing we must not do is carry on and re-key.
+    throw new EncryptionKeyUnavailableError({ cause: error });
+  }
+  if (existing) return existing;
+
+  if (await hasStoredUserData()) {
+    throw new EncryptionKeyUnavailableError();
+  }
+  return createEncryptionKey();
+}
+
+/**
+ * Whether this device holds user data that a new key would orphan.
+ *
+ * ⚠️ Reads **AsyncStorage directly**, not `backend()`: the question is about real stored data, and
+ * a demo session's in-memory store is neither real nor at risk. And deliberately **not** the premium
+ * cache — that key is a cached boolean that re-fetches from RevenueCat, so orphaning it costs
+ * nothing, while treating it as data would block a legitimate first mint for anyone who had ever
+ * opened the paywall.
+ */
+async function hasStoredUserData(): Promise<boolean> {
+  const values = await Promise.all(
+    [KEYS.localUserProfile, KEYS.taxProfile, KEYS.entries, KEYS.appSettings].map((key) =>
+      AsyncStorage.getItem(key)
+    )
+  );
+  return values.some((value) => value !== null);
+}
+
+/** Drops the cached key so the next read or write resolves it again — [D12]'s retry. */
+export function forgetCachedEncryptionKey(): void {
+  encryptionKeyPromise = null;
 }
 
 /** `store` defaults to whichever backend is live. The only caller that overrides it is the premium
@@ -101,6 +160,8 @@ async function readJson<T>(key: string, store: KeyValueStore = backend()): Promi
 
 async function writeJson<T>(key: string, value: T, store: KeyValueStore = backend()): Promise<void> {
   const json = JSON.stringify(value);
+  // Throws rather than returning null when a device's key is unavailable, so the `? :` below cannot
+  // quietly write plaintext over encrypted data. Null reaches here only on web.
   const encryptionKey = await getEncryptionKey();
   const payload = encryptionKey ? encryptText(json, encryptionKey) : json;
   await store.setItem(key, payload);
