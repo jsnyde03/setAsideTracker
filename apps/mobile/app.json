@@ -39,6 +39,14 @@
           "project": "react-native",
           "url": "https://sentry.io/"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "SetAside uses your location only while you have a mileage trip running, to measure how far you drove. It never reads your location in the background or when no trip is running.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
       ]
     ]
   }
