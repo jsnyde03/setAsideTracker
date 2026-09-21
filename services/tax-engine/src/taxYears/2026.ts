@@ -11,6 +11,9 @@ import { stateTaxConfigs2026 } from "../stateTaxConfigs/2026";
  */
 export const taxYear2026: TaxYearConfig = {
   year: 2026,
+  // Last verified against the authorities cited in this file's header above.
+  // ⚠️ Bump ONLY after actually re-checking them — see TaxYearConfig.reviewedOn.
+  reviewedOn: "2026-09-21",
   // headOfHousehold/marriedFilingSeparately brackets/standard deductions confirmed directly
   // against the official IRS Rev. Proc. 2025-32 PDF (irs.gov/pub/irs-drop/rp-25-32.pdf), Section
   // 4.01 Table 2 (HoH) / Table 4 (MFS) and Section 4.14 (standard deduction). MFS brackets are

@@ -8,7 +8,9 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "audit:dependents": "npm run build && node scripts/dependent-audit.mjs"
+    "audit:dependents": "npm run build && node scripts/dependent-audit.mjs",
+    "audit:staleness": "npm run build && node scripts/staleness-audit.mjs",
+    "audit": "npm run audit:dependents && npm run audit:staleness"
   },
   "devDependencies": {
     "typescript": "^5.5.4",

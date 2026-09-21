@@ -11,6 +11,61 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.2 Tax-correctness block — WHOLE-ITEM after-scan · 2026-09-21
+
+**COMPLETE, 7/7.** All three live money-wrong bugs fixed, each mutation-verified.
+**226 mobile unit (from 197) · 102 engine · 38/38 Playwright (from 34) · typecheck clean.**
+
+**1.2.2.7 shipped:** `reviewedOn` on `TaxYearConfig` + `scripts/staleness-audit.mjs`, and **both
+audits wired into CI's cheap gate step**. Both **exit non-zero** — the only difference between a
+gate and a report nobody runs. The staleness gate fails when a live year is unreviewed for 6 months,
+or when the current calendar year has no config and the engine would **silently fall back** to
+another year's brackets. ⚠️ **Six months, not annually:** Georgia's change was effective mid-year, so
+a January-keyed review would have missed it by months.
+
+⭐ **Both gates were planted against, because an unverified gate IS the defect it exists to prevent.**
+Putting GA back on the credit slot fails `audit:dependents`; a 20-month-old review date fails
+`audit:staleness`. ⚠️ And my own verification nearly lied: `npm run audit:dependents | tail` reported
+`exit=0` because `$?` captured **`tail`**, not npm. The real evidence was the `npm error code 1`
+line. That is the documented shell-is-a-participant trap in this repo, walked into while checking a
+gate designed to stop exactly this class of thing.
+
+### The item in one line each
+
+| | fix | direction it was wrong |
+|---|---|---|
+| **.1** | GA/SC/MN exemptions → income subtraction (+ GA $4,000→$5,000) | **understated** — $0 state tax vs ~$891 |
+| **.2** | 51-state sweep + audit gate | found **35 of 42** states model no dependent mechanism |
+| **.3** | Safe harbor projects to a full year | **understated** — "no penalty expected" through both spring deadlines |
+| **.4** | MFJ counts spouse income, credits their withholding | **understated** — profit taxed from the bottom bracket |
+| **.5** | Dependents reach the withholding estimate | **understated** — and undid a double-count .4 introduced |
+| **.6** | State picker | **$0 state tax** for anyone who typed a state's name |
+| **.7** | Both audits as CI gates | the gap that let GA's change sit unnoticed |
+
+### What this item actually taught, beyond the fixes
+
+⚡ **Nine plants across six sub-steps, and the ones that mattered most were the plants that PASSED.**
+Two tests I wrote were vacuous, and both looked like coverage:
+- 1.2.2.5 v1 compared two baselines that **both carried the defect**, so they moved together.
+- 1.2.2.5 v2 measured the right thing through **too weak a fixture** — the child credit was capped
+  near $1,000 at that income, so double-claiming moved less than the threshold allowed.
+
+**A plant that passes is information about the test, not permission to move on.** Both would have
+shipped as green coverage of a claim they could not check.
+
+⛔ **Every sub-step's before-scan found something the plan did not know, and twice it found a defect
+in the sub-step before it.** 1.2.2.5's scan caught the double-count 1.2.2.4 had shipped the previous
+day — invisible to 1.2.2.4's own tests because every one of them used `hasW2Job: false`. **The gap
+was in the fixture, not the assertions**, which is why only a different item's scan could surface
+it. That is the strongest argument this version has produced for the before-scan being mandatory
+rather than proportional.
+
+⚠️ **Carried forward, unresolved:** the 35-state dependent gap (backlog, v1.3 — direction is *safe*,
+which is why it defers), and lens B's "$656 vs ~$3,496" worked example, still **never re-derived**
+and still labelled as indicative in both the log and its test.
+
+---
+
 ### 🔎 1.2.2.6 State picker — SUB-TASK after-scan · 2026-09-21
 
 **Shipped.** `src/states.ts` (list + `searchStates` + `stateName`), `components/StatePicker.tsx`,

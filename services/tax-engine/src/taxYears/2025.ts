@@ -20,6 +20,9 @@ import { nyLocalTaxJurisdictions2026 } from "../stateTaxConfigs/nyLocalTax2026";
  */
 export const taxYear2025: TaxYearConfig = {
   year: 2025,
+  // Last verified against the authorities cited in this file's header above.
+  // ⚠️ Bump ONLY after actually re-checking them — see TaxYearConfig.reviewedOn.
+  reviewedOn: "2026-09-21",
   // headOfHousehold/marriedFilingSeparately brackets per IRS Rev. Proc. 2024-40 (the federal rate
   // tables themselves were unchanged by OBBBA for 2025 — only the standard deduction baseline was
   // reset, confirmed directly in Rev. Proc. 2025-32's text). MFS brackets are exactly half of

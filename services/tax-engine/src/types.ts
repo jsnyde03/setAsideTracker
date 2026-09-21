@@ -142,6 +142,21 @@ export interface ChildTaxCreditConfig {
 
 export interface TaxYearConfig {
   year: number;
+  /**
+   * ISO date (YYYY-MM-DD) this year's figures were last checked against the authorities cited in
+   * the config file's own header.
+   *
+   * ⚠️ **Required, and machine-read by `npm run audit:staleness`.** Tax figures change mid-year,
+   * not only at year boundaries: Georgia raised its dependent exemption $4,000 → $5,000 effective
+   * TY2026, and nothing in this repo noticed — it was found by a web search during an unrelated
+   * audit on 2026-09-21. Prose like "MUST be reviewed each year" had been sitting at the top of
+   * the file the whole time and changed nothing, because nothing could read it.
+   *
+   * **Bump this only after actually re-checking the figures**, never to quiet the gate. A date that
+   * is newer than the last real review is worse than a stale one: it converts a loud, correct
+   * failure into silent, false confidence.
+   */
+  reviewedOn: string;
   /** Federal income tax brackets, keyed by filing status. */
   federalBrackets: Record<FilingStatus, TaxBracket[]>;
   /** Standard deduction amount, keyed by filing status. */

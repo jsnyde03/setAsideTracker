@@ -250,6 +250,22 @@ workflows:
         script: |
           cd services/tax-engine
           npm test
+
+          # ⚠️ Tax-config audits, added 1.2.2.7. Both EXIT NON-ZERO, so they are gates rather than
+          # reports nobody runs — which is the only difference that matters. Each exists because a
+          # real defect got through:
+          #
+          #   audit:dependents — GA/SC/MN modelled dependent EXEMPTIONS as dollar-for-dollar tax
+          #     CREDITS, telling a $40k Georgia filer with two dependents they owed $0 state tax
+          #     instead of ~$891. Fails on any per-dependent credit >= $1,000; no real one is close.
+          #
+          #   audit:staleness — Georgia raised that exemption $4,000 -> $5,000 effective TY2026 and
+          #     nothing here noticed; a web search found it during an unrelated audit. Fails when a
+          #     live year's figures have not been re-checked in 6 months, or when the current
+          #     calendar year has no config and the engine would silently fall back to another
+          #     year's brackets.
+          npm run audit
+
           cd ../../apps/mobile
           npm run typecheck
           npm test

@@ -24,9 +24,9 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> **▶ ACTIVE = 1.2.2 (tax-correctness block), 6 of 7 done. Next action: 1.2.2.7** — regression
-> tests + the config staleness gate, which closes the item. **⏸ 1.2.1 is 7/7 built**, deferred to
-> ~November with Maestro.
+> ✅ **1.2.2 IS COMPLETE (7/7).** All three live money-wrong bugs are fixed, each
+> mutation-verified. **▶ Next action: promote and decompose 1.2.3** (mileage trip toggle, [D8]) —
+> v1.2's only native item. **⏸ 1.2.1 is 7/7 built**, deferred to ~November with Maestro.
 > Health: **102** engine · **226** mobile unit · **38/38** Playwright · typecheck clean · lint 14.
 >
 > ⚠️ **Constraint carried into 1.2.4 and beyond: do not assert absolute dollar figures in tests.**
@@ -114,7 +114,7 @@ because the gate is about data, not payment. An e2e asserts the absence.
 
 ---
 
-### ▶ **1.2.2 — Tax-correctness block** · 🔵 before-scan done 2026-09-20
+### ✅ **1.2.2 — Tax-correctness block** · **COMPLETE 2026-09-21, 7/7**
 
 **Why it is next:** three confirmed money-wrong bugs, live in v1.1.1, all understating what the user
 owes the IRS — and **every feature item after this renders numbers this block corrects.** 1.2.4 puts a
@@ -130,7 +130,7 @@ per-entry set-aside in ~52 rows a year; building it first multiplies one wrong f
 | **1.2.2.4** | ✅ **DONE 2026-09-21.** `spouseAnnualIncome` on `TaxProfile`, joint-filers-only field in onboarding **and** edit (existing married users need the route), fed to `otherTaxableIncome`. ⛔ **The before-scan caught a worse bug than the one being fixed:** `netAmountToSetAside = tax − withholding`, so counting spouse income *without* crediting their withholding hands the user their spouse's **entire tax bill**. Both move together, and the credit is **ungated by `hasW2Job`** — a gig worker whose spouse holds the W2 is the case this exists for. ⭐ Spouse income is kept **out of `otherFicaWages`**: the SS wage base is per-person, so routing it there would silently cut the user's SE tax. 207 unit (was 202) · 34/34 Playwright · both traps mutation-verified. | ✅ |
 | **1.2.2.5** | ✅ **DONE 2026-09-21.** `estimateW2Withholding` now takes `numberOfChildren` — W-4 Step 3 — applying the CTC and state dependent credits/exemptions, and dependents are claimed on **exactly one** W-4. ⛔ **Its before-scan caught a double-count I introduced in 1.2.2.4**: `estimateTax` derives withholding from `otherTaxableIncome`, which now includes the spouse, so my separate spouse estimate counted them twice whenever the user also had a W2 — every 1.2.2.4 test used `hasW2Job: false`. Replaced with one per-job path. ⚠️ **Three test versions before a plant was caught** — see the log. 212 unit · 102 engine · 34/34 Playwright. | ✅ |
 | **1.2.2.6** | ✅ **DONE 2026-09-21.** `US_STATES` + `StatePicker`, search by name or code, in onboarding **and** edit. ⭐ **All 51 were always supported** — the engine has 50 states + DC and always did; the *input* was broken, so "California" became an unmatched key, `$0` state tax, and a warning that California wasn't supported. ⭐ **A hand-written list is what drifts, so a test asserts it matches the engine's keys exactly, both directions, for every tax year.** ⚠️ Placeholder and a11y name kept **unchanged** and an exact code auto-selects — Maestro is out of minutes until ~November and could not re-validate a renamed selector. 226 unit (was 212) · **38/38** Playwright (was 34) · both plants caught. | ✅ |
-| **1.2.2.7** | **Regression tests + a staleness gate.** Every fix above gets a test that would have caught it, each mutation-verified. ⭐ Plus the thing that lets this recur: **nothing reviews the state configs for staleness** — GA's rise was found by a web search, not by the repo. | ⬜ |
+| **1.2.2.7** | ✅ **DONE 2026-09-21.** Both audits wired into CI's cheap gate step and **both exit non-zero** — gates, not reports. New `reviewedOn` on `TaxYearConfig` + `audit:staleness`: fails when a live year's figures are unreviewed for 6 months, or when the current calendar year has no config and the engine would **silently fall back** to another year's brackets. ⭐ **Every 1.2.2 fix is mutation-verified** — 9 plants across 6 sub-steps, each caught. ⚠️ Both gates were themselves planted against, because an unverified gate is the defect it is meant to prevent. | ✅ |
 
 **Exit line:** all four money-wrong bugs corrected with mutation-verified tests; the dependent
 mechanism checked across **all 51** configs, not three; no feature item renders a figure this block
