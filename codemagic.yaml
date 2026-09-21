@@ -346,8 +346,27 @@ workflows:
           npx expo prebuild --platform ios
 
       - name: Build the app for the iOS Simulator
-        # Release embeds the JS bundle (no Metro needed at run time); CODE_SIGNING_ALLOWED=NO because
-        # simulator builds don't need signing.
+        # Release embeds the JS bundle (no Metro needed at run time).
+        #
+        # ⚠️ AD-HOC SIGNED, deliberately. This previously used CODE_SIGNING_ALLOWED=NO on the
+        # reasoning that "simulator builds don't need signing" — true for launching, FALSE for the
+        # Keychain. An unsigned app carries no entitlements at all, including application-identifier,
+        # and iOS requires that for any Keychain access. expo-secure-store goes straight to the
+        # Keychain, so every run failed with:
+        #
+        #     Couldn't save your info
+        #     Calling the 'getValueWithKeyAsync' function has failed
+        #
+        # getOrCreateEncryptionKey could not read or mint a key, so NOTHING could be persisted, so
+        # onboarding could never complete and no flow could ever reach the dashboard. Found
+        # 2026-09-20 after the run started printing on-screen text into the log.
+        #
+        # ⛔ The app was never broken — v1.1.1 ships this path signed and works. We were testing a
+        # build that was structurally incapable of saving.
+        #
+        # `CODE_SIGN_IDENTITY="-"` is ad-hoc signing: no certificate, no provisioning profile, no
+        # AppleConnect group needed (which this workflow deliberately omits), but the entitlements
+        # are present so the simulator Keychain answers.
         script: |
           cd apps/mobile
           xcodebuild \
@@ -357,7 +376,10 @@ workflows:
             -sdk iphonesimulator \
             -derivedDataPath ios/build \
             -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="-" \
+            build
 
       - name: Boot a simulator and install the app
         # ⚠️ Do NOT hardcode a simulator name here. The runner's Xcode image decides which devices
