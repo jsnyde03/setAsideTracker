@@ -23,10 +23,20 @@ sitting on the device. There is now a recovery screen ([D12]: retry · restore �
 failure is a *named* error rather than a `SyntaxError` about JSON, and a key is **never minted while
 data exists** under an older one. **12 plants; 11 caught, and the 12th passing deleted a line.**
 
-⏸ **1.2.1 (demo mode) is 7/7 built but cannot close** — its Maestro validation is out of Codemagic
-minutes until ~November. ▶ **Next: 1.2.4, the set-aside split by date and week** ([D7]) — its first
-sub-step is a **[DECISION] for Jason**. ⚠️ **Mileage is 1.2.5, not 1.2.3** — four lines said otherwise
-until 2026-09-21; the queue table's row order is the build order.
+✅ **1.2.4 (set-aside by week) COMPLETE, 6/6.** Every entry freezes a set-aside rate at log time —
+**the tax it actually adds**, so the increments telescope to the year's real total — rolled up into
+Monday–Sunday weeks, on the dashboard beside the year total, with an adjustment row so the list
+visibly adds up.
+
+⏸ **1.2.1 (demo mode) is 7/7 built but cannot close** — Maestro resumes ~November.
+▶ **Next: 1.2.5, the mileage trip toggle** ([D8]) — v1.2's only native item.
+⚠️ **Mileage is 1.2.5, not 1.2.3** — four lines said otherwise until 2026-09-21; the queue table's
+row order is the build order.
+
+⚠️ **"Out of Codemagic minutes" is wrong and it misled a session.** **~80% is consumed, and Jason
+stopped the Maestro work deliberately to RESERVE the rest for TestFlight** _(2026-09-21)_. A device
+build **is** available — it is scarce and spoken for. **Never spend one on a single item:**
+accumulate the device-owed work and send one build carrying all of it.
 
 ## Rules that cost real time to rediscover
 

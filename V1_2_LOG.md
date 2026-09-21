@@ -1869,6 +1869,33 @@ gate** · pre-submit functional-correctness audit · Apple guideline pass incl. 
 
 ## Completed-item detail
 
+### 1.2.4 — Set-aside split by date and week · ✅ DONE 2026-09-21, 6/6
+
+_Moved verbatim from the plan at the 1.2.5 switch-in. Scan records for this item — five
+sub-task and one whole-item — are in the section above._
+
+**Why it is next:** the correctness blocks are closed, so the feature items can now render figures
+that have already been corrected — which was the entire point of sequencing them first. In Jason's
+words ([D7]): *"having one big lump sum to set aside makes it hard to keep track."*
+
+⚠️ **The before-scan is owed at 1.2.4.2**, the first step that writes code. The spec's premises were
+measured on 2026-09-20 — **before 1.2.2 changed the tax math and 1.2.3 changed the storage path** — so
+they are a hypothesis again, not a finding. Spec → [V1_2_LOG.md](V1_2_LOG.md).
+
+| # | sub-step | scan |
+|---|---|---|
+| **1.2.4.1** | ✅ **DONE 2026-09-21.** All three answered by Jason — **[D13]** week is a fixed **Mon–Sun** · **[D14]** legacy entries get a computed figure and any week containing one is **marked estimated** · **[D15]** "this week" goes **on the dashboard** beside the YTD total, past weeks behind a drill-down. | ✅ |
+| **1.2.4.2** | ✅ **DONE 2026-09-21.** `setAsideRate` on `Entry`, frozen by the provider on create. ⭐ **It is the tax the entry ACTUALLY ADDS** — `f(existing + this) − f(existing)` through the same `netAmountToSetAside` the dashboard shows — so brackets, the SE wage base, state rules and the W2 credit are handled by construction, with no parallel tax path. The increments **telescope to the year's real total**, which is what will make the weekly rows add up, and a test pins that. A *rate* rather than a dollar amount, so an edit moves the dollars at the frozen rate. ⛔ **The e2e caught a defect no unit test could:** an edit DROPPED the field — the entry form builds a complete object literal, so anything it does not name is lost on save, and this is the app's first `Entry` field the user does not edit. Carried forward in the provider, not the form. **256 unit (was 248) · 45/45 Playwright (was 43) · 2 plants, both caught.** | ✅ |
+| **1.2.4.3** | ✅ **DONE 2026-09-21.** `weeklySetAsides` + `weekStartOf` + `fallbackSetAsideRate`, all pure. Monday–Sunday per [D13]; most recent week first; **no row for a week with no work** — an empty row is not information. [D14] handled: a legacy entry gets the year's own effective rate and its week is **marked estimated**, with a control asserting a fully frozen week is *not*. ⚠️ **All week maths is UTC** — `new Date("2026-06-22")` is midnight UTC, which is Sunday evening across the Americas, so a local-time version files every Sunday into the wrong week. Confirmed by planting it. **266 unit (was 256) · 3 plants, all caught.** | ✅ |
+| **1.2.4.4** | ✅ **DONE 2026-09-21.** "This week" sits inside the set-aside card **beside** the year total, never instead of it ([D15]), and opens `WeeklySetAsideSheet` — every week worked, with [D14]'s estimated weeks labelled and a footnote saying what that means. **266 unit · 48/48 Playwright (was 45).** ⛔ **A plant PASSED and rewrote the test:** the spec asserted on the accessibility *label*, so hardcoding the displayed figure to `$0.00` went green — the label kept telling the truth while the screen lied. It now reads the **rendered text**, and keeps the label assertion for VoiceOver. ⚠️ A second assertion of mine would have reported a false defect: a loose match on "estimated" caught the dashboard's *"Q4 2026 estimated tax"*. | ✅ |
+| **1.2.4.5** | ✅ **DONE 2026-09-21.** `summarizeWeeklySetAsides` — the weeks, their total, the year total, and the **adjustment** between them — shown in the sheet as its own row plus a **Total** line, so the list visibly adds up. Hidden when it is zero, which is the normal case. ⛔ **The plan's premise was wrong and following it would have shipped an incoherent screen:** `computeCatchUpStatus` compares what is owed against what the user says they have **actually saved** — a hand-typed figure about their behaviour — not the weekly figures against the year total. Wiring this drift into that line would have told a user who is perfectly on track that they were behind. **270 unit (was 266) · 50/50 Playwright (was 48) · 2 plants caught**, and a third exposed a **circular** assertion of mine. | ✅ |
+| **1.2.4.6** | ✅ **DONE 2026-09-21.** All gates green: **272 unit · 102 engine · 50/50 Playwright · typecheck + lint · both tax-config audits · ports verified free.** ✅ Release notes written **as the work landed**, not backfilled. 🔴 **The whole-item scan caught what no sub-step could:** the demo persona carried no frozen rates, so **every demo week rendered "estimated"** under a footnote claiming the entries predate the feature — false, and on the surface store screenshots are shot from. `buildDemoSeed` goes through none of the three paths the sub-steps built. Folded in, with a plant. | ✅ |
+
+**Exit line:** each entry carries a set-aside frozen at the rate it was logged under, a week's worth
+sums to a figure that never moves retroactively, and the YTD total still says what is really owed.
+
+---
+
 ### 1.2.3 — Data-safety block · ✅ DONE 2026-09-21, 5/5
 
 _Moved verbatim from the plan at the 1.2.4 switch-in. Scan records for this item — four

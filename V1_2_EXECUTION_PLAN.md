@@ -23,13 +23,12 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> ✅ **1.2.2 (7/7) and 1.2.3 (5/5) ARE COMPLETE** and closed. **▶ ACTIVE: 1.2.4, the set-aside split
-> by date and week** ([D7]) — **4 of 6 done.** The frozen per-entry rate, the Monday–Sunday roll-up and
-> the dashboard surface are all built and on the branch. **▶ Next action: 1.2.4.5, reconcile the drift**
-> — frozen figures stop summing to the year total once rates move, and `weeklyCatchUpAmount` already
-> exists to say so but renders **only when already behind**. **⏸ 1.2.1 is 7/7 built**, deferred to
-> ~November with Maestro.
-> Health: **102** engine · **266** mobile unit · **48/48** Playwright · typecheck clean · both tax-config
+> ✅ **1.2.2 (7/7), 1.2.3 (5/5) and 1.2.4 (6/6) ARE COMPLETE** and closed. **▶ ACTIVE: 1.2.5, the
+> mileage trip toggle** ([D8]) — v1.2's only native item, decomposed below. **▶ Next action: 1.2.5.1,
+> the privacy-page consolidation**, which its own prerequisite says must precede the disclosure.
+> ⚠️ **Jason owns the disclosure wording and the location usage string.** **⏸ 1.2.1 is 7/7 built**,
+> its Maestro validation waiting on ~November.
+> Health: **272** mobile unit · **102** engine · **50/50** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
@@ -51,9 +50,13 @@
 > else broke", not "this works on a phone"** — that happened three times in 1.2.1 alone. Device gates
 > → [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
 >
-> ⏸ **MAESTRO IS PAUSED — out of Codemagic minutes, resumes ~November 2026** _(Jason 2026-09-21)_.
-> **Next action when minutes return: dispatch the CURRENT branch tip and read the log.** Nothing is
-> owed on this machine; everything is pushed. Full narrative → [V1_2_LOG.md](V1_2_LOG.md).
+> ⏸ **MAESTRO IS PAUSED — and "out of minutes" was the wrong summary.** ⚠️ **Codemagic is ~80%
+> consumed; Jason stopped the Maestro work deliberately to RESERVE the remainder for TestFlight
+> builds** _(Jason 2026-09-21, correcting this block)_. So a device build **is** available — it is
+> scarce and spoken for. **What follows: never spend one on a single item.** Accumulate the
+> device-owed work and send one build carrying all of it. Maestro resumes ~November 2026.
+> **Next Maestro action when minutes return: dispatch the CURRENT branch tip and read the log.**
+> Nothing is owed on this machine; everything is pushed. Full narrative → [V1_2_LOG.md](V1_2_LOG.md).
 >
 > **2 of 12 flows pass** (`Onboarding → Dashboard`, `Onboarding validation`). ⚡ **The app was never
 > broken** — thirteen dispatches diagnosed a *harness*, and the one real app question raised along
@@ -114,7 +117,7 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 In-memory store · offset-dated persona · 4 leak guards · enter/exit + [D6] Settings row · banner on
 all 13 screens · premium preview ([D5]) · 34/34 Playwright. **⏸ Cannot close until the Maestro suite
-is green**, and that is out of minutes until ~November. ⚡ **Its one genuine open risk is now
+is green**, and Maestro resumes ~November (minutes reserved for TestFlight — see the resume block). ⚡ **Its one genuine open risk is now
 answered:** `enterDemo()` works on a real simulator build, so demo mode is not broken on device.
 What remains unproven is the *flow*, not the feature. Detail + 10 scan records → [V1_2_LOG.md](V1_2_LOG.md).
 
@@ -123,31 +126,34 @@ because the gate is about data, not payment. An e2e asserts the absence.
 
 ---
 
-### ⭐ **1.2.4 — Set-aside split by date and week** · **ACTIVE**
+### 🔧 **1.2.5 — Mileage trip toggle** · **ACTIVE** · v1.2's only native item
 
-**Why it is next:** the correctness blocks are closed, so the feature items can now render figures
-that have already been corrected — which was the entire point of sequencing them first. In Jason's
-words ([D7]): *"having one big lump sum to set aside makes it hard to keep track."*
+**Why it is next ([D8]):** it is the one item in the queue that **needs the build capacity Jason
+reserved**. ⚠️ **Codemagic is ~80% consumed and the remainder is deliberately held for TestFlight** —
+so the rule is *accumulate, then send one build carrying everything*. Mileage brings the only
+prebuild-affecting change in v1.2; landing it now means the next device build validates it **together
+with** 1.2.3's `Alert` layer, 1.2.4's weekly sheet and 1.2.1's demo flows, instead of spending a
+scarce cycle on any one of them.
 
-⚠️ **The before-scan is owed at 1.2.4.2**, the first step that writes code. The spec's premises were
-measured on 2026-09-20 — **before 1.2.2 changed the tax math and 1.2.3 changed the storage path** — so
-they are a hypothesis again, not a finding. Spec → [V1_2_LOG.md](V1_2_LOG.md).
+⛔ **When-in-use only.** Auto-detection is v1.3 ([D8]). **The moment this needs "Always" it is a
+different App Store review** — if a sub-step starts reaching for background location, stop and
+re-decide rather than widening the ask.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.4.1** | ✅ **DONE 2026-09-21.** All three answered by Jason — **[D13]** week is a fixed **Mon–Sun** · **[D14]** legacy entries get a computed figure and any week containing one is **marked estimated** · **[D15]** "this week" goes **on the dashboard** beside the YTD total, past weeks behind a drill-down. | ✅ |
-| **1.2.4.2** | ✅ **DONE 2026-09-21.** `setAsideRate` on `Entry`, frozen by the provider on create. ⭐ **It is the tax the entry ACTUALLY ADDS** — `f(existing + this) − f(existing)` through the same `netAmountToSetAside` the dashboard shows — so brackets, the SE wage base, state rules and the W2 credit are handled by construction, with no parallel tax path. The increments **telescope to the year's real total**, which is what will make the weekly rows add up, and a test pins that. A *rate* rather than a dollar amount, so an edit moves the dollars at the frozen rate. ⛔ **The e2e caught a defect no unit test could:** an edit DROPPED the field — the entry form builds a complete object literal, so anything it does not name is lost on save, and this is the app's first `Entry` field the user does not edit. Carried forward in the provider, not the form. **256 unit (was 248) · 45/45 Playwright (was 43) · 2 plants, both caught.** | ✅ |
-| **1.2.4.3** | ✅ **DONE 2026-09-21.** `weeklySetAsides` + `weekStartOf` + `fallbackSetAsideRate`, all pure. Monday–Sunday per [D13]; most recent week first; **no row for a week with no work** — an empty row is not information. [D14] handled: a legacy entry gets the year's own effective rate and its week is **marked estimated**, with a control asserting a fully frozen week is *not*. ⚠️ **All week maths is UTC** — `new Date("2026-06-22")` is midnight UTC, which is Sunday evening across the Americas, so a local-time version files every Sunday into the wrong week. Confirmed by planting it. **266 unit (was 256) · 3 plants, all caught.** | ✅ |
-| **1.2.4.4** | ✅ **DONE 2026-09-21.** "This week" sits inside the set-aside card **beside** the year total, never instead of it ([D15]), and opens `WeeklySetAsideSheet` — every week worked, with [D14]'s estimated weeks labelled and a footnote saying what that means. **266 unit · 48/48 Playwright (was 45).** ⛔ **A plant PASSED and rewrote the test:** the spec asserted on the accessibility *label*, so hardcoding the displayed figure to `$0.00` went green — the label kept telling the truth while the screen lied. It now reads the **rendered text**, and keeps the label assertion for VoiceOver. ⚠️ A second assertion of mine would have reported a false defect: a loose match on "estimated" caught the dashboard's *"Q4 2026 estimated tax"*. | ✅ |
-| **1.2.4.5** | ✅ **DONE 2026-09-21.** `summarizeWeeklySetAsides` — the weeks, their total, the year total, and the **adjustment** between them — shown in the sheet as its own row plus a **Total** line, so the list visibly adds up. Hidden when it is zero, which is the normal case. ⛔ **The plan's premise was wrong and following it would have shipped an incoherent screen:** `computeCatchUpStatus` compares what is owed against what the user says they have **actually saved** — a hand-typed figure about their behaviour — not the weekly figures against the year total. Wiring this drift into that line would have told a user who is perfectly on track that they were behind. **270 unit (was 266) · 50/50 Playwright (was 48) · 2 plants caught**, and a third exposed a **circular** assertion of mine. | ✅ |
-| **1.2.4.6** | ✅ **DONE 2026-09-21.** All gates green: **272 unit · 102 engine · 50/50 Playwright · typecheck + lint · both tax-config audits · ports verified free.** ✅ Release notes written **as the work landed**, not backfilled. 🔴 **The whole-item scan caught what no sub-step could:** the demo persona carried no frozen rates, so **every demo week rendered "estimated"** under a footnote claiming the entries predate the feature — false, and on the surface store screenshots are shot from. `buildDemoSeed` goes through none of the three paths the sub-steps built. Folded in, with a plant. | ✅ |
+| **1.2.5.1** | **Privacy page → one source, then disclose location.** The prerequisite collision, and it runs first for the reason the prerequisite gives: `PRIVACY_POLICY.md` and the hosted page are two copies, so a disclosure written now lands in one and not the other. ⚠️ **Jason approves the wording** before any build goes to review. | ⬜ |
+| **1.2.5.2** | **`expo-location` + the config change, ALONE in its own commit.** `NSLocationWhenInUseUsageDescription` that actually justifies the capture. ⚠️ Isolated deliberately: this is the class of change that has broken iOS CI here before, and a build failure needs exactly one suspect. ⚠️ `NODE_OPTIONS=--use-system-ca` or the install fails. | ⬜ |
+| **1.2.5.3** | **Trip capture: start → accumulate → stop**, populating the existing `MileageLog` shape rather than a new one. Pure distance maths kept out of the native layer so it is testable without a device. | ⬜ |
+| **1.2.5.4** | **The surface.** Where the toggle lives, what a running trip looks like, and how a finished trip becomes an entry's miles — which the user can still edit by hand, because the number is theirs. | ⬜ |
+| **1.2.5.5** | **🔴 Degradation, and it is the correctness heart of this item.** Permission denied · location services off · **the app backgrounded, which under when-in-use STOPS the updates** · a trip left running. **A silently under-counted trip is worse than no trip**: it is a deduction the user cannot know is wrong, on a tax return. | ⬜ |
+| **1.2.5.6** | **Verify + whole-item after-scan + assemble the TestFlight payload.** The device list is owed across 1.2.1, 1.2.3, 1.2.4 and this item; this step writes the single build's agenda. | ⬜ |
 
-**Exit line:** each entry carries a set-aside frozen at the rate it was logged under, a week's worth
-sums to a figure that never moves retroactively, and the YTD total still says what is really owed.
+**Exit line:** a user can start and stop a trip, the miles land on an entry they can still correct,
+and every way the capture can fall short is something the app says out loud rather than absorbs.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
-_1.2.1 (parked) and 1.2.4 (active) are not listed here — they are above. 1.2.2 and 1.2.3 are in **Closed**.
+_1.2.1 (parked) and 1.2.5 (active) are not listed here — they are above. 1.2.2, 1.2.3 and 1.2.4 are in **Closed**.
 An item appears in exactly one place._
 
 ⛔ **Numbers are STABLE IDs — do not renumber on insert.** A new item takes the **next free number**
@@ -158,7 +164,6 @@ out-of-order number is worth less than one more round of that.
 
 | # | item | notes |
 |---|---|---|
-| 1.2.5 | **⭐ Mileage trip toggle** 🔧 | NEW 2026-09-20 ([D8]). Start/stop capture on **when-in-use** location, populating the existing `MileageLog` shape. **v1.2's only native item.** Auto-detection → v1.3. |
 | 1.2.6 | **Premium slice** | Optimizer (headline) · safe-harbor payment tracker · per-quarter amounts in reminders · expense drill-down. **Before the screen passes** so each walks the final surface once. ⚠️ **Depends on 1.2.2** — the safe-harbor tracker cannot be built on the broken safe-harbor math. |
 | 1.2.7 | **Native iPad** | Adaptive split-view/sidebar. ~2× its original estimate (scoped at 6 screens, now 13). |
 | 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
@@ -181,6 +186,14 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.4 — Set-aside split by date and week ✅ DONE 2026-09-21, 6/6.** Every entry now freezes a
+  set-aside rate at log time — **the tax it actually adds**, so the increments telescope to the
+  year's real total — rolled up into Monday–Sunday weeks ([D13]), shown on the dashboard beside
+  the year total ([D15]), with legacy weeks marked estimated ([D14]) and an **adjustment row** so
+  the list visibly adds up. **272 unit · 50/50 Playwright · 11 plants, 9 caught — and the 2 that
+  PASSED each changed something.** 🔴 The whole-item scan caught the demo persona rendering every
+  week as "estimated". _Sub-step detail + 6 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.3 — Data-safety block ✅ DONE 2026-09-21, 5/5.** A decryption failure is now a **named** error
   instead of a `SyntaxError` about JSON · a key is **never minted while data exists** under an older
@@ -247,7 +260,7 @@ map is at the head of the log's item-spec section._
 
 **Gating 1.2.5 (the mileage toggle) — v1.2's only native item** _(said "1.2.3"; corrected 2026-09-21)_**:**
 1. **`PRIVACY_POLICY.md` + the hosted privacy page must disclose location collection** before the
-   build that carries it goes to review. ⚠️ **Collides with 1.2.8's "privacy-page single source of
+   build that carries it goes to review. ⚠️ **Collides with 1.2.10’s "privacy-page single source of
    truth"** — do that consolidation first or the disclosure lands in one copy and not the other.
 2. **A `NSLocationWhenInUseUsageDescription` string that justifies the capture**, and App Store
    review notes explaining it. When-in-use is a far lighter ask than background — **keep it that way**;
