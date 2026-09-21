@@ -15,14 +15,21 @@ const location = {
   stopThrows: false,
   startOptions: null as Record<string, unknown> | null,
   stopCalls: 0,
+  /** Whether permission is STILL granted, queried mid-trip — separate from the initial request. */
+  stillGranted: true,
+  queryThrows: false,
 };
 const storage = new Map<string, string>();
 let taskRegistered = false;
 
 vi.mock("expo-location", () => ({
   Accuracy: { High: 4 },
-  hasServicesEnabledAsync: vi.fn(async () => location.hasServicesEnabled),
+  hasServicesEnabledAsync: vi.fn(async () => {
+    if (location.queryThrows) throw new Error("query failed");
+    return location.hasServicesEnabled;
+  }),
   requestForegroundPermissionsAsync: vi.fn(async () => ({ granted: location.granted })),
+  getForegroundPermissionsAsync: vi.fn(async () => ({ granted: location.stillGranted })),
   startLocationUpdatesAsync: vi.fn(async (_task: string, options: Record<string, unknown>) => {
     if (location.startThrows) throw new Error("no");
     location.startOptions = options;
@@ -75,6 +82,8 @@ beforeEach(() => {
   location.stopThrows = false;
   location.startOptions = null;
   location.stopCalls = 0;
+  location.stillGranted = true;
+  location.queryThrows = false;
   storage.clear();
   taskRegistered = false;
 });
@@ -214,5 +223,49 @@ describe("resuming after the app was terminated", () => {
 
     expect(await tracker.resumeTripIfRunning()).toBe(false);
     expect(tracker.isTripActive()).toBe(false);
+  });
+});
+
+describe("diagnosing a trip that has gone quiet (1.2.5.5)", () => {
+  /**
+   * ⛔ Staleness alone cannot tell a parked car from a revoked permission, and guessing wrong harms
+   * the user either way — a false alarm at a long light, or silence while the trip is lost. So the
+   * cause is asked of the platform.
+   */
+  it("names the cause when the platform can give one", async () => {
+    const tracker = await loadTracker();
+
+    location.hasServicesEnabled = false;
+    expect(await tracker.diagnoseStall()).toEqual({ kind: "services-disabled" });
+
+    location.hasServicesEnabled = true;
+    location.stillGranted = false;
+    expect(await tracker.diagnoseStall()).toEqual({ kind: "permission-revoked" });
+  });
+
+  it("says no-signal rather than inventing a cause when everything is still permitted", async () => {
+    const tracker = await loadTracker();
+    location.hasServicesEnabled = true;
+    location.stillGranted = true;
+
+    // Nothing is wrong with permission or services, so the honest answer is "we are not receiving
+    // anything" -- which is also what a parked car looks like. Claiming more would be a guess.
+    expect(await tracker.diagnoseStall()).toEqual({ kind: "no-signal" });
+  });
+
+  it("does not turn its own failure into a diagnosis", async () => {
+    const tracker = await loadTracker();
+    location.queryThrows = true;
+
+    expect(await tracker.diagnoseStall()).toEqual({ kind: "no-signal" });
+  });
+
+  it("reports the running trip's health", async () => {
+    const tracker = await loadTracker();
+    await tracker.startTripTracking();
+
+    const health = tracker.currentTripHealth(Date.now() + 15 * 60_000);
+
+    expect(health.stale, "a trip with no fixes for 15 minutes is stale").toBe(true);
   });
 });

@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import {
+  currentTripHealth,
   currentTripMiles,
+  diagnoseStall,
   isTripActive,
   startTripTracking,
   stopTripTracking,
   watchTripMiles,
+  type TripStall,
 } from "../mileage/tripTracker";
 import { reportError } from "../errorReporting";
 import { radius, spacing, type, type Colors } from "../theme";
@@ -31,8 +34,39 @@ export function TripTrackerButton({ onTripFinished }: TripTrackerButtonProps) {
   const [running, setRunning] = useState(isTripActive);
   const [miles, setMiles] = useState(currentTripMiles);
   const [busy, setBusy] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
 
   useEffect(() => watchTripMiles(setMiles), []);
+
+  // ⚠️ 1.2.5.5: a trip that has quietly stopped receiving location still LOOKS like it is working —
+  // the button reads "Stop trip", the miles just never rise. That is the under-count this whole
+  // sub-step exists to prevent, so the running trip is checked rather than assumed, and the cause is
+  // asked of the platform instead of inferred from the silence.
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      // The not-running case is handled INSIDE the async body rather than as an early return above:
+      // clearing state synchronously in an effect triggers cascading renders (and the lint rule that
+      // says so), and this path has no reason to be synchronous.
+      if (!running) {
+        if (!cancelled) setWarning(null);
+        return;
+      }
+      const health = currentTripHealth();
+      if (!health.stale && !health.likelyForgotten) {
+        if (!cancelled) setWarning(null);
+        return;
+      }
+      const stall = health.stale ? await diagnoseStall() : ({ kind: "ok" } as TripStall);
+      if (!cancelled) setWarning(warningFor(stall, health.likelyForgotten));
+    };
+    void check();
+    const timer = running ? setInterval(() => void check(), 60_000) : undefined;
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) clearInterval(timer);
+    };
+  }, [running]);
 
   if (Platform.OS === "web") return null;
 
@@ -84,6 +118,12 @@ export function TripTrackerButton({ onTripFinished }: TripTrackerButtonProps) {
           {running ? `Stop trip · ${miles.toFixed(1)} mi` : "Track this trip"}
         </Text>
       </Pressable>
+      {warning !== null && (
+        <View style={styles.warning} accessibilityLiveRegion="polite">
+          <Ionicons name="warning-outline" size={14} color={colors.danger} />
+          <Text style={styles.warningText}>{warning}</Text>
+        </View>
+      )}
       <Text style={styles.hint}>
         {running
           ? "Measuring while you drive. Your phone shows a location indicator until you stop."
@@ -91,6 +131,26 @@ export function TripTrackerButton({ onTripFinished }: TripTrackerButtonProps) {
       </Text>
     </View>
   );
+}
+
+/**
+ * What to say about a trip that has gone quiet or been left running.
+ *
+ * ⚠️ Returns null for `no-signal` **while the trip is otherwise fine**: permission and services are
+ * both in order, so the most likely explanation is a parked car, and crying wolf at every long light
+ * teaches the user to ignore the one warning that matters.
+ */
+function warningFor(stall: TripStall, likelyForgotten: boolean): string | null {
+  switch (stall.kind) {
+    case "services-disabled":
+      return "Location is off, so this trip has stopped counting miles. Turn on Location Services, or type your miles in.";
+    case "permission-revoked":
+      return "SetAside lost location access, so this trip has stopped counting miles. Re-allow it in Settings, or type your miles in.";
+    default:
+      return likelyForgotten
+        ? "This trip has been running a long time. If you've finished driving, stop it so it doesn't keep counting."
+        : null;
+  }
 }
 
 /** One message per failure, each naming what the user can actually do about it. */
@@ -133,5 +193,7 @@ function createStyles(colors: Colors) {
     label: { ...type.label, color: colors.primary },
     labelRunning: { color: colors.danger },
     hint: { ...type.micro, color: colors.inkSubtle, marginTop: 6 },
+    warning: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 8 },
+    warningText: { ...type.micro, color: colors.danger, flex: 1 },
   });
 }

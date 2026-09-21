@@ -1,7 +1,15 @@
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { addPoint, startTrip, tripMiles, type TripPoint, type TripState } from "./trip";
+import {
+  addPoint,
+  startTrip,
+  tripHealth,
+  tripMiles,
+  type TripHealth,
+  type TripPoint,
+  type TripState,
+} from "./trip";
 
 /**
  * The live trip: a background location task, the state it accumulates, and the way the UI watches it.
@@ -144,6 +152,40 @@ export async function stopTripTracking(): Promise<number> {
 
 export function isTripActive(): boolean {
   return active;
+}
+
+export type TripStall =
+  | { kind: "ok" }
+  | { kind: "permission-revoked" }
+  | { kind: "services-disabled" }
+  | { kind: "no-signal" };
+
+/**
+ * Why a running trip has gone quiet — asked of the platform, not guessed from the silence.
+ *
+ * ⛔ **`stale` alone cannot tell a parked car from a revoked permission**, and showing the wrong one
+ * is its own harm: telling a driver their permission was revoked when they were at a long light is
+ * a false alarm, and staying silent when it really was revoked loses them the trip. So the ambiguity
+ * is resolved by asking iOS directly, and `no-signal` is returned **only** when permission and
+ * services are both still fine — at which point "we are not receiving anything" is the honest answer
+ * rather than a diagnosis.
+ */
+export async function diagnoseStall(): Promise<TripStall> {
+  try {
+    if (!(await Location.hasServicesEnabledAsync())) return { kind: "services-disabled" };
+    const { granted } = await Location.getForegroundPermissionsAsync();
+    if (!granted) return { kind: "permission-revoked" };
+    return { kind: "no-signal" };
+  } catch {
+    // The query itself failed, which says nothing about the trip. Claiming a cause here would be
+    // inventing one.
+    return { kind: "no-signal" };
+  }
+}
+
+/** The running trip's health, for a screen deciding whether to warn. */
+export function currentTripHealth(now: number = Date.now()): TripHealth {
+  return tripHealth(state, now);
 }
 
 /** Current miles, for a screen mounting mid-trip. */

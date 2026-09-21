@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  LONG_TRIP_MINUTES,
   MAX_ACCURACY_METERS,
   MAX_SPEED_MPH,
   MIN_STEP_METERS,
   addPoint,
   distanceMeters,
   metersToMiles,
+  STALE_AFTER_MINUTES,
   startTrip,
+  tripHealth,
   tripMiles,
   type TripPoint,
 } from "../mileage/trip";
@@ -165,3 +168,63 @@ function metersPerMinuteAt(mph: number): number {
   expect(mph).toBeLessThan(MAX_SPEED_MPH);
   return (mph / 60) * 1609.344;
 }
+
+describe("tripHealth (1.2.5.5)", () => {
+  const T0 = 1_760_000_000_000;
+  const minutes = (n: number) => T0 + n * 60_000;
+
+  it("counts a trip stale from its START when no fix has ever arrived", () => {
+    // ⭐ The worst case, and the one a lastFixAt-only rule misses entirely: permission granted, the
+    // trip starts, and nothing is ever delivered. With no fix there is no "time since last fix", so
+    // a naive check would call this healthy forever while it recorded nothing.
+    const trip = startTrip(T0);
+
+    expect(tripHealth(trip, minutes(STALE_AFTER_MINUTES - 1)).stale).toBe(false);
+    expect(tripHealth(trip, minutes(STALE_AFTER_MINUTES)).stale).toBe(true);
+    expect(tripHealth(trip, minutes(STALE_AFTER_MINUTES)).minutesSinceLastFix).toBeUndefined();
+  });
+
+  it("goes stale from the last ARRIVAL, including a rejected one", () => {
+    // A reading too imprecise to use still proves location is flowing, so it must reset the clock.
+    let trip = startTrip(T0);
+    trip = addPoint(trip, { ...ORIGIN, timestamp: minutes(1), accuracy: MAX_ACCURACY_METERS + 100 });
+
+    expect(trip.rejectedForAccuracy).toBe(1);
+    expect(tripHealth(trip, minutes(1 + STALE_AFTER_MINUTES - 1)).stale).toBe(false);
+    expect(tripHealth(trip, minutes(1 + STALE_AFTER_MINUTES)).stale).toBe(true);
+  });
+
+  it("reports how long it has been running, and flags one left going", () => {
+    const trip = startTrip(T0);
+
+    expect(tripHealth(trip, minutes(30)).runningMinutes).toBe(30);
+    expect(tripHealth(trip, minutes(30)).likelyForgotten).toBe(false);
+    expect(tripHealth(trip, minutes(LONG_TRIP_MINUTES)).likelyForgotten).toBe(true);
+  });
+
+  it("calls a trip suspect when more was discarded than used", () => {
+    let good = startTrip(T0);
+    good = addPoint(good, { ...ORIGIN, timestamp: minutes(0) });
+    good = addPoint(good, pointNorthOf(ORIGIN, 1609.344, 60));
+    expect(good.accepted).toBe(1);
+    expect(tripHealth(good, minutes(1)).qualitySuspect).toBe(false);
+
+    let bad = good;
+    for (let i = 0; i < 3; i++) {
+      bad = addPoint(bad, pointNorthOf(ORIGIN, 4000 + i, 120 + i, MAX_ACCURACY_METERS + 50));
+    }
+    expect(tripHealth(bad, minutes(2)).qualitySuspect).toBe(true);
+  });
+
+  it("calls a trip suspect when NOTHING usable arrived at all", () => {
+    // accepted === 0, so there is no ratio to take — the rule has to handle it separately or a trip
+    // that rejected every single reading would look fine.
+    let trip = startTrip(T0);
+    for (let i = 0; i < 5; i++) {
+      trip = addPoint(trip, { ...ORIGIN, timestamp: minutes(i), accuracy: MAX_ACCURACY_METERS + 1 });
+    }
+
+    expect(trip.accepted).toBe(0);
+    expect(tripHealth(trip, minutes(5)).qualitySuspect).toBe(true);
+  });
+});

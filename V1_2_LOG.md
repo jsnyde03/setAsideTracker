@@ -11,6 +11,47 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.5.5 Degradation — SUB-TASK before + after-scan · 2026-09-21
+
+**Shipped.** `tripHealth` (pure) + `diagnoseStall` + a warning line under the running trip.
+**305 unit (was 296) · 50/50 Playwright · typecheck + lint clean.**
+
+⚠️ **The before-scan found this row's own premise superseded — by a decision taken inside the same
+item.** It listed *"the app backgrounded, which under when-in-use STOPS the updates"* as a headline
+case; [D17] removed that case two sub-steps earlier. What survived is the sentence underneath it —
+*a silently under-counted trip is worse than no trip* — re-aimed at the failures that remain:
+permission revoked mid-drive, location services switched off, a trip left running.
+
+⛔ **The problem is that a stalled trip looks exactly like a working one.** The button still reads
+"Stop trip", the miles simply never rise, and a driver has no way to tell that from not having moved.
+
+**Two design calls, each with a test that fails without it:**
+
+1. **Staleness counts from the trip's START, not only from the last fix.** A trip that never received
+   a single reading has no "time since last fix" at all, so a `lastFixAt`-only rule would call the
+   worst case healthy forever. Planted: `(minutesSinceLastFix ?? 0)` instead of `?? runningMinutes`
+   reddens exactly that test.
+2. ⭐ **The cause is asked of the platform, never inferred from the silence.** A parked car and a
+   revoked permission are indistinguishable from here. `diagnoseStall` queries services and
+   permission, and returns `no-signal` **only when both are fine** — at which point "we are not
+   receiving anything" is an honest report rather than a diagnosis. Planted: always blaming
+   permission reddens the no-false-alarm test.
+
+**And the UI says nothing for `no-signal` on an otherwise healthy trip.** That is deliberate and it
+is the harder half: warning at every long light would train the user to dismiss the warning that
+actually means their trip is dead.
+
+⚠️ **A `lastFixAt` subtlety worth keeping:** it stamps on **every arrival, including rejected ones**.
+A reading too imprecise to use still proves location is flowing, so it must reset the staleness
+clock — otherwise a stream of poor fixes reads as a dead trip, and the user gets a false alarm while
+the app is working as designed.
+
+⚠️ **Lint caught a real thing, not a style nit:** clearing the warning synchronously in the effect
+body trips `react-hooks/set-state-in-effect`. Moved inside the async check, which is where it
+belonged — the not-running path had no reason to be synchronous.
+
+---
+
 ### 🔎 1.2.5.1 One privacy policy, and the location disclosure — SUB-TASK before + after-scan · 2026-09-21
 
 **Shipped.** `docs/privacy.html` is the only privacy policy ([D16]); `PRIVACY_POLICY.md` is a

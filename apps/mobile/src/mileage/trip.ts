@@ -40,6 +40,12 @@ export interface TripState {
   rejectedForSpeed: number;
   /** Accepted fixes that were within the jitter threshold, so the phone had not really moved. */
   ignoredAsStationary: number;
+  /** Fixes that passed every filter and moved the total. The denominator for "was this trip any good". */
+  accepted: number;
+  /** When the trip began, epoch ms. A timestamp, not a position — safe to persist. */
+  startedAt?: number;
+  /** When a reading last ARRIVED, accepted or not. The signal for "is location still flowing". */
+  lastFixAt?: number;
 }
 
 /**
@@ -80,12 +86,14 @@ export function distanceMeters(a: TripPoint, b: TripPoint): number {
   return 2 * EARTH_RADIUS_METERS * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-export function startTrip(): TripState {
+export function startTrip(now: number = Date.now()): TripState {
   return {
     miles: 0,
     rejectedForAccuracy: 0,
     rejectedForSpeed: 0,
     ignoredAsStationary: 0,
+    accepted: 0,
+    startedAt: now,
   };
 }
 
@@ -96,35 +104,100 @@ export function startTrip(): TripState {
  * from yet, which is why a trip that receives a single fix is 0 miles rather than an error.
  */
 export function addPoint(state: TripState, point: TripPoint): TripState {
+  // ⚠️ Stamped for EVERY arrival, including rejected ones. This answers "is the OS still sending us
+  // location", which is a different question from "did that reading count" — and it is the one that
+  // distinguishes a revoked permission from a car sitting at a long light.
+  const arrived = { ...state, lastFixAt: point.timestamp };
+
   if (point.accuracy !== undefined && point.accuracy > MAX_ACCURACY_METERS) {
-    return { ...state, rejectedForAccuracy: state.rejectedForAccuracy + 1 };
+    return { ...arrived, rejectedForAccuracy: arrived.rejectedForAccuracy + 1 };
   }
 
-  if (!state.anchor) {
-    return { ...state, anchor: point };
+  const anchor = arrived.anchor;
+  if (!anchor) {
+    return { ...arrived, anchor: point };
   }
 
-  const meters = distanceMeters(state.anchor, point);
-  const elapsedSeconds = Math.max(0, (point.timestamp - state.anchor.timestamp) / 1000);
+  const meters = distanceMeters(anchor, point);
+  const elapsedSeconds = Math.max(0, (point.timestamp - anchor.timestamp) / 1000);
 
   // A jump no vehicle could have made is a bad fix, not travel. Guarded against a zero interval,
   // where speed is undefined rather than infinite — two fixes can share a timestamp.
   if (elapsedSeconds > 0) {
     const mph = metersToMiles(meters) / (elapsedSeconds / 3600);
     if (mph > MAX_SPEED_MPH) {
-      return { ...state, rejectedForSpeed: state.rejectedForSpeed + 1 };
+      return { ...arrived, rejectedForSpeed: arrived.rejectedForSpeed + 1 };
     }
   }
 
   if (meters < MIN_STEP_METERS) {
     // Anchor held, not advanced — see MIN_STEP_METERS.
-    return { ...state, ignoredAsStationary: state.ignoredAsStationary + 1 };
+    return { ...arrived, ignoredAsStationary: arrived.ignoredAsStationary + 1 };
   }
 
-  return { ...state, miles: state.miles + metersToMiles(meters), anchor: point };
+  return {
+    ...arrived,
+    miles: arrived.miles + metersToMiles(meters),
+    anchor: point,
+    accepted: arrived.accepted + 1,
+  };
 }
 
 /** The number that reaches an entry: whole tenths of a mile, which is how mileage is claimed. */
 export function tripMiles(state: TripState): number {
   return Math.round(state.miles * 10) / 10;
+}
+
+/** No reading for this long means something may be wrong rather than the car being parked. */
+export const STALE_AFTER_MINUTES = 10;
+
+/** Past this, a trip was probably left running rather than driven. */
+export const LONG_TRIP_MINUTES = 240;
+
+/**
+ * Whether a running trip is actually working — the questions a user cannot answer by looking at a
+ * number that is quietly not going up.
+ *
+ * ⚠️ **1.2.5.5 exists because a silently under-counted trip is worse than no trip at all.** It is a
+ * mileage deduction: too low costs the user money they were owed, and nothing on screen distinguishes
+ * "you have not moved" from "your location permission was revoked twenty minutes ago". These flags
+ * are the input to saying so out loud.
+ */
+export interface TripHealth {
+  /** Minutes since the trip began. */
+  runningMinutes: number;
+  /** Minutes since a reading last ARRIVED, accepted or not. Undefined before the first one. */
+  minutesSinceLastFix?: number;
+  /**
+   * Nothing has arrived for {@link STALE_AFTER_MINUTES}.
+   *
+   * ⚠️ **Ambiguous on its own, deliberately.** A parked car and a revoked permission look identical
+   * from here, so this is a prompt to *ask the platform* which it is — never a conclusion to show
+   * the user by itself.
+   */
+  stale: boolean;
+  /** Running long enough that it was probably forgotten rather than driven. */
+  likelyForgotten: boolean;
+  /**
+   * More readings were discarded as too imprecise than were used — so the distance is probably
+   * short, and the user should know that before claiming it.
+   */
+  qualitySuspect: boolean;
+}
+
+export function tripHealth(state: TripState, now: number = Date.now()): TripHealth {
+  const runningMinutes = state.startedAt === undefined ? 0 : (now - state.startedAt) / 60000;
+  const minutesSinceLastFix =
+    state.lastFixAt === undefined ? undefined : (now - state.lastFixAt) / 60000;
+
+  return {
+    runningMinutes,
+    minutesSinceLastFix,
+    // Before the first fix, the trip is judged from when it STARTED — otherwise a trip that never
+    // received anything at all would never be called stale, which is the worst case of the lot.
+    stale: (minutesSinceLastFix ?? runningMinutes) >= STALE_AFTER_MINUTES,
+    likelyForgotten: runningMinutes >= LONG_TRIP_MINUTES,
+    qualitySuspect:
+      state.accepted === 0 ? state.rejectedForAccuracy >= 5 : state.rejectedForAccuracy > state.accepted,
+  };
 }
