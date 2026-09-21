@@ -24,8 +24,8 @@
 > ship as soon as it is done.** Do not reintroduce a target.
 >
 > ✅ **1.2.2 (7/7) and 1.2.3 (5/5) ARE COMPLETE** and closed. **▶ ACTIVE: 1.2.4, the set-aside split
-> by date and week** ([D7]), decomposed below — **1.2.4.1 is a [DECISION] and it is Jason's**, three
-> questions that shape everything after it. **⏸ 1.2.1 is 7/7 built**, deferred to ~November with Maestro.
+> by date and week** ([D7]), decomposed below. **1.2.4.1 is answered — [D13]/[D14]/[D15], 2026-09-21.
+> ▶ Next action: 1.2.4.2, and its before-scan is owed first.** **⏸ 1.2.1 is 7/7 built**, deferred to ~November with Maestro.
 > Health: **102** engine · **248** mobile unit · **43/43** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all in `components/`, re-count at 1.2.11)_.
 >
@@ -132,7 +132,7 @@ they are a hypothesis again, not a finding. Spec → [V1_2_LOG.md](V1_2_LOG.md).
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.4.1** | **[DECISION] the three questions the spec left open**, all Jason's, all shaping what follows: **(a)** which week boundary — ISO Mon–Sun, or the user's own pay week · **(b)** an entry logged before this exists has no frozen figure: back-fill at today's rate, or render "—" · **(c)** does the weekly row sit on the dashboard or behind a drill-down. | ⬜ |
+| **1.2.4.1** | ✅ **DONE 2026-09-21.** All three answered by Jason — **[D13]** week is a fixed **Mon–Sun** · **[D14]** legacy entries get a computed figure and any week containing one is **marked estimated** · **[D15]** "this week" goes **on the dashboard** beside the YTD total, past weeks behind a drill-down. | ✅ |
 | **1.2.4.2** | **Freeze the set-aside at log time** — one optional `Entry` field, written when the entry is saved. ⭐ **[D7]'s whole point:** a per-period figure derived from the year's *average* rate moves retroactively every time the user earns more, so opening the app in November would change last July's number. ⚠️ **Verify the round-trip premise first** — it rests on `parseBackupSnapshot` passing entries through wholesale, which is also the hole filed at 1.2.10. | ⬜ |
 | **1.2.4.3** | **The weekly roll-up**, as a pure function over entries — group by week, sum the frozen figures. Pure so it is testable without the app, the way `calculations.ts` already is. | ⬜ |
 | **1.2.4.4** | **The surface.** Weekly sits **alongside** the YTD lump, never instead of it — the year total is what is actually owed. Free tier: this is the core set-aside job, not the tax-time axis. | ⬜ |
@@ -228,6 +228,12 @@ map is at the head of the log's item-spec section._
 | **[D8]** | **Mileage gets a start/stop toggle in v1.2 on when-in-use location; auto-detection waits for v1.3.** The **widget is cut to v1.3** so v1.2 carries one native item, not two. | Jason 2026-09-20 |
 | **[D9]** | ✅ **NO SHIP DATE. Work through the queue and ship ASAP.** August is retired and not replaced — the version is paced by the work, not by a date. ⚠️ **Do not reintroduce a target date**; the correctness exposure from [D10] is the reason to go fast, not a reason to set one and cut against it. | Jason 2026-09-20 |
 | **[D11]** | **The demo persona stays at ONE tax year.** Year-over-year therefore cannot be previewed — accepted, because the gate is about data, not payment. Revisit only if the demo becomes the primary premium sales surface. | Jason 2026-09-20 |
+| **[D13]** | **A week is Monday–Sunday, fixed.** DoorDash, Uber and Spark all run their pay weeks Mon–Sun, so the app's week matches the earnings statement the user is comparing it against. **Not configurable** — a user-chosen week start is a setting nobody asked for that every weekly figure would then depend on. | Jason 2026-09-21 |
+
+| **[D14]** | **Entries logged before the frozen field exists get a computed figure, and any week containing one is MARKED ESTIMATED.** Rejected both alternatives deliberately: "—" greets every existing user with a wall of blanks across data they really have, and a silent back-fill presents a reconstructed number as though it had been frozen at the time — **the exact thing [D7] exists to prevent**. The label is what makes the third option honest rather than convenient. | Jason 2026-09-21 |
+
+| **[D15]** | **"This week" sits on the dashboard beside the YTD total**, past weeks behind a drill-down. [D7]'s point is that the week becomes the unit the user acts on, and a figure behind a tap does not become anyone's rhythm. The year total stays — it is what is actually owed. | Jason 2026-09-21 |
+
 | **[D12]** | **The recovery surface offers three explicit routes — retry, restore-from-backup, erase — and nothing silent.** ⚠️ **Retry is not politeness:** `expo-secure-store` defaults to `WHEN_UNLOCKED`, so a launch before the device's first unlock can return null **transiently**, which is not key loss — erasing or re-keying on it would destroy good data. Restore is the only genuine recovery the app has, and a user stranded on this screen cannot reach Settings to find it. | Jason 2026-09-21 |
 | **[D10]** | **No interim patch release — the three live money-wrong bugs are fixed in v1.2, not in a v1.1.2.** Recommendation on record was a cheap disclosure patch (MFJ warning + safe-harbor caveat) while the real fixes were built; **Jason chose the single correct release instead.** Tradeoff accepted knowingly: v1.1.1 keeps understating what users owe until v1.2 ships. | Jason 2026-09-20 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
