@@ -17,6 +17,7 @@ import { annualIncomeFromPaycheck, getCountiesForState } from "../calculations";
 import { Chip } from "../components/Chip";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
+import { StatePicker } from "../components/StatePicker";
 import { TextField } from "../components/TextField";
 import { W2_JOB_SUPPORT_ENABLED } from "../featureFlags";
 import { spacing, type, type Colors } from "../theme";
@@ -189,15 +190,10 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
             />
           )}
 
-          <TextField
-            label="State you primarily work in"
-            hint="State tax is calculated for all 50 states + DC. U.S. territories aren't supported yet — you'll see a warning on the dashboard if that applies to you."
-            placeholder="e.g. CA"
-            value={state}
-            onChangeText={setState}
-            autoCapitalize="characters"
-            maxLength={2}
-          />
+          {/* Was a free-text field: typing "California" produced the key CALIFORNIA, which matched
+              nothing, so the app computed $0 state tax and warned that California wasn't supported
+              — over a config holding all 51. Fixed at 1.2.2.6. */}
+          <StatePicker value={state} onChange={setState} />
 
           {availableCounties && (
             <>

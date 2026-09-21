@@ -11,6 +11,47 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.2.6 State picker — SUB-TASK after-scan · 2026-09-21
+
+**Shipped.** `src/states.ts` (list + `searchStates` + `stateName`), `components/StatePicker.tsx`,
+wired into onboarding **and** the edit screen. **226 unit (was 212) · 38/38 Playwright (was 34).**
+
+⭐ **Jason: "All states should be supported." They already were, and that was the trap.** The engine
+has had **50 states + DC** the whole time — measured, not assumed: 51 configs, none missing, none
+extra. **The defect was entirely in the input.** Free text meant "California" became the key
+`CALIFORNIA`, which matched nothing, so the app computed **$0 state tax** and displayed *"CALIFORNIA
+isn't supported yet"* — a false statement about its own capability, on the first screen anyone sees.
+A user who believed it left; a user who ignored it got a wrong number.
+
+⚡ **The list is hand-written, which is the thing that drifts — so it is checked, not trusted.**
+`states.test.ts` asserts `US_STATES` matches the engine's configured keys **exactly, in both
+directions, for every tax year the engine ships**: a name with no config offers a state the app
+cannot tax, a config with no name hides one that works. Dropping DC from the list fails **5** tests,
+including both year checks. That turns "all states are supported" into a fact the suite enforces
+rather than a claim in a hint string.
+
+⚠️ **The constraint that shaped the design: Maestro is out of minutes until ~November.** Every flow
+selects this input by *"State you primarily work in"* and taps it by *"e.g. CA"*, then types a bare
+code. A renamed selector or a newly-required tap could not be re-validated for weeks. So:
+- the placeholder and accessible name are **deliberately unchanged**, and
+- **an exact two-letter code auto-selects with no tap**, keeping every existing flow working.
+
+⭐ The query is deliberately **not cleared** on auto-select — clearing it would eat the rest of the
+word, so "California" would select CA at the second letter and then type "lifornia" into an empty
+field. Subtle, and only visible by walking the keystrokes.
+
+**A search-and-chips field, not a modal:** it matches the county selector directly above it, adds no
+navigation, and keeps working under react-native-web — where a native picker renders as nothing and
+the e2e suite would go blind precisely where this defect lived.
+
+**Mutation-verified, one plant per claim:** reverting `searchStates` to code-only — the original
+defect — fails **3** tests; dropping DC fails **5**. Both restored, full suite re-run, ports free.
+
+**Territories:** still unsupported, and now *said* rather than implied. The empty state names them
+instead of silently returning `$0` for an unrecognised key.
+
+---
+
 ### 🔎 1.2.2.5 Dependents in the withholding credit — SUB-TASK after-scan · 2026-09-21
 
 **Shipped.** `estimateW2Withholding` takes `numberOfChildren`, applies the CTC (W-4 Step 3) and
