@@ -141,6 +141,23 @@ export interface Entry {
   /** User-defined expense categories beyond the four fixed buckets. Optional and Premium-authored;
    * absent on older entries and for free users. See {@link CustomExpense}. */
   customExpenses?: CustomExpense[];
+  /**
+   * The fraction of this entry's own profit to set aside for tax, **frozen at the moment it was
+   * logged** ([D7]) — e.g. `0.2734`. Multiply by {@link entryNetProfit} to get the dollar figure.
+   *
+   * ⚠️ **Why a rate is stored rather than a dollar amount.** Tax is progressive, so a per-shift
+   * figure derived from the year's *average* rate moves retroactively every time the user earns
+   * more: open the app in November and last July's number has changed, which is the opposite of
+   * something you can track against. Freezing it means a week's total never moves once the week has
+   * passed. A *rate* rather than an *amount* additionally means editing an entry's pay updates its
+   * set-aside — at the rate that was in effect when it was logged, which is the property being
+   * preserved. The drift this creates against the true year total is real, expected, and reported
+   * by the existing catch-up line rather than hidden.
+   *
+   * Absent on every entry logged before v1.2 and on any entry with no positive profit; see
+   * {@link computeSetAsideRate} for how it is derived and what absence means.
+   */
+  setAsideRate?: number;
   createdAt: string;
 }
 

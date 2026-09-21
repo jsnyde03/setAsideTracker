@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Entry, FiledYearTax, LocalUserProfile, TaxProfile } from "../types";
 import { reportError } from "../errorReporting";
+import { computeSetAsideRate } from "../calculations";
 import {
   addEntry,
   clearAllLocalData,
@@ -61,6 +62,13 @@ interface AppDataValue {
 }
 
 const AppDataContext = createContext<AppDataValue | null>(null);
+
+/** The calendar year an entry belongs to. A back-dated entry is rated against ITS year, not
+ *  today's — logging a December shift on 2 January must not rate it against a year with no
+ *  income in it yet. Dates are stored as YYYY-MM-DD. */
+function entryYear(entry: Entry): number {
+  return Number(entry.date.slice(0, 4));
+}
 
 /**
  * Owns the app's data — profile, tax profile, entries — and the two settings that aren't the theme's.
@@ -126,11 +134,34 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setTaxProfile(newTaxProfile);
   }, []);
 
-  const saveEntry = useCallback(async (entry: Entry, isEditing: boolean) => {
-    const updated = isEditing ? await updateEntry(entry) : await addEntry(entry);
-    setEntries(updated);
-    return updated;
-  }, []);
+  const saveEntry = useCallback(
+    async (entry: Entry, isEditing: boolean) => {
+      // ⛔ The rate is frozen on CREATE and never on edit — that is the whole of [D7]. Re-deriving
+      // it when an entry is edited would silently re-rate it at today's brackets, which is exactly
+      // the retroactive movement the frozen field exists to prevent. An edit changes the dollars
+      // (rate × the new profit) and never the rate.
+      //
+      // ⚠️ **But an edit actively DROPS it, which is why the carry-forward below is not belt and
+      // braces.** The entry form builds a complete object literal field by field, so anything it
+      // does not name is gone on save — `id` and `createdAt` survive only because they are copied
+      // there explicitly. `setAsideRate` is the app's first `Entry` field the user does not edit, so
+      // it is the first to meet that shape. Restored here rather than in the form because the form's
+      // literal *is* the hazard, and the next screen that saves an entry would repeat it.
+      // Named explicitly, never `{...previous, ...entry}` — a blanket merge would resurrect the
+      // optional fields a user just cleared.
+      const previous = isEditing ? entries.find((e) => e.id === entry.id) : undefined;
+      const toSave: Entry = isEditing
+        ? { ...entry, setAsideRate: entry.setAsideRate ?? previous?.setAsideRate }
+        : taxProfile
+          ? { ...entry, setAsideRate: computeSetAsideRate(entries, entry, taxProfile, entryYear(entry)) }
+          : entry;
+
+      const updated = isEditing ? await updateEntry(toSave) : await addEntry(toSave);
+      setEntries(updated);
+      return updated;
+    },
+    [entries, taxProfile]
+  );
 
   const removeEntry = useCallback(async (entryId: string) => {
     const updated = await deleteEntryFromStore(entryId);

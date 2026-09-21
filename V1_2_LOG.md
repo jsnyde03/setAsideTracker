@@ -11,6 +11,68 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.4.2 Freeze the set-aside at log time — SUB-TASK before + after-scan · 2026-09-21
+
+**Before-scan: all three of the spec's premises re-verified against the current code**, since they
+were measured before 1.2.2 moved the tax math and 1.2.3 moved the storage path. All still hold —
+`netAmountToSetAside` is still one YTD figure, **there is still no week concept anywhere** (the only
+weekly number is `weeklyCatchUpAmount`, which renders only when already behind, and
+`PAY_PERIODS_PER_YEAR`, which is about W2 paychecks), and `parseBackupSnapshot` still passes entries
+through wholesale so a new optional field round-trips for free. Nothing surfaced to defer.
+
+**Shipped.** `setAsideRate?: number` on `Entry`, `entryNetProfit`, `computeSetAsideRate`,
+`entrySetAside`, and the provider freezing on create. **256 unit (was 248) · 45/45 Playwright
+(was 43) · typecheck + lint clean.**
+
+⭐ **The design decision, made at the code rather than in the plan: the frozen figure is the tax the
+entry ACTUALLY ADDS.** `f(existing + this) − f(existing)`, where `f` is the same
+`netAmountToSetAside` the dashboard renders. Three things fall out of that rather than being built:
+
+1. **Progressive brackets, the SE wage base, state rules and the W2 withholding credit are all
+   handled by construction** — there is no second tax path to drift from the real one, which is the
+   same argument that made 1.2.2.3 route safe harbor through `estimateFromAggregate`.
+2. **The increments telescope: they sum to the year's true total.** So a week's row is a real slice
+   of a real number, not an apportionment. A test pins it, and it is what 1.2.4.5 will reconcile
+   *against* once rates move.
+3. **Early in a year where a W2 job already over-withholds, the rate is 0** — the correct answer,
+   arrived at with no special case.
+
+**Two deliberate departures, both recorded because they are lossy:**
+- **A rate, not a dollar amount.** [D7] says "frozen at the rate in effect when logged", and storing
+  the rate means editing an entry's pay moves its set-aside *at the old rate* — the property being
+  preserved. A stored amount would sit still while the pay changed underneath it.
+- **Clamped to ≥ 0, which gives up exactness on purpose.** A shift whose mileage deduction exceeds
+  its pay genuinely *reduces* the year's tax. That stays true in the year total, but "set aside
+  −$12" is not an instruction, and for a tax app the safe direction is setting aside slightly too
+  much. The residue is the reconciliation 1.2.4.5 owns.
+
+⛔ **The e2e found a defect no unit test could have: an edit DROPPED the field.**
+`computeSetAsideRate` was correct and covered; the provider called it; and editing an entry still
+erased the result. **`AddEntryScreen` builds a complete object literal field by field** — `id` and
+`createdAt` survive only because they are explicitly copied — so anything the form does not name is
+gone on save. `setAsideRate` is the app's **first `Entry` field the user does not edit**, so it is
+the first to meet that shape, and every future one will meet it too. Carried forward in the
+provider rather than the form, because the form's literal *is* the hazard and the next screen to
+save an entry would repeat it. Explicitly named, never `{...previous, ...entry}`, which would
+resurrect optional fields a user had just cleared.
+⚡ **This is the memory `tested-helper-is-not-a-used-helper` landing a third time** — and the reason
+the spec drives the real save path through the UI and reads what actually hit storage.
+
+**Two plants, both caught:** the *average* rate in place of the increment (3 unit tests red,
+including the telescoping sum) · re-rating on edit (the e2e red). ⚠️ **One test did NOT move under
+the first plant and that is information:** *"does not move a logged entry's figure when more is
+earned later"* passes under an average rate too, because the freezing is done by *storage*, not by
+the formula. It pins the freeze mechanism, not the choice of rate — which is a real property, just
+not the one its name suggests. Left as is, with this note.
+
+⚠️ **`vitest` does not typecheck.** The first version of this test file named two `TaxProfile`
+fields that do not exist (`numberOfChildren`, `w2AnnualIncome`) and ran green — so the W2 fixture
+was asserting over a W2 job with **no salary at all**. Only `tsc` found it. The suite being green
+says nothing about a fixture being what it claims; the guard assertion inside that test is what
+made the correction verifiable.
+
+---
+
 ### 🔎 1.2.3 Data-safety block — WHOLE-ITEM after-scan · 2026-09-21
 
 **COMPLETE, 5/5.** **248 mobile unit (from 226) · 102 engine · 43/43 Playwright (from 38) ·

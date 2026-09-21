@@ -133,7 +133,7 @@ they are a hypothesis again, not a finding. Spec → [V1_2_LOG.md](V1_2_LOG.md).
 | # | sub-step | scan |
 |---|---|---|
 | **1.2.4.1** | ✅ **DONE 2026-09-21.** All three answered by Jason — **[D13]** week is a fixed **Mon–Sun** · **[D14]** legacy entries get a computed figure and any week containing one is **marked estimated** · **[D15]** "this week" goes **on the dashboard** beside the YTD total, past weeks behind a drill-down. | ✅ |
-| **1.2.4.2** | **Freeze the set-aside at log time** — one optional `Entry` field, written when the entry is saved. ⭐ **[D7]'s whole point:** a per-period figure derived from the year's *average* rate moves retroactively every time the user earns more, so opening the app in November would change last July's number. ⚠️ **Verify the round-trip premise first** — it rests on `parseBackupSnapshot` passing entries through wholesale, which is also the hole filed at 1.2.10. | ⬜ |
+| **1.2.4.2** | ✅ **DONE 2026-09-21.** `setAsideRate` on `Entry`, frozen by the provider on create. ⭐ **It is the tax the entry ACTUALLY ADDS** — `f(existing + this) − f(existing)` through the same `netAmountToSetAside` the dashboard shows — so brackets, the SE wage base, state rules and the W2 credit are handled by construction, with no parallel tax path. The increments **telescope to the year's real total**, which is what will make the weekly rows add up, and a test pins that. A *rate* rather than a dollar amount, so an edit moves the dollars at the frozen rate. ⛔ **The e2e caught a defect no unit test could:** an edit DROPPED the field — the entry form builds a complete object literal, so anything it does not name is lost on save, and this is the app's first `Entry` field the user does not edit. Carried forward in the provider, not the form. **256 unit (was 248) · 45/45 Playwright (was 43) · 2 plants, both caught.** | ✅ |
 | **1.2.4.3** | **The weekly roll-up**, as a pure function over entries — group by week, sum the frozen figures. Pure so it is testable without the app, the way `calculations.ts` already is. | ⬜ |
 | **1.2.4.4** | **The surface.** Weekly sits **alongside** the YTD lump, never instead of it — the year total is what is actually owed. Free tier: this is the core set-aside job, not the tax-time axis. | ⬜ |
 | **1.2.4.5** | **Reconcile the drift.** Frozen figures will not sum to the true year total once the rate moves; `weeklyCatchUpAmount` already exists to say so, and today renders **only when already behind**. | ⬜ |
@@ -306,6 +306,19 @@ already present).
   non-negative. Pair with the 1099 reconciliation item; both are the logged total not matching reality.
 - **No multi-state or part-year residency** — a single state of residence only.
 
+- **⚠️ Any future non-user-edited `Entry` field will be DROPPED on edit, and nothing warns → 1.2.11.**
+  `AddEntryScreen.handleSave` builds a complete `Entry` literal field by field; `id` and `createdAt`
+  survive only because they are copied there by hand. 1.2.4.2 hit this with `setAsideRate` and fixed
+  it at the provider, but the *shape* is still there and the next such field repeats it. A lint rule
+  cannot see it; what would is a test asserting that saving an edit preserves every key the previous
+  entry had except the ones the form owns. **Deferred, not folded:** it is a test-infra guard over a
+  class, and 1.2.11 is the CI-gate item. _(Found 2026-09-21 at the 1.2.4.2 after-scan — by the e2e,
+  after the unit tests were green.)_
+- **`vitest` does not typecheck, so a green suite can assert over fields that do not exist → 1.2.11.**
+  A test fixture named two `TaxProfile` fields that are not on the type and ran green, describing a
+  W2 job with no salary. `tsc` catches it, but only when someone runs it — the two are separate
+  commands and CI's cheap gate should fail on either. **Deferred, not folded:** same family as the
+  audit gates 1.2.2.7 wired in. _(Found 2026-09-21 at the 1.2.4.2 after-scan.)_
 - **Recovery is all-or-nothing: a device where only *some* keys are unreadable salvages none of it
   → v1.3.** `load()` is a `Promise.all` of four reads, so one bad value lands on the recovery screen
   with the other three discarded. "Restore from a backup" is a different offer when the entries were

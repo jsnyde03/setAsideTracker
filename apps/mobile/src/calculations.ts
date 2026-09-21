@@ -191,6 +191,18 @@ export function yearsWithEntries(entries: Entry[]): number[] {
  * supplies, phone, and any custom categories). Mileage is handled separately by the tax engine via
  * the standard mileage rate, not as a dollar expense here.
  */
+/**
+ * One entry's own contribution to net SE profit: gross + tips, less its non-mileage expenses.
+ *
+ * ⚠️ Mileage is deliberately **not** subtracted here, matching {@link aggregateEntries} — the tax
+ * engine applies the standard mileage rate itself, and taking it off twice would double-count it.
+ * Extracted so the per-entry set-aside ({@link computeSetAsideRate}) and the aggregate cannot drift
+ * apart on what "this entry earned" means.
+ */
+export function entryNetProfit(entry: Entry): number {
+  return entry.grossPay + entry.tips - totalEntryExpenses(entry);
+}
+
 export function aggregateEntries(entries: Entry[]): EntryAggregate {
   return entries.reduce<EntryAggregate>(
     (acc, entry) => {
@@ -214,6 +226,59 @@ export function aggregateEntries(entries: Entry[]): EntryAggregate {
  * double-count it as if it were a second real cash outflow. Returns undefined when no hours have
  * been logged, since dividing by zero isn't a rate, it's a missing input.
  */
+/**
+ * The set-aside rate to freeze onto an entry being logged now ([D7]) — or `undefined` when there is
+ * nothing to freeze.
+ *
+ * **It is the tax this entry actually ADDS, not a share of an average.** The figure is
+ * `f(existing + this) − f(existing)`, where `f` is the same `netAmountToSetAside` the dashboard
+ * shows — so it accounts for progressive brackets, the SE tax wage base, state rules and the W2
+ * withholding credit by *construction*, with no parallel tax path to drift from the real one. Early
+ * in a year where a W2 job already over-withholds, `f` is still zero and so is the increment, which
+ * is the correct answer: nothing needs setting aside yet.
+ *
+ * "Existing" means the entries already saved at this moment — not the entries dated earlier. That is
+ * what "the rate in effect when logged" means, and it keeps the figure stable when a user back-dates
+ * an entry later.
+ *
+ * ⚠️ **Clamped to ≥ 0, which loses exactness on purpose.** A high-mileage shift can *reduce* the
+ * year's tax (its standard-mileage deduction exceeding its pay), giving a negative increment. That
+ * reduction is real and stays visible in the year total — but a per-shift instruction to set aside a
+ * negative amount is not actionable, and the safe direction for a tax app is setting aside slightly
+ * too much. The residual is what the catch-up line reconciles.
+ *
+ * @returns a fraction of {@link entryNetProfit}, or `undefined` when the entry has no positive
+ *   profit to take a fraction of — an entry that cost more than it paid sets aside nothing, which is
+ *   a known zero rather than a missing figure.
+ */
+export function computeSetAsideRate(
+  existingEntries: Entry[],
+  newEntry: Entry,
+  taxProfile: TaxProfile,
+  year: number = new Date().getFullYear()
+): number | undefined {
+  const profit = entryNetProfit(newEntry);
+  if (profit <= 0) return undefined;
+
+  const before = computeTaxEstimate(existingEntries, taxProfile, year).netAmountToSetAside;
+  const after = computeTaxEstimate([...existingEntries, newEntry], taxProfile, year).netAmountToSetAside;
+
+  return Math.max(0, after - before) / profit;
+}
+
+/**
+ * What a single entry says to set aside, in dollars: its frozen rate applied to its current profit.
+ *
+ * Returns `undefined` for an entry with no frozen rate **and** no fallback supplied — the caller
+ * then knows the figure is unavailable rather than zero. [D14]: a fallback rate is passed for
+ * entries logged before the field existed, and any period containing one is marked estimated.
+ */
+export function entrySetAside(entry: Entry, fallbackRate?: number): number | undefined {
+  const rate = entry.setAsideRate ?? fallbackRate;
+  if (rate === undefined) return undefined;
+  return Math.max(0, entryNetProfit(entry)) * rate;
+}
+
 export function effectiveHourlyRate(
   totalEarnings: number,
   totalExpenses: number,
