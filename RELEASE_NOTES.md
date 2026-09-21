@@ -12,6 +12,60 @@ clean **What's New** block (the draft for the App Store "What's New" field) plus
 
 ---
 
+## v1.2 — Correctness, demo mode + mileage  🔄 IN DEVELOPMENT (branch `v1.2`)
+
+> ⚠️ **Backfilled 2026-09-21, and that is itself a process miss.** This file says entries land "as
+> each feature lands, not reconstructed at submission time" — 1.2.0, 1.2.1 and all of 1.2.2 shipped
+> without one. Recorded here rather than quietly fixed, because the habit is what failed, not the
+> file. Per-item detail → [V1_2_LOG.md](V1_2_LOG.md).
+
+### What's New (draft — not final until the version is feature-complete)
+
+```
+Your tax estimate just got more accurate.
+
+• Married filing jointly now accounts for your spouse's income, so your set-aside
+  reflects the bracket you're actually in.
+• Georgia, South Carolina and Minnesota dependent figures corrected.
+• The safe-harbor calculator now projects a full year, instead of telling you
+  you're on track when you aren't.
+• Pick your state from a list — no more two-letter codes.
+• New: explore the app with sample data before entering anything real.
+```
+
+### Completed in this release
+
+**🔴 Tax correctness (1.2.2) — three bugs that were live in v1.1.1, all understating what you owe:**
+
+- **Safe harbor no longer says "no penalty expected" when it shouldn't.** It compared a
+  *year-to-date* tax against a *full-year* withholding, so a W2 + gig user was told they were safe
+  through both spring deadlines. Gig income is now projected to a full year, and the screen says so.
+- **Married Filing Jointly now collects spouse income.** A joint return taxes both incomes together;
+  without it, gig profit was taxed from the bottom of the MFJ brackets. Their paycheck withholding
+  is credited too, so the estimate doesn't hand you their tax bill.
+- **GA / SC / MN dependent exemptions were being applied as tax credits.** A Georgia filer with two
+  dependents on $40k of profit was shown **$0** state tax instead of roughly $891. Also corrected
+  Georgia's 2026 exemption, $4,000 → $5,000.
+- **Dependents now reach the withholding estimate** (W-4 Step 3), matching how the total already
+  credited them.
+- **State is now a picker.** Typing "California" used to produce $0 state tax and a message saying
+  California wasn't supported — over a config that has always held all 50 states plus DC.
+- **Two new CI gates** over the tax configs: one catches a dependent figure filed as the wrong kind
+  of thing, one fails when a tax year's figures haven't been re-checked in six months.
+
+**Demo mode (1.2.1) — built, device validation pending:**
+
+- Explore the whole app with a realistic sample account, from onboarding or from Settings, without
+  touching real data. Every screen is marked while it runs, and premium screens preview populated —
+  while purchase and PDF export still check the real entitlement.
+
+**Routing migration (1.2.0):**
+
+- The app moved to real navigation routes (`expo-router`), replacing a hand-rolled screen switch.
+  Invisible to users; it is what makes iPad layouts and deep links possible.
+
+---
+
 ## v1.1.1 — Premium app icon  ✅ LIVE on the App Store (approved 2026-07-17)
 
 > Icon-only patch release (`08305f0`, tag `v1.1.1`, merged to `master` in `906cfd9`). Written up

@@ -4,12 +4,11 @@
 > here and nowhere else. Detail of completed work → [V1_2_LOG.md](V1_2_LOG.md). Version ladder →
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Nothing else carries a v1.2 queue.
 
-> ## ⏭️ RESUME HERE — 2026-09-20
+> ## ⏭️ RESUME HERE — 2026-09-21
 >
-> ✅ **Pushed and verified** (`git rev-list --count origin/v1.2..HEAD` = 0). The 8 local-only commits
-> that were stranded here — all of 1.2.1.1–1.2.1.5 — are on the remote. ⚠️ **Committing is not
-> shipping; check the count, don't assume it.** A previous resume block asserted "clean and pushed"
-> while eight commits sat local.
+> ✅ **Clean and pushed, verified** — `git rev-list --count origin/v1.2..HEAD` = 0.
+> ⚠️ **Check that count; never assume it.** A previous resume block asserted "clean and pushed"
+> while eight commits sat local, and CI spent two cycles building a month-old tree.
 >
 > ⛔ **STOP RENUMBERING THE QUEUE.** Two renumbers on 2026-09-20 broke **thirteen** cross-references
 > between them, every one found only by grepping afterwards. Item numbers are now **stable IDs** —
@@ -43,7 +42,7 @@
 > → [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
 >
 > ⏸ **MAESTRO IS PAUSED — out of Codemagic minutes, resumes ~November 2026** _(Jason 2026-09-21)_.
-> **Next action when minutes return: dispatch `5d15e56` (or later) and read the log.** Nothing is
+> **Next action when minutes return: dispatch the CURRENT branch tip and read the log.** Nothing is
 > owed on this machine; everything is pushed. Full narrative → [V1_2_LOG.md](V1_2_LOG.md).
 >
 > **2 of 12 flows pass** (`Onboarding → Dashboard`, `Onboarding validation`). ⚡ **The app was never

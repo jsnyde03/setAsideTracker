@@ -1,6 +1,20 @@
 # Annual Tax Config Review
 
-Process referenced by [ROADMAP.md §6](ROADMAP.md): "Tax rate configs must be reviewed/updated annually (have a process, not just code — IRS brackets/mileage rates change every year)." This document is that process. It's a runbook for a human (or a future Claude session) to follow once a year, not something the app runs automatically — there's no CI hook for this, by design, since verifying a tax figure against a government source requires judgment, not just a script.
+Process referenced by [ROADMAP.md §6](ROADMAP.md): "Tax rate configs must be reviewed/updated annually (have a process, not just code — IRS brackets/mileage rates change every year)." This document is that process. It's a runbook for a human (or a future Claude session) to follow, because verifying a tax figure against a government source requires judgment, not a script.
+
+> ⚠️ **Updated 2026-09-21: there IS now a CI hook, and it does not do what this runbook does.**
+> `npm run audit` (in `services/tax-engine`) runs two gates that **fail the build**:
+> - **`audit:staleness`** — fails when a live tax year's `reviewedOn` date is more than **6
+>   months** old, or when the current calendar year has no config at all (the engine would
+>   otherwise silently fall back to another year's brackets).
+> - **`audit:dependents`** — fails on any per-dependent *credit* ≥ $1,000, which is almost
+>   certainly an exemption filed in the wrong slot.
+>
+> ⛔ **The gate cannot tell you a figure is WRONG — only that nobody has looked recently.**
+> The original reasoning above still holds: judgment is the part a script cannot do. Running
+> this runbook is what makes the gate's green meaningful. **Bump `reviewedOn` only after
+> actually working through the steps below** — a date newer than the last real review turns a
+> loud, correct failure into silent, false confidence, which is strictly worse than stale.
 
 ## When to run this
 
@@ -9,7 +23,16 @@ There's no single date because federal and state sources publish on different sc
 - **Federal** (IRS Rev. Proc. for brackets/standard deduction, mileage rate, SSA wage-base fact sheet): typically published **October–November** for the *following* tax year.
 - **States**: wildly inconsistent. Some (e.g. CA's EDD withholding schedules, NY's NYS-50-T-NYS) publish **December–January** for the *upcoming* year. Others index mid-year. There's no way to know a state is ready except checking.
 
-**Practical trigger:** run this once in **December or January**, covering whichever upcoming tax year hasn't been added to `services/tax-engine/src/taxYears/` yet. If a source isn't published yet when you check, note that in the review log below and re-check that specific state/federal figure a month or two later rather than blocking the whole pass on it.
+**Practical trigger:** ⚠️ **twice a year, not once.** Run it in **December or January** for the
+upcoming tax year, and again around **June** for the year in progress.
+
+> ⚡ **Why twice: states change figures MID-YEAR.** Georgia raised its dependent exemption
+> $4,000 → $5,000 effective TY2026, and this repo did not notice — it was found by a web
+> search on 2026-09-21 during an audit of something else. A December/January-only cadence
+> would have missed it by the better part of a year, while the app quietly overstated what
+> Georgia families owed. The 6-month CI gate exists to force the second pass.
+
+Cover whichever upcoming tax year hasn't been added to `services/tax-engine/src/taxYears/` yet. If a source isn't published yet when you check, note that in the review log below and re-check that specific state/federal figure a month or two later rather than blocking the whole pass on it.
 
 ## Step 1 — Federal figures
 
