@@ -32,6 +32,24 @@ export interface TaxProfile {
   /** State income tax withheld year-to-date, from the YTD column of the most recent pay stub. */
   w2YtdStateWithheld?: number;
   // ─────────────────────────────────────────────────────────────────────────────────────────────
+  /**
+   * Spouse's expected annual taxable income, for Married Filing Jointly only.
+   *
+   * ⚠️ **Without this the app was quietly wrong for most married users.** A joint return taxes both
+   * incomes together, so gig profit stacks on top of the spouse's — but `grep -ri spouse` returned
+   * nothing repo-wide until 1.2.2.4, and profit was taxed from the bottom of the MFJ brackets as if
+   * the spouse earned nothing. The set-aside came out systematically too low, silently.
+   *
+   * ⛔ **This figure MUST be credited with its own withholding, never added as bare income.**
+   * `netAmountToSetAside` is `totalEstimatedTax − withholding`, so adding a spouse's income without
+   * their withholding would tell the user to set aside their spouse's entire tax bill — a worse bug
+   * than the one this fixes. See `estimateFromAggregate`.
+   *
+   * Annual rather than per-paycheck (unlike the user's own W2 fields) because it is a second-hand
+   * figure: people know roughly what their spouse earns, not their pay-stub breakdown. Optional —
+   * absent for single filers, and for joint filers who haven't supplied it.
+   */
+  spouseAnnualIncome?: number;
   state: string;
   /** County of residence, only required for states with a local "piggyback" income tax (e.g. MD). */
   county?: string;

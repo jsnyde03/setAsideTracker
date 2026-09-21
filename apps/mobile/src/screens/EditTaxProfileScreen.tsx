@@ -51,6 +51,9 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
   const styles = createStyles(colors);
   const [filingStatus, setFilingStatus] = useState<FilingStatus>(taxProfile.filingStatus);
   const [dependents, setDependents] = useState(String(taxProfile.dependents));
+  const [spouseAnnualIncome, setSpouseAnnualIncome] = useState(
+    taxProfile.spouseAnnualIncome !== undefined ? String(taxProfile.spouseAnnualIncome) : ""
+  );
   const [hasW2Job, setHasW2Job] = useState(taxProfile.hasW2Job);
   const [w2GrossPayPerPeriod, setW2GrossPayPerPeriod] = useState(
     taxProfile.w2GrossPayPerPeriod !== undefined ? String(taxProfile.w2GrossPayPerPeriod) : ""
@@ -95,6 +98,8 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
       Alert.alert("County required", "Select the county you live in — it affects local tax.");
       return;
     }
+
+    const spouseAmount = Math.max(0, parseFloat(spouseAnnualIncome) || 0);
     if (hasW2Job && w2EndDate.trim().length > 0 && !/^\d{4}-\d{2}-\d{2}$/.test(w2EndDate.trim())) {
       Alert.alert("Check end date", "Enter the W2 job's end date as YYYY-MM-DD, or leave it blank.");
       return;
@@ -109,6 +114,10 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
     onSave({
       filingStatus,
       dependents: Math.max(0, parseInt(dependents, 10) || 0),
+      // Cleared when not filing jointly, so switching away from MFJ drops the figure rather than
+      // leaving it to start counting again if the user switches back later.
+      spouseAnnualIncome:
+        filingStatus === "marriedFilingJointly" && spouseAmount > 0 ? spouseAmount : undefined,
       hasW2Job,
       w2GrossPayPerPeriod: hasW2Job && grossAmount > 0 ? grossAmount : undefined,
       w2RetirementPerPeriod: hasW2Job && retirementAmount > 0 ? retirementAmount : undefined,
@@ -165,6 +174,20 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
             onChangeText={setDependents}
             keyboardType="number-pad"
           />
+
+          {/* Joint filers only (1.2.2.4). This is the route for everyone already onboarded before
+              the field existed — without it, existing married users keep the low estimate with no
+              way to correct it. */}
+          {filingStatus === "marriedFilingJointly" && (
+            <TextField
+              label="Spouse's annual income"
+              hint="Roughly what your spouse expects to earn this year, before tax. A joint return taxes both incomes together, so this decides which bracket your gig profit lands in. Their paycheck withholding is credited too."
+              placeholder="0"
+              value={spouseAnnualIncome}
+              onChangeText={setSpouseAnnualIncome}
+              keyboardType="decimal-pad"
+            />
+          )}
 
           <TextField
             label="State you primarily work in"

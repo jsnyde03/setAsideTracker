@@ -764,6 +764,81 @@ describe("computeW4Optimization", () => {
   });
 });
 
+describe("MFJ spouse income (1.2.2.4)", () => {
+  const mfjNoW2: TaxProfile = {
+    filingStatus: "marriedFilingJointly",
+    dependents: 0,
+    hasW2Job: false,
+    state: "TX", // no state tax keeps the federal effect isolated
+  };
+  const gig = [makeEntry({ date: "2026-03-01", grossPay: 40000, tips: 0, mileage: 0 })];
+
+  it("gig profit stacks on the spouse's income instead of starting at the bottom bracket", () => {
+    const alone = computeTaxEstimate(gig, mfjNoW2, 2026);
+    const withSpouse = computeTaxEstimate(gig, { ...mfjNoW2, spouseAnnualIncome: 90000 }, 2026);
+
+    // The whole defect: without the spouse, $40k of profit is taxed as if it were the household's
+    // only income, so it falls in the lowest MFJ brackets.
+    expect(withSpouse.estimate.federalIncomeTax.taxableIncome).toBeGreaterThan(
+      alone.estimate.federalIncomeTax.taxableIncome
+    );
+    expect(withSpouse.netAmountToSetAside).toBeGreaterThan(alone.netAmountToSetAside);
+  });
+
+  /**
+   * ⛔ THE TRAP THIS SUB-STEP HAD TO AVOID. netAmountToSetAside is
+   * `totalEstimatedTax − withholding`. Counting the spouse's income without crediting the spouse's
+   * withholding would hand the user their spouse's ENTIRE tax bill to set aside — strictly worse
+   * than the under-bracketing being fixed. The increase must be the marginal effect on the gig
+   * profit, not anything resembling the spouse's own liability.
+   */
+  it("does NOT hand the user their spouse's whole tax bill", () => {
+    const alone = computeTaxEstimate(gig, mfjNoW2, 2026);
+    const withSpouse = computeTaxEstimate(gig, { ...mfjNoW2, spouseAnnualIncome: 90000 }, 2026);
+
+    // What the spouse alone would owe, as a scale reference.
+    const spouseOnly = computeTaxEstimate([], { ...mfjNoW2, spouseAnnualIncome: 90000 }, 2026);
+    const spouseOwnTax = spouseOnly.estimate.totalEstimatedTax;
+
+    const increase = withSpouse.netAmountToSetAside - alone.netAmountToSetAside;
+    expect(spouseOwnTax).toBeGreaterThan(0); // the reference is real, not a vacuous 0
+    expect(increase).toBeLessThan(spouseOwnTax);
+    // And the spouse on their own must need essentially nothing set aside — their withholding
+    // covers their own income. This is the assertion that fails if the credit is dropped.
+    expect(spouseOnly.netAmountToSetAside).toBeLessThan(spouseOwnTax * 0.1);
+  });
+
+  it("spouse income does NOT reduce SE tax — the Social Security wage base is per person", () => {
+    const alone = computeTaxEstimate(gig, mfjNoW2, 2026);
+    const withSpouse = computeTaxEstimate(gig, { ...mfjNoW2, spouseAnnualIncome: 200000 }, 2026);
+
+    // Routing spouse income through `otherFicaWages` would shrink the user's available SS wage
+    // base (seTax.ts:26) and silently cut their self-employment tax. It must not move at all.
+    expect(withSpouse.estimate.seTax.totalSeTax).toBeCloseTo(alone.estimate.seTax.totalSeTax, 6);
+    expect(withSpouse.estimate.seTax.socialSecurityTax).toBeCloseTo(
+      alone.estimate.seTax.socialSecurityTax,
+      6
+    );
+  });
+
+  it("is ignored for every filing status except joint", () => {
+    for (const filingStatus of ["single", "headOfHousehold", "marriedFilingSeparately"] as const) {
+      const base = { ...mfjNoW2, filingStatus };
+      const without = computeTaxEstimate(gig, base, 2026);
+      const withValue = computeTaxEstimate(gig, { ...base, spouseAnnualIncome: 90000 }, 2026);
+      // A stale value left behind by a filing-status change must not keep inflating the estimate.
+      expect(withValue.netAmountToSetAside).toBeCloseTo(without.netAmountToSetAside, 6);
+    }
+  });
+
+  it("works when the SPOUSE has the W2 job and the user has none — the case it exists for", () => {
+    const withSpouse = computeTaxEstimate(gig, { ...mfjNoW2, spouseAnnualIncome: 90000 }, 2026);
+    // hasW2Job is false, so a withholding credit gated on it would be zero and the set-aside would
+    // balloon. It must still be credited.
+    expect(withSpouse.w2WithholdingYtdEstimate).toBeGreaterThan(0);
+  });
+});
+
 describe("safe-harbor full-year projection (1.2.2.3)", () => {
   const txW2Gig: TaxProfile = {
     filingStatus: "single",

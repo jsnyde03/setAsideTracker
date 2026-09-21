@@ -11,6 +11,51 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.2.4 MFJ spouse income — SUB-TASK after-scan · 2026-09-21
+
+**Shipped.** `spouseAnnualIncome` on `TaxProfile`; joint-filers-only field in **both** onboarding and
+`EditTaxProfileScreen`; wired into `otherTaxableIncome` with a matching withholding credit.
+**207 unit (was 202) · 34/34 Playwright · typecheck clean.**
+
+⛔ **The before-scan caught a worse bug than the one being fixed, and it would have shipped.**
+`netAmountToSetAside` is `totalEstimatedTax − withholding`. Adding a spouse's income raises
+`totalEstimatedTax` by the spouse's whole tax — so counting the income **without** crediting their
+withholding tells the user to set aside their spouse's entire tax bill. For a $90k spouse that is a
+five-figure instruction, against an under-bracketing error of a few hundred. **The obvious
+one-line version of this fix is far more harmful than the defect.** Income and withholding move
+together or not at all.
+
+⭐ **Two further rules fell out of reading the code rather than the plan:**
+- **The credit must NOT be gated on `hasW2Job`.** That flag is about the *user's* job, and the case
+  this feature exists for is a gig worker whose **spouse** holds the W2 — that user has no W2 of
+  their own, so a gated credit would be zero and the set-aside would balloon. A test asserts this
+  path specifically.
+- **Spouse income must stay OUT of `otherFicaWages`.** That field shrinks both the Social Security
+  wage base and the Additional Medicare threshold (`seTax.ts:26,33`), and **the SS wage base is
+  per-person** — a spouse's wages do not consume the user's. Routing it there would silently cut
+  the user's SE tax.
+
+⚠️ **One simplification, stated rather than buried:** MFJ's $250k Additional Medicare threshold *is*
+assessed on combined wages, so a couple above it sees that tax applied slightly late. Accepted
+because the alternative — using `otherFicaWages` — miscomputes SE tax for **everyone** to fix an
+edge above $250k of wages. The trade is recorded in the code at the decision point.
+
+**Design note:** the field is **annual**, unlike the user's own per-paycheck W2 fields. It is a
+second-hand figure — people know roughly what their spouse earns, not their pay-stub breakdown —
+and the withholding model already treats each job's withholding as calibrated in isolation
+(`estimateW2Withholding`'s own docstring), which is exactly how a default W-4 behaves. So one
+annual number is both easier to answer and consistent with the existing model.
+
+**Both traps mutation-verified, one plant each:** dropping the withholding credit fails **2** tests
+(the spouse's-whole-bill test and the no-W2-user test); leaking spouse income into `otherFicaWages`
+fails **1** (the SE-tax invariant). Both restored and re-verified.
+
+**Stale-value handling:** the figure is persisted only while filing status is MFJ, and cleared on
+switching away — otherwise a value left behind by a status change silently starts counting again if
+the user switches back.
+
+---
+
 ### 🔎 1.2.2.3 Safe-harbor full-year projection — SUB-TASK after-scan · 2026-09-21
 
 **Shipped.** `projectAggregateToFullYear` + `computeSafeHarborFromEntries` in `calculations.ts`;

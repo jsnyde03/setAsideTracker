@@ -1,5 +1,6 @@
 import {
   estimateTax,
+  estimateW2Withholding,
   currentTaxYear,
   taxYearConfigs,
   type TaxEstimateResult,
@@ -268,12 +269,29 @@ export function estimateFromAggregate(
   const w2Active = taxProfile.hasW2Job && w2JobActiveDuringYear(year, taxProfile.w2EndDate);
   const { w2FicaWages, w2FederalTaxableIncome } = deriveW2Incomes(taxProfile, w2Active);
 
+  // Spouse income on a joint return (1.2.2.4). Only counted when actually filing jointly — the
+  // field is meaningless otherwise, and a stale value left behind by a filing-status change must
+  // not silently keep inflating the estimate.
+  const spouseIncome =
+    taxProfile.filingStatus === "marriedFilingJointly"
+      ? Math.max(0, taxProfile.spouseAnnualIncome ?? 0)
+      : 0;
+
+  // ⚠️ Spouse income goes into TAXABLE income and NOWHERE ELSE. It must not reach `otherFicaWages`,
+  // which shrinks both the Social Security wage base and the Additional Medicare threshold
+  // (seTax.ts:26,33). The SS wage base is PER PERSON, so a spouse's wages do not consume the
+  // user's — routing it there would wrongly cut the user's SE tax.
+  // Known simplification, stated rather than hidden: MFJ's $250k Additional Medicare threshold IS
+  // assessed on combined wages, so a couple above that will see it applied slightly late. That
+  // costs accuracy only above $250k of wages, and the alternative miscomputes SE tax for everyone.
+  const otherTaxableIncome = w2FederalTaxableIncome + spouseIncome;
+
   const estimate = estimateTax(
     {
       filingStatus: taxProfile.filingStatus,
       netSelfEmploymentProfit: aggregate.netSelfEmploymentProfit,
       businessMiles: aggregate.businessMiles,
-      otherTaxableIncome: w2FederalTaxableIncome,
+      otherTaxableIncome,
       otherFicaWages: w2FicaWages,
       stateCode: taxProfile.state,
       county: taxProfile.county,
@@ -312,6 +330,32 @@ export function estimateFromAggregate(
       w2FederalWithholdingYtdEstimate = annualFederalEstimate;
     }
   }
+
+  // ⛔ The spouse's withholding is NOT optional once their income is counted. Their employer
+  // withholds against their own pay all year, exactly as the user's does. Counting the income
+  // without the withholding would hand the user their spouse's entire tax bill to set aside —
+  // strictly worse than the under-bracketing this fixes. The two move together or not at all.
+  //
+  // Estimated on the same "as if it were the only income" basis the user's own W2 uses
+  // (see estimateW2Withholding's docstring) — which is how a default W-4 actually behaves.
+  // Deliberately NOT gated on `w2Active`: a gig worker whose spouse has the W2 job is the exact
+  // case this exists for, and that user has no W2 job of their own.
+  let spouseWithholding = 0;
+  let spouseFederalWithholding = 0;
+  if (spouseIncome > 0) {
+    const spouseEstimate = estimateW2Withholding(
+      spouseIncome,
+      taxProfile.filingStatus,
+      taxProfile.state,
+      config,
+      taxProfile.county
+    );
+    spouseWithholding = spouseEstimate.annualTotalEstimate;
+    spouseFederalWithholding = spouseEstimate.annualFederalEstimate;
+  }
+
+  w2WithholdingYtdEstimate += spouseWithholding;
+  w2FederalWithholdingYtdEstimate += spouseFederalWithholding;
 
   const netAmountToSetAside = Math.max(0, estimate.totalEstimatedTax - w2WithholdingYtdEstimate);
 

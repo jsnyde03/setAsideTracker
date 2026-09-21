@@ -54,6 +54,7 @@ export function OnboardingScreen({ onComplete, onExploreDemo }: OnboardingScreen
   const [email, setEmail] = useState("");
   const [filingStatus, setFilingStatus] = useState<FilingStatus>("single");
   const [dependents, setDependents] = useState("0");
+  const [spouseAnnualIncome, setSpouseAnnualIncome] = useState("");
   const [hasW2Job, setHasW2Job] = useState(false);
   const [w2GrossPayPerPeriod, setW2GrossPayPerPeriod] = useState("");
   const [w2RetirementPerPeriod, setW2RetirementPerPeriod] = useState("");
@@ -106,6 +107,7 @@ export function OnboardingScreen({ onComplete, onExploreDemo }: OnboardingScreen
       createdAt: new Date().toISOString(),
     };
 
+    const spouseAmount = Math.max(0, parseFloat(spouseAnnualIncome) || 0);
     const grossAmount = Math.max(0, parseFloat(w2GrossPayPerPeriod) || 0);
     const retirementAmount = Math.max(0, parseFloat(w2RetirementPerPeriod) || 0);
     const preTaxBenefitsAmount = Math.max(0, parseFloat(w2PreTaxBenefitsPerPeriod) || 0);
@@ -115,6 +117,10 @@ export function OnboardingScreen({ onComplete, onExploreDemo }: OnboardingScreen
     const taxProfile: TaxProfile = {
       filingStatus,
       dependents: Math.max(0, parseInt(dependents, 10) || 0),
+      // Persisted only for joint filers — see the field's own doc comment. Storing it for anyone
+      // else would leave a value that silently starts counting if they later switch to MFJ.
+      spouseAnnualIncome:
+        filingStatus === "marriedFilingJointly" && spouseAmount > 0 ? spouseAmount : undefined,
       hasW2Job,
       w2GrossPayPerPeriod: hasW2Job && grossAmount > 0 ? grossAmount : undefined,
       w2RetirementPerPeriod: hasW2Job && retirementAmount > 0 ? retirementAmount : undefined,
@@ -177,6 +183,21 @@ export function OnboardingScreen({ onComplete, onExploreDemo }: OnboardingScreen
             onChangeText={setDependents}
             keyboardType="number-pad"
           />
+
+          {/* Joint filers only. A joint return taxes both incomes together, so without this the
+              gig profit is taxed as if the household had no other income and the set-aside comes
+              out systematically low (1.2.2.4). Optional: someone who leaves it blank is no worse
+              off than before, and the hint says what it buys them. */}
+          {filingStatus === "marriedFilingJointly" && (
+            <TextField
+              label="Spouse's annual income"
+              hint="Roughly what your spouse expects to earn this year, before tax. A joint return taxes both incomes together, so this decides which tax bracket your gig profit lands in. We credit their paycheck withholding too, so this won't ask you to set aside their tax."
+              placeholder="0"
+              value={spouseAnnualIncome}
+              onChangeText={setSpouseAnnualIncome}
+              keyboardType="decimal-pad"
+            />
+          )}
 
           <TextField
             label="State you primarily work in"
