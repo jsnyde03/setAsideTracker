@@ -12,7 +12,7 @@ import {
   entriesForYear,
   totalEntryExpenses,
   yearsWithEntries,
-  weeklySetAsides,
+  summarizeWeeklySetAsides,
   weekStartOf,
 } from "../calculations";
 import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates";
@@ -118,7 +118,8 @@ export function DashboardScreen({
   // The weekly split ([D7]). `weeklySetAsides` owns the arithmetic; this screen only picks the
   // current week out of it and opens the sheet.
   const [weeksOpen, setWeeksOpen] = useState(false);
-  const weeks = weeklySetAsides(entries, taxProfile, selectedYear);
+  const weekSummary = summarizeWeeklySetAsides(entries, taxProfile, selectedYear);
+  const weeks = weekSummary.weeks;
   const currentWeekStart = weekStartOf(new Date().toISOString().slice(0, 10));
   const thisWeek = weeks.find((week) => week.weekStart === currentWeekStart);
 
@@ -636,6 +637,7 @@ export function DashboardScreen({
       <BreakdownDetailSheet detail={activeDetail} onClose={() => setActiveDetailKey(null)} />
       <WeeklySetAsideSheet
         weeks={weeksOpen ? weeks : null}
+        summary={weeksOpen ? weekSummary : null}
         year={year}
         onClose={() => setWeeksOpen(false)}
       />

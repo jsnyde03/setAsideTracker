@@ -383,6 +383,54 @@ export function weeklySetAsides(
   return Array.from(byWeek.values()).sort((a, b) => b.weekStart.localeCompare(a.weekStart));
 }
 
+/** A year's weeks, plus the arithmetic that makes them add up to what is actually owed. */
+export interface WeeklySetAsideSummary {
+  weeks: WeeklySetAside[];
+  /** What the weekly figures sum to. */
+  weeksTotal: number;
+  /** What the year owes right now — the same figure the dashboard headline shows. */
+  yearTotal: number;
+  /**
+   * `yearTotal − weeksTotal`: what the weeks do not account for. Positive means the weeks
+   * **under-collect** and the user needs to put more aside than their weekly rows suggested.
+   *
+   * ⚠️ **Zero is the normal case, and that is a property rather than luck.** Each frozen figure is
+   * the tax its entry added at the time, so the series telescopes to the year's total exactly. It
+   * only drifts when something invalidates a past freeze: a rate clamped at 0 for a shift that
+   * reduced the year's tax, an entry edited or deleted after the fact, a tax profile changed
+   * mid-year (a move, a marriage, a spouse's income), or entries that predate the frozen field and
+   * lean on {@link fallbackSetAsideRate}.
+   */
+  adjustment: number;
+}
+
+/**
+ * The weekly rows **and** the difference between them and the truth.
+ *
+ * ⛔ **This is not what `computeCatchUpStatus` does, and the plan said it was.** That function
+ * compares what the user *owes* against what they say they have *actually saved* — a hand-typed
+ * figure about their savings behaviour. This compares the app's own weekly figures against the
+ * app's own year total. They are different axes, and wiring this drift into that line would have
+ * told a user who is perfectly on track that they were behind.
+ *
+ * Surfaced rather than hidden because a user who adds the weeks up and compares them to the
+ * headline is doing the obvious thing, and a mismatch with no explanation reads as a bug.
+ */
+export function summarizeWeeklySetAsides(
+  entries: Entry[],
+  taxProfile: TaxProfile,
+  year: number = new Date().getFullYear()
+): WeeklySetAsideSummary {
+  const weeks = weeklySetAsides(entries, taxProfile, year);
+  const weeksTotal = weeks.reduce((total, week) => total + week.setAside, 0);
+  const yearTotal = computeTaxEstimate(entries, taxProfile, year).netAmountToSetAside;
+
+  return { weeks, weeksTotal, yearTotal, adjustment: yearTotal - weeksTotal };
+}
+
+/** Below this the adjustment is rounding noise from the telescoping sum, not a real difference. */
+export const SET_ASIDE_ADJUSTMENT_EPSILON = 0.01;
+
 export function effectiveHourlyRate(
   totalEarnings: number,
   totalExpenses: number,

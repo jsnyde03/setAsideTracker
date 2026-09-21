@@ -11,6 +11,41 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.4.5 Reconcile the drift — SUB-TASK before + after-scan · 2026-09-21
+
+**Shipped.** `summarizeWeeklySetAsides` returns the weeks, `weeksTotal`, `yearTotal` and the
+**`adjustment`** between them; the sheet renders it as its own row plus a **Total** line, so the
+list visibly adds up. Hidden below a cent, which is the normal case — a row reading
+"Adjustment $0.00" makes a correct list look broken. **270 unit (was 266) · 50/50 Playwright
+(was 48) · typecheck + lint clean.**
+
+⛔ **The before-scan found the plan's premise was wrong, and it was not a wording problem.** The item
+said *"`weeklyCatchUpAmount` already exists to say so."* It does not. `computeCatchUpStatus` takes
+`(netAmountToSetAside, amountSetAsideSoFar)` — what is **owed** versus what the user **hand-types as
+actually saved**. That is a fact about their savings behaviour. The drift here is the app's own
+weekly figures against the app's own year total. **Two different axes**, and wiring one into the
+other would have told a user who is perfectly on track that they were behind. Built as its own thing.
+
+**When the drift is real** — worth listing, because "zero" is the normal case and only looks like
+luck: each frozen figure is the tax its entry added, so the series telescopes to the year total
+exactly. It moves only when something invalidates a past freeze — a rate clamped at 0 for a shift
+that *reduced* the year's tax, an entry edited or deleted afterwards, a **tax profile changed
+mid-year** (a move, a marriage, a spouse's income), or legacy entries on the fallback rate.
+
+**The e2e induces it the way a user does: by moving from TX to CA after logging a shift**, then
+asserts the row appears. Paired with a control asserting it is **absent** on an untouched profile —
+and the control earns its place: a plant showing the row unconditionally passed the appearance test
+and reddened only the control.
+
+⚠️ **A plant exposed a circular assertion of mine.** *"Always reconciles: weeks + adjustment is the
+year total"* was satisfied by a plant returning `yearTotal: weeksTotal, adjustment: 0` — all three
+numbers from one source, so the equation held while the figure was wrong. It now compares
+`yearTotal` against an **independently computed** `computeTaxEstimate`, and the re-planted version
+reds it. _(This is the `roundtrip-through-one-encoder` shape: a check whose two sides come from one
+source cannot fail, and reading it never reveals that — only planting does.)_
+
+---
+
 ### 🔎 1.2.4.4 The weekly surface — SUB-TASK before + after-scan · 2026-09-21
 
 **Shipped.** A "This week" row **inside** the set-aside card — beside the year total, never instead

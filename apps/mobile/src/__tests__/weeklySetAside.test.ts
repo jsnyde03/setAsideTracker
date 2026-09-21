@@ -3,6 +3,7 @@ import {
   computeSetAsideRate,
   computeTaxEstimate,
   fallbackSetAsideRate,
+  summarizeWeeklySetAsides,
   weekStartOf,
   weeklySetAsides,
 } from "../calculations";
@@ -159,5 +160,66 @@ describe("weeklySetAsides", () => {
       expect(weeks[0].setAside).toBe(0);
       expect(weeks[0].estimated, "an entry with nothing to rate is not an estimate").toBe(false);
     });
+  });
+});
+
+describe("summarizeWeeklySetAsides — the drift, and saying so (1.2.4.5)", () => {
+  it("reports no adjustment when nothing has invalidated a freeze", () => {
+    const saved = logAll([entry("a", "2026-03-02", 4000), entry("b", "2026-08-10", 9000)]);
+
+    const summary = summarizeWeeklySetAsides(saved, PROFILE, YEAR);
+
+    // The increments telescope, so the weeks ARE the year total and there is nothing to explain.
+    expect(summary.adjustment).toBeCloseTo(0, 6);
+    expect(summary.weeksTotal).toBeCloseTo(summary.yearTotal, 6);
+  });
+
+  /**
+   * ⭐ The case the adjustment exists for. The rate is frozen at log time, so changing the tax
+   * profile afterwards moves what is owed while every past week stays where it was — correctly, per
+   * [D7]. The difference has to be visible, or the weeks silently stop adding up to the headline.
+   */
+  it("reports the difference when the tax profile changes after the fact", () => {
+    const saved = logAll([entry("a", "2026-03-02", 20000), entry("b", "2026-08-10", 15000)]);
+
+    const movedToCalifornia: TaxProfile = { ...PROFILE, state: "CA" };
+    const summary = summarizeWeeklySetAsides(saved, movedToCalifornia, YEAR);
+
+    expect(summary.yearTotal).toBeGreaterThan(summary.weeksTotal); // CA has an income tax; TX does not
+    expect(summary.adjustment).toBeCloseTo(summary.yearTotal - summary.weeksTotal, 6);
+    expect(summary.adjustment).toBeGreaterThan(0);
+    // And the weekly rows themselves have NOT moved — that is the property being preserved.
+    expect(summary.weeks.reduce((t, w) => t + w.setAside, 0)).toBeCloseTo(summary.weeksTotal, 6);
+  });
+
+  it("reports the difference when an entry is deleted after its neighbours were rated", () => {
+    const saved = logAll([
+      entry("a", "2026-03-02", 20000),
+      entry("b", "2026-05-04", 15000),
+      entry("c", "2026-08-10", 10000),
+    ]);
+
+    // Remove the middle one. The later entries keep rates frozen against income no longer there.
+    const afterDelete = saved.filter((e) => e.id !== "b");
+    const summary = summarizeWeeklySetAsides(afterDelete, PROFILE, YEAR);
+
+    expect(Math.abs(summary.adjustment)).toBeGreaterThan(0.01);
+    expect(summary.weeksTotal + summary.adjustment).toBeCloseTo(summary.yearTotal, 6);
+  });
+
+  it("always reconciles: weeks + adjustment is the year total, whatever happened", () => {
+    const legacy = entry("old", "2026-02-02", 5000); // no frozen rate at all
+    const saved = logAll([entry("a", "2026-03-02", 8000)]);
+    const heavyMileage = entry("m", "2026-04-06", 50, { mileage: 400, setAsideRate: 0 });
+
+    const all = [legacy, ...saved, heavyMileage];
+    const summary = summarizeWeeklySetAsides(all, PROFILE, YEAR);
+
+    // ⚠️ `yearTotal` is compared against an INDEPENDENTLY computed figure, not against itself.
+    // Asserting only `weeksTotal + adjustment === yearTotal` is satisfied by an implementation that
+    // derives all three from one source -- measured: a plant returning `yearTotal: weeksTotal,
+    // adjustment: 0` passed that assertion while breaking two other tests.
+    expect(summary.yearTotal).toBeCloseTo(computeTaxEstimate(all, PROFILE, YEAR).netAmountToSetAside, 6);
+    expect(summary.weeksTotal + summary.adjustment).toBeCloseTo(summary.yearTotal, 6);
   });
 });

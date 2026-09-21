@@ -1,12 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import type { WeeklySetAside } from "../calculations";
+import {
+  SET_ASIDE_ADJUSTMENT_EPSILON,
+  type WeeklySetAside,
+  type WeeklySetAsideSummary,
+} from "../calculations";
 import { radius, shadow, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
 
 interface WeeklySetAsideSheetProps {
   /** Every week with logged work in the selected year, most recent first. Null hides the sheet. */
   weeks: WeeklySetAside[] | null;
+  /** The same weeks plus what they do not account for, so the list visibly adds up (1.2.4.5). */
+  summary: WeeklySetAsideSummary | null;
   year: number;
   onClose: () => void;
 }
@@ -41,10 +47,14 @@ function formatWeekDay(date: string): string {
  * predate the frozen one, and presenting a reconstruction as though it had been frozen at the time
  * is exactly what [D7] exists to prevent.
  */
-export function WeeklySetAsideSheet({ weeks, year, onClose }: WeeklySetAsideSheetProps) {
+export function WeeklySetAsideSheet({ weeks, summary, year, onClose }: WeeklySetAsideSheetProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const anyEstimated = (weeks ?? []).some((week) => week.estimated);
+  // Hidden when the weeks already telescope to the year total exactly, which is the normal
+  // case -- a row reading "Adjustment $0.00" is noise that makes a correct list look broken.
+  const showAdjustment =
+    summary !== null && Math.abs(summary.adjustment) >= SET_ASIDE_ADJUSTMENT_EPSILON;
 
   return (
     <Modal
@@ -84,6 +94,29 @@ export function WeeklySetAsideSheet({ weeks, year, onClose }: WeeklySetAsideShee
                   <Text style={styles.rowValue}>{formatCurrency(week.setAside)}</Text>
                 </View>
               ))
+            )}
+
+            {summary && showAdjustment && (
+              <View style={styles.row}>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowLabel}>Adjustment</Text>
+                  <Text style={styles.rowHint}>
+                    Each week was set at the rate in effect at the time. This is the difference
+                    against what you owe today.
+                  </Text>
+                </View>
+                <Text style={styles.rowValue}>
+                  {summary.adjustment > 0 ? "+" : "−"}
+                  {formatCurrency(Math.abs(summary.adjustment))}
+                </Text>
+              </View>
+            )}
+
+            {summary && weeks !== null && weeks.length > 0 && (
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total to set aside ({year})</Text>
+                <Text style={styles.totalValue}>{formatCurrency(summary.yearTotal)}</Text>
+              </View>
             )}
 
             {anyEstimated && (
@@ -136,6 +169,15 @@ function createStyles(colors: Colors) {
     rowLabel: { ...type.label, color: colors.ink },
     rowHint: { ...type.caption, color: colors.inkSubtle, marginTop: 2 },
     rowValue: { ...type.subtitle, color: colors.ink },
+    totalRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+      paddingTop: spacing.md,
+    },
+    totalLabel: { ...type.label, color: colors.ink, fontWeight: "700" },
+    totalValue: { ...type.title, color: colors.ink },
     footnote: { ...type.caption, color: colors.inkSubtle, marginTop: spacing.md },
   });
 }
