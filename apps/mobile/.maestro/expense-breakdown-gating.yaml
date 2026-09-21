@@ -19,7 +19,15 @@ name: Expense breakdown gating (locked card → paywall)
 # Same class as the onboarding defect: AddEntryScreen is also a ScrollView under a
 # KeyboardAvoidingView (AddEntryScreen.tsx:203,234), so a tap aimed at a field the keyboard
 # covers silently lands on the keyboard and the next inputText appends to the WRONG field.
-- hideKeyboard
+# ⚠️ NOT hideKeyboard. iOS's NUMERIC keypad has no return/Done key, so hideKeyboard fails
+# outright ("Couldn't hide the keyboard") — it only works for the text keyboard, which is why
+# onboarding passes and every entry-form flow did not. Worse, the keypad spans y=590-874 and so
+# hides the Premium rows at y=706 and y=754, turning into a second symptom: scrollUntilVisible
+# reporting "no visible element" for rows the hierarchy clearly shows are present.
+# Tapping a neutral point above the keypad dismisses it (the form sets
+# keyboardShouldPersistTaps="handled", so a tap outside an input blurs it).
+- tapOn:
+    point: "50%,15%"
 - scrollUntilVisible:
     element:
       text: "Mileage (business miles driven)"
@@ -28,7 +36,15 @@ name: Expense breakdown gating (locked card → paywall)
 - waitForAnimationToEnd
 - tapOn: "Mileage (business miles driven)"
 - inputText: "500"
-- hideKeyboard
+# ⚠️ NOT hideKeyboard. iOS's NUMERIC keypad has no return/Done key, so hideKeyboard fails
+# outright ("Couldn't hide the keyboard") — it only works for the text keyboard, which is why
+# onboarding passes and every entry-form flow did not. Worse, the keypad spans y=590-874 and so
+# hides the Premium rows at y=706 and y=754, turning into a second symptom: scrollUntilVisible
+# reporting "no visible element" for rows the hierarchy clearly shows are present.
+# Tapping a neutral point above the keypad dismisses it (the form sets
+# keyboardShouldPersistTaps="handled", so a tap outside an input blurs it).
+- tapOn:
+    point: "50%,15%"
 - tapOn: "Save Entry"
 - scrollUntilVisible:
     element:

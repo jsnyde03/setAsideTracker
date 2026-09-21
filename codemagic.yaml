@@ -501,10 +501,10 @@ workflows:
 
             echo "=== ON-SCREEN TEXT AT EACH FAILURE (from Maestro's view hierarchy) ==="
             find "$HOME/.maestro/tests" -type f -name '*.json' -path '*screen-hierarchy*' 2>/dev/null \
-              | head -4 | while read -r h; do
+              | head -12 | while read -r h; do
                   echo ""
                   echo "--- $(basename "$(dirname "$(dirname "$h")")") / $(basename "$h") ---"
-                  python3 /tmp/dump_hierarchy.py "$h" 2>&1 | head -60
+                  python3 /tmp/dump_hierarchy.py "$h" 2>&1 | head -45
                 done
 
             echo ""
