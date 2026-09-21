@@ -14,6 +14,33 @@ real navigation stack. Green means "nothing else broke", not "this works on a ph
 
 ---
 
+## 🎯 THE ONE BUILD — read this before dispatching _(assembled 2026-09-21 at 1.2.5.6)_
+
+⚠️ **Codemagic is ~80% consumed and the remainder is reserved for TestFlight** (Jason 2026-09-21).
+**Never spend a build on a single item.** This section is the agenda for one build carrying
+everything four items owe, in the order to actually do them — most-likely-to-be-broken first.
+
+⛔ **1.2.5 (mileage) has ZERO device verification and cannot get any other way.** It is the only
+prebuild-affecting change in v1.2: two native modules, a config plugin, a background location task.
+**If this build fails, it is almost certainly 1.2.5** — which is why `expo-location` and
+`expo-task-manager` each landed in their own commit, so the suspect list is short.
+
+| order | what | why it is first/last |
+|---|---|---|
+| **1** | **Does it build and launch at all?** | A prebuild change is the class that has broken iOS CI here before. Everything below is moot if this fails. |
+| **2** | **Start a trip → drive → stop.** Miles land on the entry, editable. | The feature's whole point, and **unprovable off-device** — the simulator only does canned routes. |
+| **3** | **⭐ Leave the app while a trip runs.** Switch to another app, lock the screen. | **[D17] is the reason this feature is worth shipping**, and this is the only way to know it works. Confirm the **location indicator** shows the entire time. |
+| **4** | **Revoke location mid-trip** (Settings → Privacy), then return. | 1.2.5.5's warning must appear and name the cause. A silent stall is the defect this item is built around. |
+| **5** | **Force-quit mid-trip, reopen.** | `resumeTripIfRunning` must pick the distance back up. Expect to lose the metres since the last fix — that is the [D16] trade, not a bug. |
+| **6** | **The recovery screen's `Alert`s** (§A) | 1.2.3's entire `Alert` layer is unverified; web renders none. |
+| **7** | **The weekly sheet at phone width** with a full year of weeks | 1.2.4 is Playwright-covered for behaviour, never for a small screen. |
+| **8** | **Demo mode end-to-end** (§C) | 1.2.1 is 7/7 built and has never been device-validated. |
+
+⚠️ **Check first, before dispatching:** `git rev-list --count origin/v1.2..HEAD` is 0, and the
+workflow prints the commit it built. Two build cycles were once spent on a month-old tree.
+
+---
+
 ## A. Cannot be automated at all — these are the reason this document exists
 
 | | check | what specifically to watch |

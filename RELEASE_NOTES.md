@@ -35,9 +35,24 @@ Your tax estimate just got more accurate.
   recover it, instead of starting you over.
 • See what to set aside from each week's work, not just one figure for the
   whole year — and last week's number stays put once the week is over.
+• New: track a trip and let the app measure your miles, instead of guessing
+  or typing them from memory.
 ```
 
 ### Completed in this release
+
+**🔧 Measured mileage (1.2.5) — stop guessing what you drove:**
+
+- **Start a trip when you set off, stop it when you're done, and the app fills in the miles.** The
+  number is added to the entry you're logging, and you can still change it — it's yours.
+- **It keeps measuring while you use other apps**, because that is how driving works. Your phone
+  shows a location indicator the whole time a trip is running, and the app never reads your location
+  when no trip is running.
+- **Your locations are never stored and never sent anywhere.** What gets saved is the distance, the
+  same number you could have typed in yourself.
+- **If it can't measure, it says so while you can still do something about it** — if location is
+  off, or permission is turned off mid-drive, you get told rather than finding a trip recorded zero
+  miles after the fact.
 
 **⭐ Set aside by the week (1.2.4) — the lump sum stops being the only number:**
 

@@ -59,6 +59,9 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
   },
 }));
 
+let demoActive = false;
+vi.mock("../demo/demoMode", () => ({ isDemoModeActive: () => demoActive }));
+
 const TRIP_STORAGE_KEY = "gigTaxTracker:activeTrip";
 
 function fix(latOffsetMeters: number, secondsLater: number, accuracy = 5) {
@@ -84,6 +87,7 @@ beforeEach(() => {
   location.stopCalls = 0;
   location.stillGranted = true;
   location.queryThrows = false;
+  demoActive = false;
   storage.clear();
   taskRegistered = false;
 });
@@ -141,6 +145,23 @@ describe("what reaches the disk", () => {
     expect(parsed).not.toHaveProperty("anchor");
     // Belt and braces against a future field carrying a position under another name.
     expect(written).not.toMatch(/latitude|longitude|34\.0|118\.2/);
+  });
+
+  /**
+   * ⭐ Found at 1.2.5's whole-item after-scan: this module writes raw AsyncStorage outside the
+   * repository, which is the exact shape of the three leaks 1.2.1.3 had to plug. Demo mode's
+   * guarantee is that nothing reaches real storage while it runs.
+   */
+  it("writes nothing at all while a demo session is running", async () => {
+    const tracker = await loadTracker();
+    demoActive = true;
+
+    await tracker.startTripTracking();
+    tracker.ingestLocations([fix(0, 0), fix(1609.344, 60)]);
+
+    expect(storage.has(TRIP_STORAGE_KEY), "a demo trip reached real storage").toBe(false);
+    // ...and the trip still works in memory, which is all a demo needs.
+    expect(tracker.currentTripMiles()).toBe(1);
   });
 
   it("clears the stored trip when the trip ends", async () => {

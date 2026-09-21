@@ -1,6 +1,7 @@
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { isDemoModeActive } from "../demo/demoMode";
 import {
   addPoint,
   startTrip,
@@ -54,6 +55,13 @@ function publish() {
  * never take down the capture itself or interrupt a drive.
  */
 function persist() {
+  // ⚠️ Raw AsyncStorage, outside the repository — so it needs the same guard the other three
+  // non-repository writers got at 1.2.1.3 (the review flag, notifications, analytics). Demo mode's
+  // guarantee is that **nothing** reaches real storage while it runs, and a demo trip writing here
+  // would leave a key behind that outlives the session. Skipping persistence costs a demo trip its
+  // termination-resilience, which is not a property an in-memory demo has anyway.
+  if (isDemoModeActive()) return;
+
   const { anchor: _anchor, ...withoutPosition } = state;
   void AsyncStorage.setItem(TRIP_STORAGE_KEY, JSON.stringify(withoutPosition satisfies PersistedTrip)).catch(
     () => {}

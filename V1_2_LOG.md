@@ -11,6 +11,45 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.5 Mileage trip toggle — WHOLE-ITEM after-scan · 2026-09-21
+
+**COMPLETE, 6/6.** **306 mobile unit (from 272) · 102 engine · 50/50 Playwright · typecheck + lint
+clean · both tax-config gates green · ports verified free.** **10 plants across 4 sub-steps; 9
+caught, and the one that passed was vacuous for two separate reasons in a row.**
+
+⛔ **THE HEADLINE IS WHAT IS NOT VERIFIED.** Every other v1.2 item could be proven by something that
+runs on this machine. **None of 1.2.5 can.** Two native modules, a config plugin and a background
+location task, and the suite that covers them runs in Node against mocks. The unit tests prove the
+*arithmetic* and the *decisions*; they prove nothing about whether the app builds, launches, or
+receives a single location. The one-build agenda at the head of
+[V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) exists because of this.
+
+🔴 **A fourth demo-mode leak, of the exact class 1.2.1.3 plugged.** `persist()` writes raw
+AsyncStorage outside the repository, so a trip started inside a demo session wrote a key to **real**
+storage that outlived the session. The three known non-repository writers (review flag,
+notifications, analytics) were each guarded at their own choke point in 1.2.1; **this is the first
+new one added since, and nothing structural stopped it.** ⚠️ The guarantee is checked by a
+convention, not by the type system — the backlog entry proposing an ESLint rule restricting
+AsyncStorage to `src/storage/` (filed at 1.2.1.1, still open at 1.2.11) would have caught this at
+the keystroke.
+
+⚡ **The pattern across this item: two decisions were taken MID-ITEM, and the second invalidated
+artifacts the first had produced.** [D16] retired the second privacy policy and established that one
+claim lives in three places; hours later [D17] changed what the app does, which falsified the usage
+string *and* the policy sentence Jason had approved — both written under [D16]. **The rule caught
+its own author within the same item.** Both were corrected in the same commit as the decision, which
+is the only reason the three declarations still agree.
+
+⚠️ **Two of this item's own premises were superseded by its own decisions**, not by drift: the spec's
+"populating the `MileageLog` shape" (answered *no* by [D16]'s wording), and 1.2.5.5's "the app
+backgrounded stops updates" (removed by [D17]). A plan is a hypothesis even against decisions taken
+*after* it was written.
+
+**Deferred, filed in this edit:** nothing new — the AsyncStorage lint rule already sits at 1.2.11
+and this item is the second argument for it.
+
+---
+
 ### 🔎 1.2.5.5 Degradation — SUB-TASK before + after-scan · 2026-09-21
 
 **Shipped.** `tripHealth` (pure) + `diagnoseStall` + a warning line under the running trip.
