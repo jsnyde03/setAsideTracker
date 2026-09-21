@@ -55,9 +55,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Persist first, then apply — the same order every other setting uses. Setting state first meant a
+  // failed write left the app wearing a theme it would forget on the next launch, with no way to
+  // tell that from one that had been saved. The write is a single AsyncStorage entry, so the delay
+  // before the repaint is not perceptible. _(Found at 1.2.3.4: the same defect as the two settings
+  // toggles, in a different provider, and not in the item's spec.)_
   const setScheme = useCallback(async (next: ColorSchemePreference) => {
-    setSchemeState(next);
     await updateAppSettings({ colorScheme: next });
+    setSchemeState(next);
   }, []);
 
   const isDark = scheme === "dark" || (scheme === "system" && systemScheme === "dark");

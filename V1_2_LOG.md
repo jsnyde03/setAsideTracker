@@ -11,6 +11,35 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.3.4 A setting can no longer show a state that was never stored — SUB-TASK after-scan · 2026-09-21
+
+**Shipped.** `setAppLockEnabled`, `setRemindersEnabled` and `setScheme` all persist first, then set
+state. **248 unit · 43/43 Playwright (was 41) · typecheck + lint clean.**
+
+⭐ **The fix is the file's own documented contract.** `AppDataValue` says, above the mutations:
+*"Every one persists first, then updates state, and THROWS on failure."* Two of them did not — and
+the comment had been sitting directly above them the whole time. **Nothing had to be designed here;
+the rule already existed and two functions were outside it.**
+
+⭐ **Three setters, not two.** The before-scan checked the same shape elsewhere and found
+`ThemeContext.setScheme` doing exactly the same thing — state first, no rollback — in a different
+provider, which the gap scan had not seen. A failed write there leaves the app wearing a theme it
+will forget on the next launch, indistinguishable from one that saved. Folded in: same defect, same
+item, three lines.
+
+**Verified at the real boundary.** AsyncStorage on web is backed by `localStorage`, so the spec
+overrides `setItem` to throw for the settings key — a write that fails the way a disk does, not the
+way a mock does. The build log shows the injected error arriving at the real handler. App Lock's own
+switch cannot be driven on web (disabled unless the device reports biometrics), so reminders stands
+in; the two setters are the same three lines.
+
+⚠️ **Paired with a control** asserting a *successful* write still moves the switch and survives a
+reload. Without it, a switch wired to ignore every tap would pass the failure test perfectly.
+**Plant caught:** restoring the old ordering turned the failure spec red while the control stayed
+green — which is exactly the shape that says both tests are doing their own job.
+
+---
+
 ### 🔎 1.2.3.3 The recovery surface — SUB-TASK after-scan · 2026-09-21
 
 **Shipped.** `RecoveryScreen`, rendered by `AppGate` whenever `loadError` is set — **the consumer

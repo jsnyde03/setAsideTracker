@@ -176,14 +176,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [taxProfile]
   );
 
+  // ⛔ These two used to set state BEFORE awaiting the write, and nothing rolled them back. The
+  // caller alerts on the failure, but the switch stayed where the user put it — so a failed write
+  // left someone looking at an App Lock they did not have, believing their financial data was
+  // locked. They are also the only two mutations here that broke the contract stated above: persist
+  // first, then update state, and throw. Now they keep it, like everything else in this file.
   const setAppLockEnabled = useCallback(async (enabled: boolean) => {
-    setAppLockEnabledState(enabled);
     await updateAppSettings({ appLockEnabled: enabled });
+    setAppLockEnabledState(enabled);
   }, []);
 
   const setRemindersEnabled = useCallback(async (enabled: boolean) => {
-    setRemindersEnabledState(enabled);
     await updateAppSettings({ remindersEnabled: enabled });
+    setRemindersEnabledState(enabled);
   }, []);
 
   const clearAllData = useCallback(async () => {
