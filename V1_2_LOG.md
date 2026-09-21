@@ -11,6 +11,43 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.2.2 Dependent-mechanism sweep — SUB-TASK after-scan · 2026-09-21
+
+**Shipped.** `services/tax-engine/scripts/dependent-audit.mjs`, wired as `npm run audit:dependents`.
+⭐ **The inventory is generated from the configs, never hand-built** — this item exists *because* a
+hand-built list of three states was mistaken for the whole class, and a hand-built answer to it
+would have repeated the error.
+
+⚡ **The finding is an order of magnitude bigger than the audit's three states.** Of 51 configs,
+9 are no-income-tax and 42 tax income. **Only 7 of those 42 model any dependent mechanism at all** —
+GA/SC/MN (exemptions, corrected at 1.2.2.1) and AR/DE/NE/OR (genuine small credits). **35 model
+nothing.** Spot-confirmed against sources that this is a real gap and not just states without one:
+**CA $489/dependent credit · NJ $1,500 exemption · MA $1,000 exemption**, all currently ignored.
+
+⚠️ **The direction differs, and that is what settles the routing.** GA/SC/MN *understated* what was
+owed — a user under-sets-aside and meets an IRS penalty, which is why it shipped immediately. The 35
+*overstate* — the user sets aside too much. Wrong, and wrong against any competitor or preparer, but
+safe. **Deferred to its own v1.3 workstream.**
+
+⛔ **Deliberately NOT "just fix the big states."** Folding in CA and NY by population is precisely
+the error that produced this finding: three states were fixed because three had been looked at. The
+correct unit of work is a systematic pass over all 42 with a statute citation each, and that is
+research, not a sub-step.
+
+**Two things the script does beyond reporting:**
+- **Cross-year drift** — flags any state handled differently in 2025 vs 2026. Output: only GA, which
+  is 1.2.2.1's intended $4,000 → $5,000 change. **No half-applied edits anywhere**, which is a real
+  reassurance after touching six config sites by script.
+- **It exits 1** on any per-dependent *credit* ≥ $1,000. No real credit approaches that (the genuine
+  ones are $29–$256), so the GA/SC/MN class cannot silently return. That makes it a CI gate rather
+  than a report nobody runs — the seed of what 1.2.2.7 owes.
+
+**Correcting the before-scan on VT:** it called VT "half correct". The sweep shows VT in the
+**no-dependent-mechanism** list, so the per-filer part folded into `standardDeduction` is all it has.
+The reading holds; the sweep just places it in a much larger group than "one state over".
+
+---
+
 ### 🔎 Maestro dispatches #2–#13 — PAUSED out of minutes · 2026-09-21
 
 **State: 2 of 12 flows pass.** Paused for Codemagic minutes, resumes ~November. Everything is

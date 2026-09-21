@@ -24,10 +24,9 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> **▶ ACTIVE = 1.2.2 (tax-correctness block), decomposed into 7 sub-steps. Next action: 1.2.2.1.**
-> **⏸ 1.2.1 is 7/7 built and blocked on Maestro dispatch #2** — manual-only, Jason-side; it closes
-> the moment those flows pass. Working 1.2.2 during that wait rather than idling.
-> Health: **197** mobile unit · **34/34** Playwright · typecheck clean · lint 14 (pre-existing).
+> **▶ ACTIVE = 1.2.2 (tax-correctness block), 2 of 7 done. Next action: 1.2.2.3** — safe-harbor
+> annualization. **⏸ 1.2.1 is 7/7 built**, validation deferred to ~November with Maestro.
+> Health: **102** engine · **197** mobile unit · **34/34** Playwright · typecheck clean · lint 14.
 >
 > ⚠️ **Constraint carried into 1.2.4 and beyond: do not assert absolute dollar figures in tests.**
 > 1.2.2 changes the tax math, which changes what `buildDemoSeed` produces. Derived assertions
@@ -125,7 +124,7 @@ per-entry set-aside in ~52 rows a year; building it first multiplies one wrong f
 | # | sub-step | scan |
 |---|---|---|
 | **1.2.2.1** | ✅ **DONE 2026-09-20.** New `StateExemptionConfig` + `dependentExemptionUsed` on the result; subtracted from income in **both** the flat and bracket branches; GA/SC/MN moved off `credit`. ⭐ **The bug had TESTS PROTECTING IT** — two asserted the credit behaviour, one named *"which is material (not a rounding error)"*. Rewritten as 4. ✅ **GA $4,000→$5,000 confirmed effective TY2026** (HB 463), so the 2026 config's `4000` was a *second*, separate bug. 102 engine tests, both plants caught. | ✅ |
-| **1.2.2.2** | **Audit every state's dependent mechanism, not just the three.** ⭐ The audit called VT the correct precedent; it is **half** correct — `7650 + 5300` folds the **per-filer** exemption into the standard deduction (MFJ doubles it, consistent), but VT's **dependent** exemptions are not modelled at all. **Nobody has checked the other 47.** A fix to three states that leaves the same class unmeasured elsewhere is not a fix. | ⬜ |
+| **1.2.2.2** | ✅ **DONE 2026-09-21.** `scripts/dependent-audit.mjs` (`npm run audit:dependents`) — inventory from the configs, not by hand. 🔴 **The finding is far bigger than three states: only 7 of 42 taxing states model ANY dependent mechanism; 35 model none**, incl. CA ($489/dep credit), NJ ($1,500), MA ($1,000) — all confirmed against sources. ⚠️ Direction is **safe** (overstates tax) unlike GA/SC/MN, so the 35-state fix is **deferred as its own workstream**, not folded. Cross-year drift clean (only GA's intended change). Script **exits 1** on any per-dependent credit ≥ $1,000, so the original class can never silently return. | ✅ |
 | **1.2.2.3** | **Safe harbor: annualize, or state what it is measuring.** `estimatedPaymentsNeeded` compares a 90% requirement built from YTD entries against a full-year withholding (`calculations.ts:511`, `:312`). **Design question in the sub-step:** project gig income to year-end, or scope the test to the period elapsed. ⚠️ `w2FederalWithholdingYtdEstimate` is **misnamed** — it holds an annual figure — and renaming it is part of the fix, not cosmetic. | ⬜ |
 | **1.2.2.4** | **MFJ spouse income.** New `TaxProfile` field (+ onboarding + edit); `grep -ri spouse` is currently empty repo-wide. Feeds `otherTaxableIncome` so gig profit stacks on top instead of starting at 10%. ⚠️ **Additive-optional, so it round-trips through backup for free** — measured at `backup.ts:51`,`:60`, same property 1.2.4 depends on. | ⬜ |
 | **1.2.2.5** | **Dependent asymmetry in the withholding credit.** ✅ **Confirmed this scan:** `w2Withholding.ts:28` calls `calculateStateTax(...)` with **no `numberOfChildren`**, and `calculateFederalIncomeTax` with no CTC — while the total it is subtracted from includes both. ⚠️ **Lens B's worked example ($656 vs ~$3,496) was NOT re-derived** — derive it here before quoting it. | ⬜ |
@@ -289,6 +288,17 @@ already present).
   1.2.2 depends on — so the fix must preserve forward-compatibility rather than whitelist known keys.
   **Deferred, not folded:** it is a correctness fix to a path 1.2.2 only reads.
   _(Found 2026-09-20 while verifying 1.2.2's schema cost — by reading the parser, not its docstring.)_
+- **🔴 35 of 42 taxing states model NO dependent mechanism at all → its own v1.3 workstream.**
+  Measured 2026-09-21 by `npm run audit:dependents`, not by hand. Only **7** states model anything:
+  GA/SC/MN (exemptions, fixed at 1.2.2.1) and AR/DE/NE/OR (small credits). Spot-confirmed against
+  sources that the gap is real and material — **CA $489/dependent credit, NJ $1,500 exemption, MA
+  $1,000 exemption**, all currently ignored. ⚠️ **Direction is SAFE** — omitting a deduction
+  *overstates* tax, unlike GA/SC/MN which understated it — which is the whole reason this defers
+  while those shipped immediately. **Deferred, not folded, and deliberately not "just the big
+  states":** picking CA and NY by population would repeat the exact error that produced this
+  finding (three states fixed because three were looked at). It needs a systematic pass over all 42
+  with a statute citation each — real research, its own item, not a sub-step.
+  _(Found 2026-09-21 at the 1.2.2.2 audit.)_
 - **Nothing stops a money-spending site from reading `canUsePremium` → 1.2.11.** [D5]'s guarantee is
   currently held by a doc comment: purchase, PDF export and the "Premium active" row must read
   `usePremium().isPremium`, and nothing checks that they still do. An ESLint `no-restricted-imports`
