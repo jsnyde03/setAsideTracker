@@ -133,6 +133,75 @@ describe("the encryption key is never minted over existing data", () => {
   });
 });
 
+describe("recovering from a backup when the data cannot be read", () => {
+  const BACKUP = JSON.stringify({
+    version: 1,
+    exportedAt: "2026-09-01T00:00:00.000Z",
+    localUserProfile: { id: "u", displayName: "Restored" },
+    taxProfile: { state: "CA", filingStatus: "single" },
+    entries: [{ id: "r1", grossPay: 250 }],
+    appSettings: { appLockEnabled: true },
+  });
+
+  /** Every user-data key unreadable, and the key that opened them gone: the state recovery exists for. */
+  function seedUnreadableDevice() {
+    for (const key of [
+      "gigTaxTracker:localUserProfile",
+      "gigTaxTracker:taxProfile",
+      ENTRIES_KEY,
+      "gigTaxTracker:appSettings",
+    ]) {
+      asyncStore.set(key, "U2FsdGVkX1+written-under-a-key-that-is-gone");
+    }
+  }
+
+  it("restores onto a device whose key is gone, which plain restore cannot do", async () => {
+    seedUnreadableDevice();
+    const repository = await loadRepository();
+
+    // Proof the starting state is the hard one: an ordinary read fails.
+    await expect(repository.getEntries()).rejects.toThrow("not available");
+
+    const snapshot = await repository.recoverFromBackup(BACKUP);
+
+    expect(snapshot.entries).toHaveLength(1);
+    expect(secureStore.setCalls, "a key had to be minted after the wipe").toBe(1);
+    // And the restored data reads back through the normal path, which is the whole point.
+    await expect(repository.getEntries()).resolves.toEqual([{ id: "r1", grossPay: 250 }]);
+  });
+
+  /**
+   * ⭐ The property that makes this safe to offer on an error screen. If the file is bad, the user
+   * must still have whatever they had — however unreadable — rather than having traded it for
+   * nothing. So parsing happens before anything is removed.
+   */
+  it("destroys nothing when the backup file is malformed", async () => {
+    seedUnreadableDevice();
+    const before = new Map(asyncStore);
+    const repository = await loadRepository();
+
+    await expect(repository.recoverFromBackup('{"version":99,"entries":[]}')).rejects.toThrow("version");
+    await expect(repository.recoverFromBackup("not json at all")).rejects.toThrow("isn't valid");
+
+    expect(asyncStore).toEqual(before);
+    expect(secureStore.setCalls).toBe(0);
+  });
+
+  it("erases the settings blob too, or the app could never start again", async () => {
+    // `clearAllLocalData` spares appSettings. Here that would leave one unreadable value behind,
+    // which still blocks minting — so the user erases everything and is stranded anyway.
+    seedUnreadableDevice();
+    const repository = await loadRepository();
+
+    await repository.eraseUnreadableLocalData();
+
+    expect(asyncStore.size).toBe(0);
+    // The app can start over: a write now succeeds, which means a key was minted.
+    await repository.addEntry({ id: "fresh", amount: 1 } as never);
+    expect(secureStore.setCalls).toBe(1);
+  });
+});
+
 describe("a key failure is not cached forever", () => {
   /**
    * ⭐ [D12]'s retry depends entirely on this. The key is held in a module-level promise; a rejected

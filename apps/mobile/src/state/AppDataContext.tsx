@@ -1,9 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Entry, FiledYearTax, LocalUserProfile, TaxProfile } from "../types";
+import { reportError } from "../errorReporting";
 import {
   addEntry,
   clearAllLocalData,
   deleteEntry as deleteEntryFromStore,
+  eraseUnreadableLocalData,
+  forgetCachedEncryptionKey,
+  recoverFromBackup,
   getAppSettings,
   getEntries,
   getLocalUserProfile,
@@ -43,6 +47,15 @@ interface AppDataValue {
   setRemindersEnabled: (enabled: boolean) => Promise<void>;
   clearAllData: () => Promise<void>;
   restoreBackup: (json: string) => Promise<BackupSnapshot>;
+
+  // ─── Recovery ([D12]) — only reachable while `loadError` is set. ──────────────────────────────
+  /** Re-resolves the encryption key and re-reads everything. The retry offered for the transient
+   *  locked-keystore case; resolves to true if the data is readable now. */
+  retryLoad: () => Promise<boolean>;
+  /** Replaces unreadable local data with a backup file's contents. Parses before it destroys. */
+  recoverFromBackupFile: (json: string) => Promise<BackupSnapshot>;
+  /** Forgets the unreadable data entirely and returns the app to a first-run state. */
+  eraseAndStartOver: () => Promise<void>;
   /** Re-reads everything from storage. The seam demo mode (1.2.1) uses to enter and leave cleanly. */
   reload: () => Promise<void>;
 }
@@ -90,8 +103,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         await load();
       } catch (error) {
         // Recorded, not swallowed, and `ready` still flips below — without that the app hangs on a
-        // spinner forever with no feedback. The consumer decides what to show; this layer doesn't
-        // own the UI.
+        // spinner forever with no feedback. `AppGate` is the consumer: it shows the recovery surface
+        // ([D12]) rather than letting the app fall through to onboarding with a null profile, which
+        // is what happened for as long as this had no consumer at all.
+        // Reported too — until 1.2.3.3 nothing sent these anywhere, so there is no figure for how
+        // often a real device fails to open its own data.
+        reportError(error, { where: "AppDataProvider/load" });
         if (!cancelled) setLoadError(error);
       } finally {
         if (!cancelled) setReady(true);
@@ -177,6 +194,47 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setAppLockEnabledState(false);
   }, []);
 
+  // ─── Recovery ([D12]) ──────────────────────────────────────────────────────────────────────────
+  //
+  // All three clear `loadError` only on success, so a failed recovery leaves the user on the screen
+  // that can still help them rather than dropping them into an app with no data.
+
+  const retryLoad = useCallback(async () => {
+    // Without this the retry is theatre: the resolved key is cached in a module-level promise, so
+    // the second attempt would reuse the first attempt's answer (1.2.3.2).
+    forgetCachedEncryptionKey();
+    try {
+      await load();
+      setLoadError(null);
+      return true;
+    } catch (error) {
+      reportError(error, { where: "AppDataProvider/retryLoad" });
+      setLoadError(error);
+      return false;
+    }
+  }, [load]);
+
+  const recoverFromBackupFile = useCallback(async (json: string) => {
+    const snapshot = await recoverFromBackup(json);
+    setEntries(snapshot.entries);
+    setLocalUserProfile(snapshot.localUserProfile);
+    setTaxProfile(snapshot.taxProfile);
+    setAppLockEnabledState(snapshot.appSettings.appLockEnabled);
+    setRemindersEnabledState(snapshot.appSettings.remindersEnabled ?? true);
+    setLoadError(null);
+    return snapshot;
+  }, []);
+
+  const eraseAndStartOver = useCallback(async () => {
+    await eraseUnreadableLocalData();
+    setEntries([]);
+    setLocalUserProfile(null);
+    setTaxProfile(null);
+    setAppLockEnabledState(false);
+    setRemindersEnabledState(true);
+    setLoadError(null);
+  }, []);
+
   const restoreBackup = useCallback(async (json: string) => {
     const snapshot = await restoreBackupSnapshot(json); // throws on a malformed file
     setEntries(snapshot.entries);
@@ -207,6 +265,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setRemindersEnabled,
       clearAllData,
       restoreBackup,
+      retryLoad,
+      recoverFromBackupFile,
+      eraseAndStartOver,
       reload: load,
     }),
     [
@@ -228,6 +289,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setRemindersEnabled,
       clearAllData,
       restoreBackup,
+      retryLoad,
+      recoverFromBackupFile,
+      eraseAndStartOver,
       load,
     ]
   );

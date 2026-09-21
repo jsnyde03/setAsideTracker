@@ -283,6 +283,54 @@ export async function exportBackupSnapshot(): Promise<string> {
 
 /** Restores from a backup JSON string, overwriting all current local data. Returns the restored
  * snapshot so the caller can update in-memory app state without requiring a full app restart. */
+/**
+ * Everything a recovery must remove, which is **more than `clearAllLocalData` removes.**
+ *
+ * ⚠️ The difference is `appSettings`, and here it is not cosmetic. A new key can only be minted once
+ * nothing is left that an older key was holding, and `appSettings` counts — so a recovery that used
+ * `clearAllLocalData` would leave one unreadable blob behind, refuse to mint, and strand the user on
+ * the recovery screen having *already* erased everything else.
+ *
+ * `clearAllLocalData` keeps its current behaviour deliberately: it backs a shipped, user-initiated
+ * "delete my data" flow, and the fact that it spares `appSettings` against the stated privacy policy
+ * is a separate defect already filed at 1.2.10. Fixing it there means changing what that flow does;
+ * fixing it here would mean changing it as a side effect of an unrelated item.
+ */
+async function discardUnreadableLocalData(): Promise<void> {
+  await backend().removeMany([KEYS.localUserProfile, KEYS.taxProfile, KEYS.entries, KEYS.appSettings]);
+  // ⚠️ No `forgetCachedEncryptionKey()` here, and that is deliberate rather than an omission: it was
+  // written, planted against, and the plant PASSED. There is no case for it — a cached *rejection*
+  // is already cleared where it is cached, and a cached key that resolved is still the right key
+  // after a wipe. Re-adding it would be defensive code no test can justify.
+}
+
+/** The erase half of the recovery surface: forget local data entirely and let the app start over. */
+export async function eraseUnreadableLocalData(): Promise<void> {
+  await discardUnreadableLocalData();
+}
+
+/**
+ * Restore as a **recovery**: the local data is discarded first, then the snapshot is written.
+ *
+ * Different from `restoreBackupSnapshot` in the one way that matters — it does not require the
+ * existing data to be readable, because in this path it is precisely what is not.
+ *
+ * ⚠️ **The snapshot is parsed BEFORE anything is destroyed.** A malformed or truncated backup file
+ * must fail with the user's data still on the device, however unreadable it is; erasing first and
+ * discovering the replacement is unusable second is the one outcome this path must never produce.
+ */
+export async function recoverFromBackup(json: string): Promise<BackupSnapshot> {
+  const snapshot = parseBackupSnapshot(json);
+  await discardUnreadableLocalData();
+  await Promise.all([
+    snapshot.localUserProfile ? saveLocalUserProfile(snapshot.localUserProfile) : Promise.resolve(),
+    snapshot.taxProfile ? saveTaxProfile(snapshot.taxProfile) : Promise.resolve(),
+    saveEntries(snapshot.entries),
+    saveAppSettings(snapshot.appSettings),
+  ]);
+  return snapshot;
+}
+
 export async function restoreBackupSnapshot(json: string): Promise<BackupSnapshot> {
   const snapshot = parseBackupSnapshot(json);
   await Promise.all([

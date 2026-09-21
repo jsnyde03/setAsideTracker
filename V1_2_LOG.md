@@ -11,6 +11,54 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.3.3 The recovery surface — SUB-TASK after-scan · 2026-09-21
+
+**Shipped.** `RecoveryScreen`, rendered by `AppGate` whenever `loadError` is set — **the consumer
+that provider comment has been promising since the provider was written.** `retryLoad`,
+`recoverFromBackupFile` and `eraseAndStartOver` on the context; `recoverFromBackup` and
+`eraseUnreadableLocalData` in the repository. **248 unit · 41/41 Playwright (was 38) · typecheck +
+lint clean.**
+
+**The before-scan found a coupling that would have shipped a broken recovery:**
+
+- 🔴 **Restore writes through the same key path it is recovering from.** `restoreBackupSnapshot`
+  calls `writeJson`, which needs a key — so after key loss the one genuine recovery the app has
+  **cannot run at all**. Recovery therefore discards first and writes second.
+- 🔴 **And discarding with `clearAllLocalData` would not have been enough.** It spares `appSettings`
+  (a known defect, filed at 1.2.10, which reads as cosmetic there) — but `hasStoredUserData` counts
+  `appSettings`, so one unreadable blob left behind still blocks the mint. The user would have
+  erased everything and *still* been stranded on the recovery screen. `discardUnreadableLocalData`
+  removes all four. ⚠️ **`clearAllLocalData` deliberately unchanged** — it backs a shipped
+  user-initiated flow, and changing what that does belongs to 1.2.10, not to a side effect here.
+- ⭐ **The backup is parsed before anything is destroyed.** A malformed file must leave the user
+  with whatever they had, however unreadable, rather than trading it for nothing. Planted: erasing
+  first made the malformed-file test red immediately.
+
+**Placement:** the recovery check sits **before** the app-lock check, deliberately. The app-lock
+setting is one of the values that could not be read, so it defaults to off — meaning the lock cannot
+be trusted to be *on* either. Nothing on the screen reveals data, and erasing is something an
+attacker could achieve by deleting the app.
+
+**Four plants. Three caught — and the fourth passed, which is why a line was removed:**
+1. Erase before parse → the malformed-file test red.
+2. Discard only three keys → two tests red.
+3. `AppGate`'s `loadError` branch disabled — i.e. exactly the shipped state — → **both** recovery
+   e2e specs red. That is the defect reproduced and caught.
+4. `forgetCachedEncryptionKey()` removed from the discard path → **everything still green.** It was
+   not load-bearing: a cached *rejection* is already cleared where it is cached, and a cached key
+   that resolved is still correct after a wipe. **Deleted, with the reasoning left in its place** so
+   it is not re-added as a defensive reflex. _(Retry keeps its call — that one is load-bearing and
+   has its own test.)_
+
+⚠️ **What the e2e cannot prove.** react-native-web renders no `Alert`, so the erase confirmation and
+both failure alerts are **device-owed** and go to the TestFlight checklist. What the specs do cover
+is the part that was broken — the routing decision — plus a **control** asserting that a readable
+device still reaches onboarding, without which a screen that rendered unconditionally would have
+passed. Unreadable state is seeded as corrupt *plaintext*, because web has no keystore, so the
+decode path is reached the way the platform actually reaches it.
+
+---
+
 ### 🔎 1.2.3.2 Never mint a key over existing data — SUB-TASK after-scan · 2026-09-21
 
 **Shipped.** `getOrCreateEncryptionKey` is gone, split into `readEncryptionKey` and
