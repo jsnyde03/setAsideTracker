@@ -152,8 +152,8 @@ re-buys it with a run.
 |---|---|---|
 | **1.2.14.1** | ✅ **DONE 2026-09-22.** Probed the runner rather than trusting the docs, which contradict themselves on macOS. **Measured `billable.MACOS.total_ms = 0`.** Image `macos-26-arm64`, Xcode 26.6, 15 iPhone simulators — **no "iPhone 15"**, so the don't-hardcode lesson still bites; the derivation picks iPhone 17. | ✅ |
 | **1.2.14.2** | **Port the workflow** to `.github/workflows/maestro-ios.yml`, carrying every lesson above. Pin Node 22 for parity (runner ships 24). | ⬜ |
-| **1.2.14.3** | **First dispatch = the harness's validation pass, NOT a regression check.** The flows have not run since the `expo-router` migration replaced the whole navigation layer. | ⬜ |
-| **1.2.14.4** | **Answer the three open questions from a real log** — the Premium row in two gating flows · `Settings` not found on the dashboard · demo mode's seeded Uber entry. ⚠️ **Read the text dump, never the assertion text.** | ⬜ |
+| **1.2.14.3** | ✅ **DONE 2026-09-22.** Two runs, **0 billable ms**. Every infra step passes — including `xcodebuild` ad-hoc signing and boot+install — and run 1 hit **the same 2/12 as Codemagic**, which is the port validating itself. | ✅ |
+| **1.2.14.4** | ⚙️ **The three questions are ANSWERED and two were mis-framed** *(Premium rows ARE present — never the keypad; `Settings` missing with `$0.00` at **y=-25**, i.e. scrolled past the header; demo now fails earlier, superseding it)*. 🔴 **Root cause found: the flows predate 1.2.5's GPS trip toggle, which grew the entry form.** Save Entry fixed → **all 5 of those flows moved past it**; the blocker relocated to the **numeric keypad staying open** (viewport 874→568) and the `50%,15%` neutral tap now landing on the trip-tracker description. | 🔵 |
 | **1.2.14.5** | **Green or triage all 12 flows**, then retire Codemagic's `maestro-ios` workflow so there is one Maestro home, not two. | ⬜ |
 | **1.2.14.6** | **Verify + whole-item after-scan.** | ⬜ |
 

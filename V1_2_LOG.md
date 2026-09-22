@@ -11,6 +11,68 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.14.3 / .4 Two Maestro runs on GitHub Actions — 2026-09-22
+
+**Run 1 `35788360578` (47m55s) · Run 2 `35793230630`. Both 2/12. Both 0 billable ms.**
+
+✅ **The port is validated, and "2/12 twice" is the evidence, not the disappointment.** Every
+infrastructure step passed on the first attempt — npm workspace install, tax-engine build, typecheck,
+unit tests, `expo prebuild` + pods, `xcodebuild` **with ad-hoc signing**, boot + install, Maestro
+install — and the run reproduced **the same two passes Codemagic produced**. Identical results from a
+different CI is what says the port carried its lessons rather than losing them.
+
+⭐ **The hierarchy dump paid for itself twice in one evening.** Run 1: five flows reported
+*"Element not found: Save Entry"*. The dump answered it in a single read —
+
+```
+Gross pay | 4000 | 0.00          ← typed fine
+Mileage (business miles driven) | 500 | 0
+Track this trip with GPS         ← 1.2.5 put this here
+Vertical scroll bar, 2 pages | 0%
+```
+
+**The button was never missing; the form was at scroll 0% of 2 pages.** ⛔ **The root cause is ours,
+not Maestro's: the flows predate 1.2.5's GPS trip toggle, which grew this form past one screen.**
+
+✅ **Fixed with `scrollUntilVisible` in 6 flows / 7 sites — and it worked: run 2 has ZERO "Save Entry"
+failures.** All five flows advanced. ⚠️ **The pass count did not move, and that is the trap to avoid
+here — "still 2/12" hides five flows getting materially further.** Judge these runs by *where* they
+fail, never by the count.
+
+🔴 **Where the blocker moved, from run 2's dump:**
+
+```
+Save Entry   [20,427][382,476]   ← reached, visible, tapped
+Cancel       [20,484][382,528]
+1  2  3      [4,590]…            ← THE NUMERIC KEYPAD IS STILL OPEN
+```
+
+The keypad occupies the bottom ~35%, cutting the usable viewport from **874 to 568**, and the screen
+is *still the entry form* after Save Entry was tapped. ⚠️ **And the dismissal is now aimed at the
+wrong place:** the flows tap `50%,15%` ≈ y=131 to blur the field, which in today's layout lands on
+*"Measures your miles while a trip is running"* — **1.2.5's own description text.** That point was
+neutral when the flows were written and stopped being neutral when the form grew. ⚠️ Whether the
+keypad alone explains the un-saved form is **not yet established** — do not fix it as though it were
+until the next dump says so.
+
+⛔ **Deliberately NOT batched: the 4 `scrollUntilVisible` failures on elements the dump proves are
+present.** The obvious theory — `centerElement` is broken — is **refuted by measurement: all 12
+flows use it, including both that pass.** Refined hypothesis: it fails when the target cannot be
+centred because scrolling is already at its end (both failures sit at scrollbar 100%). **Still a
+hypothesis.** Fixing it alongside the evidenced change would have made this run unreadable.
+
+✅ **The three questions parked since 2026-09-21 are answered, and two were MIS-FRAMED:**
+1. The Premium rows are **present** — `IRS mileage log (Premium)`, `Custom expense categories
+   (Premium)` — at the very bottom edge. **It was never the numeric keypad**, which the old note
+   had reasoned toward because those flows "type nothing".
+2. `Settings` is missing because the dashboard is **scrolled past its own header** — the dump shows
+   `$0.00` rendered at **y=-25**.
+3. Demo mode now fails *earlier* than the seeded Uber entry, so that question is superseded.
+
+🔴 **A foot-gun I built: the `paths:` trigger means every edit to the workflow file starts a
+~48-minute run.** It spawned a duplicate of run 2, cancelled. Now unnecessary — see the correction
+below — and should be removed.
+
 ### 🔎 1.2.14.1 Probe the macOS runner — SUB-TASK after-scan · 2026-09-22 · ✅ DONE
 
 ⭐ **[D27] rested on a claim I had not measured, and the documentation would not settle it.** GitHub's
