@@ -186,6 +186,7 @@ out-of-order number is worth less than one more round of that.
 | 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
 | 1.2.9 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. |
 | 1.2.11 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.7 rewrite those files. |
+| **1.2.13** | 🔴 **PUBLISH the privacy policy — SHIP BLOCKER** | The URL Apple and users read is served from a **different repo** (`jsnyde03/Set_Aside_Tracker`, Pages, last pushed 2026-07-02) and **never mentions location**. `docs/privacy.html` here is 2026-09-21 and does. v1.2 ships location capture. ⚠️ `privacyClaimsAgree` is green and cannot see it — the published copy is not in this repo. |
 | 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
 
 ⚠️ **Sequencing, and it is the point of the restructure:** the correctness blocks run **before** the
@@ -333,6 +334,25 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From the repo-visibility check _(2026-09-22)_
+
+- 🔴 **[D16] is TRUE IN THIS REPO AND FALSE IN THE WORLD → 1.2.13 (promoted, ship blocker).**
+  "One privacy policy" consolidated the two copies *here*; the copy that is actually **served** lives
+  in `jsnyde03/Set_Aside_Tracker` and was never in scope. ⚡ **The drift [D16] existed to kill simply
+  moved to a repository the gate cannot reach.** Structural fix needed, not another one-off sync —
+  either publish from this repo (Pages on `docs/`, which would also make the URL and the canonical
+  file the same object) or a release step that pushes it. ⚠️ **Whatever is chosen must extend
+  `privacyClaimsAgree` to check the LIVE URL**, or the next drift is silent in exactly the same way.
+- **Two public repos, and only one was known about.** `setAsideTracker` (code, no Pages) and
+  `Set_Aside_Tracker` (Pages: privacy + support). The deferred "repo → private" item's "check Pages
+  first" caveat is satisfied for the code repo — **but `Set_Aside_Tracker` must stay public** for
+  Pages to serve on a free plan.
+- ⚠️ **"Repo → private" now has a cost it did not have when filed → re-decide, do not just execute.**
+  GitHub Actions is free on macOS runners **for public repos**, which is what makes the Maestro-on-
+  Actions route viable (Jason 2026-09-22) and would unblock the ~November pause while protecting the
+  reserved Codemagic builds. Private repos drop to ~200 macOS minutes/month. **The two wishes are
+  close to mutually exclusive on a free plan.**
 
 ### From 1.2.7.2 _(2026-09-22)_
 
