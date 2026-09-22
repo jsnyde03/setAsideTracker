@@ -17,6 +17,7 @@ import {
   weekStartOf,
 } from "../calculations";
 import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates";
+import { summarizeWeekdayEarnings } from "../weekdayEarnings";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { BreakdownDetailSheet } from "../components/BreakdownDetailSheet";
@@ -44,6 +45,8 @@ interface DashboardScreenProps {
   onOpenYearOverYear: () => void;
   /** Opens the Schedule C expense breakdown (Premium). Premium users only — free → paywall. */
   onOpenExpenseBreakdown: () => void;
+  /** Opens the best-days-to-work view (Premium). Premium users only — free → paywall. */
+  onOpenBestDays: () => void;
   /** Opens the paywall — invoked when a free user taps a locked Premium card (W-4, safe harbor). */
   onOpenPaywall: () => void;
   onUpdateAmountSetAside: (year: number, amount: number) => void;
@@ -96,6 +99,7 @@ export function DashboardScreen({
   onOpenSafeHarbor,
   onOpenYearOverYear,
   onOpenExpenseBreakdown,
+  onOpenBestDays,
   onOpenPaywall,
   onUpdateAmountSetAside,
 }: DashboardScreenProps) {
@@ -140,6 +144,9 @@ export function DashboardScreen({
 
   // Year-over-year insights soft-gate: only meaningful once entries span 2+ distinct tax years.
   const yearsTracked = yearsWithEntries(entries).length;
+
+  // Day-of-week earnings ([D20]). The card below and the screen it opens share this one soft gate.
+  const weekdayEarnings = summarizeWeekdayEarnings(entries, year);
 
   const [showShare, setShowShare] = useState(false);
 
@@ -628,6 +635,30 @@ export function DashboardScreen({
                   </Text>
                   <Text style={styles.insightSub}>
                     See your write-offs grouped by Schedule C line — including custom categories.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
+            )}
+
+            {/* Best days ([D20]). Soft-gated on the same rule the screen uses, so the card never
+                promises a comparison the screen would then refuse to draw. */}
+            {weekdayEarnings.hasEnoughData && (
+              <Pressable
+                onPress={canUsePremium ? onOpenBestDays : onOpenPaywall}
+                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={canUsePremium ? "Open best days to work" : "Best days to work (Premium)"}
+              >
+                <View style={styles.insightIconWrap}>
+                  <Ionicons name={canUsePremium ? "calendar-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                </View>
+                <View style={styles.insightInfo}>
+                  <Text style={styles.insightTitle}>
+                    Best days to work{canUsePremium ? "" : "  ·  Premium"}
+                  </Text>
+                  <Text style={styles.insightSub}>
+                    Which days of the week have actually paid you best per hour.
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />

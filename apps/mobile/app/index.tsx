@@ -43,6 +43,7 @@ export default function DashboardRoute() {
         onOpenSafeHarbor={() => router.push("/safe-harbor")}
         onOpenYearOverYear={() => router.push("/year-over-year")}
         onOpenExpenseBreakdown={() => router.push("/expense-breakdown")}
+        onOpenBestDays={() => router.push("/best-days")}
         onOpenPaywall={() => router.push("/paywall")}
         onUpdateAmountSetAside={handleUpdateAmountSetAside}
       />

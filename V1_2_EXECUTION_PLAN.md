@@ -24,17 +24,15 @@
 > ship as soon as it is done.** Do not reintroduce a target.
 >
 > ✅ **1.2.2 through 1.2.5 ARE ALL COMPLETE** and closed. **▶ ACTIVE: 1.2.6, the premium slice**
-> ([D3]), decomposed below — pure JS, so every line is verifiable here. ✅ **1.2.6.2 is DONE** (the due-date
-> shift; its after-scan folded in a launch-time refresh without which the fix reached no existing
-> install). ✅ **1.2.6.1 is DONE** — the amount is on the dashboard, premium, beside a free date.
-> ✅ **1.2.6.3 is DONE** — the payment tracker ([D19]: per-quarter), plus a **live v1.1.1 data-loss
-> fix** its before-scan found: editing the tax profile erased `filedTaxByYear`.
-> **▶ Next action: 1.2.6.4**, the shift/earnings optimizer — 1.2.6's headline, pulled from v1.3.
-> ⚠️ Soft-gate below ~30 entries; **the demo persona is what makes it demoable** (it seeds 20).
+> ([D3]), decomposed below — pure JS, so every line is verifiable here.
+> ✅ **1.2.6.1–1.2.6.4 are DONE.** The payment tracker ([D19]) came with a **live v1.1.1 data-loss
+> fix**, and the optimizer shipped as day-of-week ([D20]) after its before-scan found the spec's
+> time-of-day had no data behind it. **▶ Next action: 1.2.6.5**, the expense-breakdown drill-down.
+> ⚠️ `ExpenseBreakdownScreen` **already exists** — establish what "drill-down" adds before building.
 > ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
 > worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
-> Health: **330** mobile unit · **102** engine · **57/57** Playwright · typecheck clean · both tax-config
+> Health: **339** mobile unit · **102** engine · **61/61** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
@@ -148,7 +146,7 @@ blur or remove anything already free. An item that fails that test is cut, not s
 | **1.2.6.2** | ✅ **DONE 2026-09-21 — the IRS due-date business-day shift.** Dates now move past weekends, MLK Day and Emancipation Day; **the after-scan folded in a launch-time refresh**, without which the fix reached nobody already installed and the reminder queue drained after a year. **321 unit · 7 plants, 7 caught.** | ✅ |
 | **1.2.6.1** | ✅ **DONE 2026-09-21 — the per-quarter amount on the dashboard's due-date row**, premium, beside a date that stays free. Labelled as a projection. **53/53 Playwright (3 new) · 4 plants, 3 caught** — the one that passed is recorded as a coverage gap, not a pass. | ✅ |
 | **1.2.6.3** | ✅ **DONE 2026-09-21 — the safe-harbor payment tracker.** Paid vs. required per quarter ([D19]), counting only deadlines already passed. 🔴 **Also fixed a live v1.1.1 data-loss bug** the before-scan found: editing the tax profile erased `filedTaxByYear`. **330 unit · 57/57 Playwright · 5 plants, 5 caught.** | ✅ |
-| **1.2.6.4** | **Shift/earnings optimizer** — the headline, pulled from v1.3, and the owed earning-optimization repositioning. Soft-gate below ~30 entries; **demo mode is what makes it demoable**. | ⬜ |
+| **1.2.6.4** | ✅ **DONE 2026-09-21 — "Best days to work", day-of-week ([D20]).** Ranked by hourly rate, gated on per-weekday sample. ⛔ Before-scan killed two thirds of the spec: time-of-day has **no data** (`Entry` has no time) and the platform half **already ships free**. **339 unit · 61/61 Playwright · 6 plants, 6 caught.** | ✅ |
 | **1.2.6.5** | **Expense-breakdown drill-down.** | ⬜ |
 | **1.2.6.6** | **Verify + whole-item after-scan.** ⚠️ **Do not assert absolute dollar figures** — 1.2.2 and 1.2.4 both moved what the demo seed produces. | ⬜ |
 
@@ -267,6 +265,7 @@ map is at the head of the log's item-spec section._
 | **[D17]** | **The tracker keeps measuring while the app is off screen — `UIBackgroundModes: location` plus the visible iOS indicator, on WHEN-IN-USE permission. No "Always" prompt, so [D8]'s line holds.** ⛔ **The alternative was a tracker that under-counts by design:** a gig worker's phone shows the delivery app, not this one, so foreground-only capture would quietly miss most of the drive — and under-claiming a deduction is the same shape of defect as the three understating bugs 1.2.2 exists to fix. Accepted costs: a TaskManager background task, more App Store review scrutiny, and **nothing here is provable without a device**. ⚠️ **Android stays foreground-only** — its background-location permission is a separately justified Play review and Android ships in v1.3. | Jason 2026-09-21 |
 | **[D18]** | **The per-quarter figure goes on the DASHBOARD; the reminder notification carries no dollar amount.** A notification body is frozen when it is scheduled — only at onboarding or a Settings toggle, never on dashboard mount — and the OS delivers it up to a year later, while `perQuarter` moves with every entry logged. **A stale figure beside a payment instruction is the same defect class 1.2.6.2 exists to remove.** The existing "check your dashboard" pointer is the one part of a months-old message still true when it fires, and it routes to a number that recomputed today. Also sidesteps two entitlement edges: a lapsed subscriber still delivered premium content, and a later subscriber who is not. | Jason 2026-09-21 |
 | **[D19]** | **The payments-made model is PER-QUARTER, not a per-year total.** The plan said to follow `amountSetAsideByYear`'s `Record<year, number>` shape. ⛔ **That shape cannot answer the question the tracker exists to answer:** safe-harbor penalties are computed per period, so a single annual figure reports a user who paid nothing until January as fully compliant. Stored as `Record<year, { q1?, q2?, q3?, q4? }>`, checked against the four due dates 1.2.6.2 corrected. **Rejected the richer per-payment shape with dates** — it only pays for itself in an actual underpayment-penalty calculation, which v1.2 is not doing. | Jason 2026-09-21 |
+| **[D20]** | **The shift/earnings optimizer ships as DAY-OF-WEEK only, gated on per-weekday sample size.** ⛔ **Its specified headline could not be built and half of it already existed.** `Entry` carries no time, and nothing in the app ever recorded one, so *"best time-of-day"* — named in ROADMAP §9.1 and IMPLEMENTATION_PLAN §347 — had no data behind it; and per-platform earnings + effective hourly rate with the best rate highlighted **already shipped, for free**, on `PlatformComparisonScreen`, so rebuilding it behind the paywall would have taken something away from free and broken 1.2.6's own gating rule. **Day-of-week is the one axis the data supports and the app does not already show.** ⚠️ **The flat "~30 entries" gate is retired**: nothing derived the 30, and at 20 seeded entries it excluded the demo that was supposed to make the feature demoable. Replaced by the mechanism it was proxying — a weekday reports once it has **≥3 entries**, the screen appears once **≥2 weekdays** qualify. Measured: the persona lands 4 qualifying weekdays on any date. **Time-of-day deferred to v1.3+**, and it needs a data-model change before it is even a candidate. | Jason 2026-09-21 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
@@ -293,6 +292,20 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.6.4 _(2026-09-21)_
+
+- 🔴 **No premium route has a route-level guard, so a deep link bypasses the paywall.**
+  `/safe-harbor`, `/w4-optimizer`, `/year-over-year`, `/expense-breakdown` and now `/best-days` all
+  wrap only in `RequireTaxProfile`; the gating lives entirely on the dashboard card's `onPress`.
+  Pre-existing across all four, and the new screen follows the same shape deliberately rather than
+  inventing a fifth pattern. Low severity — it exposes the user's own data, not anyone else's — but
+  it is a paid feature reachable for free by anyone who knows the scheme. One `RequirePremium`
+  wrapper closes all five.
+- **Time-of-day earnings needs a data-model change before it is even a candidate.** `Entry` has no
+  time field and never has. Adding one leaves it empty for every existing entry, so the view stays
+  unbuildable for months after the field ships. ROADMAP and IMPLEMENTATION_PLAN were corrected in
+  place so the next reader is not re-sold it. → v1.3+.
 
 ### From 1.2.6.3 _(2026-09-21)_
 

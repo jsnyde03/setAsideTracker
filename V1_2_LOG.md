@@ -11,6 +11,58 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.6.4 Earnings optimizer — after-scan · 2026-09-21 · ✅ DONE
+
+**339 unit (from 330) · 102 engine · 61/61 Playwright (4 new) · typecheck clean · lint 15 unchanged ·
+ports free. 6 plants, 6 caught.**
+
+⛔ **THE HEADLINE: two thirds of the specified feature did not survive its own before-scan, and the
+half that did was already shipped.** The spec — ROADMAP §9.1 and IMPLEMENTATION_PLAN §347, agreeing
+with each other — promised *"best time-of-day, day-of-week, platform combinations by earnings and
+effective hourly rate"*. Checked against the code:
+
+- **Time-of-day had no data behind it.** `Entry` carries a date and no time, and nothing in the app
+  has ever recorded one (`startedAt` exists only on transient live-trip state). It was not "hard";
+  it was not possible, and nobody had looked.
+- **Platform by earnings + effective hourly rate, with the best rate highlighted, already shipped —
+  for FREE**, on `PlatformComparisonScreen`. Building it again behind the paywall would have
+  **removed something free**, which is the single thing 1.2.6's own gating rule forbids. ⚡ **The
+  item would have failed its own slice's rule**, and an e2e now asserts no platform name appears on
+  the new screen at all.
+- **Day-of-week survived** — derivable from `date`, and shown nowhere in the app today.
+
+⚠️ **[D20] retired the "~30 entries" gate, and the reason generalises.** Nothing derived the 30, and
+at 20 seeded entries it **excluded the demo persona that was supposed to make the feature demoable**
+— the plan asserted both things two lines apart. What the count was proxying is **per-cell sample
+size**: thirty shifts all on Saturdays say nothing about Tuesdays. Gating per weekday (≥3 entries,
+≥2 qualifying weekdays) states the mechanism directly, and it lets an honest screen show its strong
+days while naming the thin ones as thin. **Measured before building:** the seed's fixed day-offsets
+always yield 4 qualifying weekdays and 2 empty ones, whatever date the demo is opened on — so the
+e2e assertions are stable rather than lucky.
+
+⚠️ **Ranks on hourly RATE, not total earned.** Total earnings rank the days the user already worked
+most, which they know and cannot act on. A plant swapping the sort is caught by a fixture where
+Monday earns more overall and Saturday more per hour.
+
+🔴 **The most dangerous plant was the date parse.** `new Date("2026-03-02")` is UTC midnight, which
+is the *previous* day in every US timezone — it would file every Monday shift under Sunday, silently,
+for the whole app. `parseIsoDateLocal` is used instead, and the plant reds **7 of 9** tests. The
+fixture also carries its own control asserting 2026-03-02 really is a Monday, because a fixture and
+an implementation making the same off-by-one agree with each other.
+
+⚠️ **Re-learned a lesson already written down in `e2e/helpers.ts`.** Two of four new specs failed
+first time on web facts the helpers exist to absorb: a bare `getByText("DoorDash")` matches the
+dashboard's entry rows once any entry exists (→ `platformChip`), and **a covered route stays MOUNTED
+under a pushed one**, so an unscoped `toHaveCount(0)` fails while the screen is perfectly correct
+(→ `visible()`). The helper's docstring says both. **A convention written in the place it applies
+still has to be read.**
+
+🔴 **No premium route has a route-level guard.** All five premium screens — the four that existed and
+the one added here — wrap only in `RequireTaxProfile`, so the paywall lives entirely on the dashboard
+card's `onPress` and a deep link walks straight past it. The new screen follows the same shape
+deliberately rather than inventing a fifth pattern; filed to the backlog, where one `RequirePremium`
+wrapper closes all five.
+
 ### 🔎 1.2.6.3 Safe-harbor payment tracker — after-scan · 2026-09-21 · ✅ DONE
 
 **330 unit (from 321) · 102 engine · 57/57 Playwright (4 new) · typecheck clean · lint 15 unchanged ·
