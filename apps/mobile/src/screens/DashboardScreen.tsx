@@ -20,6 +20,7 @@ import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates
 import { summarizeWeekdayEarnings } from "../weekdayEarnings";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
+import { useSizeClass } from "../useSizeClass";
 import { BreakdownDetailSheet } from "../components/BreakdownDetailSheet";
 import { WeeklySetAsideSheet } from "../components/WeeklySetAsideSheet";
 import { ShareEarningsModal } from "../components/ShareEarningsModal";
@@ -205,8 +206,36 @@ export function DashboardScreen({
     onUpdateAmountSetAside(year, parsed);
   }
 
+  /**
+   * Every insight card is conditional, so a brand-new user can have **none** of them — and a
+   * two-column layout with an empty right half looks broken rather than spacious.
+   *
+   * ⚠️ The count is derived from the SAME booleans that gate the cards, and that is the point: a
+   * second copy of these conditions would agree today and drift the first time one of them changes.
+   */
+  const showPlatformCard = platformStats.length >= 2 && !!topPlatform;
+  const showW4Card = taxProfile.hasW2Job && netAmountToSetAside > 0;
+  const showSafeHarborCard = netAmountToSetAside > 0;
+  const showYearOverYearCard = yearsTracked >= 2;
+  const showExpenseCard =
+    aggregate.totalExpenses > 0 || estimate.mileageDeduction.deductionAmount > 0;
+  const showBestDaysCard = weekdayEarnings.hasEnoughData;
+  const insightCardCount = [
+    showPlatformCard,
+    showW4Card,
+    showSafeHarborCard,
+    showYearOverYearCard,
+    showExpenseCard,
+    showBestDaysCard,
+  ].filter(Boolean).length;
+
+  // Two columns only on a regular-width window AND only when there is a second column to fill.
+  const twoColumn = useSizeClass() === "regular" && insightCardCount > 0;
+
   return (
-    <Screen edges={["top", "left", "right"]}>
+    // `width="full"` opts out of the reading measure `Screen` applies by default — this is the one
+    // screen laying out real columns, which need more room than a column of prose. See ../layout.
+    <Screen edges={["top", "left", "right"]} width={twoColumn ? "full" : "readable"}>
       <FlatList
         data={sortedEntries}
         keyExtractor={(entry) => entry.id}
@@ -285,389 +314,399 @@ export function DashboardScreen({
               </View>
             )}
 
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Total earnings logged ({year})</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(totalEarnings)}</Text>
-              {aggregate.totalExpenses > 0 && (
-                <View style={styles.breakdownRowLight}>
-                  <Text style={styles.breakdownLabelLight}>Expenses logged</Text>
-                  <Text style={styles.breakdownValueLight}>
-                    −{formatCurrency(aggregate.totalExpenses)}
-                  </Text>
-                </View>
-              )}
-              {hourlyRate !== undefined && (
-                <View style={styles.breakdownRowLight}>
-                  <Text style={styles.breakdownLabelLight}>Effective hourly rate (after taxes)</Text>
-                  <Text style={styles.hourlyRateValue}>{formatCurrency(hourlyRate)}/hr</Text>
-                </View>
-              )}
-            </View>
-
-            <LinearGradient
-              colors={["#1F2937", "#111827"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.setAsideCard}
-            >
-              <View style={styles.setAsideHeader}>
-                <Ionicons name="shield-checkmark-outline" size={16} color="#F5C451" />
-                <Text style={styles.setAsideLabel}>Set aside for taxes</Text>
+            {/* The two-column band. On compact this is a plain stack — `columns` and `column` only
+                take effect when `twoColumn` adds them, so the phone layout is byte-identical to
+                what it was. Money on the left, where the eye starts; navigation on the right. */}
+            <View style={twoColumn ? styles.columns : undefined}>
+              <View style={twoColumn ? styles.column : undefined}>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>Total earnings logged ({year})</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(totalEarnings)}</Text>
+                {aggregate.totalExpenses > 0 && (
+                  <View style={styles.breakdownRowLight}>
+                    <Text style={styles.breakdownLabelLight}>Expenses logged</Text>
+                    <Text style={styles.breakdownValueLight}>
+                      −{formatCurrency(aggregate.totalExpenses)}
+                    </Text>
+                  </View>
+                )}
+                {hourlyRate !== undefined && (
+                  <View style={styles.breakdownRowLight}>
+                    <Text style={styles.breakdownLabelLight}>Effective hourly rate (after taxes)</Text>
+                    <Text style={styles.hourlyRateValue}>{formatCurrency(hourlyRate)}/hr</Text>
+                  </View>
+                )}
               </View>
-              <Text style={styles.setAsideValue}>{formatCurrency(netAmountToSetAside)}</Text>
-              <Text style={styles.setAsideSubtext}>
-                ~
-                {(
-                  (estimate.netProfitAfterMileage > 0
-                    ? netAmountToSetAside / estimate.netProfitAfterMileage
-                    : 0) * 100
-                ).toFixed(1)}
-                % of net earnings, tax year {estimate.taxYear}
-              </Text>
-              {/* [D7]/[D15]: the week is the unit a gig worker can act on — one lump sum for the
-                  whole year is the thing that "makes it hard to keep track". It sits beside the year
-                  total rather than replacing it, because the year total is what is actually owed. */}
-              <Pressable
-                onPress={() => setWeeksOpen(true)}
-                style={styles.weekRow}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  thisWeek
-                    ? `Set aside for this week, ${formatCurrency(thisWeek.setAside)}. Tap to see every week.`
-                    : "See set aside by week"
-                }
+
+              <LinearGradient
+                colors={["#1F2937", "#111827"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.setAsideCard}
               >
-                <View style={styles.weekText}>
-                  <Text style={styles.weekLabel}>This week</Text>
-                  <Text style={styles.weekHint}>
-                    {thisWeek
-                      ? `${thisWeek.entryCount} ${thisWeek.entryCount === 1 ? "shift" : "shifts"} so far${
-                          thisWeek.estimated ? " · estimated" : ""
-                        }`
-                      : "No shifts logged yet this week"}
-                  </Text>
+                <View style={styles.setAsideHeader}>
+                  <Ionicons name="shield-checkmark-outline" size={16} color="#F5C451" />
+                  <Text style={styles.setAsideLabel}>Set aside for taxes</Text>
                 </View>
-                <Text style={styles.weekValue}>
-                  {thisWeek ? formatCurrency(thisWeek.setAside) : formatCurrency(0)}
+                <Text style={styles.setAsideValue}>{formatCurrency(netAmountToSetAside)}</Text>
+                <Text style={styles.setAsideSubtext}>
+                  ~
+                  {(
+                    (estimate.netProfitAfterMileage > 0
+                      ? netAmountToSetAside / estimate.netProfitAfterMileage
+                      : 0) * 100
+                  ).toFixed(1)}
+                  % of net earnings, tax year {estimate.taxYear}
                 </Text>
-                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.55)" />
-              </Pressable>
+                {/* [D7]/[D15]: the week is the unit a gig worker can act on — one lump sum for the
+                    whole year is the thing that "makes it hard to keep track". It sits beside the year
+                    total rather than replacing it, because the year total is what is actually owed. */}
+                <Pressable
+                  onPress={() => setWeeksOpen(true)}
+                  style={styles.weekRow}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    thisWeek
+                      ? `Set aside for this week, ${formatCurrency(thisWeek.setAside)}. Tap to see every week.`
+                      : "See set aside by week"
+                  }
+                >
+                  <View style={styles.weekText}>
+                    <Text style={styles.weekLabel}>This week</Text>
+                    <Text style={styles.weekHint}>
+                      {thisWeek
+                        ? `${thisWeek.entryCount} ${thisWeek.entryCount === 1 ? "shift" : "shifts"} so far${
+                            thisWeek.estimated ? " · estimated" : ""
+                          }`
+                        : "No shifts logged yet this week"}
+                    </Text>
+                  </View>
+                  <Text style={styles.weekValue}>
+                    {thisWeek ? formatCurrency(thisWeek.setAside) : formatCurrency(0)}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.55)" />
+                </Pressable>
 
-              <Text style={styles.breakdownHint}>Tap any line to see how it's calculated.</Text>
+                <Text style={styles.breakdownHint}>Tap any line to see how it's calculated.</Text>
 
-              <MathBreakdownRow
-                label="Self-employment tax"
-                value={formatCurrency(estimate.seTax.totalSeTax)}
-                onPress={() => setActiveDetailKey("seTax")}
-                styles={styles}
-              />
-              <MathBreakdownRow
-                label="Federal income tax"
-                value={formatCurrency(estimate.federalIncomeTax.incomeTax)}
-                onPress={() => setActiveDetailKey("federalIncomeTax")}
-                styles={styles}
-              />
-              {estimate.childTaxCredit.totalCredit > 0 && (
                 <MathBreakdownRow
-                  label={`Child Tax Credit (${estimate.childTaxCredit.numberOfChildren})`}
-                  value={`−${formatCurrency(estimate.childTaxCredit.totalCredit)}`}
-                  credit
-                  onPress={() => setActiveDetailKey("childTaxCredit")}
+                  label="Self-employment tax"
+                  value={formatCurrency(estimate.seTax.totalSeTax)}
+                  onPress={() => setActiveDetailKey("seTax")}
                   styles={styles}
                 />
-              )}
-              <MathBreakdownRow
-                label={`${taxProfile.state} state income tax`}
-                value={formatCurrency(estimate.stateTax.stateLevelTax)}
-                onPress={() => setActiveDetailKey("stateTax")}
-                styles={styles}
-              />
-              {estimate.stateTax.creditApplied > 0 && (
                 <MathBreakdownRow
-                  label={`${taxProfile.state} state tax credit`}
-                  value={`−${formatCurrency(estimate.stateTax.creditApplied)}`}
-                  credit
+                  label="Federal income tax"
+                  value={formatCurrency(estimate.federalIncomeTax.incomeTax)}
+                  onPress={() => setActiveDetailKey("federalIncomeTax")}
+                  styles={styles}
+                />
+                {estimate.childTaxCredit.totalCredit > 0 && (
+                  <MathBreakdownRow
+                    label={`Child Tax Credit (${estimate.childTaxCredit.numberOfChildren})`}
+                    value={`−${formatCurrency(estimate.childTaxCredit.totalCredit)}`}
+                    credit
+                    onPress={() => setActiveDetailKey("childTaxCredit")}
+                    styles={styles}
+                  />
+                )}
+                <MathBreakdownRow
+                  label={`${taxProfile.state} state income tax`}
+                  value={formatCurrency(estimate.stateTax.stateLevelTax)}
                   onPress={() => setActiveDetailKey("stateTax")}
                   styles={styles}
                 />
-              )}
-              {w2WithholdingYtdEstimate > 0 && (
-                <MathBreakdownRow
-                  label="W2 withholding so far (est.)"
-                  value={`−${formatCurrency(w2WithholdingYtdEstimate)}`}
-                  credit
-                  onPress={() => setActiveDetailKey("w2Withholding")}
-                  styles={styles}
-                />
-              )}
-              {estimate.stateTax.supported &&
-                estimate.stateTax.localTaxSupported &&
-                estimate.stateTax.county && (
+                {estimate.stateTax.creditApplied > 0 && (
                   <MathBreakdownRow
-                    label={`${estimate.stateTax.county} local tax`}
-                    value={formatCurrency(estimate.stateTax.localTax)}
+                    label={`${taxProfile.state} state tax credit`}
+                    value={`−${formatCurrency(estimate.stateTax.creditApplied)}`}
+                    credit
                     onPress={() => setActiveDetailKey("stateTax")}
                     styles={styles}
                   />
                 )}
-              {!estimate.stateTax.supported && (
-                <View style={styles.warningBox}>
-                  <Ionicons name="warning-outline" size={14} color="#FCA5A5" />
-                  <Text style={styles.stateWarning}>
-                    {taxProfile.state} isn't supported yet — state tax is showing as $0 and is NOT
-                    included in your set-aside number. Account for it manually until this state is
-                    added.
-                  </Text>
-                </View>
-              )}
-              {estimate.stateTax.supported && !estimate.stateTax.localTaxSupported && (
-                <View style={styles.warningBox}>
-                  <Ionicons name="warning-outline" size={14} color="#FCA5A5" />
-                  <Text style={styles.stateWarning}>
-                    {taxProfile.state} has a local/county income tax that isn't included here yet
-                    (county not set or not recognized). Your set-aside number is missing that amount.
-                  </Text>
-                </View>
-              )}
-            </LinearGradient>
+                {w2WithholdingYtdEstimate > 0 && (
+                  <MathBreakdownRow
+                    label="W2 withholding so far (est.)"
+                    value={`−${formatCurrency(w2WithholdingYtdEstimate)}`}
+                    credit
+                    onPress={() => setActiveDetailKey("w2Withholding")}
+                    styles={styles}
+                  />
+                )}
+                {estimate.stateTax.supported &&
+                  estimate.stateTax.localTaxSupported &&
+                  estimate.stateTax.county && (
+                    <MathBreakdownRow
+                      label={`${estimate.stateTax.county} local tax`}
+                      value={formatCurrency(estimate.stateTax.localTax)}
+                      onPress={() => setActiveDetailKey("stateTax")}
+                      styles={styles}
+                    />
+                  )}
+                {!estimate.stateTax.supported && (
+                  <View style={styles.warningBox}>
+                    <Ionicons name="warning-outline" size={14} color="#FCA5A5" />
+                    <Text style={styles.stateWarning}>
+                      {taxProfile.state} isn't supported yet — state tax is showing as $0 and is NOT
+                      included in your set-aside number. Account for it manually until this state is
+                      added.
+                    </Text>
+                  </View>
+                )}
+                {estimate.stateTax.supported && !estimate.stateTax.localTaxSupported && (
+                  <View style={styles.warningBox}>
+                    <Ionicons name="warning-outline" size={14} color="#FCA5A5" />
+                    <Text style={styles.stateWarning}>
+                      {taxProfile.state} has a local/county income tax that isn't included here yet
+                      (county not set or not recognized). Your set-aside number is missing that amount.
+                    </Text>
+                  </View>
+                )}
+              </LinearGradient>
 
-            <View style={styles.progressCard}>
-              <Text style={styles.progressLabel}>Amount set aside so far ({year})</Text>
-              <View style={styles.progressInputRow}>
-                <Text style={styles.progressInputPrefix}>$</Text>
-                <TextInput
-                  style={styles.progressInput}
-                  value={amountSetAsideInput}
-                  onChangeText={setAmountSetAsideInput}
-                  // ⚠️ `onBlur`, not `onEndEditing` — a web blur never reaches the latter, so this
-                  // field's blur-to-save path was dead on web. Less severe than the safe-harbor
-                  // inputs because the check button beside it is a second path, but it is the same
-                  // defect and closing two of three sites is how a class half-closes.
-                  onBlur={handleSaveAmountSetAside}
-                  keyboardType="decimal-pad"
-                  placeholder="0.00"
-                  placeholderTextColor={colors.inkFaint}
-                  accessibilityLabel="Amount set aside so far"
-                />
-                <Pressable
-                  onPress={handleSaveAmountSetAside}
-                  hitSlop={8}
-                  accessibilityLabel="Save amount set aside"
-                  accessibilityRole="button"
-                >
-                  <Ionicons name="checkmark-circle" size={26} color={colors.primary} />
-                </Pressable>
+              <View style={styles.progressCard}>
+                <Text style={styles.progressLabel}>Amount set aside so far ({year})</Text>
+                <View style={styles.progressInputRow}>
+                  <Text style={styles.progressInputPrefix}>$</Text>
+                  <TextInput
+                    style={styles.progressInput}
+                    value={amountSetAsideInput}
+                    onChangeText={setAmountSetAsideInput}
+                    // ⚠️ `onBlur`, not `onEndEditing` — a web blur never reaches the latter, so this
+                    // field's blur-to-save path was dead on web. Less severe than the safe-harbor
+                    // inputs because the check button beside it is a second path, but it is the same
+                    // defect and closing two of three sites is how a class half-closes.
+                    onBlur={handleSaveAmountSetAside}
+                    keyboardType="decimal-pad"
+                    placeholder="0.00"
+                    placeholderTextColor={colors.inkFaint}
+                    accessibilityLabel="Amount set aside so far"
+                  />
+                  <Pressable
+                    onPress={handleSaveAmountSetAside}
+                    hitSlop={8}
+                    accessibilityLabel="Save amount set aside"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="checkmark-circle" size={26} color={colors.primary} />
+                  </Pressable>
+                </View>
+
+                {nextDueDate && (
+                  <View style={styles.progressRow}>
+                    <Text style={styles.progressRowLabel}>Next payment due</Text>
+                    <Text style={styles.progressRowValue}>
+                      {nextDueDate.label} — {formatDate(nextDueDate.dueDate)}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Additive by construction: a free user sees the date row above exactly as before.
+                    The DATE is the core job and stays free ([D3]'s axis — premium is tax-time depth,
+                    never the set-aside itself); the amount is the premium line. */}
+                {nextDueDate && showPerQuarter && (
+                  <View style={styles.progressRow}>
+                    <Text style={styles.progressRowLabel}>Estimated payment</Text>
+                    <Text style={styles.progressRowValue}>
+                      ≈ {formatCurrency(safeHarbor.perQuarter)} per quarter
+                    </Text>
+                  </View>
+                )}
+                {nextDueDate && showPerQuarter && safeHarbor.isProjected && (
+                  // Said, not implied. Before the year is out this is earnings-so-far scaled up, and
+                  // it moves as more is logged — a figure sitting next to a deadline reads as an
+                  // instruction, so the one word that makes it a forecast has to be on screen.
+                  <Text style={styles.perQuarterNote}>
+                    Projected from your earnings so far — it moves as you log more.
+                  </Text>
+                )}
+
+                {catchUp.gap <= 0 ? (
+                  <View style={[styles.statusBox, styles.statusBoxGood]}>
+                    <Ionicons name="checkmark-circle-outline" size={14} color={colors.accent} />
+                    <Text style={styles.statusTextGood}>
+                      {catchUp.gap === 0
+                        ? "You're on track — set aside matches what you owe so far."
+                        : `You've saved ${formatCurrency(-catchUp.gap)} more than you need so far. Nice work.`}
+                    </Text>
+                  </View>
+                ) : catchUp.weeklyCatchUpAmount !== undefined && nextDueDate ? (
+                  <View style={[styles.statusBox, styles.statusBoxBehind]}>
+                    <Ionicons name="warning-outline" size={14} color={colors.danger} />
+                    <Text style={styles.statusTextBehind}>
+                      You're {formatCurrency(catchUp.gap)} behind — set aside an extra{" "}
+                      {formatCurrency(catchUp.weeklyCatchUpAmount)}/week until {formatDate(nextDueDate.dueDate)} to
+                      catch up.
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={[styles.statusBox, styles.statusBoxBehind]}>
+                    <Ionicons name="warning-outline" size={14} color={colors.danger} />
+                    <Text style={styles.statusTextBehind}>
+                      You're {formatCurrency(catchUp.gap)} behind what you've set aside so far.
+                    </Text>
+                  </View>
+                )}
               </View>
 
-              {nextDueDate && (
-                <View style={styles.progressRow}>
-                  <Text style={styles.progressRowLabel}>Next payment due</Text>
-                  <Text style={styles.progressRowValue}>
-                    {nextDueDate.label} — {formatDate(nextDueDate.dueDate)}
-                  </Text>
-                </View>
+              <View style={styles.addButtonWrap}>
+                <PrimaryButton
+                  label="Log Earnings"
+                  onPress={onAddEntry}
+                  icon={<Ionicons name="add" size={20} color="#fff" />}
+                />
+                <Pressable
+                  onPress={onOpenWhatIf}
+                  style={({ pressed }) => [styles.whatIfButton, pressed && styles.whatIfButtonPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Try a what-if scenario"
+                >
+                  <Ionicons name="calculator-outline" size={18} color={colors.primary} />
+                  <Text style={styles.whatIfButtonText}>What if I earned more?</Text>
+                </Pressable>
+              </View>
+              </View>
+
+              <View style={twoColumn ? styles.column : undefined}>
+              {showPlatformCard && (
+                <Pressable
+                  onPress={onOpenPlatforms}
+                  style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Compare your platforms"
+                >
+                  <View style={styles.insightIconWrap}>
+                    <Ionicons name="podium-outline" size={18} color={colors.primary} />
+                  </View>
+                  <View style={styles.insightInfo}>
+                    <Text style={styles.insightTitle}>Compare your platforms</Text>
+                    <Text style={styles.insightSub}>
+                      {PLATFORM_LABELS[topPlatform.platform]} leads with{" "}
+                      {formatCurrency(topPlatform.totalEarnings)}
+                      {topPlatform.hourlyRate !== undefined
+                        ? ` · ${formatCurrency(topPlatform.hourlyRate)}/hr`
+                        : ""}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+                </Pressable>
               )}
 
-              {/* Additive by construction: a free user sees the date row above exactly as before.
-                  The DATE is the core job and stays free ([D3]'s axis — premium is tax-time depth,
-                  never the set-aside itself); the amount is the premium line. */}
-              {nextDueDate && showPerQuarter && (
-                <View style={styles.progressRow}>
-                  <Text style={styles.progressRowLabel}>Estimated payment</Text>
-                  <Text style={styles.progressRowValue}>
-                    ≈ {formatCurrency(safeHarbor.perQuarter)} per quarter
-                  </Text>
-                </View>
-              )}
-              {nextDueDate && showPerQuarter && safeHarbor.isProjected && (
-                // Said, not implied. Before the year is out this is earnings-so-far scaled up, and
-                // it moves as more is logged — a figure sitting next to a deadline reads as an
-                // instruction, so the one word that makes it a forecast has to be on screen.
-                <Text style={styles.perQuarterNote}>
-                  Projected from your earnings so far — it moves as you log more.
-                </Text>
+              {showW4Card && (
+                <Pressable
+                  onPress={canUsePremium ? onOpenW4Optimizer : onOpenPaywall}
+                  style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={canUsePremium ? "Open the W-4 withholding optimizer" : "W-4 withholding optimizer (Premium)"}
+                >
+                  <View style={styles.insightIconWrap}>
+                    <Ionicons name={canUsePremium ? "options-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                  </View>
+                  <View style={styles.insightInfo}>
+                    <Text style={styles.insightTitle}>
+                      Skip quarterly payments{canUsePremium ? "" : "  ·  Premium"}
+                    </Text>
+                    <Text style={styles.insightSub}>
+                      Cover your gig taxes through your W2 paycheck instead — see the W-4 amount.
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+                </Pressable>
               )}
 
-              {catchUp.gap <= 0 ? (
-                <View style={[styles.statusBox, styles.statusBoxGood]}>
-                  <Ionicons name="checkmark-circle-outline" size={14} color={colors.accent} />
-                  <Text style={styles.statusTextGood}>
-                    {catchUp.gap === 0
-                      ? "You're on track — set aside matches what you owe so far."
-                      : `You've saved ${formatCurrency(-catchUp.gap)} more than you need so far. Nice work.`}
-                  </Text>
-                </View>
-              ) : catchUp.weeklyCatchUpAmount !== undefined && nextDueDate ? (
-                <View style={[styles.statusBox, styles.statusBoxBehind]}>
-                  <Ionicons name="warning-outline" size={14} color={colors.danger} />
-                  <Text style={styles.statusTextBehind}>
-                    You're {formatCurrency(catchUp.gap)} behind — set aside an extra{" "}
-                    {formatCurrency(catchUp.weeklyCatchUpAmount)}/week until {formatDate(nextDueDate.dueDate)} to
-                    catch up.
-                  </Text>
-                </View>
-              ) : (
-                <View style={[styles.statusBox, styles.statusBoxBehind]}>
-                  <Ionicons name="warning-outline" size={14} color={colors.danger} />
-                  <Text style={styles.statusTextBehind}>
-                    You're {formatCurrency(catchUp.gap)} behind what you've set aside so far.
-                  </Text>
-                </View>
+              {showSafeHarborCard && (
+                <Pressable
+                  onPress={canUsePremium ? onOpenSafeHarbor : onOpenPaywall}
+                  style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={canUsePremium ? "Open the safe-harbor calculator" : "Safe-harbor calculator (Premium)"}
+                >
+                  <View style={styles.insightIconWrap}>
+                    <Ionicons name={canUsePremium ? "shield-checkmark-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                  </View>
+                  <View style={styles.insightInfo}>
+                    <Text style={styles.insightTitle}>
+                      Avoid the IRS penalty{canUsePremium ? "" : "  ·  Premium"}
+                    </Text>
+                    <Text style={styles.insightSub}>
+                      See the safe-harbor minimum to pay in — often less than your full bill.
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+                </Pressable>
               )}
+
+              {showYearOverYearCard && (
+                <Pressable
+                  onPress={canUsePremium ? onOpenYearOverYear : onOpenPaywall}
+                  style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={canUsePremium ? "Open year-over-year insights" : "Year-over-year insights (Premium)"}
+                >
+                  <View style={styles.insightIconWrap}>
+                    <Ionicons name={canUsePremium ? "trending-up-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                  </View>
+                  <View style={styles.insightInfo}>
+                    <Text style={styles.insightTitle}>
+                      Year-over-year insights{canUsePremium ? "" : "  ·  Premium"}
+                    </Text>
+                    <Text style={styles.insightSub}>
+                      See how this year compares to last — earnings, miles, and tax.
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+                </Pressable>
+              )}
+
+              {showExpenseCard && (
+                <Pressable
+                  onPress={canUsePremium ? onOpenExpenseBreakdown : onOpenPaywall}
+                  style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={canUsePremium ? "Open the expense breakdown" : "Expense breakdown (Premium)"}
+                >
+                  <View style={styles.insightIconWrap}>
+                    <Ionicons name={canUsePremium ? "receipt-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                  </View>
+                  <View style={styles.insightInfo}>
+                    <Text style={styles.insightTitle}>
+                      Expense breakdown{canUsePremium ? "" : "  ·  Premium"}
+                    </Text>
+                    <Text style={styles.insightSub}>
+                      See your write-offs grouped by Schedule C line — including custom categories.
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+                </Pressable>
+              )}
+
+              {/* Best days ([D20]). Soft-gated on the same rule the screen uses, so the card never
+                  promises a comparison the screen would then refuse to draw. */}
+              {showBestDaysCard && (
+                <Pressable
+                  onPress={canUsePremium ? onOpenBestDays : onOpenPaywall}
+                  style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={canUsePremium ? "Open best days to work" : "Best days to work (Premium)"}
+                >
+                  <View style={styles.insightIconWrap}>
+                    <Ionicons name={canUsePremium ? "calendar-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
+                  </View>
+                  <View style={styles.insightInfo}>
+                    <Text style={styles.insightTitle}>
+                      Best days to work{canUsePremium ? "" : "  ·  Premium"}
+                    </Text>
+                    <Text style={styles.insightSub}>
+                      Which days of the week have actually paid you best per hour.
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+                </Pressable>
+              )}
+
+              </View>
             </View>
-
-            <View style={styles.addButtonWrap}>
-              <PrimaryButton
-                label="Log Earnings"
-                onPress={onAddEntry}
-                icon={<Ionicons name="add" size={20} color="#fff" />}
-              />
-              <Pressable
-                onPress={onOpenWhatIf}
-                style={({ pressed }) => [styles.whatIfButton, pressed && styles.whatIfButtonPressed]}
-                accessibilityRole="button"
-                accessibilityLabel="Try a what-if scenario"
-              >
-                <Ionicons name="calculator-outline" size={18} color={colors.primary} />
-                <Text style={styles.whatIfButtonText}>What if I earned more?</Text>
-              </Pressable>
-            </View>
-
-            {platformStats.length >= 2 && topPlatform && (
-              <Pressable
-                onPress={onOpenPlatforms}
-                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
-                accessibilityRole="button"
-                accessibilityLabel="Compare your platforms"
-              >
-                <View style={styles.insightIconWrap}>
-                  <Ionicons name="podium-outline" size={18} color={colors.primary} />
-                </View>
-                <View style={styles.insightInfo}>
-                  <Text style={styles.insightTitle}>Compare your platforms</Text>
-                  <Text style={styles.insightSub}>
-                    {PLATFORM_LABELS[topPlatform.platform]} leads with{" "}
-                    {formatCurrency(topPlatform.totalEarnings)}
-                    {topPlatform.hourlyRate !== undefined
-                      ? ` · ${formatCurrency(topPlatform.hourlyRate)}/hr`
-                      : ""}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
-              </Pressable>
-            )}
-
-            {taxProfile.hasW2Job && netAmountToSetAside > 0 && (
-              <Pressable
-                onPress={canUsePremium ? onOpenW4Optimizer : onOpenPaywall}
-                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
-                accessibilityRole="button"
-                accessibilityLabel={canUsePremium ? "Open the W-4 withholding optimizer" : "W-4 withholding optimizer (Premium)"}
-              >
-                <View style={styles.insightIconWrap}>
-                  <Ionicons name={canUsePremium ? "options-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
-                </View>
-                <View style={styles.insightInfo}>
-                  <Text style={styles.insightTitle}>
-                    Skip quarterly payments{canUsePremium ? "" : "  ·  Premium"}
-                  </Text>
-                  <Text style={styles.insightSub}>
-                    Cover your gig taxes through your W2 paycheck instead — see the W-4 amount.
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
-              </Pressable>
-            )}
-
-            {netAmountToSetAside > 0 && (
-              <Pressable
-                onPress={canUsePremium ? onOpenSafeHarbor : onOpenPaywall}
-                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
-                accessibilityRole="button"
-                accessibilityLabel={canUsePremium ? "Open the safe-harbor calculator" : "Safe-harbor calculator (Premium)"}
-              >
-                <View style={styles.insightIconWrap}>
-                  <Ionicons name={canUsePremium ? "shield-checkmark-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
-                </View>
-                <View style={styles.insightInfo}>
-                  <Text style={styles.insightTitle}>
-                    Avoid the IRS penalty{canUsePremium ? "" : "  ·  Premium"}
-                  </Text>
-                  <Text style={styles.insightSub}>
-                    See the safe-harbor minimum to pay in — often less than your full bill.
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
-              </Pressable>
-            )}
-
-            {yearsTracked >= 2 && (
-              <Pressable
-                onPress={canUsePremium ? onOpenYearOverYear : onOpenPaywall}
-                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
-                accessibilityRole="button"
-                accessibilityLabel={canUsePremium ? "Open year-over-year insights" : "Year-over-year insights (Premium)"}
-              >
-                <View style={styles.insightIconWrap}>
-                  <Ionicons name={canUsePremium ? "trending-up-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
-                </View>
-                <View style={styles.insightInfo}>
-                  <Text style={styles.insightTitle}>
-                    Year-over-year insights{canUsePremium ? "" : "  ·  Premium"}
-                  </Text>
-                  <Text style={styles.insightSub}>
-                    See how this year compares to last — earnings, miles, and tax.
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
-              </Pressable>
-            )}
-
-            {(aggregate.totalExpenses > 0 || estimate.mileageDeduction.deductionAmount > 0) && (
-              <Pressable
-                onPress={canUsePremium ? onOpenExpenseBreakdown : onOpenPaywall}
-                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
-                accessibilityRole="button"
-                accessibilityLabel={canUsePremium ? "Open the expense breakdown" : "Expense breakdown (Premium)"}
-              >
-                <View style={styles.insightIconWrap}>
-                  <Ionicons name={canUsePremium ? "receipt-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
-                </View>
-                <View style={styles.insightInfo}>
-                  <Text style={styles.insightTitle}>
-                    Expense breakdown{canUsePremium ? "" : "  ·  Premium"}
-                  </Text>
-                  <Text style={styles.insightSub}>
-                    See your write-offs grouped by Schedule C line — including custom categories.
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
-              </Pressable>
-            )}
-
-            {/* Best days ([D20]). Soft-gated on the same rule the screen uses, so the card never
-                promises a comparison the screen would then refuse to draw. */}
-            {weekdayEarnings.hasEnoughData && (
-              <Pressable
-                onPress={canUsePremium ? onOpenBestDays : onOpenPaywall}
-                style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
-                accessibilityRole="button"
-                accessibilityLabel={canUsePremium ? "Open best days to work" : "Best days to work (Premium)"}
-              >
-                <View style={styles.insightIconWrap}>
-                  <Ionicons name={canUsePremium ? "calendar-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
-                </View>
-                <View style={styles.insightInfo}>
-                  <Text style={styles.insightTitle}>
-                    Best days to work{canUsePremium ? "" : "  ·  Premium"}
-                  </Text>
-                  <Text style={styles.insightSub}>
-                    Which days of the week have actually paid you best per hour.
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
-              </Pressable>
-            )}
 
             <Text style={styles.sectionHeader}>Recent entries</Text>
           </View>
@@ -731,6 +770,14 @@ export function DashboardScreen({
 function createStyles(colors: Colors) {
   return StyleSheet.create({
   listContent: { padding: spacing.xl, paddingBottom: spacing.xxxl },
+  /**
+   * The regular-width band: money left, navigation right. `alignItems: "flex-start"` so a short
+   * right column does not stretch its cards down the height of the left one — insight cards are
+   * fixed-height rows and a stretched one looks like a rendering fault.
+   */
+  columns: { flexDirection: "row", alignItems: "flex-start", gap: spacing.xl },
+  /** Equal halves. `flexBasis: 0` so the columns split the space evenly regardless of content. */
+  column: { flex: 1, flexBasis: 0 },
   greetingRow: {
     flexDirection: "row",
     alignItems: "center",

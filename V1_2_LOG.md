@@ -11,6 +11,59 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.7.3 Dashboard at regular width — SUB-TASK after-scan · 2026-09-22 · ✅ DONE
+
+**398 unit · typecheck clean · 76/76 Playwright (66 chromium + 5 + 5) · lint 15 unchanged · ports
+free. 3 plants, 3 caught.**
+
+⚙️ **What shipped ([D25]).** A two-column band inside the `FlatList`'s `ListHeaderComponent`: money
+left (total, set-aside, progress, Log Earnings), insight cards right, "Recent entries" and the list
+full-width beneath. The dashboard is the **first and only `width="full"` consumer**, which is what
+turns 1.2.7.2's opt-out from a tested helper into a used one.
+
+🔴 **The structural find, and it decided the design: the dashboard is a `FlatList` whose header
+holds the ENTIRE screen.** Everything above the entry rows — greeting, three cards, actions, six
+insight cards — is one `ListHeaderComponent`. That is why the "cards left / shifts right" split was
+the expensive option: it needs the header lifted out of the list entirely. The chosen band is a
+wrapper around children that were already siblings.
+
+⚠️ **All six insight cards are conditional, so a brand-new user has NONE** — and a two-column band
+with an empty right half reads as a rendering fault, not as space. `twoColumn` therefore requires
+`insightCardCount > 0`. ⭐ **The count is derived from the same six named booleans that gate the
+cards**, because a second copy of those conditions would agree today and drift the first time one
+changed. Planting the guard away reproduces exactly the defect: **673px of asymmetry**, the card
+stranded in the left half.
+
+🔴 **I wrote a test with a hole and found it by predicting a plant would survive.** The side-by-side
+assertions (`money` ends before `insight` begins, `insight` past mid-screen) all hold **even if
+`width="full"` is never passed** — the columns would simply be squeezed into the 672pt reading
+measure. So the one thing .3 exists to prove about .2's opt-out was unasserted. Added
+`bandWidth > READABLE_CONTENT_MAX_WIDTH` *before* running the plant, then confirmed it reds at
+**632**. ⚡ **The useful habit is the order: ask what a plant would do before running it, and treat
+"it would pass" as a finding about the test rather than a reason to skip the plant.**
+
+🧪 **The plants.** ⓔ `width="full"` never passed → caught at 632 *(and would NOT have been caught an
+hour earlier)*. ⓕ the empty-column guard removed → caught by **two** tests, 673px asymmetry.
+ⓖ `flexDirection: "row"` removed → columns stack, insight card falls to x=20 while the money card
+ends at 502.
+
+✅ **All 66 chromium tests pass unchanged**, and this was the real risk: they run at 1280px, which
+is regular, and most of them log entries — so they now exercise the **two-column** dashboard, not
+the one they were written against. They survive because they select by text and accessible name
+rather than position. ⚠️ **Corollary worth stating: no test anywhere now exercises the phone-layout
+dashboard**, which sharpens the phone-width gap already filed from this item's before-scan.
+
+🧹 **Reindented 369 lines, deliberately and separately.** The wrappers were first inserted without
+reindenting their children, leaving `<View style={styles.summaryCard}>` at 12 spaces inside a parent
+at 14 — structurally correct and a lie to anyone reading the tree. Whitespace only; typecheck and
+all 76 tests re-run after. ⚠️ **Review this commit with `git diff -w`** — the real change is ~40
+lines. (No prettier config exists in this repo, so nothing would have done it automatically.)
+
+⏭ **Carried into 1.2.7.4:** the remaining 14 screens, sheets and modals first. The sheets are the
+known-bad case — `Modal` + a bottom sheet with no `maxWidth`, so they span the full 1366px — and
+`Screen`'s seam does **not** reach them, because a `Modal` renders outside the screen's view tree.
+**1.2.7.4 needs its own constraint for the four sheets; .2's fix does not cover them.**
+
 ### 🔎 1.2.7.2 The size-class seam — SUB-TASK after-scan · 2026-09-22 · ✅ DONE
 
 **398 unit (from 382) · typecheck clean · 72/72 Playwright (66 chromium + 3 + 3) · lint 15

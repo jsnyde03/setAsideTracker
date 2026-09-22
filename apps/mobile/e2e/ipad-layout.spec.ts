@@ -79,6 +79,61 @@ test.describe("iPad layout — the size-class seam", () => {
     );
   });
 
+  test("the dashboard lays out in two columns once there is a second column to fill", async ({
+    page,
+  }, testInfo) => {
+    /**
+     * A brand-new user has none of the six insight cards — every one is conditional on data — so
+     * the layout must earn its second column. Logging one entry turns on the safe-harbor card,
+     * which is the cheapest way to cross that threshold.
+     */
+    await page.getByText("Log Earnings", { exact: true }).click();
+    await expect(page.getByText("Platform")).toBeVisible();
+    await page.getByText("DoorDash", { exact: true }).first().click();
+    await page.getByLabel("Gross pay", { exact: true }).first().fill("900");
+    await page.getByText("Save Entry", { exact: true }).click();
+
+    const money = await cardBox(page, "Total earnings logged (" + new Date().getFullYear() + ")");
+    const insight = await cardBox(page, "Avoid the IRS penalty  ·  Premium");
+
+    // Side by side, not stacked: the money column ends before the insight column begins.
+    expect(money.x + money.width).toBeLessThanOrEqual(insight.x);
+
+    // And they share a band rather than being a wrapped single column.
+    expect(insight.x).toBeGreaterThan(page.viewportSize()!.width / 2 - 100);
+
+    /**
+     * ⚠️ The band must also be using the `width="full"` opt-out. Without this the columns would
+     * still be side by side — just squeezed into the 672pt reading measure — and every assertion
+     * above would still pass. This is the only check that the opt-out `Screen` gained at 1.2.7.2
+     * is actually wired, and the dashboard is its first and only consumer.
+     */
+    const bandWidth = insight.x + insight.width - money.x;
+    expect(bandWidth).toBeGreaterThan(READABLE_CONTENT_MAX_WIDTH);
+
+    await page.screenshot({
+      path: testInfo.outputPath(`dashboard-two-column-${testInfo.project.name}.png`),
+      fullPage: true,
+    });
+  });
+
+  test("falls back to one centred column when there are no insight cards", async ({ page }) => {
+    /**
+     * The regression this prevents: a two-column band with an empty right half, which reads as a
+     * rendering fault rather than as space. `beforeEach` leaves a freshly onboarded user with no
+     * entries, so none of the six cards qualify — exactly the state a new iPad user opens the app in.
+     */
+    // ⚠️ The positive control comes FIRST. `toHaveCount(0)` is also true of a blank page, so an
+    // absence asserted before anything is known to have rendered proves nothing.
+    const money = await cardBox(page, "Total earnings logged (" + new Date().getFullYear() + ")");
+    await expect(page.getByText("Avoid the IRS penalty  ·  Premium")).toHaveCount(0);
+
+    const viewportWidth = page.viewportSize()!.width;
+
+    expect(money.width).toBeLessThanOrEqual(READABLE_CONTENT_MAX_WIDTH);
+    expect(Math.abs(money.x - (viewportWidth - (money.x + money.width)))).toBeLessThanOrEqual(2);
+  });
+
   test("a phone-width window is NOT constrained — the control", async ({ page }) => {
     /**
      * The regression this control exists for: a max width that applies at every size would
