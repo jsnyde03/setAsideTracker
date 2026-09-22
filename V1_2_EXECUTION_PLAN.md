@@ -82,7 +82,7 @@
 > 3. `Demo mode` — now enters the demo successfully, then cannot find the seeded Uber entry.
 
 **Branch:** `v1.2` · **Target: none — ship ASAP** ([D9], superseding [D4]'s August)
-**Structural audit:** [`docs/audits/2026-08-07-v1.2-structural/`](docs/audits/2026-08-07-v1.2-structural/SYNTHESIS.md) · **Gap scan:** [`docs/audits/2026-09-20-v1.2-gap-scan/`](docs/audits/2026-09-20-v1.2-gap-scan/README.md) · **Ladder rationale:** [BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md)
+**Structural audit:** [`audits/2026-08-07-v1.2-structural/`](audits/2026-08-07-v1.2-structural/SYNTHESIS.md) · **Gap scan:** [`audits/2026-09-20-v1.2-gap-scan/`](audits/2026-09-20-v1.2-gap-scan/README.md) · **Ladder rationale:** [BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md)
 
 ⛔ **The backwards-from-Aug-31 schedule is retired**, not rescheduled. There is no date to work back
 from and none is wanted. **What replaces it: the queue order below, correctness first.** The one hard
@@ -468,7 +468,7 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
   reminder queue drained because scheduling happened only at onboarding; nothing structural stops the
   next such feature repeating it. Worth one grep at 1.2.11, not a rule yet.
 
-### From the 2026-09-20 gap scan _(full findings → [docs/audits/2026-09-20-v1.2-gap-scan/](docs/audits/2026-09-20-v1.2-gap-scan/))_
+### From the 2026-09-20 gap scan _(full findings → [audits/2026-09-20-v1.2-gap-scan/](audits/2026-09-20-v1.2-gap-scan/))_
 
 **Folded into v1.2 rather than deferred** _(recorded here so the routing is auditable)_: the **state
 picker** → 1.2.2 (free text produces a `$0` state tax and a "CALIFORNIA isn't supported yet" warning
