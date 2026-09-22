@@ -27,6 +27,7 @@ prebuild-affecting change in v1.2: two native modules, a config plugin, a backgr
 
 | order | what | why it is first/last |
 |---|---|---|
+| **0** | **⛔ DOES IT UPLOAD?** Read the ITMS mail before opening the app. **ITMS-91053 names every required-reason API still undeclared** — the one thing about the privacy manifest that cannot be checked off-device (1.2.10.1). A rejection here costs the build before any row below runs. | Upload happens before install; nothing else on this list matters if the binary is refused. |
 | **1** | **Does it build and launch at all?** | A prebuild change is the class that has broken iOS CI here before. Everything below is moot if this fails. |
 | **2** | **Start a trip → drive → stop.** Miles land on the entry, editable. | The feature's whole point, and **unprovable off-device** — the simulator only does canned routes. |
 | **3** | **⭐ Leave the app while a trip runs.** Switch to another app, lock the screen. | **[D17] is the reason this feature is worth shipping**, and this is the only way to know it works. Confirm the **location indicator** shows the entire time. |
@@ -35,7 +36,6 @@ prebuild-affecting change in v1.2: two native modules, a config plugin, a backgr
 | **6** | **The recovery screen's `Alert`s** (§A) | 1.2.3's entire `Alert` layer is unverified; web renders none. |
 | **7** | **The weekly sheet at phone width** with a full year of weeks | 1.2.4 is Playwright-covered for behaviour, never for a small screen. |
 | **8** | **Demo mode end-to-end** (§C) | 1.2.1 is 7/7 built and has never been device-validated. |
-| **0** | **⛔ DOES IT UPLOAD?** Read the ITMS mail before opening the app. **ITMS-91053 names every required-reason API still undeclared** — the one thing about the privacy manifest that cannot be checked off-device (1.2.10.1). A rejection here costs the build before any row below runs. | Upload happens before install; nothing else on this list matters if the binary is refused. |
 | **9** | **Reminders survive a relaunch, and a disabled switch stays disabled.** With reminders ON, cold-start and confirm notifications are scheduled for the **shifted** dates; then turn the switch OFF, relaunch, and confirm **nothing is re-created**. | 1.2.6.2's launch refresh. **`useReminderRefresh` has no test and cannot get one here** — no React renderer. The rule underneath is covered four ways; the wiring is covered by this row alone. The off-then-relaunch half is the data-loss-shaped direction: the OS permission outlives the switch. |
 
 ⚠️ **Check first, before dispatching:** `git rev-list --count origin/v1.2..HEAD` is 0, and the
