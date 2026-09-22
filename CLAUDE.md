@@ -8,50 +8,72 @@ Native, iOS first. **LIVE on the App Store as "SetAside" at v1.1.1**; bundle id
 `V1_2_LOG.md` is the detail store — every scan record and the reasoning behind every decision.
 Read the plan's `RESUME HERE` block first; it is kept current.
 
-## Status (2026-09-21)
+## Status (2026-09-22)
 
 **v1.2 in development on branch `v1.2`.** No ship date — [D9]: work the queue and ship when done.
 **Do not reintroduce a target date.**
 
-✅ **1.2.2 (tax correctness) COMPLETE, 7/7.** Three money-wrong bugs that were **live in v1.1.1**,
-all understating what the user owed: safe harbor reporting "no penalty expected" through both spring
-deadlines · MFJ ignoring spouse income · GA/SC/MN dependent exemptions applied as tax credits.
+✅ **1.2.2–1.2.6 and 1.2.10 are CLOSED.** Tax correctness · data safety · set-aside by week · the
+mileage trip toggle · the premium slice (four surfaces) · filed correctness + submission compliance.
+**Per-item detail is in `V1_2_LOG.md` and belongs there, not here.**
 
-✅ **1.2.3 (data safety) COMPLETE, 5/5.** ⛔ **`loadError` had no consumer** — so a user whose data
-could not be decrypted was shown **onboarding**, and setting up again wrote over the profile still
-sitting on the device. There is now a recovery screen ([D12]: retry · restore · erase), a decryption
-failure is a *named* error rather than a `SyntaxError` about JSON, and a key is **never minted while
-data exists** under an older one. **12 plants; 11 caught, and the 12th passing deleted a line.**
+⏸ **1.2.1 (demo mode) is 7/7 built and cannot close** — Maestro resumes ~November.
+▶ **ACTIVE: 1.2.7, native iPad**, decomposed in the plan. ⚠️ **Its verification is almost entirely
+visual and device-owed**, so expect it to *bank* checks for the reserved build rather than clear
+them. 🔴 **Flipping `supportsTablet` obliges iPad screenshots in App Store Connect** — a submission
+requirement that ships with the flip, not after it.
 
-✅ **1.2.4 (set-aside by week) COMPLETE, 6/6.** Every entry freezes a set-aside rate at log time —
-**the tax it actually adds**, so the increments telescope to the year's real total — rolled up into
-Monday–Sunday weeks, on the dashboard beside the year total, with an adjustment row so the list
-visibly adds up.
+⚡ **Five live v1.1.1 defects were found by BUILDING ON TOP OF THEM, not by any backlog:** three
+money-wrong tax bugs · a data-loss path that greeted an unreadable-data user as brand new and
+overwrote them · a tax-profile edit that erased the user's filed prior-year tax · reminders that
+reached no existing install while their queue silently drained · and "Clear All Data" leaving the
+app lock on, so the next launch demanded Face ID for an app with nothing in it. **None reach anyone
+until v1.2 ships** — [D10]'s accepted cost, and the reason to keep moving.
 
-✅ **1.2.5 (mileage trip toggle) COMPLETE, 6/6.** Start/stop capture that keeps measuring off screen
-([D17]: when-in-use + the visible iOS indicator, **no "Always" prompt**), with accuracy/jitter/speed
-filters — a naive sum inflates a **tax deduction** the user cannot tell is wrong. ⛔ **Coordinates are
-never persisted**, enforced by a test, because [D16]'s published policy says so.
+⛔ **THE ONE RESERVED BUILD NOW OWES FOUR THINGS, and two are new.** The agenda is at the head of
+`V1_2_TESTFLIGHT_CHECKLIST.md`, ordered most-likely-broken first. **Do not spend a build on less.**
+1. **Does it upload?** ITMS-91053 names any required-reason API still undeclared — unknowable here.
+2. **Does it install?** ⚠️ **It will land as "Missing Compliance"** until the export questionnaire is
+   answered in ASC. **That is [D23] working, not a broken build** — and it is how 1.2.10.2 gets its
+   answer: Apple's own classification rather than our reading of the EAR.
+3. **1.2.5 (mileage)** — two native modules, a config plugin, a background task, all proven only
+   against mocks in Node.
+4. **Every iPad layout**, once 1.2.7 lands.
 
-⏸ **1.2.1 (demo mode) is 7/7 built but cannot close** — Maestro resumes ~November.
-▶ **Next: 1.2.6, the premium slice** ([D3]) — pure JS, verifiable here.
-
-⛔ **1.2.5 has ZERO device verification and no way to get any off-device.** Two native modules, a
-config plugin and a background location task, covered by tests that run in Node against mocks.
-**The one-build agenda is at the head of `V1_2_TESTFLIGHT_CHECKLIST.md`** — one build carrying what
-four items owe, ordered most-likely-broken first. **Do not spend a build on less.**
-
-⚠️ **One privacy policy only: `docs/privacy.html`** ([D16]). The markdown copy is retired — it had
-drifted into claiming the app transmits nothing while Sentry ships crash reports. **One claim lives
-in three places** — the policy, the App Store Connect labels, and `app.json`'s permission strings —
-and [D17] falsified two of them within hours of [D16] being written. Move them together.
+⚠️ **One privacy policy only: `docs/privacy.html`** ([D16]), and **one claim lives in three places** —
+the policy, the App Store Connect labels, and `app.json`. ⚡ **That rule is now a GATE**
+(`privacyClaimsAgree.test.ts`): it found four disagreements at 1.2.10.3, two of them created an hour
+earlier by my own edit. Analytics is gated too — `analyticsPrivacy.test.ts` fails any event property
+outside an allow-list, which is what catches the field nobody thought to forbid.
 
 ⚠️ **"Out of Codemagic minutes" is wrong and it misled a session.** **~80% is consumed, and Jason
 stopped the Maestro work deliberately to RESERVE the rest for TestFlight** _(2026-09-21)_. A device
-build **is** available — it is scarce and spoken for. **Never spend one on a single item:**
-accumulate the device-owed work and send one build carrying all of it.
+build **is** available — it is scarce and spoken for.
 
 ## Rules that cost real time to rediscover
+
+- ⛔ **`onEndEditing` NEVER FIRES ON A WEB BLUR — use `onBlur`.** Three inputs saved on
+  `onEndEditing`, so everything typed into them was discarded on web, and **two of them had no Save
+  button**, making blur their only path. It works on device, which is why nothing caught it; what it
+  cost was the ability to verify any of it here. ⚠️ **Two probes "refuted" this before one confirmed
+  it** — see the next rule.
+- ⛔ **A COVERED ROUTE STAYS MOUNTED, and it will fool your instrument, not just your test.**
+  Pushing Settings over the dashboard does not unmount the dashboard. A probe that typed a value,
+  navigated away and back, and found it still there concluded the value had **persisted** — it was
+  reading the input's own surviving local state. **Only `page.reload()` forces a real re-read**, and
+  only as a real onboarded user, because demo mode's store is **in memory** and a reload drops it
+  entirely. The same fact also breaks unscoped `toHaveCount(0)` assertions and makes a sheet's
+  "Close" ambiguous with the screen's. ⚡ **A broken instrument that agrees with you is
+  indistinguishable from evidence.**
+- ⚠️ **This is an npm WORKSPACE: `apps/mobile/node_modules` is EMPTY.** Everything hoists to the repo
+  root. A dependency sweep scoped to the package directory returned **zero** privacy manifests and
+  read as *"the dependencies are non-compliant"* rather than *"I searched the wrong tree"*. **Search
+  from the repo root.** The tell was that the answer came back suspiciously absolute.
+- ⚠️ **Anything the demo persona asserts on a DATE is a latent coin flip.** The seed paid each past
+  quarter `Math.round(perQuarter)` against an unrounded requirement, so "nothing overdue" was green
+  on 2026-09-21 and red on 2026-09-22 — the entries move with today's date and the figure re-rounded.
+  **Gate demo invariants over `demoSeed.test.ts`'s sample dates, never over "now"**: planting the old
+  rounding reds only **2 of those 7**, which is exactly why it shipped green.
 
 - ⛔ **A failing assertion tells you what was ABSENT; only the view hierarchy tells you what was
   PRESENT.** Thirteen Maestro dispatches went on diagnosing a *harness* — every app-level hypothesis
@@ -80,8 +102,9 @@ accumulate the device-owed work and send one build carrying all of it.
 ```bash
 cd services/tax-engine && npm test          # 102 engine tests
 cd services/tax-engine && npm run audit     # ⚠️ TAX CONFIG GATES — both exit non-zero
-cd apps/mobile && npm run typecheck && npm test   # 226 unit
-cd apps/mobile && NODE_OPTIONS=--use-system-ca npx playwright test --config e2e/playwright.config.ts
+cd apps/mobile && npm run typecheck && npm test   # 378 unit
+cd apps/mobile && NODE_OPTIONS=--use-system-ca npx playwright test --config e2e/playwright.config.ts   # 66 e2e
+node tools/sweep-hygiene.mjs                 # reports test/gating hygiene; triage, not a gate
 ```
 
 ⚠️ **A green Playwright suite means "nothing else broke", NOT "this works on a phone."**

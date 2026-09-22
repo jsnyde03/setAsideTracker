@@ -4,7 +4,7 @@
 > here and nowhere else. Detail of completed work → [V1_2_LOG.md](V1_2_LOG.md). Version ladder →
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Nothing else carries a v1.2 queue.
 
-> ## ⏭️ RESUME HERE — 2026-09-21
+> ## ⏭️ RESUME HERE — 2026-09-22
 >
 > ✅ **Clean and pushed, verified** — `git rev-list --count origin/v1.2..HEAD` = 0.
 > ⚠️ **Check that count; never assume it.** A previous resume block asserted "clean and pushed"
@@ -15,21 +15,24 @@
 > a new item takes the next free number and the build order is the table's row order, not the
 > numbering. See the note above the queue table.
 >
-> 🔴 **STILL LIVE IN v1.1.1, and fixed only on this branch:** three money-wrong bugs that understate
-> what the user owes the IRS, plus a data-loss path that greets a user whose data cannot be read as a
-> brand-new one and then writes over it. **All fixed in 1.2.2 and 1.2.3. None of it reaches anybody
-> until v1.2 ships** — that is [D10]'s accepted cost, and it is the reason to keep moving.
+> 🔴 **FIVE defects are STILL LIVE in v1.1.1 and fixed only on this branch:** three money-wrong tax
+> bugs · a data-loss path that greets an unreadable-data user as brand new and overwrites them · a
+> tax-profile edit that erases the user's filed prior-year tax · reminders that reach no existing
+> install while their queue drains · and "Clear All Data" leaving the app lock ON, so the next launch
+> demands Face ID for an app with nothing in it. ⚡ **Every one was found by BUILDING ON TOP OF IT**,
+> none from a backlog. **None reaches anybody until v1.2 ships** — [D10]'s accepted cost, and the
+> reason to keep moving.
 >
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> ✅ **1.2.2 through 1.2.6 ARE ALL COMPLETE** and closed — the premium slice shipped four surfaces
-> and its whole-item after-scan found a **class of three dead save paths** (below).
-> **▶ ACTIVE: 1.2.10, filed correctness + submission compliance** ([D21], ahead of 1.2.7).
-> ✅ **1.2.10 is CLOSED** — both upload gates handled, and **[D23]** settles the export declaration by
-> **asking Apple instead of asserting it**. **▶ ACTIVE: 1.2.7, native iPad**, decomposed below.
-> ⛔ **Neither upload gate is provable off-device**, and 1.2.7 is barely provable here either — the
-> reserved build now owes: ITMS-91053, the **Missing Compliance** answer, and every iPad layout.
+> ✅ **1.2.2–1.2.6 and 1.2.10 ARE ALL COMPLETE** and closed. **▶ ACTIVE: 1.2.7, native iPad**,
+> decomposed below — and promoted with its weakness stated: **its verification is almost entirely
+> visual and device-owed**, so it banks checks for the reserved build rather than clearing them here.
+> 🔴 **Flipping `supportsTablet` obliges iPad screenshots in App Store Connect.**
+> ⛔ **The reserved build now owes four things** — ITMS-91053, the **"Missing Compliance"** answer
+> ([D23], which is also how the export question gets answered at all), 1.2.5's mileage stack, and
+> every iPad layout once 1.2.7 lands. Agenda → [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
 > ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
 > worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
@@ -347,7 +350,8 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
   `year-over-year.spec.ts` was the one real gap and is fixed. The rest are artifacts of the script
   scanning backwards within a test body, so it misses controls that live in a helper or come after
   the absence. ⚠️ **The script is the deliverable, not the list** — re-run it at 1.2.11 rather than
-  re-enumerating by hand. Script: `scratchpad/sweep2.mjs` (pattern recorded in the log).
+  re-enumerating by hand. **Script: `tools/sweep-hygiene.mjs`** — in the repo, because the
+  scratchpad it was written in does not survive the session that made it.
 - 🔴 **`RequirePremium` does not exist, and the five premium destinations are now enumerated from the
   mechanism** rather than by hand: whatever the dashboard routes through
   `canUsePremium ? X : onOpenPaywall`. All five carry `RequireTaxProfile` only. ⚡ **One of the new
