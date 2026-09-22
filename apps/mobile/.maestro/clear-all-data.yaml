@@ -28,6 +28,17 @@ name: Clear all data (destructive confirm + return to onboarding)
 # keyboardShouldPersistTaps="handled", so a tap outside an input blurs it).
 - tapOn:
     point: "50%,15%"
+# ⛔ 1.2.14.4: "Save Entry" is BELOW THE FOLD, and has been since 1.2.5 put the GPS trip toggle and
+# its description on this form. The failure hierarchy showed the form at **scroll 0% of 2 pages**
+# with every field filled correctly (gross pay 4000, mileage 500) — the button was never missing,
+# it was off-screen, and the assertion could only say it was absent.
+# ⚠️ No `centerElement` here: Save Entry is the last control on the form, so it can never be
+# centred, and a scrollUntilVisible that insists on centring a bottom element is the other half of
+# this run's failures.
+- scrollUntilVisible:
+    element:
+      text: "Save Entry"
+    direction: DOWN
 - tapOn: "Save Entry"
 - scrollUntilVisible:
     element:

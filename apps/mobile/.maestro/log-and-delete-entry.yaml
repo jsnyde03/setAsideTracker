@@ -26,6 +26,11 @@ name: Log + delete entry (native picker + confirm dialog)
 # keyboardShouldPersistTaps="handled", so a tap outside an input blurs it).
 - tapOn:
     point: "50%,15%"
+# ⛔ 1.2.14.4: below the fold since 1.2.5 added the GPS trip toggle — see clear-all-data.yaml.
+- scrollUntilVisible:
+    element:
+      text: "Save Entry"
+    direction: DOWN
 - tapOn: "Save Entry"
 - scrollUntilVisible:
     element:
