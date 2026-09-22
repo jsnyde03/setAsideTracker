@@ -11,6 +11,121 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.7.1 Flip the tablet flag + the iPad instrument — SUB-TASK after-scan · 2026-09-22 · ✅ DONE
+
+**382 unit (from 378) · typecheck clean · 70/70 Playwright (66 chromium + 4 iPad) · lint 15
+unchanged · ports free. 4 plants, 4 caught.**
+
+⛔ **The sub-step was MISDESCRIBED, and building it is what found that.** It read *"unlock
+`orientation` (portrait today)"*. Expo's `orientation` is a **global** key: `@expo/config-plugins`'
+`setOrientation` writes exactly one Info.plist entry, `UISupportedInterfaceOrientations`, and
+**never the `~ipad` variant** — verified in the plugin's source, not assumed. Done as written, an
+iPad item would have let the **iPhone** rotate into landscape: a device class with no landscape
+design, and — per this item's own before-scan — **no test coverage at phone width at all.** ⚡ **The
+before-scan passed this through**, exactly as `preauthored-items-fail-two-ways` predicts: confirming
+"`orientation` is `portrait`, as the plan says" is what a before-scan does. Only reaching for the
+mechanism caught it.
+
+✅ **What shipped instead:** `orientation: "portrait"` stays (it is the iPhone's setting), and
+`ios.infoPlist["UISupportedInterfaceOrientations~ipad"]` carries all four. iOS prefers the `~ipad`
+variant on iPad and the base key elsewhere. ⚠️ **This depends on a second verified fact:**
+`createInfoPlistPluginWithPropertyGuard` suppresses the orientation plugin only when `ios.infoPlist`
+sets the **exact** key it owns — so the `~ipad` variant does not trip the guard.
+
+⭐ **`tabletOrientation.test.ts`, and the 4th plant is the one that earns it.** Claims gated
+separately: ships to iPad · iPhone stays portrait · the `~ipad` array · **and a control asserting
+the BASE key is absent from `infoPlist`.** Planting *the base key written instead of the variant* —
+the realistic mistake — reds two tests, and without the control it would have been **invisible**:
+that plant silences the orientation plugin via the guard, so the phone rotates while the config
+still looks deliberate. Each plant red exactly its own claim; the other three stayed green.
+
+🔴 **A measurement refuted my own instrument mid-step, and it read as evidence.** The baseline test
+first measured the bounding box of the *heading text node* and reported the content spanning **12%**
+of a 1366px viewport — which looks exactly like "the layout is already constrained." It was the
+width of the words. Dumping the ancestor chain showed the card at **1326px of 1366 (x=20)**. ⚡ **The
+claim was right and the instrument was wrong**, and the only reason it surfaced is that the number
+disagreed with the claim — had the text happened to be wide, it would have passed and been believed.
+Now selected structurally, by walking to the nearest ancestor with a real border radius, because
+react-native-web's class names (`css-view-g5y9jx r-borderRadius-…`) are content hashes, not a
+contract. ⚡ Same shape as CLAUDE.md's covered-route rule: *"a broken instrument that agrees with you
+is indistinguishable from evidence."* That rule was written about a probe reading surviving local
+state; this is the second instance, and the first outside navigation — **worth reading as a general
+hazard of any measurement written alongside the claim it is meant to test.**
+
+📏 **The baseline, as numbers rather than impressions** — this is what 1.2.7.2 moves:
+
+| viewport | card width | x | span |
+|---|---|---|---|
+| iPad portrait 1024 | 984px | 20 | **98%** |
+| iPad landscape 1366 | 1326px | 20 | **99%** |
+
+A 1326px-wide card is a text measure no one can read — "stretched to fit", stated as a figure.
+⚠️ **The baseline test asserts `> 0.9` deliberately, so 1.2.7.2 turns it RED** and it must be
+rewritten to the constrained expectation. A baseline that keeps passing after the fix is a test of
+nothing.
+
+✅ **Answered: the app does NOT break when wide.** `scrollWidth <= clientWidth` at both iPad sizes,
+and the 66-test suite was already running at 1280. The item's content is appearance, not survival —
+which is what made [D24] available in the first place.
+
+⚙️ **Playwright scoping matters as much as the viewports:** `chromium` carries all 66 with
+`testIgnore` on `ipad-*.spec.ts`; the two iPad projects `testMatch` those alone. Running 66 × 3 on a
+serial suite would triple runtime to re-prove viewport-independent logic. Confirmed by the count:
+**70 = 66 + 2 + 2.**
+
+⏭ **Carried into 1.2.7.2:** **5 of the repo's 15 lint findings live in `Screen.tsx`** — the file .2
+edits. All pre-existing `react-hooks/refs` on the `Animated.Value` refs, none introduced here.
+Recorded so .2's diff is not blamed for them, and so 1.2.11's re-count knows they were already there.
+
+### 🔎 1.2.7 Native iPad — TASK before-scan · 2026-09-22
+
+**Premises checked against the code before acting, per §0. Three held, one was wrong, and one
+reframed the item.**
+
+✅ **Held.** `ios.supportsTablet: false` and `orientation: "portrait"` in `apps/mobile/app.json`. ·
+`components/Screen.tsx` is genuinely the single seam — **all 15 screens import it**, which is a
+*stronger* claim than the plan made, so the "no screen invents its own breakpoint" design holds by
+construction rather than by discipline. · Sheets are full-bleed: no `maxWidth` appears in any
+component, and the four `Modal`s use a backdrop + bottom-sheet pattern that spans the full width.
+
+⚠️ **Wrong: "the other 12 screens."** There are **15** in `src/screens/`. `RecoveryScreen` was added
+at 1.2.3 and `LockScreen` was never counted. Corrected in the plan to 14. **Third instance of a
+stale count surviving in the plan** after the two 2026-09-20 renumbers and the "1.2.3 = mileage"
+rot — all three found by grepping rather than by reading, which is the usable tell.
+
+⚡ **The reframe, and it is the reason the item changed shape: 1.2.7 was promoted as
+"almost entirely visual and device-owed" ([D21]), and that is not true.** The Playwright suite's
+only project is `Desktop Chrome` at **1280×720** — *wider than iPad portrait (1024)* and about iPad
+landscape. So **66 green e2e tests have been rendering this app at regular width all along.** The
+app therefore provably survives being wide *functionally*; what it lacks is any *design* for it
+(zero `maxWidth` outside `LockScreen`/`RecoveryScreen`). The item's real content is appearance, not
+survival — and appearance is screenshot-able locally.
+
+⭐ **Consequently the implementation choice decides whether the item is verifiable here.** Nothing in
+the repo uses `useWindowDimensions` yet. Built on it, the breakpoint re-renders on resize, so
+**1.2.7.5 (Split View live-resize) falls out by construction** and Playwright can assert it by
+resizing the viewport mid-test. Built on a `Platform.isPad`-style constant, **both** are lost — the
+layout would settle on mount, which is precisely what .5 exists to catch. **A device-owed item was
+device-owed because of how it was going to be built, not because of what it is.**
+
+✅ **[D24] (Jason 2026-09-22): the seam is `useWindowDimensions`; iPad viewports join the e2e suite.**
+.1–.5 verify here; the reserved build confirms *fidelity* — fonts, safe areas, real Split View — and
+.6 (hardware keyboard) stays genuinely device-owed. ⚠️ **This does not make the build optional**, and
+the standing caveat still applies: react-native-web at 1024px is not UIKit at 1024pt. It moves the
+build from *discovering* layout breaks to *confirming* their absence.
+
+⚡ **Sequencing reinforced rather than re-opened:** the reserved build already owes "every iPad
+layout", so building iPad **now** is what makes the one-build agenda work. Deferring 1.2.7 past the
+build costs a second build — the scarce resource — which is the opposite of what [D21]'s reasoning
+was protecting.
+
+🔴 **Filed to the backlog (not folded): no test in this repo has ever rendered the app at PHONE
+width.** The app ships portrait iPhone only and its entire e2e suite runs at 1280px. Adding a
+390×844 project is one config line, but it could red an unknown number of tests, which is a triage
+workstream rather than an iPad sub-step → 1.2.9/1.2.11. ⚡ **Found only because the iPad question
+forced a read of the Playwright config** — the omission of the *shipping* width had been invisible
+for the whole version.
+
 ### 🔎 1.2.10 — WHOLE-ITEM after-scan · 2026-09-22 · ✅ CLOSED (6 built, 2 deferred)
 
 **378 unit (from 346) · 102 engine · 66/66 Playwright · typecheck clean · lint 15 unchanged · both

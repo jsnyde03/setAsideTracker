@@ -34,7 +34,38 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  /**
+   * Three projects, and the scoping matters as much as the viewports ([D24]).
+   *
+   * `chromium` runs the whole suite at Desktop Chrome's 1280×720 — which, note, is *wider than an
+   * iPad in portrait*. That is why the app was already known to survive regular width before 1.2.7
+   * began: 66 tests had been rendering it there all along.
+   *
+   * The iPad projects exist to check **appearance**, not behaviour, so they are scoped to the iPad
+   * specs alone. Running all 66 in three projects would triple a serial suite's runtime to re-prove
+   * logic that is viewport-independent.
+   *
+   * ⚠️ The logical sizes below are points, not pixels — a 12.9" iPad Pro is 1024×1366pt. RN-web at
+   * 1024px is still not UIKit at 1024pt; these catch layout *breaks*, and the device build confirms
+   * fidelity.
+   */
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: "**/ipad-*.spec.ts",
+    },
+    {
+      name: "ipad-portrait",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 1366 } },
+      testMatch: "**/ipad-*.spec.ts",
+    },
+    {
+      name: "ipad-landscape",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 1024 } },
+      testMatch: "**/ipad-*.spec.ts",
+    },
+  ],
   webServer: {
     command: "npm run web",
     url: BASE_URL,

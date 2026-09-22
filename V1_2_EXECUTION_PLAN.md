@@ -144,14 +144,23 @@ rather than prove them here.
 🔴 **Flipping `supportsTablet` obliges iPad SCREENSHOTS in App Store Connect.** That is a submission
 requirement, not polish — the flip and the store assets ship together or the listing is incomplete.
 
+⚡ **Before-scan 2026-09-22 changed the item's shape: it is NOT as device-owed as promoted.** The
+Playwright suite already runs at **1280×720** — wider than iPad portrait — so the app provably
+survives being wide *functionally*; it is simply not *designed* for it (no `maxWidth` outside
+`LockScreen`/`RecoveryScreen`). **Decision (Jason 2026-09-22): the seam is built on
+`useWindowDimensions`, and iPad viewports join the e2e suite** — live-resize then works by
+construction and .1–.5 are verifiable here, leaving the reserved build to confirm *fidelity* rather
+than discover breakage. ⚠️ **Corrected: 15 screens, not 13** — `RecoveryScreen` (1.2.3) and
+`LockScreen` were never counted. Detail → [V1_2_LOG.md](V1_2_LOG.md).
+
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.7.1** | **Flip `ios.supportsTablet` (false today) and unlock `orientation` (portrait today).** Then look: does the app survive being wide at all, before any adaptive work? | ⬜ |
-| **1.2.7.2** | **The size-class seam, in `components/Screen.tsx`** — the single wrapper every screen already goes through. One place decides compact vs. regular, so no screen invents its own breakpoint. | ⬜ |
+| **1.2.7.1** | ✅ **DONE 2026-09-22.** `supportsTablet: true`; iPad gets all four orientations via **`UISupportedInterfaceOrientations~ipad`** while the iPhone stays portrait — ⛔ **"unlock `orientation`" as written would have let the PHONE rotate.** Gated (`tabletOrientation.test.ts`, 4 plants/4 caught) + the two iPad Playwright projects. **Baseline measured: the dashboard card spans 98–99% of the viewport.** | ✅ |
+| **1.2.7.2** | **The size-class seam, in `components/Screen.tsx`** — confirmed the single wrapper all **15** screens import. One place decides compact vs. regular on `useWindowDimensions`, so no screen invents its own breakpoint. | ⬜ |
 | **1.2.7.3** | **Dashboard at regular width** — the multi-column layout. The screen that matters most and the one with the most on it. | ⬜ |
-| **1.2.7.4** | **The other 12 screens at regular width.** ⚠️ **Sheets and modals first** — they are full-bleed today, which reads as broken on a 13" display. | ⬜ |
-| **1.2.7.5** | **Split View / Stage Manager: survive being RESIZED LIVE**, not merely launched wide. A layout that only settles on mount fails here. | ⬜ |
-| **1.2.7.6** | **Hardware keyboard** — tab order through forms, escape to dismiss a sheet. | ⬜ |
+| **1.2.7.4** | **The other 14 screens at regular width.** ⚠️ **Sheets and modals first** — confirmed full-bleed today, which reads as broken on a 13" display. | ⬜ |
+| **1.2.7.5** | **Split View / Stage Manager: survive being RESIZED LIVE**, not merely launched wide. Falls out of .2's breakpoint source, and is asserted by resizing the viewport mid-test. | ⬜ |
+| **1.2.7.6** | **Hardware keyboard** — tab order through forms, escape to dismiss a sheet. ⛔ Device-owed. | ⬜ |
 | **1.2.7.7** | **iPad screenshots** for the listing (see the red note above). | ⬜ |
 | **1.2.7.8** | **Verify + whole-item after-scan.** | ⬜ |
 
@@ -296,6 +305,7 @@ map is at the head of the log's item-spec section._
 | **[D21]** | **1.2.10 runs before 1.2.7 (native iPad).** ⛔ **Two of its items are UPLOAD-time gates** — the iOS privacy manifest (ITMS-91053) and `ITSAppUsesNonExemptEncryption`, declared `false` while the app does AES-256 — and **no `.xcprivacy` exists in the repo at all**. The single reserved TestFlight build is spent at *upload*, so getting these wrong kills the build four items are waiting on before it reaches a device. 1.2.10 is also pure JS/config, which is the right shape of work while device builds are scarce; **1.2.7 is layout work whose verification is almost entirely visual and device-owed** — the worst possible fit for the current constraint. | Jason 2026-09-21 |
 | **[D22]** | **Analytics stops sending the user's state code.** A US state describes where someone is at lower precision than three decimal places, which is Apple's definition of **Coarse Location** however the app came by it — so declaring it would have put a location category in the privacy manifest, the App Store labels **and** the policy, on a tax app that collects no location otherwise. ⚡ **Not collecting it removes the question from all three places rather than answering it three times.** Rejected declaring it as "Other Data" — defensible, but being wrong about a location category is an App Store rejection. Cost: the state distribution of the user base is no longer measurable, which mattered because state tax configs are per-state work. | Jason 2026-09-22 |
 | **[D23]** | **`ITSAppUsesNonExemptEncryption` is REMOVED, so App Store Connect asks instead of being pre-answered.** The key's only function is to bypass the export-compliance questionnaire. The app encrypts local data with **crypto-js AES-256** — not the OS's crypto — and whether that is exempt turns on **Note 4 to Category 5 Part 2**, the *primary-function* test, **not on whose library it is** _(which is how this was first framed, wrongly)_. The reading that the app qualifies is defensible — its primary function is tax **calculation**, and BIS lists inventory-management software as a Note 4 example — **but it is a reading, and this is a legal declaration.** ⚡ **So we stopped answering the question and started asking it:** Apple's own flow produces the classification at first upload, and it gets recorded then. ⚠️ Cost: every build lands as **"Missing Compliance"** until answered in ASC — documented in both checklists so it is not mistaken for a broken build. | Jason 2026-09-22 |
+| **[D24]** | **The iPad size-class seam is built on `useWindowDimensions`, and iPad viewports join the Playwright suite.** ⛔ **1.2.7 was promoted as "almost entirely device-owed" and that was a property of the intended implementation, not of the item.** The e2e suite already runs at **1280×720 — wider than iPad portrait** — so the app is proven to *survive* regular width; the item's real content is appearance. On `useWindowDimensions` the breakpoint re-renders on resize, so **Split View live-resize (1.2.7.5) falls out by construction** and is assertable by resizing the viewport mid-test; on a `Platform.isPad`-style constant both the behaviour and the check are lost. ⚠️ **Does not make the reserved build optional** — RN-web at 1024px is not UIKit at 1024pt, and 1.2.7.6 (hardware keyboard) stays device-owed. It moves the build from *discovering* layout breaks to *confirming* their absence. | Jason 2026-09-22 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
@@ -323,7 +333,18 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
 
-### From 1.2.10's build-out _(2026-09-22)_
+### From 1.2.7's before-scan _(2026-09-22)_
+
+- 🔴 **NO TEST IN THIS REPO HAS EVER RENDERED THE APP AT PHONE WIDTH → 1.2.9/1.2.11.** The Playwright
+  suite's only project is `Desktop Chrome` at **1280×720**, and the app ships **portrait iPhone
+  only**. So 66 green e2e tests have been validating a viewport no shipping user has, and every
+  phone-width layout claim in v1.2 rests on device screenshots alone. ⚡ **1.2.7 adds iPad
+  viewports, which makes the omission of the actual shipping width the conspicuous one.** Adding a
+  390×844 project is one config line; **deferred, not folded, because it could red an unknown number
+  of tests mid-item** — that is a triage workstream, not an iPad sub-step. ⚠️ Whoever takes it should
+  expect real findings, not a clean pass: this is the same shape as "the suite is green because
+  nothing would have failed." _(Found at the 1.2.7 before-scan, by reading the Playwright config to
+  see whether iPad widths could be driven here.)_
 
 - **Analytics / crash opt-out toggle → v1.3.** Not promised by the policy and not required by Apple;
   a genuine feature (persisted setting + gating both `init` calls + tests) that does not belong
