@@ -42,11 +42,15 @@ needs only repo scope and answers the same question about the thing we actually 
 Codemagic dispatch #2 a whole mac build on 2026-09-20. **The don't-hardcode lesson was not a
 historical curiosity — it would have failed again, on the first run, on a different CI.**
 
-⚠️ **A GitHub-specific constraint found here, not in any plan:** `workflow_dispatch` only appears for
-workflows present on the **default branch**, and `master` is ~95 commits behind `v1.2`. So a manual
-button does not exist yet. Worked around with a `paths:` filter on this workflow's own file — pushing
-it *is* the trigger — which also cannot fire on unrelated work. **It resolves itself when v1.2
-merges, which [D26]'s policy cutover already requires.**
+⚠️ **A GitHub constraint found here — and then HALF-REFUTED by trying it, which is the more useful
+half.** I wrote that `workflow_dispatch` only works for workflows on the **default branch** (master
+being ~95 commits behind `v1.2`), and built a `paths:` filter to work around it. Then
+`gh workflow run maestro-ios.yml --ref v1.2` **queued a run against the feature branch without
+complaint.** The accurate statement: the Actions **UI button** needs the default branch; **the API
+does not.** ⚡ **The workaround was not wrong, it was unnecessary** — and I would not have found that
+by reading, only by running the command I had already told myself would fail. Corrected in the
+workflow's own comment, because a wrong mechanism left in a comment is what this session has twice
+caught elsewhere. The `paths:` trigger is kept deliberately: it makes editing that file self-testing.
 
 ### 🔎 1.2.7.4 Every other screen at regular width — SUB-TASK after-scan · 2026-09-22 · ✅ DONE
 

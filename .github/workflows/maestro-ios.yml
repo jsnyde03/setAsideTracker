@@ -11,9 +11,11 @@
 name: iOS Maestro (native flows)
 
 on:
-  # ⚠️ Manual dispatch only appears for workflows on the DEFAULT branch, and master is ~95 commits
-  # behind v1.2. Until v1.2 merges, trigger a run by pushing a change to this file (the path filter
-  # below), or from the Actions UI once it has landed on master.
+  # ⚠️ **Corrected 2026-09-22 by trying it.** The claim here was that manual dispatch only works for
+  # workflows on the DEFAULT branch (master is ~95 commits behind v1.2). That is true of the Actions
+  # **UI button**, and it is NOT true of the API: `gh workflow run maestro-ios.yml --ref v1.2`
+  # queues a run against this branch fine. The push/paths trigger below is kept anyway — it makes
+  # editing this file self-testing — but the CLI is the normal way to start a run.
   workflow_dispatch:
     inputs:
       flow:
