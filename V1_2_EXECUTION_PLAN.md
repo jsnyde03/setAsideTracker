@@ -156,7 +156,7 @@ than discover breakage. ⚠️ **Corrected: 15 screens, not 13** — `RecoverySc
 | # | sub-step | scan |
 |---|---|---|
 | **1.2.7.1** | ✅ **DONE 2026-09-22.** `supportsTablet: true`; iPad gets all four orientations via **`UISupportedInterfaceOrientations~ipad`** while the iPhone stays portrait — ⛔ **"unlock `orientation`" as written would have let the PHONE rotate.** Gated (`tabletOrientation.test.ts`, 4 plants/4 caught) + the two iPad Playwright projects. **Baseline measured: the dashboard card spans 98–99% of the viewport.** | ✅ |
-| **1.2.7.2** | **The size-class seam, in `components/Screen.tsx`** — confirmed the single wrapper all **15** screens import. One place decides compact vs. regular on `useWindowDimensions`, so no screen invents its own breakpoint. | ⬜ |
+| **1.2.7.2** | ✅ **DONE 2026-09-22.** `src/layout.ts` (pure rule, 16 tests) + `useSizeClass.ts` (the hook), wired once in `Screen.tsx`: content caps at a **672pt** reading measure and centres on regular widths, untouched on compact. Measured 1326px → **632px, gutters equal**, at both iPad sizes. 4 plants/4 caught. | ✅ |
 | **1.2.7.3** | **Dashboard at regular width** — the multi-column layout. The screen that matters most and the one with the most on it. | ⬜ |
 | **1.2.7.4** | **The other 14 screens at regular width.** ⚠️ **Sheets and modals first** — confirmed full-bleed today, which reads as broken on a 13" display. | ⬜ |
 | **1.2.7.5** | **Split View / Stage Manager: survive being RESIZED LIVE**, not merely launched wide. Falls out of .2's breakpoint source, and is asserted by resizing the viewport mid-test. | ⬜ |
@@ -332,6 +332,20 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.7.2 _(2026-09-22)_
+
+- **The pure-rule / native-wiring split is now a repo PATTERN with two instances, and nothing names
+  it → 1.2.11.** A module importing `react-native` is **uncollectable by vitest** (Flow-typed entry
+  point, plain Node runner), so the pure half has to live in its own file to be testable at all.
+  `appReviewPolicy.ts` + `appReview.ts` did this first; `layout.ts` + `useSizeClass.ts` now matches
+  it. ⚡ **The codebase already knew this in one place and did not say so** — the same shape as
+  `setAsideRate`'s rebuild hazard, which was commented in one file and repeated in another. A gate
+  is cheap (assert no `react-native` import in the pure modules, as `layout.test.ts` already does
+  for itself); naming the convention is cheaper. **Deferred, not folded:** 1.2.11 is the test-infra
+  item. ⚠️ Note `appReview.test.ts` tests `appReviewPolicy.ts`, so a by-name sweep reports
+  `appReview.ts` as covered when it has no test at all — **a filename is not a coverage claim**, and
+  my own scan was fooled by it for a minute.
 
 ### From 1.2.7's before-scan _(2026-09-22)_
 

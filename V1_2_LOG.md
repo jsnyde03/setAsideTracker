@@ -11,6 +11,66 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.7.2 The size-class seam — SUB-TASK after-scan · 2026-09-22 · ✅ DONE
+
+**398 unit (from 382) · typecheck clean · 72/72 Playwright (66 chromium + 3 + 3) · lint 15
+unchanged · ports free. 4 plants, 4 caught.**
+
+📏 **The number the item exists to move: a 1326px card became 632px, centred to the pixel.**
+
+| viewport | card | gutters | before |
+|---|---|---|---|
+| iPad portrait 1024 | 632px | 196 / 196 | 984px at x=20 |
+| iPad landscape 1366 | 632px | 367 / 367 | 1326px at x=20 |
+
+⚙️ **What shipped.** `src/layout.ts` holds the rule — `REGULAR_WIDTH_BREAKPOINT = 768`,
+`READABLE_CONTENT_MAX_WIDTH = 672`, `resolveSizeClass`, `resolveContentMaxWidth` — and
+`useSizeClass.ts` the one-line hook over `useWindowDimensions`. `Screen.tsx` is the only default
+caller, so the seam is applied once for all 15 screens. A screen needing real columns opts out with
+`width="full"` (the dashboard, at 1.2.7.3).
+
+⚠️ **Neither constant is invented, which matters in a repo that retired a "~30 entries" gate for
+exactly that reason ([D20]).** 768 is the narrow edge of every iPad in portrait, so a full-screen
+iPad is always regular and the widest iPhone (440pt) is always compact. 672 is roughly where iOS's
+own `readableContentGuide` caps — the system's answer to the same question. ⭐ **And the breakpoint
+is a WIDTH test, not a device test, on purpose:** an iPad in a half or third split hands the app
+320–507pt, where a tablet layout is worse than the phone one. `Platform.isPad` cannot see that.
+
+🔴 **I wrote the rule/hook split into the docstring and then defeated it in the same file.**
+`layout.ts` shipped with `useSizeClass` at the bottom importing `react-native` — which made **every
+test in `layout.test.ts` uncollectable**, because vitest runs in plain Node and react-native's entry
+point is Flow-typed. ⚡ **The failure mode is worse than a coverage gap: the suite reports a broken
+FILE, and a broken file is easy to scroll past.** Caught immediately only because the new tests were
+run before anything else.
+
+⭐ **So the promise became a gate, and planting it taught something the crash did not.**
+`layout.test.ts` now asserts `layout.ts` contains no `react-native` import. Planting the import
+back reds the gate — **while the other 15 tests still pass**, because an *unused* import is elided.
+So the crash only arrives once something uses it. **The text gate is strictly stronger than the
+failure it guards**: it fires while the import is still harmless, instead of when it breaks the file.
+
+✅ **The split turned out to be an existing repo pattern, not an invention.** `appReview.ts`
+(react-native wiring) and `appReviewPolicy.ts` (pure, tested) already did exactly this. ⚠️ **Found
+by measuring, after a by-name sweep misled me**: `appReview.test.ts` imports `appReviewPolicy`, so
+"does `appReview.ts` have a test?" answered *yes* by filename and *no* in fact. **A filename is not
+a coverage claim.** Filed to 1.2.11 — two instances and nothing names the convention, the same shape
+as `setAsideRate`'s hazard being commented in one file and repeated in another.
+
+🧪 **The plants, and why these four.** ⓐ compact exemption removed → the phone letterboxes itself;
+unit caught. ⓑ the `react-native` import restored → gate caught. ⓒ `alignSelf` removed → capped but
+pinned left, **694px of gutter asymmetry**; only e2e could catch this. ⓓ `maxWidth` computed but
+never applied → **1326px, the exact baseline number**. ⚡ **ⓓ is the important one:** every unit test
+stays green while nothing changes on screen — *a tested helper is not a used helper*, and the only
+thing standing between the rule and that outcome is the iPad projects added at 1.2.7.1.
+
+✅ **The risk the before-scan flagged did not materialise: all 66 chromium tests pass unchanged.**
+They run at 1280px, which is regular, so they now render the constrained layout — and none of them
+depended on full-bleed positioning, because they select by text and accessible name.
+
+⏭ **Carried into 1.2.7.3:** the dashboard is the first `width="full"` caller, and the opt-out exists
+and is unit-tested but **has no consumer yet** — the same "correct rule, wired by nothing" shape
+this repo has hit twice (`loadError`, `useReminderRefresh`). .3 is what proves it.
+
 ### 🔎 1.2.7.1 Flip the tablet flag + the iPad instrument — SUB-TASK after-scan · 2026-09-22 · ✅ DONE
 
 **382 unit (from 378) · typecheck clean · 70/70 Playwright (66 chromium + 4 iPad) · lint 15
