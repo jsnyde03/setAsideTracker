@@ -23,16 +23,17 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> ✅ **1.2.2 through 1.2.5 ARE ALL COMPLETE** and closed. **▶ ACTIVE: 1.2.6, the premium slice**
-> ([D3]), decomposed below — pure JS, so every line is verifiable here.
-> ✅ **1.2.6.1–1.2.6.5 are DONE** — four premium surfaces built, plus a **live v1.1.1 data-loss fix**
-> ([D19]) and a headline reshaped after its spec turned out unbuildable ([D20]).
-> **▶ Next action: 1.2.6.6 — verify + the WHOLE-ITEM after-scan**, which closes 1.2.6. ⚠️ Do not
-> assert absolute dollar figures; 1.2.2 and 1.2.4 both moved what the demo seed produces.
+> ✅ **1.2.2 through 1.2.6 ARE ALL COMPLETE** and closed — the premium slice shipped four surfaces
+> and its whole-item after-scan found a **class of three dead save paths** (below).
+> **▶ ACTIVE: 1.2.10, filed correctness + submission compliance**, decomposed below and **moved ahead
+> of 1.2.7 ([D21])**. **▶ Next action: 1.2.10.1**, the privacy manifest — and its first question is
+> whether Expo's prebuild already generates one, not how to write one.
+> 🔴 **Its two upload gates decide whether the reserved build survives submission**, so they run
+> before anything is dispatched.
 > ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
 > worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
-> Health: **346** mobile unit · **102** engine · **64/64** Playwright · typecheck clean · both tax-config
+> Health: **346** mobile unit · **102** engine · **66/66** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
@@ -130,33 +131,35 @@ because the gate is about data, not payment. An e2e asserts the absence.
 
 ---
 
-### ⭐ **1.2.6 — Premium slice** · **ACTIVE**
+### 🧾 **1.2.10 — Filed correctness + submission compliance** · **ACTIVE**
 
-**Why it is next:** the correctness blocks and both feature items are closed, and [D3] is standing —
-**every version carries a premium line**. It also unblocks cleanly: its hard dependency was 1.2.2's
-safe-harbor maths, which shipped. ⚠️ **Pure JS, so unlike 1.2.5 every line of it is verifiable on
-this machine** — which is the right shape of work while a device build is being saved up for.
-
-⛔ **The gating rule, applied to each of the four before it is built:** premium sits on the
-**tax-time / complexity** axis, never on the core set-aside job, and is **additive** — it may not
-blur or remove anything already free. An item that fails that test is cut, not shrunk.
+**Why it is next, ahead of 1.2.7 ([D21]):** its items are pure JS/config, so every line is verifiable
+on this machine — and two of them are **upload-time** gates. The one reserved TestFlight build is
+spent at upload, so a wrong privacy manifest kills the build four items are waiting on before it ever
+reaches a device. ⛔ **No `.xcprivacy` exists in the repo today**, and `ITSAppUsesNonExemptEncryption`
+is declared `false` while the app does AES-256.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.6.2** | ✅ **DONE 2026-09-21 — the IRS due-date business-day shift.** Dates now move past weekends, MLK Day and Emancipation Day; **the after-scan folded in a launch-time refresh**, without which the fix reached nobody already installed and the reminder queue drained after a year. **321 unit · 7 plants, 7 caught.** | ✅ |
-| **1.2.6.1** | ✅ **DONE 2026-09-21 — the per-quarter amount on the dashboard's due-date row**, premium, beside a date that stays free. Labelled as a projection. **53/53 Playwright (3 new) · 4 plants, 3 caught** — the one that passed is recorded as a coverage gap, not a pass. | ✅ |
-| **1.2.6.3** | ✅ **DONE 2026-09-21 — the safe-harbor payment tracker.** Paid vs. required per quarter ([D19]), counting only deadlines already passed. 🔴 **Also fixed a live v1.1.1 data-loss bug** the before-scan found: editing the tax profile erased `filedTaxByYear`. **330 unit · 57/57 Playwright · 5 plants, 5 caught.** | ✅ |
-| **1.2.6.4** | ✅ **DONE 2026-09-21 — "Best days to work", day-of-week ([D20]).** Ranked by hourly rate, gated on per-weekday sample. ⛔ Before-scan killed two thirds of the spec: time-of-day has **no data** (`Entry` has no time) and the platform half **already ships free**. **339 unit · 61/61 Playwright · 6 plants, 6 caught.** | ✅ |
-| **1.2.6.5** | ✅ **DONE 2026-09-21 — tap a Schedule C line, see the entries behind it.** Before-scan: the screen existed but **nothing on it was tappable**, and `buildScheduleCSummary` had no per-entry attribution. Rows sum to the line exactly (no adjustment row needed, unlike 1.2.4). **346 unit · 64/64 Playwright · 7 plants, 7 caught.** | ✅ |
-| **1.2.6.6** | **Verify + whole-item after-scan.** ⚠️ **Do not assert absolute dollar figures** — 1.2.2 and 1.2.4 both moved what the demo seed produces. | ⬜ |
+| **1.2.10.1** | **iOS privacy manifest (ITMS-91053).** ⚠️ **First question is whether Expo's prebuild already generates one** — "no file in the repo" is not the same as "none in the binary". Then what this app must declare for its own API use and for Sentry. | ⬜ |
+| **1.2.10.2** | **`ITSAppUsesNonExemptEncryption`.** Declared `false` while the app does AES-256. Decide the correct declaration (the exemption may still apply) and make the file say what is true. | ⬜ |
+| **1.2.10.3** | **The [D16] three-places sweep** — privacy page · App Store Connect labels · `app.json` permission strings. They must agree, and 1.2.10.1–2 have just changed what is claimed. | ⬜ |
+| **1.2.10.4** | **`clearAllLocalData` omits `appSettings`**, against the published policy's "erases everything". | ⬜ |
+| **1.2.10.5** | **Analytics / crash-report opt-out toggle** — the policy promises one and there is none. | ⬜ |
+| **1.2.10.6** | **Backup-restore validation.** | ⬜ |
+| **1.2.10.7** | **Tax-profile completeness prompt.** | ⬜ |
+| **1.2.10.8** | **Verify + whole-item after-scan.** | ⬜ |
 
-**Exit line:** four premium surfaces that each earn their gate on the tax-time axis, nothing that was
-free became paid, and the quarterly dates they attach money to are the correct ones.
-
+**Exit line:** the app uploads without an ITMS rejection, and every claim it makes about data — in the
+manifest, the App Store labels, the permission strings and the privacy page — is one the code honours.
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
-_1.2.1 (parked) and 1.2.6 (active) are not listed here — they are above. 1.2.2–1.2.5 are in **Closed**.
-An item appears in exactly one place._
+_1.2.1 (parked) and 1.2.10 (active) are not listed here — they are above. 1.2.2–1.2.6 are in
+**Closed**. An item appears in exactly one place._
+
+⚠️ **1.2.10 was moved ahead of 1.2.7 on 2026-09-21 ([D21])** — row order is build order, and this is
+the row moving, not the numbering. Its two upload-time gates decide whether the single reserved
+TestFlight build survives submission at all.
 
 ⛔ **Numbers are STABLE IDs — do not renumber on insert.** A new item takes the **next free number**
 and is placed in the right row; **build order is this table's row order**, never the numbering. Two
@@ -169,7 +172,6 @@ out-of-order number is worth less than one more round of that.
 | 1.2.7 | **Native iPad** | Adaptive split-view/sidebar. ~2× its original estimate (scoped at 6 screens, now 13). |
 | 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
 | 1.2.9 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. |
-| 1.2.10 | **Filed correctness + submission-compliance backlog** | Backup-restore validation · **iOS privacy manifest (may block upload — ITMS-91053)** · `ITSAppUsesNonExemptEncryption` declared false while the app does AES-256 · `clearAllLocalData` omits `appSettings` against the stated policy · completeness prompt · analytics opt-out · privacy-page single source. _(The due-date shift left here for 1.2.6.2 and shipped 2026-09-21.)_ |
 | 1.2.11 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.7 rewrite those files. |
 | 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
 
@@ -187,6 +189,17 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.6 — Premium slice ✅ DONE 2026-09-21, 6/6.** Four premium surfaces on the tax-time axis, and
+  **nothing that was free became paid**: the per-quarter amount beside a still-free due date · the
+  safe-harbor payment tracker, **per quarter** ([D19]) · "best days to work" ([D20]) · the Schedule C
+  drill-down. ⛔ **Three of the six items were wrong as specified and the before-scans caught all
+  three** — a per-year payments model that could not answer its own question, an optimizer whose
+  headline had **no data behind it** and whose other half already shipped free, and a "surfacing fix"
+  that was a build. 🔴 **Two live v1.1.1 defects fixed on the way**: editing the tax profile erased
+  `filedTaxByYear`, and reminders reached no existing install while their queue silently drained.
+  **346 unit · 102 engine · 66/66 Playwright · 29 plants, 29 caught.**
+  _Sub-step detail + 7 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.5 — Mileage trip toggle ✅ DONE 2026-09-21, 6/6.** Start/stop trip capture that keeps
   measuring while the app is off screen ([D17]: when-in-use + the visible iOS indicator, no
@@ -266,6 +279,7 @@ map is at the head of the log's item-spec section._
 | **[D18]** | **The per-quarter figure goes on the DASHBOARD; the reminder notification carries no dollar amount.** A notification body is frozen when it is scheduled — only at onboarding or a Settings toggle, never on dashboard mount — and the OS delivers it up to a year later, while `perQuarter` moves with every entry logged. **A stale figure beside a payment instruction is the same defect class 1.2.6.2 exists to remove.** The existing "check your dashboard" pointer is the one part of a months-old message still true when it fires, and it routes to a number that recomputed today. Also sidesteps two entitlement edges: a lapsed subscriber still delivered premium content, and a later subscriber who is not. | Jason 2026-09-21 |
 | **[D19]** | **The payments-made model is PER-QUARTER, not a per-year total.** The plan said to follow `amountSetAsideByYear`'s `Record<year, number>` shape. ⛔ **That shape cannot answer the question the tracker exists to answer:** safe-harbor penalties are computed per period, so a single annual figure reports a user who paid nothing until January as fully compliant. Stored as `Record<year, { q1?, q2?, q3?, q4? }>`, checked against the four due dates 1.2.6.2 corrected. **Rejected the richer per-payment shape with dates** — it only pays for itself in an actual underpayment-penalty calculation, which v1.2 is not doing. | Jason 2026-09-21 |
 | **[D20]** | **The shift/earnings optimizer ships as DAY-OF-WEEK only, gated on per-weekday sample size.** ⛔ **Its specified headline could not be built and half of it already existed.** `Entry` carries no time, and nothing in the app ever recorded one, so *"best time-of-day"* — named in ROADMAP §9.1 and IMPLEMENTATION_PLAN §347 — had no data behind it; and per-platform earnings + effective hourly rate with the best rate highlighted **already shipped, for free**, on `PlatformComparisonScreen`, so rebuilding it behind the paywall would have taken something away from free and broken 1.2.6's own gating rule. **Day-of-week is the one axis the data supports and the app does not already show.** ⚠️ **The flat "~30 entries" gate is retired**: nothing derived the 30, and at 20 seeded entries it excluded the demo that was supposed to make the feature demoable. Replaced by the mechanism it was proxying — a weekday reports once it has **≥3 entries**, the screen appears once **≥2 weekdays** qualify. Measured: the persona lands 4 qualifying weekdays on any date. **Time-of-day deferred to v1.3+**, and it needs a data-model change before it is even a candidate. | Jason 2026-09-21 |
+| **[D21]** | **1.2.10 runs before 1.2.7 (native iPad).** ⛔ **Two of its items are UPLOAD-time gates** — the iOS privacy manifest (ITMS-91053) and `ITSAppUsesNonExemptEncryption`, declared `false` while the app does AES-256 — and **no `.xcprivacy` exists in the repo at all**. The single reserved TestFlight build is spent at *upload*, so getting these wrong kills the build four items are waiting on before it reaches a device. 1.2.10 is also pure JS/config, which is the right shape of work while device builds are scarce; **1.2.7 is layout work whose verification is almost entirely visual and device-owed** — the worst possible fit for the current constraint. | Jason 2026-09-21 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
@@ -292,6 +306,19 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.6's WHOLE-ITEM after-scan _(2026-09-21)_
+
+- **Absence assertions with no positive control — 4 remaining candidates.** A scripted sweep found 5;
+  `year-over-year.spec.ts` was the one real gap and is fixed. The rest are artifacts of the script
+  scanning backwards within a test body, so it misses controls that live in a helper or come after
+  the absence. ⚠️ **The script is the deliverable, not the list** — re-run it at 1.2.11 rather than
+  re-enumerating by hand. Script: `scratchpad/sweep2.mjs` (pattern recorded in the log).
+- 🔴 **`RequirePremium` does not exist, and the five premium destinations are now enumerated from the
+  mechanism** rather than by hand: whatever the dashboard routes through
+  `canUsePremium ? X : onOpenPaywall`. All five carry `RequireTaxProfile` only. ⚡ **One of the new
+  e2e tests relies on that hole to reach `/safe-harbor` directly** — closing it will need that test
+  changed in the same edit, which is exactly the kind of coupling a later pass discovers the hard way.
 
 ### From 1.2.6.5 _(2026-09-21)_
 

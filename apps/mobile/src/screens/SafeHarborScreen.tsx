@@ -103,6 +103,17 @@ export function SafeHarborScreen({
     onUpdateQuarterlyPayment(year, quarter, parseAmount(text));
   }
 
+  /**
+   * ⚠️ **Committed on `onBlur`, never `onEndEditing`.** Measured 2026-09-21 at 1.2.6.6: a web blur
+   * does not reach `onEndEditing`, so every figure typed into these two fields was silently
+   * discarded on web — and they have **no Save button**, unlike the dashboard's set-aside input, so
+   * blur was the only path they had. It works on a device (iOS ends editing on blur), which is why
+   * nothing caught it; what it cost was the ability to verify it here at all.
+   *
+   * ⛔ The probe that first "refuted" this was itself broken — it navigated to Settings and back,
+   * which does not unmount the dashboard, and read the input's surviving local text as if it were
+   * storage. A real reload, as a real onboarded user, settled it.
+   */
   function persistPriorYear(totalTaxText: string, agiText: string) {
     const totalTax = parseAmount(totalTaxText);
     if (totalTax === undefined) return; // nothing to store without a total-tax figure
@@ -148,7 +159,7 @@ export function SafeHarborScreen({
               style={styles.input}
               value={priorTaxInput}
               onChangeText={setPriorTaxInput}
-              onEndEditing={() => persistPriorYear(priorTaxInput, priorAgiInput)}
+              onBlur={() => persistPriorYear(priorTaxInput, priorAgiInput)}
               keyboardType="decimal-pad"
               placeholder="0"
               placeholderTextColor={colors.inkFaint}
@@ -180,7 +191,7 @@ export function SafeHarborScreen({
               style={styles.input}
               value={priorAgiInput}
               onChangeText={setPriorAgiInput}
-              onEndEditing={() => persistPriorYear(priorTaxInput, priorAgiInput)}
+              onBlur={() => persistPriorYear(priorTaxInput, priorAgiInput)}
               keyboardType="decimal-pad"
               placeholder="0"
               placeholderTextColor={colors.inkFaint}
@@ -286,10 +297,7 @@ export function SafeHarborScreen({
                         onChangeText={(text) =>
                           setPaymentInputs((previous) => ({ ...previous, [quarter.key]: text }))
                         }
-                        // ⚠️ `onBlur`, not `onEndEditing` like the prior-year input above. The
-                        // latter is never reached by a web blur, so a value typed here was only
-                        // committed on a device — leaving the whole persistence path unverifiable
-                        // by the only suite that runs on this machine. `onBlur` fires in both.
+                        // ⚠️ `onBlur`, never `onEndEditing` — see the note on `persistPriorYear`.
                         onBlur={() => persistPayment(quarter.key, paymentInputs[quarter.key])}
                         keyboardType="decimal-pad"
                         placeholder="—"

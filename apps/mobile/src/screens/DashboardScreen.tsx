@@ -439,7 +439,11 @@ export function DashboardScreen({
                   style={styles.progressInput}
                   value={amountSetAsideInput}
                   onChangeText={setAmountSetAsideInput}
-                  onEndEditing={handleSaveAmountSetAside}
+                  // ⚠️ `onBlur`, not `onEndEditing` — a web blur never reaches the latter, so this
+                  // field's blur-to-save path was dead on web. Less severe than the safe-harbor
+                  // inputs because the check button beside it is a second path, but it is the same
+                  // defect and closing two of three sites is how a class half-closes.
+                  onBlur={handleSaveAmountSetAside}
                   keyboardType="decimal-pad"
                   placeholder="0.00"
                   placeholderTextColor={colors.inkFaint}

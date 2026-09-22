@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, grossPayField, platformChip, resetAppStorage } from "./helpers";
+import { completeOnboarding, grossPayField, platformChip, resetAppStorage, visible } from "./helpers";
 
 /**
  * Year-over-year insights is Premium. Unlike the W-4 / safe-harbor cards (gated on tax conditions),
@@ -48,6 +48,11 @@ test.describe("Year-over-year insights gating", () => {
 
     await logEntry(page, "5000"); // a single current-year entry — only one tracked year
 
+    // The control, added at 1.2.6.6's sweep. `toHaveCount(0)` is equally true of a dashboard that
+    // never rendered, so without this the test passes whether the soft gate works or the screen is
+    // broken. Every other soft-gate test in this suite pairs its absence with a positive; this one
+    // was the exception.
+    await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
     await expect(page.getByText(/Year-over-year insights/)).toHaveCount(0);
   });
 });

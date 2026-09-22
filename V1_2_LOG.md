@@ -11,6 +11,56 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.6 Premium slice — WHOLE-ITEM after-scan · 2026-09-21 · ✅ CLOSED 6/6
+
+**346 unit · 102 engine · 66/66 Playwright · typecheck clean · both tax-config gates green ·
+lint 15 unchanged · ports free. 31 plants across the item, 31 caught.**
+
+⚡ **The headline across all six sub-steps: THREE of them were wrong as specified, and every one was
+caught by a before-scan rather than by building.** 1.2.6.1's "mostly a surfacing fix" was a build.
+1.2.6.3's per-year payments model could not answer the question the tracker exists to answer.
+1.2.6.4's headline had **no data behind it** and its other half **already shipped free**, so building
+it as written would have failed the slice's own gating rule. **The ratio is the argument for the
+scan**: three corrections, none of which cost more than an hour to find, against features that would
+have shipped wrong or not at all.
+
+🔴 **The sweep's real find: a class of three DEAD SAVE PATHS, and I nearly dismissed it with a broken
+probe.** `onEndEditing` does not fire on a web blur, so every figure typed into three inputs was
+discarded — and the two safe-harbor fields have **no Save button**, so blur was the only path they
+had. All three now use `onBlur`, which fires on both platforms, with an e2e asserting persistence
+**across a real `page.reload()`**.
+
+⛔ **Two of my own probes were wrong before one was right, and the reason is the same fact three
+times.** Probe 1 navigated to Settings and back, concluded the value had persisted, and *refuted*
+the finding — but the dashboard is the index route and Settings is pushed **over** it, so nothing
+unmounted and I was reading the input's surviving local text as if it were storage. Probe 2 fixed
+that with a reload, which drops demo mode's **in-memory** store entirely. Only probe 3 — a real
+onboarded user, a real reload — measured anything. ⚡ **The covered-thing-stays-mounted fact bit
+three separate times this item** (an absence assertion, a modal's duplicate "Close", and now my own
+instrument), and the third was the expensive one because *a broken instrument that agrees with you
+is indistinguishable from evidence.* `run-the-control-on-the-verifier`, earned again.
+
+⚠️ **My hand-built lists undercounted and my first scripts miscounted — in both directions.** The
+`onEndEditing` class: I said two sites, the script found **three**. The premium-route class: my
+first script keyed on the string `(Premium)` in a docstring, which **missed the screen I had just
+written** (its docstring reads `(Premium, [D20])`) and **falsely flagged two free screens** that
+merely mention premium fields. Re-derived from the actual gate —
+`canUsePremium ? X : onOpenPaywall` — it returns exactly five, and my hand count was right after all.
+**The lesson is not "script it", it is "derive it from the mechanism":** a pattern over prose encodes
+only what I already thought of, while a pattern over the *gating expression* cannot miss a synonym.
+
+**Fixed in the sweep:** `year-over-year.spec.ts`'s soft-gate test asserted the card was absent with
+nothing confirming the dashboard had rendered — `toHaveCount(0)` is equally true of a blank page, and
+every other soft-gate test in the suite pairs its absence with a positive. **Filed:** four remaining
+absence-assertion candidates (script artifacts, but the script is worth re-running at 1.2.11), and
+`RequirePremium`, which still does not exist — ⚠️ **one of this item's own new tests reaches
+`/safe-harbor` directly** *because* of that hole, so closing it changes that test in the same edit.
+
+**Two live v1.1.1 defects were fixed as a side effect of building features on top of them** — the
+tax-profile edit erasing `filedTaxByYear`, and reminders that reached no existing install while their
+queue silently drained. Neither was on any backlog; both were found by a before-scan asking what the
+code actually did before trusting what the plan said it did.
+
 ### 🔎 1.2.6.5 Expense-breakdown drill-down — after-scan · 2026-09-21 · ✅ DONE
 
 **346 unit (from 339) · 102 engine · 64/64 Playwright (3 new) · typecheck clean · lint 15 unchanged ·
