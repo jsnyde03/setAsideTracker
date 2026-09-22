@@ -73,6 +73,28 @@ describe("summarizeQuarterlyPayments", () => {
     expect(summary.overdue).toBe(400);
   });
 
+  it("treats a sub-cent gap as covered, not as a debt", () => {
+    // ⛔ Regression, found by the CALENDAR rather than by a test. The demo seeded each past quarter
+    // with `Math.round(perQuarter)` against an unrounded requirement, so whether the persona read
+    // as square was a coin flip on the cents — green on 2026-09-21, red on 2026-09-22, because the
+    // seeded entries move with the date and the figure re-rounded the other way. The seed now pays
+    // up (`ceil`), and sub-cent differences are float noise from `miles × rate` either way.
+    const summary = summarizeQuarterlyPayments(1000.004, { q1: 1000 }, YEAR, MAY);
+
+    expect(summary.quarters[0].shortfall).toBe(0);
+    expect(summary.overdue).toBe(0);
+    expect(summary.onTrack).toBe(true);
+  });
+
+  it("still reports a real sub-dollar shortfall", () => {
+    // The other direction: 43 cents is noise-free and genuinely owed, so it must survive. Without
+    // this pair the clamp above could swallow any amount and nothing would notice.
+    const summary = summarizeQuarterlyPayments(1000.43, { q1: 1000 }, YEAR, MAY);
+
+    expect(summary.quarters[0].shortfall).toBeCloseTo(0.43, 6);
+    expect(summary.onTrack).toBe(false);
+  });
+
   it("never reports a negative shortfall", () => {
     const summary = summarizeQuarterlyPayments(1000, { q1: 2500 }, YEAR, MAY);
     expect(summary.quarters[0].shortfall).toBe(0);

@@ -11,6 +11,50 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.10.1 iOS privacy manifest — after-scan · 2026-09-22 · ✅ DONE
+
+**358 unit (from 346) · 102 engine · 66/66 Playwright · typecheck clean · lint 15 unchanged ·
+ports free. 3 plants, 3 caught.**
+
+⚡ **The sub-step's own framing was right and answered itself in ten minutes.** "Does Expo's prebuild
+already generate one?" — it does, from `ios.privacyManifests`, and `withPrivacyInfo` opens with
+`if (!privacyManifests) { return config; }`. **The key was absent, so the app shipped with no
+app-level manifest at all** while **12 dependencies ship their own**. Reading the generator settled
+in minutes what "write a manifest" would have guessed at.
+
+⚠️ **The dependency count came from the repo ROOT, and the first search returned zero.** This is an
+npm workspace: `apps/mobile/node_modules` holds **nothing**, everything hoists. A sweep scoped to the
+package directory reported "no privacy manifests anywhere" — which would have been read as *the
+dependencies are non-compliant* rather than *I searched the wrong tree*.
+`truncated-search-hides-a-class`, earned again, and the tell was that the answer was suspiciously
+absolute.
+
+🔴 **A defect I shipped in 1.2.6.3 surfaced here, and the CALENDAR found it rather than any test.**
+The demo seeded each past quarter with `Math.round(perQuarter)` against the **unrounded**
+requirement, so whether the persona read "nothing overdue" depended on which way the cents rounded —
+**green on 2026-09-21, red on 2026-09-22**, because the seeded entries move with the date. Fixed
+three ways: the seed pays up (`ceil`), sub-cent gaps are clamped (they are float noise from
+`miles × rate`, not money), and a sub-dollar shortfall now renders with cents instead of reading
+"$0 short". ⛔ **The guard that matters is date-INDEPENDENT** — the invariant runs over the seed's
+existing seven sample dates, and **planting the old `round` reds only 2 of the 7.** That ratio is the
+whole lesson: *a demo assertion that depends on today's date is a latent coin flip, and it will be
+green the day you write it.*
+
+**[D22] removed a question instead of answering it.** Analytics sent the user's state code, and a US
+state is information about where someone is at lower precision than three decimal places — Apple's
+Coarse Location, however the app came by it. Declaring it would have put a location category in the
+manifest, the App Store labels **and** the policy, on a tax app that otherwise collects none. Not
+collecting it deletes all three. ⭐ **Enforced by a gate rather than a promise:** a test parses the
+property keys actually passed to `trackEvent` and fails anything outside an allow-list. Planted both
+directions — the named-forbidden `state` **and** a `zipCode` nobody had thought to forbid — and the
+allow-list is what caught the second. The policy's claim now has something holding it up besides
+review.
+
+⛔ **What this sub-step cannot prove, and says so:** the app's own `NSPrivacyAccessedAPITypes` list.
+Apple's check runs at upload and the ITMS-91053 mail names the missing categories; nothing on this
+machine can. `UserDefaults / CA92.1` is declared because it is true. **The first submission is the
+gate**, which is the whole reason [D21] put this before any device build.
+
 ### 🔎 1.2.6 Premium slice — WHOLE-ITEM after-scan · 2026-09-21 · ✅ CLOSED 6/6
 
 **346 unit · 102 engine · 66/66 Playwright · typecheck clean · both tax-config gates green ·

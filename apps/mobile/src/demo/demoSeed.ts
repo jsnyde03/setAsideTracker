@@ -272,7 +272,12 @@ export function buildDemoSeed(now: Date = new Date()): DemoSeed {
   // the persona reads "nothing overdue" whatever date the demo is opened on, which is the same
   // property `amountSetAside` is protecting. A demo that greets a visitor with a penalty warning
   // would be showing them the feature working against the one person it is meant to reassure.
-  const perQuarter = Math.round(computeSafeHarborFromEntries(ratedEntries, taxProfile, year).perQuarter);
+  // ⚠️ **`ceil`, not `round`, and that is not a nicety.** The requirement is the UNROUNDED
+  // `perQuarter`, so rounding the payment down leaves a fractional shortfall and the persona reads
+  // as overdue. Whether that happened was a coin flip on the cents — it passed on 2026-09-21 and
+  // failed on 2026-09-22, because the entry offsets move with the date and the figure re-rounded
+  // the other way. Paying up guarantees covered on every date instead of most of them.
+  const perQuarter = Math.ceil(computeSafeHarborFromEntries(ratedEntries, taxProfile, year).perQuarter);
   const paidQuarters = summarizeQuarterlyPayments(perQuarter, undefined, year)
     .quarters.filter((quarter) => quarter.isPast)
     .reduce<QuarterlyPayments>((acc, quarter) => ({ ...acc, [quarter.key]: perQuarter }), {});

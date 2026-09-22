@@ -25,15 +25,15 @@
 >
 > ✅ **1.2.2 through 1.2.6 ARE ALL COMPLETE** and closed — the premium slice shipped four surfaces
 > and its whole-item after-scan found a **class of three dead save paths** (below).
-> **▶ ACTIVE: 1.2.10, filed correctness + submission compliance**, decomposed below and **moved ahead
-> of 1.2.7 ([D21])**. **▶ Next action: 1.2.10.1**, the privacy manifest — and its first question is
-> whether Expo's prebuild already generates one, not how to write one.
-> 🔴 **Its two upload gates decide whether the reserved build survives submission**, so they run
-> before anything is dispatched.
+> **▶ ACTIVE: 1.2.10, filed correctness + submission compliance** ([D21], ahead of 1.2.7).
+> ✅ **1.2.10.1 is DONE** — the app had no privacy manifest because Expo only generates one when
+> `ios.privacyManifests` is set. **▶ Next action: 1.2.10.2**, `ITSAppUsesNonExemptEncryption`,
+> declared `false` while the app does AES-256.
+> ⛔ **Neither upload gate is provable off-device** — the ITMS mail at upload is the real check.
 > ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
 > worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
-> Health: **346** mobile unit · **102** engine · **66/66** Playwright · typecheck clean · both tax-config
+> Health: **358** mobile unit · **102** engine · **66/66** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
@@ -141,7 +141,7 @@ is declared `false` while the app does AES-256.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.10.1** | **iOS privacy manifest (ITMS-91053).** ⚠️ **First question is whether Expo's prebuild already generates one** — "no file in the repo" is not the same as "none in the binary". Then what this app must declare for its own API use and for Sentry. | ⬜ |
+| **1.2.10.1** | ✅ **DONE 2026-09-22 — the app-level privacy manifest.** Expo SDK 56 generates one **only when `ios.privacyManifests` is set**, and it was absent, so the app shipped without one while 12 dependencies shipped their own. Declared: crash data, product interaction, device id, `NSPrivacyTracking: false`. **[D22]: the state code is no longer sent at all**, so no location category appears anywhere. ⛔ **The API-category list cannot be verified off-device — the upload names what is missing.** **358 unit · 66/66 Playwright · 3 plants, 3 caught.** | ✅ |
 | **1.2.10.2** | **`ITSAppUsesNonExemptEncryption`.** Declared `false` while the app does AES-256. Decide the correct declaration (the exemption may still apply) and make the file say what is true. | ⬜ |
 | **1.2.10.3** | **The [D16] three-places sweep** — privacy page · App Store Connect labels · `app.json` permission strings. They must agree, and 1.2.10.1–2 have just changed what is claimed. | ⬜ |
 | **1.2.10.4** | **`clearAllLocalData` omits `appSettings`**, against the published policy's "erases everything". | ⬜ |
@@ -280,6 +280,7 @@ map is at the head of the log's item-spec section._
 | **[D19]** | **The payments-made model is PER-QUARTER, not a per-year total.** The plan said to follow `amountSetAsideByYear`'s `Record<year, number>` shape. ⛔ **That shape cannot answer the question the tracker exists to answer:** safe-harbor penalties are computed per period, so a single annual figure reports a user who paid nothing until January as fully compliant. Stored as `Record<year, { q1?, q2?, q3?, q4? }>`, checked against the four due dates 1.2.6.2 corrected. **Rejected the richer per-payment shape with dates** — it only pays for itself in an actual underpayment-penalty calculation, which v1.2 is not doing. | Jason 2026-09-21 |
 | **[D20]** | **The shift/earnings optimizer ships as DAY-OF-WEEK only, gated on per-weekday sample size.** ⛔ **Its specified headline could not be built and half of it already existed.** `Entry` carries no time, and nothing in the app ever recorded one, so *"best time-of-day"* — named in ROADMAP §9.1 and IMPLEMENTATION_PLAN §347 — had no data behind it; and per-platform earnings + effective hourly rate with the best rate highlighted **already shipped, for free**, on `PlatformComparisonScreen`, so rebuilding it behind the paywall would have taken something away from free and broken 1.2.6's own gating rule. **Day-of-week is the one axis the data supports and the app does not already show.** ⚠️ **The flat "~30 entries" gate is retired**: nothing derived the 30, and at 20 seeded entries it excluded the demo that was supposed to make the feature demoable. Replaced by the mechanism it was proxying — a weekday reports once it has **≥3 entries**, the screen appears once **≥2 weekdays** qualify. Measured: the persona lands 4 qualifying weekdays on any date. **Time-of-day deferred to v1.3+**, and it needs a data-model change before it is even a candidate. | Jason 2026-09-21 |
 | **[D21]** | **1.2.10 runs before 1.2.7 (native iPad).** ⛔ **Two of its items are UPLOAD-time gates** — the iOS privacy manifest (ITMS-91053) and `ITSAppUsesNonExemptEncryption`, declared `false` while the app does AES-256 — and **no `.xcprivacy` exists in the repo at all**. The single reserved TestFlight build is spent at *upload*, so getting these wrong kills the build four items are waiting on before it reaches a device. 1.2.10 is also pure JS/config, which is the right shape of work while device builds are scarce; **1.2.7 is layout work whose verification is almost entirely visual and device-owed** — the worst possible fit for the current constraint. | Jason 2026-09-21 |
+| **[D22]** | **Analytics stops sending the user's state code.** A US state describes where someone is at lower precision than three decimal places, which is Apple's definition of **Coarse Location** however the app came by it — so declaring it would have put a location category in the privacy manifest, the App Store labels **and** the policy, on a tax app that collects no location otherwise. ⚡ **Not collecting it removes the question from all three places rather than answering it three times.** Rejected declaring it as "Other Data" — defensible, but being wrong about a location category is an App Store rejection. Cost: the state distribution of the user base is no longer measurable, which mattered because state tax configs are per-state work. | Jason 2026-09-22 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
@@ -306,6 +307,18 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.10.1 _(2026-09-22)_
+
+- 🔴 **A demo defect shipped in 1.2.6.3 and the CALENDAR found it, not a test.** The seed paid each
+  past quarter `Math.round(perQuarter)` against an unrounded requirement, so "nothing overdue" was a
+  coin flip on the cents — green 2026-09-21, red 2026-09-22. Fixed (`ceil`, plus a sub-cent clamp so
+  float noise is never reported as a debt) and now gated by a **date-independent** invariant over the
+  seed's existing seven sample dates. ⚠️ **The plant reds on only 2 of those 7**, which is exactly why
+  it shipped. **Any demo assertion that depends on today's date is a latent 50/50.**
+- **The app-level `NSPrivacyAccessedAPITypes` list is unverifiable on this machine.** Only the upload
+  says which required-reason APIs are undeclared (ITMS-91053 names them). `UserDefaults / CA92.1` is
+  declared because it is true; the rest is confirmed by the first submission → checklist §A.
 
 ### From 1.2.6's WHOLE-ITEM after-scan _(2026-09-21)_
 

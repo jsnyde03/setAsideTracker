@@ -28,8 +28,13 @@ export default function OnboardingRoute() {
       // `replace`, not `push` — onboarding must not sit in the back stack once it's done.
       router.replace("/");
       if (remindersEnabled) scheduleQuarterlyReminders();
+      // ⛔ **No `state` here ([D22]).** It used to send the user's state code, and a US state is
+      // information describing where someone is at lower precision than three decimal places —
+      // which is Apple's definition of Coarse Location, however the app came by it. Declaring a
+      // location category would then have had to appear in the privacy manifest, the App Store
+      // labels and the policy alike. Not collecting it removes the question from all three rather
+      // than answering it three times, and `analytics.test.ts` now gates it.
       trackEvent(ANALYTICS_EVENTS.onboardingCompleted, {
-        state: taxProfile.state,
         hasW2Job: taxProfile.hasW2Job,
       });
     } catch (error) {

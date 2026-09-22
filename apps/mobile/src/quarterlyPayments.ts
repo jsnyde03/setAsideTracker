@@ -45,6 +45,11 @@ export interface PaymentsSummary {
  * January — a number that is both wrong and alarming. The due dates come from
  * `getQuarterlyDueDatesForTaxYear`, so they are the business-day-shifted real deadlines.
  */
+/** Below a cent is rounding noise, not a debt. */
+function dropSubCentNoise(amount: number): number {
+  return amount < 0.01 ? 0 : amount;
+}
+
 export function summarizeQuarterlyPayments(
   perQuarter: number,
   payments: QuarterlyPayments | undefined,
@@ -64,7 +69,10 @@ export function summarizeQuarterlyPayments(
       dueDate,
       required: perQuarter,
       paid,
-      shortfall: Math.max(0, perQuarter - (paid ?? 0)),
+      // Sub-cent differences are float noise from `miles * rate`, not money anybody owes. Without
+      // this a payment of exactly the required amount can still report a $0.000001 shortfall, and
+      // the UI then says "short" about a debt that does not exist.
+      shortfall: dropSubCentNoise(Math.max(0, perQuarter - (paid ?? 0))),
       isPast: dueDate.getTime() < now.getTime(),
     };
   });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeTaxEstimate, entriesForYear, weeklySetAsides } from "../calculations";
+import { computeSafeHarborFromEntries, computeTaxEstimate, entriesForYear, weeklySetAsides } from "../calculations";
+import { summarizeQuarterlyPayments } from "../quarterlyPayments";
 import { DEMO_ENTRY_COUNT, buildDemoSeed } from "../demo/demoSeed";
 
 /**
@@ -155,4 +156,27 @@ describe("buildDemoSeed", () => {
     expect(weeks.some((week) => week.estimated)).toBe(false);
   });
 
+});
+
+describe("the persona is never overdue on its estimated payments, on any date", () => {
+  // ⛔ Regression, and the CALENDAR found it rather than a test. The seed paid each past quarter
+  // `Math.round(perQuarter)` against an unrounded requirement, so whether the demo read as square
+  // was a coin flip on the cents: green on 2026-09-21, red on 2026-09-22. The e2e can only ever
+  // catch that on an unlucky date, which is no guarantee at all — this asserts the invariant
+  // directly, across the same awkward dates the rest of this file uses.
+  it.each(SAMPLE_DATES)("has nothing overdue when built on %s", (now) => {
+    const seed = buildDemoSeed(now);
+    const year = now.getFullYear();
+    const perQuarter = computeSafeHarborFromEntries(seed.entries, seed.taxProfile, year, now).perQuarter;
+
+    const summary = summarizeQuarterlyPayments(
+      perQuarter,
+      seed.taxProfile.estimatedPaymentsByYear?.[year],
+      year,
+      now
+    );
+
+    expect(summary.overdue).toBe(0);
+    expect(summary.onTrack).toBe(true);
+  });
 });

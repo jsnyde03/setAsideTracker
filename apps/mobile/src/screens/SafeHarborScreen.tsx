@@ -314,7 +314,9 @@ export function SafeHarborScreen({
                       {quarter.shortfall === 0
                         ? `of ${formatCurrency(quarter.required)} ✓`
                         : quarter.isPast
-                          ? `${formatCurrency(quarter.shortfall)} short`
+                          ? // Cents when the gap is under a dollar — whole-dollar formatting would
+                            // render a real 43¢ shortfall as "$0 short", which reads as a bug.
+                            `${formatCurrency(quarter.shortfall, quarter.shortfall < 1 ? 2 : 0)} short`
                           : `of ${formatCurrency(quarter.required)}`}
                     </Text>
                   </View>
