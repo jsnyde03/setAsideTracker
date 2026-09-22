@@ -1,0 +1,89 @@
+# 1.2.14.1 — reconnaissance, not a test.
+#
+# Two questions, both load-bearing for [D27] (move Maestro off Codemagic onto GitHub Actions):
+#
+#   1. Are macOS runners actually free on a public repo? GitHub's own billing page answers this
+#      ambiguously — one line says usage is free for standard runners in public repositories, and
+#      macOS IS a standard runner, while the pricing table lists macOS at $0.062/min. ⚠️ The whole
+#      decision rests on this, so it gets MEASURED: after this run, read
+#      `gh api repos/jsnyde03/setAsideTracker/actions/runs/<id>/timing` — `billable` is empty or
+#      zero when the run cost nothing.
+#   2. What is actually on the runner image? The Codemagic workflow learned the hard way not to
+#      hardcode a simulator name — "iPhone 15" was absent from the Xcode 26.4 image and cost a whole
+#      mac build. The port needs to know what this image has before it trusts any device logic.
+#
+# ⚠️ `workflow_dispatch` alone would not be runnable here: GitHub only offers manual dispatch for
+# workflows present on the DEFAULT branch, and master is 94 commits behind v1.2. The path filter is
+# what makes this runnable from a feature branch — it fires when this file itself changes, so
+# pushing it IS the trigger, and it cannot fire on unrelated work.
+name: macOS runner probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [v1.2]
+    paths:
+      - ".github/workflows/macos-probe.yml"
+
+jobs:
+  probe:
+    runs-on: macos-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: What commit is this
+        # The Codemagic workflow prints this too, and for the reason CLAUDE.md records: a build of
+        # old code brings its own old gate, and a fix that "didn't work" is indistinguishable from
+        # one that was never in the binary.
+        run: |
+          echo "commit: $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
+
+      - name: Runner image, Xcode, and hardware
+        run: |
+          echo "=== macOS ==="
+          sw_vers
+          uname -m
+          echo "=== Xcode ==="
+          xcodebuild -version
+          xcrun --sdk iphonesimulator --show-sdk-version
+          echo "=== available Xcodes ==="
+          ls /Applications | grep -i xcode || echo "(none listed)"
+          echo "=== cores / memory ==="
+          sysctl -n hw.ncpu
+          sysctl -n hw.memsize
+
+      - name: Which iPhone simulators exist
+        # This is the exact question that cost Codemagic dispatch #2. The real workflow derives the
+        # device rather than naming one; this prints what that derivation would land on.
+        run: |
+          set -euo pipefail
+          echo "=== all available iPhone simulators ==="
+          xcrun simctl list devices available | grep -E '^[[:space:]]+iPhone' || echo "(NO iPhone simulators)"
+
+          echo ""
+          echo "=== what the Codemagic device-picking logic would select ==="
+          DEVICE_ID=$(xcrun simctl list devices available \
+            | grep -E '^[[:space:]]+iPhone' \
+            | tail -1 \
+            | sed -E 's/.*\(([0-9A-Fa-f-]{36})\).*/\1/')
+          if [ -z "$DEVICE_ID" ]; then
+            echo "would FAIL — no iPhone simulator on this image"
+            exit 1
+          fi
+          echo "would pick: $(xcrun simctl list devices available | grep "$DEVICE_ID" | sed 's/^[[:space:]]*//')"
+
+      - name: Node and the toolchain the build needs
+        run: |
+          node --version
+          npm --version
+          python3 --version   # the failure-hierarchy dump script needs this
+          which curl
+
+      - name: Can Maestro install
+        # Cheap to check here rather than discovering it mid-port.
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          export PATH="$PATH:$HOME/.maestro/bin"
+          maestro --version
