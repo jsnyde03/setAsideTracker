@@ -11,6 +11,43 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.14.1 Probe the macOS runner — SUB-TASK after-scan · 2026-09-22 · ✅ DONE
+
+⭐ **[D27] rested on a claim I had not measured, and the documentation would not settle it.** GitHub's
+billing page says usage is free for standard GitHub-hosted runners in public repositories, and macOS
+*is* a standard runner — while the pricing table lists macOS at 6.2¢/min, ~10× Linux. A fetch of that
+page came back **self-contradicting inside one answer**. The whole decision to move Maestro off
+Codemagic depended on it.
+
+✅ **Measured instead, from a real run's own billing record:**
+
+```
+"billable": { "MACOS": { "total_ms": 0, "jobs": 1 } },  "run_duration_ms": 42000
+```
+
+**Zero billable milliseconds for a 42-second macOS job.** ⚠️ The per-user billing endpoint needs an
+auth scope this session does not have and should not silently request; the per-run `timing` endpoint
+needs only repo scope and answers the same question about the thing we actually care about.
+
+⚡ **And the probe paid for itself twice, because it also surveyed the image the port depends on:**
+
+| | |
+|---|---|
+| image | `macos-26-arm64` · macOS 26.6.2 · **Xcode 26.6** · iphonesimulator SDK 26.5 |
+| simulators | **15 iPhones: 17, 17 Pro, 17 Pro Max, Air, 16e, 17e** |
+| device derivation | selects *iPhone 17* — the Codemagic logic ports unchanged |
+| toolchain | Node **24.20** (Codemagic pins 22 → pin it) · Python 3.14.7 · curl · Maestro installs |
+
+🔴 **"iPhone 15" does not exist on this image either.** That is the exact device name that cost
+Codemagic dispatch #2 a whole mac build on 2026-09-20. **The don't-hardcode lesson was not a
+historical curiosity — it would have failed again, on the first run, on a different CI.**
+
+⚠️ **A GitHub-specific constraint found here, not in any plan:** `workflow_dispatch` only appears for
+workflows present on the **default branch**, and `master` is ~95 commits behind `v1.2`. So a manual
+button does not exist yet. Worked around with a `paths:` filter on this workflow's own file — pushing
+it *is* the trigger — which also cannot fire on unrelated work. **It resolves itself when v1.2
+merges, which [D26]'s policy cutover already requires.**
+
 ### 🔎 1.2.7.4 Every other screen at regular width — SUB-TASK after-scan · 2026-09-22 · ✅ DONE
 
 **400 unit (from 398) · typecheck clean · 106/106 Playwright (66 chromium + 20 + 20) · lint 15
