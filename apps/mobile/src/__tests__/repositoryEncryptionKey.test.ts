@@ -134,12 +134,27 @@ describe("the encryption key is never minted over existing data", () => {
 });
 
 describe("recovering from a backup when the data cannot be read", () => {
+  // ⚠️ A COMPLETE entry, and it did not used to be. This fixture was `{ id: "r1", grossPay: 250 }`
+  // — no date, platform or expenses — which no writer in the app can produce, so the test was
+  // restoring a shape no user could ever have backed up. 1.2.10.6's validation rejected it on its
+  // first run, which is the fixture being wrong rather than the validation being strict.
+  const RESTORED_ENTRY = {
+    id: "r1",
+    platform: "doordash",
+    date: "2026-08-14",
+    grossPay: 250,
+    tips: 0,
+    mileage: 0,
+    expenses: { parking: 0, tolls: 0, supplies: 0, phone: 0 },
+    createdAt: "2026-08-14T00:00:00.000Z",
+  };
+
   const BACKUP = JSON.stringify({
     version: 1,
     exportedAt: "2026-09-01T00:00:00.000Z",
     localUserProfile: { id: "u", displayName: "Restored" },
     taxProfile: { state: "CA", filingStatus: "single" },
-    entries: [{ id: "r1", grossPay: 250 }],
+    entries: [RESTORED_ENTRY],
     appSettings: { appLockEnabled: true },
   });
 
@@ -167,7 +182,7 @@ describe("recovering from a backup when the data cannot be read", () => {
     expect(snapshot.entries).toHaveLength(1);
     expect(secureStore.setCalls, "a key had to be minted after the wipe").toBe(1);
     // And the restored data reads back through the normal path, which is the whole point.
-    await expect(repository.getEntries()).resolves.toEqual([{ id: "r1", grossPay: 250 }]);
+    await expect(repository.getEntries()).resolves.toEqual([RESTORED_ENTRY]);
   });
 
   /**
@@ -233,5 +248,45 @@ describe("a key failure is not cached forever", () => {
     secureStore.throwOnRead = true;
 
     await expect(repository.getEntries()).rejects.toThrow("not available");
+  });
+});
+
+describe("clearing all data actually clears all data", () => {
+  const SETTINGS_KEY = "gigTaxTracker:appSettings";
+  const PROFILE_KEY = "gigTaxTracker:localUserProfile";
+
+  it("removes app settings, so the app lock cannot survive the erase", async () => {
+    // ⛔ The bug this pins was a LOCKOUT, not untidiness. `clearAllData` set the lock state to false
+    // in memory, so the erase looked complete — while the stored `appLockEnabled: true` survived and
+    // the next launch read it back, putting Face ID in front of an app with nothing in it.
+    const repository = await loadRepository();
+    await repository.updateAppSettings({ appLockEnabled: true });
+    expect(asyncStore.has(SETTINGS_KEY)).toBe(true); // the control: there is something to clear
+
+    await repository.clearAllLocalData();
+
+    expect(asyncStore.has(SETTINGS_KEY)).toBe(false);
+    // Read back through the real accessor, not the raw map — a default of `true` here would be the
+    // same lockout arriving by a different route.
+    expect((await repository.getAppSettings()).appLockEnabled).toBe(false);
+  });
+
+  it("clears the user's own data and keeps the purchased entitlement", async () => {
+    const repository = await loadRepository();
+    await repository.saveLocalUserProfile({
+      id: "u1",
+      displayName: "Test",
+      email: "",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+    await repository.saveCachedPremium(true);
+
+    await repository.clearAllLocalData();
+
+    expect(asyncStore.has(PROFILE_KEY)).toBe(false);
+    // Premium is tied to the Apple ID, not to local data — wiping the device data must not drop a
+    // subscription the user is still paying for.
+    expect(asyncStore.has(PREMIUM_KEY)).toBe(true);
+    expect(await repository.getCachedPremium()).toBe(true);
   });
 });

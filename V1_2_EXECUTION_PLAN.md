@@ -26,14 +26,15 @@
 > ✅ **1.2.2 through 1.2.6 ARE ALL COMPLETE** and closed — the premium slice shipped four surfaces
 > and its whole-item after-scan found a **class of three dead save paths** (below).
 > **▶ ACTIVE: 1.2.10, filed correctness + submission compliance** ([D21], ahead of 1.2.7).
-> ✅ **1.2.10.1 is DONE** — the app had no privacy manifest because Expo only generates one when
-> `ios.privacyManifests` is set. **▶ Next action: 1.2.10.2**, `ITSAppUsesNonExemptEncryption`,
-> declared `false` while the app does AES-256.
+> ✅ **1.2.10.1, .3, .4 and .6 are DONE**; **.5 and .7 are deferred to v1.3** as features rather than
+> compliance fixes. 🔴 **▶ 1.2.10.2 is the ONLY open sub-step and it is BLOCKED ON JASON** — the
+> export-compliance declaration is a legal statement, and the app uses crypto-js AES rather than the
+> OS's crypto, which is the distinction Apple's exemption turns on.
 > ⛔ **Neither upload gate is provable off-device** — the ITMS mail at upload is the real check.
 > ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
 > worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
-> Health: **358** mobile unit · **102** engine · **66/66** Playwright · typecheck clean · both tax-config
+> Health: **376** mobile unit · **102** engine · **66/66** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
@@ -142,12 +143,12 @@ is declared `false` while the app does AES-256.
 | # | sub-step | scan |
 |---|---|---|
 | **1.2.10.1** | ✅ **DONE 2026-09-22 — the app-level privacy manifest.** Expo SDK 56 generates one **only when `ios.privacyManifests` is set**, and it was absent, so the app shipped without one while 12 dependencies shipped their own. Declared: crash data, product interaction, device id, `NSPrivacyTracking: false`. **[D22]: the state code is no longer sent at all**, so no location category appears anywhere. ⛔ **The API-category list cannot be verified off-device — the upload names what is missing.** **358 unit · 66/66 Playwright · 3 plants, 3 caught.** | ✅ |
-| **1.2.10.2** | **`ITSAppUsesNonExemptEncryption`.** Declared `false` while the app does AES-256. Decide the correct declaration (the exemption may still apply) and make the file say what is true. | ⬜ |
-| **1.2.10.3** | **The [D16] three-places sweep** — privacy page · App Store Connect labels · `app.json` permission strings. They must agree, and 1.2.10.1–2 have just changed what is claimed. | ⬜ |
-| **1.2.10.4** | **`clearAllLocalData` omits `appSettings`**, against the published policy's "erases everything". | ⬜ |
-| **1.2.10.5** | **Analytics / crash-report opt-out toggle** — the policy promises one and there is none. | ⬜ |
-| **1.2.10.6** | **Backup-restore validation.** | ⬜ |
-| **1.2.10.7** | **Tax-profile completeness prompt.** | ⬜ |
+| **1.2.10.2** | 🔴 **BLOCKED ON JASON — the one open item.** The app encrypts local data with **crypto-js AES-256**, i.e. *not* the OS's crypto, and Apple's guidance exempts OS-provided encryption while proprietary use is not exempt. **This is a legal export-control declaration, not an engineering call**, and it could not be resolved from the documentation. Inventory + the exact question → log. | 🔵 |
+| **1.2.10.3** | ✅ **DONE 2026-09-22 — the [D16] sweep found four disagreements, two of them an hour old.** The manifest under-declared **Performance Data** (Sentry traces are on at `tracesSampleRate: 0.2`) and gave Crash Data the wrong purposes; the policy described crashes but not tracing; `STORE_LISTING.md` still claimed the state code [D22] had just removed. **Now gated** — a test compares the manifest against the App Store table and fails any retired claim. | ✅ |
+| **1.2.10.4** | ✅ **DONE 2026-09-22 — and it was a LOCKOUT, not untidiness.** `clearAllData` set the app lock off **in memory only**, so the stored `appLockEnabled: true` survived and the next launch put Face ID in front of an app the user had just erased. | ✅ |
+| **1.2.10.5** | ⏭ **DEFERRED to v1.3 — my own row was wrong.** The policy promises **no** opt-out (checked; it says nothing of the kind), so this is a feature, not a compliance fix, and features do not belong inside a compliance item. | ✅ |
+| **1.2.10.6** | ✅ **DONE 2026-09-22 — restore validated entries only with `Array.isArray`.** A file containing `entries: [{}]` restored cleanly and then produced `NaN` in every derived figure, with nothing to undo. A bad entry now refuses the **whole file** and names which one. | ✅ |
+| **1.2.10.7** | ⏭ **DEFERRED to v1.3 — measured, not assumed.** Missing W2 figures yield zero withholding, so an incomplete profile makes the set-aside **too high**, never too low. A nudge, not a correctness bug. | ✅ |
 | **1.2.10.8** | **Verify + whole-item after-scan.** | ⬜ |
 
 **Exit line:** the app uploads without an ITMS rejection, and every claim it makes about data — in the
@@ -307,6 +308,15 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.10's build-out _(2026-09-22)_
+
+- **Analytics / crash opt-out toggle → v1.3.** Not promised by the policy and not required by Apple;
+  a genuine feature (persisted setting + gating both `init` calls + tests) that does not belong
+  inside a compliance item. ⚠️ **The row claiming the policy promised one was mine, written the day
+  before** — a same-session misdescription, checked and corrected rather than built.
+- **Tax-profile completeness prompt → v1.3.** Measured: missing W2 figures produce zero withholding,
+  so the set-aside comes out **too high**. Conservative, not wrong — a UX nudge.
 
 ### From 1.2.10.1 _(2026-09-22)_
 

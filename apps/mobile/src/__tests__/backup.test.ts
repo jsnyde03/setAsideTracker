@@ -110,3 +110,45 @@ describe("parseBackupSnapshot validation", () => {
     );
   });
 });
+
+describe("a damaged backup is refused rather than restored", () => {
+  // ⛔ Restore REPLACES everything before anything downstream validates it, so until 1.2.10.6 the
+  // only check on the entries list was `Array.isArray`. A file with `entries: [{}]` restored
+  // cleanly and then produced NaN in every derived tax figure, with nothing to undo.
+  function fileWithEntries(entries: unknown[]): string {
+    return JSON.stringify({ ...buildBackupSnapshot({ localUserProfile: profile, taxProfile, entries: [], appSettings: { appLockEnabled: false } }), entries });
+  }
+
+  it("accepts a well-formed entry — the control", () => {
+    expect(parseBackupSnapshot(fileWithEntries(entries)).entries).toEqual(entries);
+  });
+
+  it.each([
+    ["an empty object", [{}]],
+    ["a null entry", [null]],
+    ["a missing id", [{ ...entries[0], id: undefined }]],
+    ["a malformed date", [{ ...entries[0], date: "10/03/2026" }]],
+    ["a string where a number belongs", [{ ...entries[0], grossPay: "120" }]],
+    ["a NaN amount", [{ ...entries[0], tips: Number.NaN }]],
+    ["no expenses object", [{ ...entries[0], expenses: undefined }]],
+    ["a non-numeric expense", [{ ...entries[0], expenses: { parking: 0, tolls: 0, supplies: 0, phone: "3" } }]],
+  ])("refuses %s", (_label, bad) => {
+    expect(() => parseBackupSnapshot(fileWithEntries(bad))).toThrow(/damaged/i);
+  });
+
+  it("names which entry is wrong, so the message can be acted on", () => {
+    expect(() => parseBackupSnapshot(fileWithEntries([entries[0], {}]))).toThrow(/entry 2/i);
+  });
+
+  it("rejects the whole file rather than silently dropping the bad entry", () => {
+    // Skipping it would be data loss the user cannot see: they asked for their data back and would
+    // get most of it, with nothing saying which shift vanished.
+    let restored: unknown;
+    try {
+      restored = parseBackupSnapshot(fileWithEntries([entries[0], {}]));
+    } catch {
+      restored = "refused";
+    }
+    expect(restored).toBe("refused");
+  });
+});

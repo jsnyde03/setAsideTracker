@@ -243,8 +243,9 @@ apply to the captions:
 > Privacy questionnaire and the hosted privacy policy must both reflect that. The privacy policy was
 > updated 2026-07-01 (see `docs/privacy.html` — deploy the same to the live host); set these ASC
 > answers to match. All collection is **anonymous / Not Linked to identity** (the app has no accounts;
-> events carry no name/email/earnings — only a state code, platform label, plan, and an anonymous
-> app-generated id).
+> events carry no name/email/earnings — only a platform label, plan, and an anonymous
+> app-generated id; the **state code was removed 2026-09-22, [D22]**, which is what keeps the
+> "Location — No" answer true by construction rather than by configuration).
 
 | Data type | Collected? | Category → type | Linked to identity? | Used for tracking? | Purpose | Source |
 |---|---|---|---|---|---|---|

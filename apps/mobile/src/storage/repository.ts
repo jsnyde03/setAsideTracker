@@ -255,11 +255,24 @@ export async function saveCachedPremium(isPremium: boolean): Promise<void> {
   await writeJson(KEYS.cachedPremium, isPremium, AsyncStorage);
 }
 
-/** Clears all locally stored data — there's no real backend/account, so this is the app's reset.
+/**
+ * Clears all locally stored data — there's no real backend/account, so this is the app's reset.
+ *
  * The cached entitlement is deliberately NOT cleared here: premium is tied to the user's Apple ID
- * (restored via RevenueCat), not to their local data, so wiping local data shouldn't drop premium. */
+ * (restored via RevenueCat), not to their local data, so wiping local data shouldn't drop premium.
+ *
+ * ⛔ **`appSettings` was missing from this list, and the consequence was a lockout, not untidiness.**
+ * `clearAllData` set the app-lock state to `false` **in memory only**, so the erase looked complete —
+ * but the stored `appLockEnabled: true` survived, and the *next launch* read it back and put a Face
+ * ID prompt in front of an app the user had just emptied. The published policy also says Clear All
+ * Data "permanently deletes everything stored on your device", which this made false.
+ *
+ * ⚠️ The theme preference lives in `appSettings` too, so a reset returns it to "system". That is the
+ * promise being kept rather than a side effect: it is data stored on the device, and "everything"
+ * has to mean everything or the sentence needs rewriting instead.
+ */
 export async function clearAllLocalData(): Promise<void> {
-  await backend().removeMany([KEYS.localUserProfile, KEYS.taxProfile, KEYS.entries]);
+  await backend().removeMany([KEYS.localUserProfile, KEYS.taxProfile, KEYS.entries, KEYS.appSettings]);
 }
 
 /** Wholesale-replaces the entries list — used by backup restore, where the imported list IS the

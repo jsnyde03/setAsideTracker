@@ -11,6 +11,51 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.10.3 / .4 / .6 — after-scans · 2026-09-22 · ✅ DONE _(.5 and .7 deferred, .2 blocked)_
+
+**376 unit (from 358) · 102 engine · 66/66 Playwright · typecheck clean · lint 15 unchanged ·
+both tax-config gates green · ports free. 3 plants, 3 caught.**
+
+⭐ **1.2.10.3 — the [D16] sweep found FOUR disagreements, and two were an hour old.** Reading the
+three documents side by side is the review nobody performs twice, and it showed:
+
+1. The privacy manifest written in 1.2.10.1 declared **three** data types; the App Store table
+   declares **four**. **Performance Data was simply missed** — and `Sentry.init` runs with
+   `tracesSampleRate: 0.2`, so it is genuinely collected. Verified in the code before declaring it.
+2. Crash Data's purposes disagreed — manifest `AppFunctionality`, labels `App Functionality +
+   Analytics`.
+3. The **policy** described crash reports and said nothing about performance tracing.
+4. `STORE_LISTING.md` still said analytics sends "a state code" — **one hour after [D22] stopped
+   sending it.** My own change created that drift, in the document [D16] exists to keep in step.
+
+⚡ **Now a gate rather than a habit:** a test parses the manifest's declared types and the store
+listing's table rows and requires them to be equal, plus a retired-claims list that fails any
+document still asserting something the app stopped doing. Both real drifts were planted and both red.
+
+🔴 **1.2.10.4 was a LOCKOUT, not untidiness.** `clearAllData` called `setAppLockEnabledState(false)`
+— **in memory only** — while the persisted `appLockEnabled: true` survived, so the erase looked
+complete and the *next launch* read it back and put Face ID in front of an app with nothing in it.
+The published "deletes everything stored on your device" was false in the same breath. ⚠️ The theme
+lives in `appSettings` too and now resets; that is the promise being kept rather than a side effect.
+
+⭐ **1.2.10.6 — restore validated the entries list with `Array.isArray` and nothing else**, while
+being **destructive**: it replaces everything first. A file containing `entries: [{}]` restored
+cleanly and produced `NaN` in every derived tax figure. Entries are now shape-checked, and a bad one
+**refuses the whole file** and names which entry — skipping it silently would be data loss the user
+cannot see, having asked for their data back and received most of it.
+
+⚡ **The new validation immediately caught an unrealistic FIXTURE, on its first run.** A recovery test
+restored `{ id: "r1", grossPay: 250 }` — no date, platform or expenses — a shape no writer in the app
+can produce. `seeds-omit-always-written-fields` exactly: the fixture was wrong, not the validation,
+and the test now restores something a user could actually have backed up.
+
+⏭ **.5 and .7 deferred to v1.3, and one of them because MY OWN ROW WAS WRONG.** 1.2.10.5's row said
+*"the policy promises one and there is none"* — the policy promises no such thing; I checked. It is a
+feature, and so is the completeness prompt: missing W2 figures yield zero withholding, so an
+incomplete profile sets aside **too much**, never too little. **Both measured before deferring.**
+⚠️ That row was written the previous day, by me — `preauthored-items-fail-two-ways` does not care how
+old a claim is.
+
 ### 🔎 1.2.10.1 iOS privacy manifest — after-scan · 2026-09-22 · ✅ DONE
 
 **358 unit (from 346) · 102 engine · 66/66 Playwright · typecheck clean · lint 15 unchanged ·
@@ -2437,3 +2482,34 @@ per-entry set-aside in ~52 rows a year; building it first multiplies one wrong f
 mechanism checked across **all 51** configs, not three; no feature item renders a figure this block
 has not already fixed.
 
+
+---
+
+## 🔴 OPEN — 1.2.10.2, the export-compliance declaration (needs Jason)
+
+**The question:** `app.json` declares `ITSAppUsesNonExemptEncryption: false`. Is that true?
+
+**What the app actually does, measured 2026-09-22:**
+
+| where | what | whose crypto |
+|---|---|---|
+| local data at rest | **AES-256 via `crypto-js`** (`storage/cryptoCore.ts`) | **a third-party JS library, NOT the OS** |
+| the encryption key | `expo-secure-store` → iOS Keychain | Apple's |
+| network | HTTPS to Sentry, PostHog, RevenueCat | Apple's (`URLSession`) |
+
+**Why it is not obvious.** Apple's guidance says encryption *built into the operating system* is
+exempt, "whereas the use of proprietary encryption is not". AES-256 is a published standard rather
+than proprietary — but it is not the OS's, so the clean exemption does not apply on its face, and the
+listed exemption categories (authentication, digital signature, decryption of data or files,
+banking, intellectual-property protection) do not obviously cover *encrypting the user's own data at
+rest*.
+
+⛔ **This is a legal export-control statement, not an engineering judgment**, and getting it wrong is
+a false declaration to Apple with a BIS reporting question behind it. Not resolvable from the docs.
+
+**What Jason needs to decide:** whether `false` stands, or whether the app declares `true` and files
+the annual self-classification report. Worth 10 minutes with the App Store Connect questionnaire
+itself, which walks the exemption tree, or a word with whoever handles his filings.
+
+⚠️ **Until this is settled, the app is still uploadable** — the declaration only changes an answer,
+not the binary — so it does not block the reserved TestFlight build. It blocks *submission*.
