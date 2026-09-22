@@ -11,6 +11,48 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.10 — WHOLE-ITEM after-scan · 2026-09-22 · ✅ CLOSED (6 built, 2 deferred)
+
+**378 unit (from 346) · 102 engine · 66/66 Playwright · typecheck clean · lint 15 unchanged · both
+tax-config gates green · ports free. 9 plants, 9 caught.**
+
+⚡ **The pattern across the item: every defect was a CLAIM-vs-REALITY gap, not a code bug.** This was
+nominally paperwork — a manifest, a declaration, some labels — and it surfaced a **lockout**, a
+**data-poisoning restore**, and four documents disagreeing about what the app collects. ⛔ **The
+compliance work was not adjacent to correctness; it was a route into it**, because every compliance
+artifact is a statement about behaviour and checking it means checking the behaviour.
+
+⭐ **Four written promises became four executable gates**, which is the item's real output:
+`analyticsPrivacy` (property allow-list, catches keys nobody forbade) · `privacyClaimsAgree`
+(manifest vs. App Store table, plus retired claims) · `exportCompliance` (the deliberate absence,
+which is the kind of absence someone helpfully fixes) · backup shape validation. **A promise in a
+document survives any amount of drift; a gate does not.**
+
+🔴 **Three of seven sub-steps were misdescribed by the plan, and I wrote all three.** .5 claimed the
+policy promises an opt-out — it promises nothing of the kind. .7 assumed an incomplete profile was a
+correctness risk — measured, it sets aside *too much*, never too little. And **.2's framing was
+wrong about the operative test**: I told Jason the distinction was crypto-js versus the OS's crypto,
+when Note 4 turns on **primary function**. ⚡ **That one is the most instructive, because it was
+wrong in a way that still reached a correct recommendation** — the answer (stop asserting, let Apple
+classify) does not depend on the reasoning I got wrong. **Following 1.2.6, where 3 of 6 were wrong as
+specified, the rate is now 6 of 13.**
+
+⚡ **[D23] is the shape worth reusing: when a question is genuinely outside our competence, stop
+answering it and route it to whoever can.** Removing the bypass key costs one manual step per upload
+and replaces a guess with Apple's own classification. ⚠️ Its cost is documented in **both** checklists
+because an unexplained "Missing Compliance" reads exactly like a broken build — and this project has
+burned cycles on that kind of misreading before.
+
+**Retroactive catch:** 1.2.10.6's new validation rejected an existing recovery fixture on its first
+run — `{ id: "r1", grossPay: 250 }`, a shape no writer in the app can produce. The fixture was wrong,
+not the gate.
+
+**Replenishment → 1.2.7 (native iPad)**, decomposed. ⚠️ Promoted with its weakness stated: its
+verification is almost entirely visual and device-owed, so it will **bank** checks for the reserved
+build rather than clear them here. 🔴 And flipping `supportsTablet` **obliges iPad screenshots** in
+App Store Connect — a submission requirement that ships with the flip, not after it.
+
+
 ### 🔎 1.2.10.3 / .4 / .6 — after-scans · 2026-09-22 · ✅ DONE _(.5 and .7 deferred, .2 blocked)_
 
 **376 unit (from 358) · 102 engine · 66/66 Playwright · typecheck clean · lint 15 unchanged ·
@@ -2483,33 +2525,3 @@ mechanism checked across **all 51** configs, not three; no feature item renders 
 has not already fixed.
 
 
----
-
-## 🔴 OPEN — 1.2.10.2, the export-compliance declaration (needs Jason)
-
-**The question:** `app.json` declares `ITSAppUsesNonExemptEncryption: false`. Is that true?
-
-**What the app actually does, measured 2026-09-22:**
-
-| where | what | whose crypto |
-|---|---|---|
-| local data at rest | **AES-256 via `crypto-js`** (`storage/cryptoCore.ts`) | **a third-party JS library, NOT the OS** |
-| the encryption key | `expo-secure-store` → iOS Keychain | Apple's |
-| network | HTTPS to Sentry, PostHog, RevenueCat | Apple's (`URLSession`) |
-
-**Why it is not obvious.** Apple's guidance says encryption *built into the operating system* is
-exempt, "whereas the use of proprietary encryption is not". AES-256 is a published standard rather
-than proprietary — but it is not the OS's, so the clean exemption does not apply on its face, and the
-listed exemption categories (authentication, digital signature, decryption of data or files,
-banking, intellectual-property protection) do not obviously cover *encrypting the user's own data at
-rest*.
-
-⛔ **This is a legal export-control statement, not an engineering judgment**, and getting it wrong is
-a false declaration to Apple with a BIS reporting question behind it. Not resolvable from the docs.
-
-**What Jason needs to decide:** whether `false` stands, or whether the app declares `true` and files
-the annual self-classification report. Worth 10 minutes with the App Store Connect questionnaire
-itself, which walks the exemption tree, or a word with whoever handles his filings.
-
-⚠️ **Until this is settled, the app is still uploadable** — the declaration only changes an answer,
-not the binary — so it does not block the reserved TestFlight build. It blocks *submission*.

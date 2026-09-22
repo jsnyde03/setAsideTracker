@@ -11,9 +11,6 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.gigtaxtracker.app",
       "buildNumber": "1",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      },
       "privacyManifests": {
         "NSPrivacyTracking": false,
         "NSPrivacyTrackingDomains": [],

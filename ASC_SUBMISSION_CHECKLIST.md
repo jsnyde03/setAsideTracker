@@ -22,7 +22,17 @@ IAP subscriptions attached for their first review. All field *values* live in
 You already have a **QA-passed 1.1.0 build in TestFlight** — you can submit that exact build (no rebuild), or ship a fresh one from `master`. Recommended: **reuse the TestFlight build** to save a CI run.
 
 - [ ] **Git ship** (only if you want a fresh build, or to get `master` current): push `v1.1` → `origin`, merge `v1.1` → `master`, push `master`. ⚠️ Pushing `master` auto-triggers CI (one build) — that's the intended single build. _(Tell Claude "go" and it'll do the push/merge.)_
-- [ ] Confirm the **1.1.0 build** shows under the app's **TestFlight / Builds** with status "Ready to Submit" (processed, export-compliance answered — see Phase 4).
+- [ ] Confirm the **1.1.0 build** shows under the app's **TestFlight / Builds** with status "Ready to
+  Submit". ⚠️ **From v1.2 it will first show "Missing Compliance"** — `ITSAppUsesNonExemptEncryption`
+  was deliberately removed ([D23]) so App Store Connect asks rather than being pre-answered. Answer the
+  questionnaire (next item), and the status clears.
+- [ ] 🔴 **Export compliance — ANSWER THE QUESTIONNAIRE, and write down where it lands.** The app
+  encrypts local data with **crypto-js AES-256** (not the OS's crypto); HTTPS to Sentry/PostHog/
+  RevenueCat is Apple's. Whether that is exempt turns on **Note 4 to Category 5 Part 2** — the
+  *primary-function* test, not whose library it is — and the app's primary function is tax
+  **calculation** (BIS lists inventory-management software as a Note 4 example). **Answer honestly,
+  then record Apple's classification in `apps/mobile/src/__tests__/exportCompliance.test.ts` with the
+  date.** ⛔ Do not re-add the Info.plist key from memory — that is a legal declaration.
 
 ## Phase 2 — App-level info  _(App Store Connect → your app → General → App Information)_
 

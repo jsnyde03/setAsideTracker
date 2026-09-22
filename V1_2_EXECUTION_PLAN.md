@@ -26,15 +26,14 @@
 > ✅ **1.2.2 through 1.2.6 ARE ALL COMPLETE** and closed — the premium slice shipped four surfaces
 > and its whole-item after-scan found a **class of three dead save paths** (below).
 > **▶ ACTIVE: 1.2.10, filed correctness + submission compliance** ([D21], ahead of 1.2.7).
-> ✅ **1.2.10.1, .3, .4 and .6 are DONE**; **.5 and .7 are deferred to v1.3** as features rather than
-> compliance fixes. 🔴 **▶ 1.2.10.2 is the ONLY open sub-step and it is BLOCKED ON JASON** — the
-> export-compliance declaration is a legal statement, and the app uses crypto-js AES rather than the
-> OS's crypto, which is the distinction Apple's exemption turns on.
-> ⛔ **Neither upload gate is provable off-device** — the ITMS mail at upload is the real check.
+> ✅ **1.2.10 is CLOSED** — both upload gates handled, and **[D23]** settles the export declaration by
+> **asking Apple instead of asserting it**. **▶ ACTIVE: 1.2.7, native iPad**, decomposed below.
+> ⛔ **Neither upload gate is provable off-device**, and 1.2.7 is barely provable here either — the
+> reserved build now owes: ITMS-91053, the **Missing Compliance** answer, and every iPad layout.
 > ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
 > worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
-> Health: **376** mobile unit · **102** engine · **66/66** Playwright · typecheck clean · both tax-config
+> Health: **378** mobile unit · **102** engine · **66/66** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
@@ -132,27 +131,29 @@ because the gate is about data, not payment. An e2e asserts the absence.
 
 ---
 
-### 🧾 **1.2.10 — Filed correctness + submission compliance** · **ACTIVE**
+### 📱 **1.2.7 — Native iPad** · **ACTIVE**
 
-**Why it is next, ahead of 1.2.7 ([D21]):** its items are pure JS/config, so every line is verifiable
-on this machine — and two of them are **upload-time** gates. The one reserved TestFlight build is
-spent at upload, so a wrong privacy manifest kills the build four items are waiting on before it ever
-reaches a device. ⛔ **No `.xcprivacy` exists in the repo today**, and `ITSAppUsesNonExemptEncryption`
-is declared `false` while the app does AES-256.
+**Why it is next:** the queue's own row order, now that 1.2.10's upload gates are cleared. ⚠️ **It is
+also the worst fit for the current constraint and that is known going in** — almost all of its
+verification is visual and device-owed, so expect it to bank checks for the one reserved build
+rather than prove them here.
+
+🔴 **Flipping `supportsTablet` obliges iPad SCREENSHOTS in App Store Connect.** That is a submission
+requirement, not polish — the flip and the store assets ship together or the listing is incomplete.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.10.1** | ✅ **DONE 2026-09-22 — the app-level privacy manifest.** Expo SDK 56 generates one **only when `ios.privacyManifests` is set**, and it was absent, so the app shipped without one while 12 dependencies shipped their own. Declared: crash data, product interaction, device id, `NSPrivacyTracking: false`. **[D22]: the state code is no longer sent at all**, so no location category appears anywhere. ⛔ **The API-category list cannot be verified off-device — the upload names what is missing.** **358 unit · 66/66 Playwright · 3 plants, 3 caught.** | ✅ |
-| **1.2.10.2** | 🔴 **BLOCKED ON JASON — the one open item.** The app encrypts local data with **crypto-js AES-256**, i.e. *not* the OS's crypto, and Apple's guidance exempts OS-provided encryption while proprietary use is not exempt. **This is a legal export-control declaration, not an engineering call**, and it could not be resolved from the documentation. Inventory + the exact question → log. | 🔵 |
-| **1.2.10.3** | ✅ **DONE 2026-09-22 — the [D16] sweep found four disagreements, two of them an hour old.** The manifest under-declared **Performance Data** (Sentry traces are on at `tracesSampleRate: 0.2`) and gave Crash Data the wrong purposes; the policy described crashes but not tracing; `STORE_LISTING.md` still claimed the state code [D22] had just removed. **Now gated** — a test compares the manifest against the App Store table and fails any retired claim. | ✅ |
-| **1.2.10.4** | ✅ **DONE 2026-09-22 — and it was a LOCKOUT, not untidiness.** `clearAllData` set the app lock off **in memory only**, so the stored `appLockEnabled: true` survived and the next launch put Face ID in front of an app the user had just erased. | ✅ |
-| **1.2.10.5** | ⏭ **DEFERRED to v1.3 — my own row was wrong.** The policy promises **no** opt-out (checked; it says nothing of the kind), so this is a feature, not a compliance fix, and features do not belong inside a compliance item. | ✅ |
-| **1.2.10.6** | ✅ **DONE 2026-09-22 — restore validated entries only with `Array.isArray`.** A file containing `entries: [{}]` restored cleanly and then produced `NaN` in every derived figure, with nothing to undo. A bad entry now refuses the **whole file** and names which one. | ✅ |
-| **1.2.10.7** | ⏭ **DEFERRED to v1.3 — measured, not assumed.** Missing W2 figures yield zero withholding, so an incomplete profile makes the set-aside **too high**, never too low. A nudge, not a correctness bug. | ✅ |
-| **1.2.10.8** | **Verify + whole-item after-scan.** | ⬜ |
+| **1.2.7.1** | **Flip `ios.supportsTablet` (false today) and unlock `orientation` (portrait today).** Then look: does the app survive being wide at all, before any adaptive work? | ⬜ |
+| **1.2.7.2** | **The size-class seam, in `components/Screen.tsx`** — the single wrapper every screen already goes through. One place decides compact vs. regular, so no screen invents its own breakpoint. | ⬜ |
+| **1.2.7.3** | **Dashboard at regular width** — the multi-column layout. The screen that matters most and the one with the most on it. | ⬜ |
+| **1.2.7.4** | **The other 12 screens at regular width.** ⚠️ **Sheets and modals first** — they are full-bleed today, which reads as broken on a 13" display. | ⬜ |
+| **1.2.7.5** | **Split View / Stage Manager: survive being RESIZED LIVE**, not merely launched wide. A layout that only settles on mount fails here. | ⬜ |
+| **1.2.7.6** | **Hardware keyboard** — tab order through forms, escape to dismiss a sheet. | ⬜ |
+| **1.2.7.7** | **iPad screenshots** for the listing (see the red note above). | ⬜ |
+| **1.2.7.8** | **Verify + whole-item after-scan.** | ⬜ |
 
-**Exit line:** the app uploads without an ITMS rejection, and every claim it makes about data — in the
-manifest, the App Store labels, the permission strings and the privacy page — is one the code honours.
+**Exit line:** the app looks designed for an iPad rather than stretched to fit one, it survives a live
+resize, and the listing has the screenshots the `supportsTablet` flip obliges.
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
 _1.2.1 (parked) and 1.2.10 (active) are not listed here — they are above. 1.2.2–1.2.6 are in
@@ -170,7 +171,6 @@ out-of-order number is worth less than one more round of that.
 
 | # | item | notes |
 |---|---|---|
-| 1.2.7 | **Native iPad** | Adaptive split-view/sidebar. ~2× its original estimate (scoped at 6 screens, now 13). |
 | 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
 | 1.2.9 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. |
 | 1.2.11 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.7 rewrite those files. |
@@ -190,6 +190,16 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.10 — Filed correctness + submission compliance ✅ DONE 2026-09-22, 6/8 built, 2 deferred.**
+  The app had **no privacy manifest** (Expo writes one only when asked) · **[D22]** analytics stopped
+  sending the state code, deleting a Coarse Location category from three documents at once ·
+  **[D23]** the export-compliance bypass was **removed so Apple's questionnaire answers it** rather
+  than us · `clearAllLocalData` omitting `appSettings` was a **lockout**, not untidiness · and a
+  **destructive restore validated nothing** beyond `Array.isArray`. ⚡ **Four executable gates
+  replaced four written promises.** .5 and .7 deferred to v1.3 as features. **378 unit · 102 engine ·
+  66/66 Playwright · 9 plants, 9 caught.**
+  _Sub-step detail + 3 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.6 — Premium slice ✅ DONE 2026-09-21, 6/6.** Four premium surfaces on the tax-time axis, and
   **nothing that was free became paid**: the per-quarter amount beside a still-free due date · the
@@ -282,6 +292,7 @@ map is at the head of the log's item-spec section._
 | **[D20]** | **The shift/earnings optimizer ships as DAY-OF-WEEK only, gated on per-weekday sample size.** ⛔ **Its specified headline could not be built and half of it already existed.** `Entry` carries no time, and nothing in the app ever recorded one, so *"best time-of-day"* — named in ROADMAP §9.1 and IMPLEMENTATION_PLAN §347 — had no data behind it; and per-platform earnings + effective hourly rate with the best rate highlighted **already shipped, for free**, on `PlatformComparisonScreen`, so rebuilding it behind the paywall would have taken something away from free and broken 1.2.6's own gating rule. **Day-of-week is the one axis the data supports and the app does not already show.** ⚠️ **The flat "~30 entries" gate is retired**: nothing derived the 30, and at 20 seeded entries it excluded the demo that was supposed to make the feature demoable. Replaced by the mechanism it was proxying — a weekday reports once it has **≥3 entries**, the screen appears once **≥2 weekdays** qualify. Measured: the persona lands 4 qualifying weekdays on any date. **Time-of-day deferred to v1.3+**, and it needs a data-model change before it is even a candidate. | Jason 2026-09-21 |
 | **[D21]** | **1.2.10 runs before 1.2.7 (native iPad).** ⛔ **Two of its items are UPLOAD-time gates** — the iOS privacy manifest (ITMS-91053) and `ITSAppUsesNonExemptEncryption`, declared `false` while the app does AES-256 — and **no `.xcprivacy` exists in the repo at all**. The single reserved TestFlight build is spent at *upload*, so getting these wrong kills the build four items are waiting on before it reaches a device. 1.2.10 is also pure JS/config, which is the right shape of work while device builds are scarce; **1.2.7 is layout work whose verification is almost entirely visual and device-owed** — the worst possible fit for the current constraint. | Jason 2026-09-21 |
 | **[D22]** | **Analytics stops sending the user's state code.** A US state describes where someone is at lower precision than three decimal places, which is Apple's definition of **Coarse Location** however the app came by it — so declaring it would have put a location category in the privacy manifest, the App Store labels **and** the policy, on a tax app that collects no location otherwise. ⚡ **Not collecting it removes the question from all three places rather than answering it three times.** Rejected declaring it as "Other Data" — defensible, but being wrong about a location category is an App Store rejection. Cost: the state distribution of the user base is no longer measurable, which mattered because state tax configs are per-state work. | Jason 2026-09-22 |
+| **[D23]** | **`ITSAppUsesNonExemptEncryption` is REMOVED, so App Store Connect asks instead of being pre-answered.** The key's only function is to bypass the export-compliance questionnaire. The app encrypts local data with **crypto-js AES-256** — not the OS's crypto — and whether that is exempt turns on **Note 4 to Category 5 Part 2**, the *primary-function* test, **not on whose library it is** _(which is how this was first framed, wrongly)_. The reading that the app qualifies is defensible — its primary function is tax **calculation**, and BIS lists inventory-management software as a Note 4 example — **but it is a reading, and this is a legal declaration.** ⚡ **So we stopped answering the question and started asking it:** Apple's own flow produces the classification at first upload, and it gets recorded then. ⚠️ Cost: every build lands as **"Missing Compliance"** until answered in ASC — documented in both checklists so it is not mistaken for a broken build. | Jason 2026-09-22 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
