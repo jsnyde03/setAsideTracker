@@ -160,7 +160,7 @@ SetAsideTracker provides estimates for planning purposes only — not tax advice
 Premium is an auto-renewing subscription (Annual $29.99 / Monthly $4.99). Payment is charged to your Apple Account at purchase; it renews automatically unless canceled at least 24 hours before the period ends, and you can manage or cancel it anytime in your App Store account settings.
 
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
-Privacy Policy: https://jsnyde03.github.io/Set_Aside_Tracker/privacy.html
+Privacy Policy: https://jsnyde03.github.io/setAsideTracker/privacy.html
 ```
 
 *(~3,050 chars — comfortably under the 4,000 limit. The Terms of Use + Privacy Policy links at the end
@@ -231,10 +231,10 @@ apply to the captions:
 
 ## Support / contact / URLs
 
-- Support URL: **https://jsnyde03.github.io/Set_Aside_Tracker/support.html**
+- Support URL: **https://jsnyde03.github.io/setAsideTracker/support.html**
 - Support email: **setasidetrackersupport@gmail.com** (matches support.html + privacy.html — verified live 2026-07-01)
 - Marketing URL (optional): **[FILL IN, if any]**
-- Privacy Policy URL: **https://jsnyde03.github.io/Set_Aside_Tracker/privacy.html**
+- Privacy Policy URL: **https://jsnyde03.github.io/setAsideTracker/privacy.html**
 
 ## App Privacy — data-collection labels (ASC "App Privacy" questionnaire)
 
@@ -329,7 +329,7 @@ Tap "Log Earnings," pick a platform, enter a pay amount, and Save — the dashbo
 
 PRIVACY
 No account; your financial data never leaves the device. Only anonymous crash reports (Sentry) and anonymous product-usage analytics (PostHog) are collected — no personal data, no tracking, no ads.
-Privacy policy: https://jsnyde03.github.io/Set_Aside_Tracker/privacy.html
+Privacy policy: https://jsnyde03.github.io/setAsideTracker/privacy.html
 
 Questions during review: setasidetrackersupport@gmail.com
 ```

@@ -13,6 +13,6 @@ export const TERMS_OF_USE_URL =
   "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 export const PRIVACY_POLICY_URL =
-  "https://jsnyde03.github.io/Set_Aside_Tracker/privacy.html";
+  "https://jsnyde03.github.io/setAsideTracker/privacy.html";
 
-export const SUPPORT_URL = "https://jsnyde03.github.io/Set_Aside_Tracker/support.html";
+export const SUPPORT_URL = "https://jsnyde03.github.io/setAsideTracker/support.html";

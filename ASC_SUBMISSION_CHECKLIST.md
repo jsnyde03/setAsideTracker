@@ -40,7 +40,14 @@ You already have a **QA-passed 1.1.0 build in TestFlight** — you can submit th
 - [ ] **Subtitle:** `Quarterly 1099 tax calculator`
 - [ ] **Primary category:** Finance · **Secondary:** Utilities (optional)
 - [ ] ⚠️ **License Agreement:** set to **Standard Apple License Agreement (EULA)** (App Information → License Agreement). Pairs with the EULA link now in the description.
-- [ ] **Privacy Policy URL:** `https://jsnyde03.github.io/Set_Aside_Tracker/privacy.html`
+- [ ] **Privacy Policy URL:** `https://jsnyde03.github.io/setAsideTracker/privacy.html`
+- [ ] 🔴 **RUN `node tools/check-published-policy.mjs` AND GET EXIT 0 — before submitting.**
+      ⛔ **This is not a formality; it has already caught a real one.** The served policy was **83
+      days stale** and never mentioned location, while `docs/privacy.html` had disclosed location
+      capture since 1.2.5 — and `privacyClaimsAgree` stayed green, because the published copy was in
+      a different repository ([D26] moved it here). ⚠️ **Pages serves `master`:/docs**, so a policy
+      updated on a feature branch is not published until that branch merges. **A red here means the
+      app is about to describe its data practices to Apple with a document that says otherwise.**
 
 ## Phase 3 — App Privacy  _(General → App Privacy → Edit)_
 
@@ -60,7 +67,7 @@ Answer the questionnaire to match [STORE_LISTING.md → App Privacy table](STORE
 - [ ] **Description** — paste from STORE_LISTING. ⚠️ Confirm the **Terms of Use (EULA) + Privacy Policy URLs are at the very end** (3.1.2 metadata requirement — they're already in the STORE_LISTING description block).
 - [ ] **Keywords** — `estimated,selfemployed,mileage,expense,deduction,rideshare,delivery,freelance,contractor,sidehustle` (no spaces, 99/100).
 - [ ] **What's New in This Version** — paste the v1.1 block from STORE_LISTING / [RELEASE_NOTES.md](RELEASE_NOTES.md).
-- [ ] **Support URL:** `https://jsnyde03.github.io/Set_Aside_Tracker/support.html`
+- [ ] **Support URL:** `https://jsnyde03.github.io/setAsideTracker/support.html`
 - [ ] **Screenshots:** upload the 6.9" set (1320×2868) in value-led order.
 - [ ] **Build:** select the **1.1.0** build (from Phase 1).
 - [ ] **Age rating:** run the questionnaire → should land **4+** (no objectionable content, no gambling, no unrestricted web, no UGC).

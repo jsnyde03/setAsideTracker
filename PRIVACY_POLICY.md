@@ -2,7 +2,7 @@
 
 ⛔ **This file is no longer the privacy policy.** The policy is
 **[`docs/privacy.html`](docs/privacy.html)**, published at
-<https://jsnyde03.github.io/Set_Aside_Tracker/privacy.html> — that URL is what the app links to
+<https://jsnyde03.github.io/setAsideTracker/privacy.html> — that URL is what the app links to
 (`apps/mobile/src/premium/legal.ts`), what App Store Connect points at, and what a user actually
 reads. **Edit that file. There is no second copy, deliberately.**
 
