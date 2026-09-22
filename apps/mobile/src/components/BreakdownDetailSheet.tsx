@@ -5,6 +5,7 @@ import type { BreakdownDetail } from "../breakdownDetails";
 import { glossaryEntry, type GlossaryTermKey } from "../glossary";
 import { radius, shadow, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
+import { useSheetWidthStyle } from "../useSizeClass";
 
 interface BreakdownDetailSheetProps {
   /** The detail to show; when null the sheet is hidden. */
@@ -24,6 +25,7 @@ const SHEET_ANIMATION = Platform.OS === "web" ? "none" : "slide";
 export function BreakdownDetailSheet({ detail, onClose }: BreakdownDetailSheetProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const sheetWidth = useSheetWidthStyle();
 
   // Which glossary term's plain-language definition is expanded inline (null = none). Reset whenever
   // a different breakdown is opened so a term left open on one sheet doesn't bleed into the next.
@@ -43,7 +45,7 @@ export function BreakdownDetailSheet({ detail, onClose }: BreakdownDetailSheetPr
       <View style={styles.backdrop}>
         {/* Tapping the dimmed area outside the card dismisses the sheet. */}
         <Pressable style={styles.backdropFill} onPress={onClose} accessibilityLabel="Dismiss details" />
-        <View style={styles.sheet} accessibilityViewIsModal>
+        <View style={[styles.sheet, sheetWidth]} accessibilityViewIsModal>
           <View style={styles.handle} />
           {detail && (
             <ScrollView

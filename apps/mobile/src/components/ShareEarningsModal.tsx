@@ -7,6 +7,7 @@ import { ShareCard, type ShareCardData } from "./ShareCard";
 import { reportError } from "../errorReporting";
 import { radius, shadow, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
+import { useSheetWidthStyle } from "../useSizeClass";
 
 interface ShareEarningsModalProps {
   visible: boolean;
@@ -26,6 +27,7 @@ const SHEET_ANIMATION = Platform.OS === "web" ? "none" : "slide";
 export function ShareEarningsModal({ visible, onClose, data }: ShareEarningsModalProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const sheetWidth = useSheetWidthStyle();
   const cardRef = useRef<View>(null);
   const [busy, setBusy] = useState(false);
   const canShare = Platform.OS !== "web";
@@ -49,7 +51,7 @@ export function ShareEarningsModal({ visible, onClose, data }: ShareEarningsModa
     <Modal visible={visible} transparent animationType={SHEET_ANIMATION} onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={styles.backdropFill} onPress={onClose} accessibilityLabel="Dismiss share" />
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, sheetWidth]}>
           <View style={styles.handle} />
           <View style={styles.titleRow}>
             <Text style={styles.title}>Share your earnings</Text>

@@ -7,6 +7,7 @@ import {
 } from "../calculations";
 import { radius, shadow, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
+import { useSheetWidthStyle } from "../useSizeClass";
 
 interface WeeklySetAsideSheetProps {
   /** Every week with logged work in the selected year, most recent first. Null hides the sheet. */
@@ -50,6 +51,7 @@ function formatWeekDay(date: string): string {
 export function WeeklySetAsideSheet({ weeks, summary, year, onClose }: WeeklySetAsideSheetProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const sheetWidth = useSheetWidthStyle();
   const anyEstimated = (weeks ?? []).some((week) => week.estimated);
   // Hidden when the weeks already telescope to the year total exactly, which is the normal
   // case -- a row reading "Adjustment $0.00" is noise that makes a correct list look broken.
@@ -66,7 +68,7 @@ export function WeeklySetAsideSheet({ weeks, summary, year, onClose }: WeeklySet
     >
       <View style={styles.backdrop}>
         <Pressable style={styles.backdropFill} onPress={onClose} accessibilityLabel="Dismiss weekly set-aside" />
-        <View style={styles.sheet} accessibilityViewIsModal>
+        <View style={[styles.sheet, sheetWidth]} accessibilityViewIsModal>
           <View style={styles.handle} />
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces={false}>
             <View style={styles.titleRow}>

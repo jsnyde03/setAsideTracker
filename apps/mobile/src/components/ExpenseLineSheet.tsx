@@ -3,6 +3,7 @@ import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "
 import type { LineContribution, ScheduleCLine } from "../scheduleC";
 import { radius, shadow, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
+import { useSheetWidthStyle } from "../useSizeClass";
 
 interface ExpenseLineSheetProps {
   /** The line being drilled into; when null the sheet is hidden. */
@@ -39,6 +40,7 @@ function formatDate(iso: string): string {
 export function ExpenseLineSheet({ line, contributions, onClose }: ExpenseLineSheetProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const sheetWidth = useSheetWidthStyle();
 
   return (
     <Modal
@@ -50,7 +52,7 @@ export function ExpenseLineSheet({ line, contributions, onClose }: ExpenseLineSh
     >
       <View style={styles.backdrop}>
         <Pressable style={styles.backdropFill} onPress={onClose} accessibilityLabel="Dismiss details" />
-        <View style={styles.sheet} accessibilityViewIsModal>
+        <View style={[styles.sheet, sheetWidth]} accessibilityViewIsModal>
           <View style={styles.handle} />
           {line && (
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces={false}>

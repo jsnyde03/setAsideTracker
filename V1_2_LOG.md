@@ -11,6 +11,61 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.7.4 Every other screen at regular width — SUB-TASK after-scan · 2026-09-22 · ✅ DONE
+
+**400 unit (from 398) · typecheck clean · 106/106 Playwright (66 chromium + 20 + 20) · lint 15
+unchanged · ports free. 4 plants, 4 caught — but two of them only after the TEST was fixed.**
+
+⚙️ **What shipped.** All four sheets capped at **540pt** (iOS's own iPad form-sheet width) and
+centred, through **one** helper — `useSheetWidthStyle()` — rather than four copies of the same three
+properties. The four sheets were already four copies of one pattern, and this repo has a standing
+backlog entry about `formatCurrency` existing ten times because every caller fixed its own instance.
+Plus `ipad-screens.spec.ts`: **12 routes read from `app/` at run time**, each asserted not to spill
+at either iPad size, each screenshotted into `.results/` for the human half of the judgement.
+
+⛔ **Confirmed, not assumed: `Screen`'s seam cannot reach a sheet.** A React Native `Modal` renders
+in its own view tree, so the content column every other surface inherits simply does not apply.
+Before this the weekly sheet was a **1366px slab with two rounded corners**.
+
+🔴 **THE FINDING: the sweep's first overflow instrument could not fail, and twelve green tests said
+otherwise.** It compared `document.documentElement.scrollWidth` to `clientWidth`. Every screen's
+content sits inside a react-native-web `ScrollView`, which has its own `overflow` and **absorbs**
+whatever width its children take — so the document never grows. ⚡ **Measured, not reasoned:**
+planting `minWidth: 2000` on `/what-if` produced a 2000px div reaching **x=2347** and **27 elements
+wider than the viewport**, while `scrollWidth` sat at exactly **1366** and all 12 route tests passed.
+Replaced with element geometry (`getBoundingClientRect().right` against the viewport, plus a count of
+elements wider than it), which then caught the same plant **and only on `/what-if`** — the other 11
+stayed green, so it isolates.
+
+⭐ **The plant is what found it, and nothing else would have.** Reading that assertion looks
+perfectly sound; it is the same shape as CLAUDE.md's *"a check whose two sides come from ONE SOURCE
+cannot fail, and reading it never reveals that — only planting does."* Here the single source was
+**the browser's own scroll container**. ⚠️ And the diagnosis came first: the plant was checked for
+having actually applied *before* the check was touched — it had.
+
+🔴 **Second test defect, same family: a control that tested at a width where the defect is
+invisible.** The compact sheet control ran at 393px. Planting *"constrain at every width"* passed it
+— a 540pt cap cannot bind on a 393pt window, so the sheet is full-bleed either way. The control was
+asserting something true of both the correct and the broken build. Added **744px** (iPad mini
+portrait: compact by our breakpoint, but wider than the cap), which is the only region where the
+mistake shows — and it reds at 540 vs >742. ⚡ **A plant that passes is information about the test:
+twice in one sub-step, and both times the fix was the test, not the code.**
+
+✅ **All 12 routes are clean at both iPad sizes under the corrected instrument** — no real overflow
+defects anywhere in the app. That result is only worth stating *because* the instrument was proven
+able to fail first; an hour earlier the same sentence would have been meaningless.
+
+⚠️ **I wrote "derived from the router, not hand-written" above a hand-written array, and caught it
+on re-read.** Made true rather than softened: `readdirSync("app")`, with a guard that throws if
+fewer than 10 routes are found, so a wrong path cannot silently sweep nothing. Same failure this
+repo logged as *findings cite comments as evidence* — a claim in a comment is not a measurement,
+including when it is mine and thirty seconds old.
+
+📋 **Human review still owed:** "does it look designed for an iPad" is not machine-decidable. The
+screenshots are in `apps/mobile/e2e/.results/` under each `ipad-*` project — 12 screens × 2
+orientations, plus the sheets. **Worth a look before the reserved build**, because a layout fault
+that is merely *ugly* passes every assertion here.
+
 ### 🔎 1.2.7.3 Dashboard at regular width — SUB-TASK after-scan · 2026-09-22 · ✅ DONE
 
 **398 unit · typecheck clean · 76/76 Playwright (66 chromium + 5 + 5) · lint 15 unchanged · ports

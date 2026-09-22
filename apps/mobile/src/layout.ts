@@ -66,3 +66,22 @@ export function resolveContentMaxWidth(
 
 /** `readable` centres the content in a reading measure; `full` lets it use the whole window. */
 export type ContentWidth = "readable" | "full";
+
+/**
+ * How wide a bottom sheet may get.
+ *
+ * ⛔ **`Screen`'s content column does not reach the sheets, and cannot.** A React Native `Modal`
+ * renders in its own view tree above everything else, so the four sheets are outside the seam every
+ * other surface goes through — they span the whole window at any width unless told otherwise, which
+ * on a 13" iPad is a full-width slab with two rounded corners.
+ *
+ * 540 is iOS's own form-sheet width on iPad. Narrower than the reading measure on purpose: a sheet
+ * is a focused, secondary surface, and matching the page behind it would make it read as a second
+ * page rather than as something sitting on top.
+ */
+export const SHEET_MAX_WIDTH = 540;
+
+/** The sheet's max width, or `undefined` on compact — where a bottom sheet must stay full-bleed. */
+export function resolveSheetMaxWidth(width: number): number | undefined {
+  return resolveSizeClass(width) === "regular" ? SHEET_MAX_WIDTH : undefined;
+}

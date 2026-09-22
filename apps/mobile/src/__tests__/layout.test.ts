@@ -5,7 +5,9 @@ import {
   READABLE_CONTENT_MAX_WIDTH,
   REGULAR_WIDTH_BREAKPOINT,
   resolveContentMaxWidth,
+  resolveSheetMaxWidth,
   resolveSizeClass,
+  SHEET_MAX_WIDTH,
 } from "../layout";
 
 /**
@@ -78,6 +80,20 @@ describe("content max width", () => {
   it("lets a screen opt out for a real column layout", () => {
     // The dashboard's multi-column layout (1.2.7.3) needs more than a reading measure.
     expect(resolveContentMaxWidth(1366, "full")).toBeUndefined();
+  });
+
+  it("caps a sheet on regular and leaves it full-bleed on compact", () => {
+    // A bottom sheet on a phone must stay edge to edge — that is what a bottom sheet IS. The
+    // constraint exists only because a Modal renders outside `Screen`'s content column.
+    expect(resolveSheetMaxWidth(393)).toBeUndefined();
+    expect(resolveSheetMaxWidth(1024)).toBe(SHEET_MAX_WIDTH);
+    expect(resolveSheetMaxWidth(1366)).toBe(SHEET_MAX_WIDTH);
+  });
+
+  it("keeps a sheet narrower than the page behind it", () => {
+    // Matching the reading measure would make the sheet read as a second page rather than as
+    // something sitting on top of the first.
+    expect(SHEET_MAX_WIDTH).toBeLessThan(READABLE_CONTENT_MAX_WIDTH);
   });
 
   it("caps well below the widths that produced the defect — the control", () => {
