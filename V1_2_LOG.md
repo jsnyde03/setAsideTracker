@@ -11,6 +11,44 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.6.5 Expense-breakdown drill-down — after-scan · 2026-09-21 · ✅ DONE
+
+**346 unit (from 339) · 102 engine · 64/64 Playwright (3 new) · typecheck clean · lint 15 unchanged ·
+ports free. 7 plants, 7 caught.**
+
+**The item was one word — "drill-down" — over a screen that already existed**, so the before-scan's
+job was deciding whether anything was left. It was: **nothing on `ExpenseBreakdownScreen` was
+tappable except Close**, and `buildScheduleCSummary` carried no per-entry attribution at all. So the
+plain reading — tap a Schedule C line, see the entries behind it — was genuinely unbuilt, and it sits
+squarely on the tax-time axis: this is *substantiation*, which is why it is a separate sheet from
+`BreakdownDetailSheet` (that one answers "how was this calculated" with glossary terms).
+
+✅ **The rows sum to the line exactly, and that was checked rather than hoped.** `deductionAmount` is
+`miles × rate` **unrounded** over the same per-entry mileage the drill-down reads, so
+`Σ(mᵢ × r) = (Σmᵢ) × r`. **1.2.4 needed an explicit adjustment row for the analogous problem; this
+does not** — and a test asserts it across *every* mapped line rather than the one that was convenient.
+Line 27's filtering had to mirror `buildScheduleCSummary`'s exactly, blank-label skip and negative
+clamp included, or the rows would count what the total ignores.
+
+⭐ **The most useful thing here was rewriting a test that could not fail.** The first version of
+"the sheet's total matches the line" captured the line's figure, opened the sheet, and asserted that
+figure was visible in it — **which the sheet prints from `line.amount`, so it passes with zero rows
+behind it.** Replaced by summing the ROWS and comparing. ⚡ **Then planted it**: with
+`contributions={[]}` the new assertion reds and the old one would not have. *A test written to check
+a sum has to read the parts, not the total it was handed.*
+
+⚠️ **Two controls named "Close" were reachable at once.** A sheet over a screen that has its own
+Close leaves both in the tree, so a screen reader offers two identical names and the e2e clicked the
+covered one and timed out retrying. The sheet's is now **"Close details"**. ⚡ **Same shape as the
+"covered route stays mounted" lesson from 1.2.6.4, one level down** — modal over screen rather than
+route over route. Filed `BreakdownDetailSheet`'s identical plain "Close" to 1.2.9; it is not ambiguous
+today only because the dashboard it opens over has no Close of its own.
+
+**Also folded in:** each contribution row is now labelled as one group. Left as three sibling `Text`s
+a screen reader announces the date, the detail and the amount as unrelated fragments — the amount,
+which is the point of the row, arrives with nothing attached to it. That grouping is also what gave
+the strengthened e2e something to sum, which is a fair trade in both directions.
+
 ### 🔎 1.2.6.4 Earnings optimizer — after-scan · 2026-09-21 · ✅ DONE
 
 **339 unit (from 330) · 102 engine · 61/61 Playwright (4 new) · typecheck clean · lint 15 unchanged ·

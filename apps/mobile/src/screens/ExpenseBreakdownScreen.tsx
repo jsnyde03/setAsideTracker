@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { Entry, TaxProfile } from "../types";
 import { computeTaxEstimate, entriesForYear } from "../calculations";
-import { buildScheduleCSummary } from "../scheduleC";
+import { buildScheduleCSummary, contributionsForLine, type ScheduleCLine } from "../scheduleC";
+import { ExpenseLineSheet } from "../components/ExpenseLineSheet";
 import { Screen } from "../components/Screen";
 import { radius, shadow, shadowSm, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
@@ -49,6 +50,15 @@ export function ExpenseBreakdownScreen({ entries, taxProfile, onClose }: Expense
   const hasCustom = scheduleC.otherExpenses.length > 0;
   const visibleLines = scheduleC.expenseLines.filter((line) => line.amount > 0);
 
+  // Which line's drill-down is open (null = closed).
+  const [openLine, setOpenLine] = useState<ScheduleCLine | null>(null);
+  // ⚠️ `mileage.ratePerMile` — the rate the ESTIMATE used, not one re-read from config. Across a
+  // tax-year boundary they differ, and the drill-down would then disagree with the line above it.
+  const contributions = useMemo(
+    () => (openLine ? contributionsForLine(entriesForYear(entries, year), openLine.line, mileage.ratePerMile) : []),
+    [openLine, entries, year, mileage.ratePerMile]
+  );
+
   return (
     <Screen edges={["top", "left", "right"]}>
       <View style={styles.header}>
@@ -89,12 +99,25 @@ export function ExpenseBreakdownScreen({ entries, taxProfile, onClose }: Expense
               {visibleLines.map((line, index) => {
                 const isOther = line.line === "27";
                 return (
-                  <View key={line.line} style={[styles.lineGroup, index > 0 && styles.lineGroupDivider]}>
+                  <Pressable
+                    key={line.line}
+                    onPress={() => setOpenLine(line)}
+                    style={({ pressed }) => [
+                      styles.lineGroup,
+                      index > 0 && styles.lineGroupDivider,
+                      pressed && styles.lineGroupPressed,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Line ${line.line} ${line.label}: ${formatCurrency(line.amount)}. Tap to see which entries make this up.`}
+                  >
                     <View style={styles.lineRow}>
                       <Text style={styles.lineLabel}>
                         Line {line.line} · {line.label}
                       </Text>
-                      <Text style={styles.lineValue}>{formatCurrency(line.amount)}</Text>
+                      <View style={styles.lineValueWrap}>
+                        <Text style={styles.lineValue}>{formatCurrency(line.amount)}</Text>
+                        <Ionicons name="chevron-forward" size={13} color={colors.inkFaint} />
+                      </View>
                     </View>
                     {line.line === "9" && (
                       <Text style={styles.lineCaption}>
@@ -114,7 +137,7 @@ export function ExpenseBreakdownScreen({ entries, taxProfile, onClose }: Expense
                           <Text style={styles.subValue}>{formatCurrency(other.amount)}</Text>
                         </View>
                       ))}
-                  </View>
+                  </Pressable>
                 );
               })}
               <View style={[styles.lineRow, styles.totalRow]}>
@@ -141,6 +164,8 @@ export function ExpenseBreakdownScreen({ entries, taxProfile, onClose }: Expense
           </>
         )}
       </ScrollView>
+
+      <ExpenseLineSheet line={openLine} contributions={contributions} onClose={() => setOpenLine(null)} />
     </Screen>
   );
 }
@@ -189,6 +214,8 @@ function createStyles(colors: Colors) {
     lineRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     lineLabel: { ...type.body, color: colors.ink, flex: 1, paddingRight: spacing.sm },
     lineValue: { ...type.body, color: colors.ink, fontWeight: "700" },
+    lineValueWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
+    lineGroupPressed: { opacity: 0.6 },
     lineCaption: { ...type.micro, color: colors.inkSubtle, marginTop: 3 },
     subRow: {
       flexDirection: "row",

@@ -111,6 +111,78 @@ export function buildScheduleCSummary(
   };
 }
 
+/** One entry's contribution to a single Schedule C line — a row of the line's drill-down. */
+export interface LineContribution {
+  entryId: string;
+  /** ISO date of the entry, for matching against the user's own records. */
+  date: string;
+  /** Display label for the entry's platform (e.g. "DoorDash"). */
+  platformLabel: string;
+  /** What this entry put on the line. */
+  amount: number;
+  /** How that amount was arrived at, when it is not simply the amount — e.g. Line 9's miles. */
+  detail?: string;
+}
+
+/**
+ * Which entries make up one Schedule C line, and by how much.
+ *
+ * ⚠️ **The rows sum to the line, exactly**, and that is a property worth keeping rather than a happy
+ * accident. `deductionAmount` is `miles × rate` **unrounded**, and the miles it uses are the sum of
+ * the same per-entry mileage figures read here — so `Σ(mᵢ × r) = (Σmᵢ) × r` up to float error. A
+ * drill-down whose rows visibly fail to add up to the total they were opened from is worse than no
+ * drill-down at all, which is why 1.2.4 had to add an explicit adjustment row; **this line does not
+ * need one, and a test asserts that rather than assuming it.**
+ *
+ * ⚠️ **`ratePerMile` must be the rate the ESTIMATE used**, passed in from
+ * `mileageDeduction.ratePerMile` — never a constant re-read from config here. The two can differ
+ * across a tax-year boundary, and re-deriving it is how a drill-down starts disagreeing with the
+ * figure above it.
+ *
+ * Sorted by amount descending: the question a drill-down answers is "what is driving this number",
+ * and every row carries its own date for the times the question is "when was that".
+ */
+export function contributionsForLine(
+  entries: Entry[],
+  line: string,
+  ratePerMile: number
+): LineContribution[] {
+  const rows: LineContribution[] = [];
+
+  for (const entry of entries) {
+    const platformLabel = PLATFORM_LABELS[entry.platform];
+    let amount = 0;
+    let detail: string | undefined;
+
+    if (line === "9") {
+      // Line 9 is three things at once — the standard-mileage deduction plus parking plus tolls —
+      // so the detail string is the only place a row can say which of them it was.
+      const mileageAmount = entry.mileage * ratePerMile;
+      const { parking, tolls } = entry.expenses;
+      amount = mileageAmount + parking + tolls;
+      const parts: string[] = [];
+      if (entry.mileage > 0) parts.push(`${entry.mileage.toLocaleString("en-US")} mi`);
+      if (parking > 0) parts.push(`parking $${parking.toLocaleString("en-US")}`);
+      if (tolls > 0) parts.push(`tolls $${tolls.toLocaleString("en-US")}`);
+      detail = parts.length > 0 ? parts.join(" · ") : undefined;
+    } else if (line === "22") {
+      amount = entry.expenses.supplies;
+    } else if (line === "25") {
+      amount = entry.expenses.phone;
+    } else if (line === "27") {
+      // Mirrors `buildScheduleCSummary`'s aggregation exactly, blank labels and the negative clamp
+      // included — a drill-down that counted a row the total ignored would not add up.
+      const items = (entry.customExpenses ?? []).filter((item) => item.label.trim() !== "");
+      amount = items.reduce((sum, item) => sum + Math.max(0, item.amount), 0);
+      detail = items.length > 0 ? items.map((item) => item.label.trim()).join(" · ") : undefined;
+    }
+
+    if (amount > 0) rows.push({ entryId: entry.id, date: entry.date, platformLabel, amount, detail });
+  }
+
+  return rows.sort((a, b) => b.amount - a.amount || a.date.localeCompare(b.date));
+}
+
 /**
  * One trip in the mileage-log substantiation appendix backing Schedule C Line 9. The IRS requires a
  * contemporaneous record of the date, business purpose, and route for each trip claimed under the

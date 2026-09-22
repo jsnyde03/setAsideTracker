@@ -25,14 +25,14 @@
 >
 > ✅ **1.2.2 through 1.2.5 ARE ALL COMPLETE** and closed. **▶ ACTIVE: 1.2.6, the premium slice**
 > ([D3]), decomposed below — pure JS, so every line is verifiable here.
-> ✅ **1.2.6.1–1.2.6.4 are DONE.** The payment tracker ([D19]) came with a **live v1.1.1 data-loss
-> fix**, and the optimizer shipped as day-of-week ([D20]) after its before-scan found the spec's
-> time-of-day had no data behind it. **▶ Next action: 1.2.6.5**, the expense-breakdown drill-down.
-> ⚠️ `ExpenseBreakdownScreen` **already exists** — establish what "drill-down" adds before building.
+> ✅ **1.2.6.1–1.2.6.5 are DONE** — four premium surfaces built, plus a **live v1.1.1 data-loss fix**
+> ([D19]) and a headline reshaped after its spec turned out unbuildable ([D20]).
+> **▶ Next action: 1.2.6.6 — verify + the WHOLE-ITEM after-scan**, which closes 1.2.6. ⚠️ Do not
+> assert absolute dollar figures; 1.2.2 and 1.2.4 both moved what the demo seed produces.
 > ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
 > worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
-> Health: **339** mobile unit · **102** engine · **61/61** Playwright · typecheck clean · both tax-config
+> Health: **346** mobile unit · **102** engine · **64/64** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
@@ -147,7 +147,7 @@ blur or remove anything already free. An item that fails that test is cut, not s
 | **1.2.6.1** | ✅ **DONE 2026-09-21 — the per-quarter amount on the dashboard's due-date row**, premium, beside a date that stays free. Labelled as a projection. **53/53 Playwright (3 new) · 4 plants, 3 caught** — the one that passed is recorded as a coverage gap, not a pass. | ✅ |
 | **1.2.6.3** | ✅ **DONE 2026-09-21 — the safe-harbor payment tracker.** Paid vs. required per quarter ([D19]), counting only deadlines already passed. 🔴 **Also fixed a live v1.1.1 data-loss bug** the before-scan found: editing the tax profile erased `filedTaxByYear`. **330 unit · 57/57 Playwright · 5 plants, 5 caught.** | ✅ |
 | **1.2.6.4** | ✅ **DONE 2026-09-21 — "Best days to work", day-of-week ([D20]).** Ranked by hourly rate, gated on per-weekday sample. ⛔ Before-scan killed two thirds of the spec: time-of-day has **no data** (`Entry` has no time) and the platform half **already ships free**. **339 unit · 61/61 Playwright · 6 plants, 6 caught.** | ✅ |
-| **1.2.6.5** | **Expense-breakdown drill-down.** | ⬜ |
+| **1.2.6.5** | ✅ **DONE 2026-09-21 — tap a Schedule C line, see the entries behind it.** Before-scan: the screen existed but **nothing on it was tappable**, and `buildScheduleCSummary` had no per-entry attribution. Rows sum to the line exactly (no adjustment row needed, unlike 1.2.4). **346 unit · 64/64 Playwright · 7 plants, 7 caught.** | ✅ |
 | **1.2.6.6** | **Verify + whole-item after-scan.** ⚠️ **Do not assert absolute dollar figures** — 1.2.2 and 1.2.4 both moved what the demo seed produces. | ⬜ |
 
 **Exit line:** four premium surfaces that each earn their gate on the tax-time axis, nothing that was
@@ -292,6 +292,14 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.6.5 _(2026-09-21)_
+
+- **Duplicate "Close" labels wherever a sheet sits over a screen that has its own.** Fixed here by
+  naming the sheet's control "Close details"; `BreakdownDetailSheet` has the same plain "Close" and
+  is opened over the dashboard, which has no Close of its own — so it is not currently ambiguous,
+  but it is the same shape one screen away. Worth folding into **1.2.9**, the a11y audit, where
+  duplicate accessible names on simultaneously-reachable controls is exactly the class being swept.
 
 ### From 1.2.6.4 _(2026-09-21)_
 
