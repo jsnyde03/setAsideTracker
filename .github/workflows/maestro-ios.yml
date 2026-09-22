@@ -1,0 +1,268 @@
+# SetAsideTracker — iOS Maestro (native flows), ported from codemagic.yaml at 1.2.14.2 ([D27]).
+#
+# ⚡ **Why it moved.** Twelve native flows sat blocked since ~August for one reason: Codemagic is
+# ~80% consumed and the remainder is reserved for TestFlight builds. macOS runners are **free on a
+# public repo** — measured at 1.2.14.1, not taken from the docs, which contradict themselves:
+# `billable.MACOS.total_ms = 0` for a real macOS run. So these flows now cost nothing, and simulator
+# builds stop competing with the builds that have to reach a device.
+#
+# ⛔ **Almost every line below was bought with a failed run.** The comments are the asset, not the
+# YAML. Do not "tidy" one away without reading why it is there.
+name: iOS Maestro (native flows)
+
+on:
+  # ⚠️ Manual dispatch only appears for workflows on the DEFAULT branch, and master is ~95 commits
+  # behind v1.2. Until v1.2 merges, trigger a run by pushing a change to this file (the path filter
+  # below), or from the Actions UI once it has landed on master.
+  workflow_dispatch:
+    inputs:
+      flow:
+        description: "A single flow to run (e.g. onboarding.yaml). Blank runs all of .maestro."
+        required: false
+        default: ""
+  push:
+    branches: [v1.2]
+    paths:
+      - ".github/workflows/maestro-ios.yml"
+
+jobs:
+  maestro:
+    runs-on: macos-latest
+    # The native build dominates; 60 costs nothing on a free runner and beats a truncated run.
+    timeout-minutes: 60
+
+    env:
+      # ⚠️ REQUIRED — without it the build fails, and it did (Codemagic, first dispatch 2026-08-08).
+      # This workflow deliberately carries no Apple credentials (a simulator build needs none), and
+      # that is also where SENTRY_AUTH_TOKEN would come from — so sentry-cli runs with no token,
+      # errors with "Auth token is required for this request", and takes the "Bundle React Native
+      # code and images" phase down with it. In @sentry/react-native 7.11.0 an upload failure fails
+      # the whole build and SENTRY_ALLOW_FAILURE is not honored.
+      #
+      # Disabling the upload is the right fix rather than adding the token: a throwaway simulator
+      # binary's source maps have no business in Sentry, and it keeps a secret out of a test job.
+      SENTRY_DISABLE_AUTO_UPLOAD: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: What commit is this
+        # ⛔ CLAUDE.md's rule, and it cost two Codemagic cycles: a build of old code brings its own
+        # old flows, so "the fix didn't work" is indistinguishable from "the fix was never in the
+        # binary". Every run says what it built in its first ten lines.
+        run: echo "=== Building commit $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s) ==="
+
+      - uses: actions/setup-node@v4
+        with:
+          # Pinned to match codemagic.yaml. The runner ships Node 24; parity removes a variable from
+          # a harness that is itself the thing under test on the first run.
+          node-version: 22
+          cache: npm
+
+      - name: Install root workspace dependencies
+        # ⚠️ This is an npm WORKSPACE — everything hoists to the repo root and apps/mobile/node_modules
+        # is empty. Install from the root or nothing resolves.
+        run: npm install --prefer-offline --no-audit --no-fund
+
+      - name: Build the tax-engine package
+        run: npm run build --workspace services/tax-engine
+
+      - name: Typecheck + unit test (fail fast before the slow native build)
+        # Cheap gates before a ~15-minute xcodebuild. A type error found here costs seconds.
+        working-directory: apps/mobile
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            apps/mobile/ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-
+
+      - name: Generate the native iOS project (expo prebuild)
+        # expo prebuild runs `pod install` itself on macOS, so no separate pod step is needed.
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform ios
+
+      - name: Build the app for the iOS Simulator
+        # Release embeds the JS bundle, so no Metro at run time.
+        #
+        # ⛔ AD-HOC SIGNED, DELIBERATELY — this is the single most expensive lesson in this file.
+        # It previously used CODE_SIGNING_ALLOWED=NO on the reasoning that "simulator builds don't
+        # need signing": true for launching, FALSE for the Keychain. An unsigned app carries no
+        # entitlements at all, including application-identifier, which iOS requires for any Keychain
+        # access. expo-secure-store goes straight to the Keychain, so every run failed with
+        #
+        #     Couldn't save your info / Calling the 'getValueWithKeyAsync' function has failed
+        #
+        # getOrCreateEncryptionKey could not read or mint a key, so NOTHING persisted, so onboarding
+        # could never complete and no flow could ever reach the dashboard. The app was never broken —
+        # we were testing a build structurally incapable of saving.
+        #
+        # ⚠️ SENTRY_DISABLE_AUTO_UPLOAD is ALSO passed as a build setting, not left to `env:` alone.
+        # On Codemagic 2026-09-21 the bundle phase received it EMPTY and ran sentry-cli anyway,
+        # failing the build. Rather than theorise about env inheritance, use the channel that
+        # demonstrably reaches the script phase — the same one CONFIGURATION and friends arrive on.
+        working-directory: apps/mobile
+        run: |
+          echo "SENTRY_DISABLE_AUTO_UPLOAD (env) = [${SENTRY_DISABLE_AUTO_UPLOAD}]"
+          xcodebuild \
+            -workspace ios/SetAsideTracker.xcworkspace \
+            -scheme SetAsideTracker \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -derivedDataPath ios/build \
+            -destination 'generic/platform=iOS Simulator' \
+            SENTRY_DISABLE_AUTO_UPLOAD=true \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="-" \
+            build
+
+      - name: Boot a simulator and install the app
+        # ⚠️ Do NOT hardcode a simulator name. The runner's Xcode image decides which devices exist,
+        # and "iPhone 15" was absent from Xcode 26.4 — which cost a whole mac build on 2026-09-20.
+        # It is absent from this image too (Xcode 26.6 ships iPhone 17 / Air / 16e / 17e, confirmed
+        # at 1.2.14.1), so the derivation is not paranoia, it is load-bearing.
+        #
+        # ⛔ The old line was `xcrun simctl boot "iPhone 15" || true`, and the `|| true` is what made
+        # it expensive rather than obvious: the boot failure was swallowed, then `simctl install`
+        # died two lines later with "No devices are booted" — a missing-device problem presenting as
+        # an install problem. Nothing is swallowed here.
+        run: |
+          set -euo pipefail
+
+          # Whatever iPhone this image actually has. Maestro does not care which model, only that one
+          # is booted. simctl groups by runtime ascending, so `tail -1` is the newest. The sed
+          # tolerates a model name carrying its own parentheses, e.g. "iPhone SE (3rd generation)".
+          DEVICE_ID=$(xcrun simctl list devices available \
+            | grep -E '^[[:space:]]+iPhone' \
+            | tail -1 \
+            | sed -E 's/.*\(([0-9A-Fa-f-]{36})\).*/\1/')
+
+          if [ -z "$DEVICE_ID" ]; then
+            echo "No iPhone simulator is available on this runner. Devices present:"
+            xcrun simctl list devices available
+            exit 1
+          fi
+
+          echo "Booting: $(xcrun simctl list devices available | grep "$DEVICE_ID" | sed 's/^[[:space:]]*//')"
+
+          # Tolerate ONLY the already-booted case, and prove it by reading the device's actual state.
+          if ! xcrun simctl boot "$DEVICE_ID"; then
+            if xcrun simctl list devices | grep "$DEVICE_ID" | grep -q "(Booted)"; then
+              echo "Device was already booted — continuing."
+            else
+              echo "Boot failed and the device is not booted. Aborting rather than masking it."
+              exit 1
+            fi
+          fi
+
+          xcrun simctl bootstatus "$DEVICE_ID" -b
+          xcrun simctl install "$DEVICE_ID" \
+            ios/build/Build/Products/Release-iphonesimulator/SetAsideTracker.app
+        working-directory: apps/mobile
+
+      - name: Cache the Maestro CLI
+        uses: actions/cache@v4
+        with:
+          path: ~/.maestro
+          key: maestro-${{ runner.os }}-v1
+
+      - name: Install Maestro
+        run: |
+          if [ ! -x "$HOME/.maestro/bin/maestro" ]; then
+            curl -Ls "https://get.maestro.mobile.dev" | bash
+          fi
+          export PATH="$PATH:$HOME/.maestro/bin"
+          maestro --version
+
+      - name: Run Maestro native flows
+        # ⚡ THE MOST USEFUL THING IN THIS FILE. Five dispatches on 2026-09-20 were spent narrowing a
+        # failure by inference, because the run reported only which assertion failed and never what
+        # was on screen. An assertion says what was ABSENT; the view hierarchy says what was PRESENT,
+        # and it cracked the two hardest failures on its first run each.
+        #
+        # ⛔ Do not diagnose from assertion text. Read the dump.
+        working-directory: apps/mobile
+        run: |
+          export PATH="$PATH:$HOME/.maestro/bin"
+
+          TARGET=".maestro"
+          if [ -n "${{ github.event.inputs.flow }}" ]; then
+            TARGET=".maestro/${{ github.event.inputs.flow }}"
+            echo "Running a single flow: $TARGET"
+          fi
+
+          MAESTRO_EXIT=0
+          maestro test "$TARGET" || MAESTRO_EXIT=$?
+
+          if [ "$MAESTRO_EXIT" -ne 0 ]; then
+            echo "=== Flows failed. Capturing the simulator's final frame. ==="
+            xcrun simctl io booted screenshot .maestro/diag-final-screen.png \
+              || echo "(could not capture the simulator screen)"
+
+            cat > /tmp/dump_hierarchy.py <<'PYEOF'
+          import json, sys
+
+          def walk(node, out):
+              attrs = node.get("attributes") or {}
+              shown = [attrs.get(k) for k in ("accessibilityText", "text", "hintText", "value")]
+              shown = [str(v) for v in shown if v]
+              if shown:
+                  label = " | ".join(dict.fromkeys(shown))
+                  out.append("    %-62s %s" % (label[:62], attrs.get("bounds", "")))
+              for child in (node.get("children") or []):
+                  walk(child, out)
+
+          out = []
+          walk(json.load(open(sys.argv[1], encoding="utf-8")), out)
+          if not out:
+              out = ["    (no text nodes)"]
+          for line in out[:150]:
+              print(line)
+          PYEOF
+
+            echo "=== ON-SCREEN TEXT AT EACH FAILURE (from Maestro's view hierarchy) ==="
+            find "$HOME/.maestro/tests" -type f -name '*.json' -path '*screen-hierarchy*' 2>/dev/null \
+              | head -12 | while read -r h; do
+                  echo ""
+                  echo "--- $(basename "$(dirname "$(dirname "$h")")") / $(basename "$h") ---"
+                  python3 /tmp/dump_hierarchy.py "$h" 2>&1 | head -45
+                done
+
+            echo ""
+            echo "=== All per-failure artifacts ==="
+            find "$HOME/.maestro/tests" -type f \( -name '*.png' -o -name '*.json' \) 2>/dev/null \
+              | tail -40 || echo "(none found)"
+          fi
+
+          exit $MAESTRO_EXIT
+
+      - name: Collect artifacts into the workspace
+        # ⚠️ `actions/upload-artifact` does NOT expand `~` or `$HOME` in `path:` — Codemagic did, and
+        # porting its `$HOME/.maestro/tests/**` line verbatim would have uploaded nothing, silently,
+        # exactly on the runs where the evidence matters. Copy into the workspace first and upload a
+        # relative path.
+        if: always()
+        run: |
+          mkdir -p maestro-artifacts
+          cp -R "$HOME/.maestro/tests" maestro-artifacts/tests 2>/dev/null || echo "(no per-failure tests dir)"
+          cp -R apps/mobile/.maestro/*.png maestro-artifacts/ 2>/dev/null || echo "(no screenshots)"
+          echo "collected:"
+          find maestro-artifacts -type f | head -20
+          echo "total files: $(find maestro-artifacts -type f | wc -l)"
+
+      - name: Upload Maestro artifacts
+        # `always()` — the artifacts matter precisely when the step above failed.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-results
+          path: maestro-artifacts/
+          if-no-files-found: ignore
+          retention-days: 14

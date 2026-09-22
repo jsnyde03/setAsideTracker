@@ -134,38 +134,46 @@ because the gate is about data, not payment. An e2e asserts the absence.
 
 ---
 
-### 📱 **1.2.7 — Native iPad** · **ACTIVE**
+### 🤖 **1.2.14 — Maestro on GitHub Actions** · **ACTIVE**
 
-**Why it is next:** the queue's own row order, now that 1.2.10's upload gates are cleared. ⚠️ **It is
-also the worst fit for the current constraint and that is known going in** — almost all of its
-verification is visual and device-owed, so expect it to bank checks for the one reserved build
-rather than prove them here.
+**Why it is next ([D27], Jason 2026-09-22):** twelve native flows have been stalled since ~August for
+one reason — Codemagic is ~80% consumed — and macOS runners are **free on a public repo**. This
+unblocks them at zero cost *and* takes simulator builds off Codemagic, so the reserved TestFlight
+minutes stretch further.
 
-🔴 **Flipping `supportsTablet` obliges iPad SCREENSHOTS in App Store Connect.** That is a submission
-requirement, not polish — the flip and the store assets ship together or the listing is incomplete.
-
-⚡ **Before-scan 2026-09-22 changed the item's shape: it is NOT as device-owed as promoted.** The
-Playwright suite already runs at **1280×720** — wider than iPad portrait — so the app provably
-survives being wide *functionally*; it is simply not *designed* for it (no `maxWidth` outside
-`LockScreen`/`RecoveryScreen`). **Decision (Jason 2026-09-22): the seam is built on
-`useWindowDimensions`, and iPad viewports join the e2e suite** — live-resize then works by
-construction and .1–.5 are verifiable here, leaving the reserved build to confirm *fidelity* rather
-than discover breakage. ⚠️ **Corrected: 15 screens, not 13** — `RecoveryScreen` (1.2.3) and
-`LockScreen` were never counted. Detail → [V1_2_LOG.md](V1_2_LOG.md).
+⛔ **The port's real payload is not YAML, it is thirteen dispatches of hard-won knowledge** sitting in
+`codemagic.yaml`'s comments: ad-hoc signing (`CODE_SIGN_IDENTITY="-"`, because an unsigned build has
+no entitlements and `expo-secure-store` then cannot save **anything**) · never hardcode a simulator
+name · never swallow a boot failure with `|| true` · `SENTRY_DISABLE_AUTO_UPLOAD` passed as a **build
+setting**, not an env var · and **print every on-screen text node on failure**. Losing any of these
+re-buys it with a run.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.7.1** | ✅ **DONE 2026-09-22.** `supportsTablet: true`; iPad gets all four orientations via **`UISupportedInterfaceOrientations~ipad`** while the iPhone stays portrait — ⛔ **"unlock `orientation`" as written would have let the PHONE rotate.** Gated (`tabletOrientation.test.ts`, 4 plants/4 caught) + the two iPad Playwright projects. **Baseline measured: the dashboard card spans 98–99% of the viewport.** | ✅ |
-| **1.2.7.2** | ✅ **DONE 2026-09-22.** `src/layout.ts` (pure rule, 16 tests) + `useSizeClass.ts` (the hook), wired once in `Screen.tsx`: content caps at a **672pt** reading measure and centres on regular widths, untouched on compact. Measured 1326px → **632px, gutters equal**, at both iPad sizes. 4 plants/4 caught. | ✅ |
-| **1.2.7.3** | ✅ **DONE 2026-09-22.** Two-column band at regular width — money left, insight cards right, entries full-width below ([D25]) — and the dashboard is the first `width="full"` consumer. ⚠️ **Falls back to one centred column when a user has none of the six (all conditional) insight cards**, so a new iPad user never sees an empty half. 3 plants/3 caught. | ✅ |
-| **1.2.7.4** | ✅ **DONE 2026-09-22.** All four sheets capped at 540pt and centred via **one** shared helper (a `Modal` renders outside `Screen`'s seam, so .2's fix could never reach them), and a **12-route sweep** — routes read from `app/`, not hand-listed — asserting no screen spills at either iPad size, with screenshots in `.results/` for review. 🔴 **Its first overflow instrument was VACUOUS** — see the log. 4 plants, 4 caught *(one only after the instrument was fixed, one only after the control was)*. | ✅ |
-| **1.2.7.5** | **Split View / Stage Manager: survive being RESIZED LIVE**, not merely launched wide. Falls out of .2's breakpoint source, and is asserted by resizing the viewport mid-test. | ⬜ |
-| **1.2.7.6** | **Hardware keyboard** — tab order through forms, escape to dismiss a sheet. ⛔ Device-owed. | ⬜ |
-| **1.2.7.7** | **iPad screenshots** for the listing (see the red note above). | ⬜ |
-| **1.2.7.8** | **Verify + whole-item after-scan.** | ⬜ |
+| **1.2.14.1** | ✅ **DONE 2026-09-22.** Probed the runner rather than trusting the docs, which contradict themselves on macOS. **Measured `billable.MACOS.total_ms = 0`.** Image `macos-26-arm64`, Xcode 26.6, 15 iPhone simulators — **no "iPhone 15"**, so the don't-hardcode lesson still bites; the derivation picks iPhone 17. | ✅ |
+| **1.2.14.2** | **Port the workflow** to `.github/workflows/maestro-ios.yml`, carrying every lesson above. Pin Node 22 for parity (runner ships 24). | ⬜ |
+| **1.2.14.3** | **First dispatch = the harness's validation pass, NOT a regression check.** The flows have not run since the `expo-router` migration replaced the whole navigation layer. | ⬜ |
+| **1.2.14.4** | **Answer the three open questions from a real log** — the Premium row in two gating flows · `Settings` not found on the dashboard · demo mode's seeded Uber entry. ⚠️ **Read the text dump, never the assertion text.** | ⬜ |
+| **1.2.14.5** | **Green or triage all 12 flows**, then retire Codemagic's `maestro-ios` workflow so there is one Maestro home, not two. | ⬜ |
+| **1.2.14.6** | **Verify + whole-item after-scan.** | ⬜ |
 
-**Exit line:** the app looks designed for an iPad rather than stretched to fit one, it survives a live
-resize, and the listing has the screenshots the `supportsTablet` flip obliges.
+**Exit line:** the 12 flows run on GitHub Actions at zero cost, the harness questions are answered
+from a log rather than by inference, and Codemagic's remaining minutes are spoken for by TestFlight
+alone.
+
+---
+
+### 📱 **1.2.7 — Native iPad** · ⏸ **PARKED at 4/8, 2026-09-22**
+
+✅ **.1–.4 shipped:** `supportsTablet` + iPad-only orientation (the iPhone stays portrait) · the
+size-class seam on `useWindowDimensions` · the dashboard two-column band · all four sheets capped and
+a 12-route sweep. **Measured 1326px → 632px.** 15 plants, 15 caught — **three of them only after a
+TEST was fixed.**
+
+⛔ **Remaining: .5 live-resize + .8 after-scan are doable here; .6 hardware keyboard and .7 iPad
+screenshots are DEVICE-OWED**, so this item closes the way 1.2.1 did — built, verification banked.
+Parked to take [D27]'s Maestro window while it is fresh. _Detail + 4 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
+
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
 _1.2.1 (parked) and 1.2.10 (active) are not listed here — they are above. 1.2.2–1.2.6 are in
