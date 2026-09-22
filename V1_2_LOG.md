@@ -11,6 +11,56 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.6.3 Safe-harbor payment tracker — after-scan · 2026-09-21 · ✅ DONE
+
+**330 unit (from 321) · 102 engine · 57/57 Playwright (4 new) · typecheck clean · lint 15 unchanged ·
+ports free. 5 plants, 5 caught.**
+
+🔴 **The before-scan found a live v1.1.1 data-loss bug, in this item's own subject area.**
+`EditTaxProfileScreen` rebuilt the saved profile by listing fields **by hand**, and `saveTaxProfile`
+replaces the stored profile wholesale — so every field the list forgot was destroyed on save.
+`amountSetAsideByYear` was carried forward explicitly; `filedTaxByYear`, added later for the
+safe-harbor screen, never was. **Changing one number in the tax profile erased the user's filed
+prior-year tax** — a figure copied off their own 1040, which the app cannot recompute, and which
+powers the usually-cheaper leg of the safe harbor. ⚡ **1.2.6.3 was about to add a third per-year
+field into the identical trap**, which is what made it Category 2 rather than a backlog row. Fixed
+**structurally** — spread the profile, override only what the form edits — so the next field added is
+immune rather than merely remembered.
+
+⚡ **The codebase already knew this failure mode, in the other half of itself.** `AppDataContext.saveEntry`
+restores `setAsideRate` onto an edited entry, with a comment saying the entry form's object literal
+*is* the hazard and that the next screen saving an entry would repeat it. It did — on the other model,
+eighteen months of commits away. Filed a grep sweep for a third instance.
+
+⛔ **[D19]: the plan's stated model shape could not do the item's stated job.** It said to follow
+`amountSetAsideByYear`'s `Record<year, number>`. But safe-harbor penalties are computed **per
+period**, so an annual total reports somebody who paid nothing until January as fully compliant — and
+"payments made vs. required" is a per-quarter claim. Jason took per-quarter. **A plant netting the
+year (`totalPaid >= totalRequired`) instead of checking each period is caught** by the case that
+motivated the decision: $4,000 paid entirely in Q1 covers the annual target while Q2 and Q3 sit unpaid.
+
+⚠️ **`overdue` counts only deadlines already PASSED**, and that is not a nicety. Summing every
+shortfall would tell a user in May they are thousands behind on payments not due until September and
+January — wrong, and alarming in the direction that makes people distrust the number.
+
+🔴 **The e2e found that `onEndEditing` is never reached by a web blur.** The tracker's inputs used it,
+copying the prior-year input above them, and the clearing test failed with the field visibly empty and
+the status still reading "of $187 ✓" — **the screenshot said it, the assertion text did not.** Moved to
+`onBlur`, which fires in both. ⚠️ **The existing prior-year input was left on `onEndEditing`** — it
+works on device, but its persist path is unprovable here, so it went to the backlog rather than being
+changed without coverage.
+
+⚠️ **The backup fixture was a minimal profile carrying none of the per-year fields**, so a round-trip
+through it would have noticed none of them going missing. Added a fully-populated case asserting each
+**against the value that went in** — including that a recorded `0` survives as `0`, since "I paid
+nothing that quarter" and "nothing recorded" are different claims and any `?? 0` on that path erases
+the distinction.
+
+**The demo seed asks the engine, as it already did for the set-aside.** Every deadline already passed
+is seeded paid in full, computed at seed time rather than pinned to specific quarters — so the persona
+reads "nothing overdue" whatever date the demo is opened on. A demo that greets a visitor with a
+penalty warning would be showing the feature working against the person it is meant to reassure.
+
 ### 🔎 1.2.6.1 Per-quarter amount on the dashboard — after-scan · 2026-09-21 · ✅ DONE
 
 **321 unit · 53/53 Playwright (3 new) · typecheck clean · lint 15 unchanged · ports free.

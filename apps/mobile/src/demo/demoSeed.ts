@@ -1,6 +1,7 @@
-import { computeSetAsideRate, computeTaxEstimate } from "../calculations";
+import { computeSafeHarborFromEntries, computeSetAsideRate, computeTaxEstimate } from "../calculations";
+import { summarizeQuarterlyPayments } from "../quarterlyPayments";
 import type { DemoSeed } from "../storage/repository";
-import type { CustomExpense, Entry, GigPlatform, MileageLog, TaxProfile } from "../types";
+import type { CustomExpense, Entry, GigPlatform, MileageLog, QuarterlyPayments, TaxProfile } from "../types";
 
 /**
  * The demo persona: **Maya Rodriguez**, a Los Angeles gig worker (rideshare + delivery) who also
@@ -265,6 +266,17 @@ export function buildDemoSeed(now: Date = new Date()): DemoSeed {
   const target = computeTaxEstimate(ratedEntries, taxProfile, year).netAmountToSetAside;
   const amountSetAside = Math.ceil((target + DEMO_SET_ASIDE_BUFFER) / 10) * 10;
 
+  // The payment tracker ([D19]) needs something to show, and for the same reason as above it asks
+  // the engine rather than restating a figure measured once. **Every deadline that has already
+  // passed is paid in full**, computed at seed time rather than hardcoded to specific quarters — so
+  // the persona reads "nothing overdue" whatever date the demo is opened on, which is the same
+  // property `amountSetAside` is protecting. A demo that greets a visitor with a penalty warning
+  // would be showing them the feature working against the one person it is meant to reassure.
+  const perQuarter = Math.round(computeSafeHarborFromEntries(ratedEntries, taxProfile, year).perQuarter);
+  const paidQuarters = summarizeQuarterlyPayments(perQuarter, undefined, year)
+    .quarters.filter((quarter) => quarter.isPast)
+    .reduce<QuarterlyPayments>((acc, quarter) => ({ ...acc, [quarter.key]: perQuarter }), {});
+
   return {
     localUserProfile: {
       id: "demo-user",
@@ -272,7 +284,11 @@ export function buildDemoSeed(now: Date = new Date()): DemoSeed {
       email: "maya.rodriguez@example.com",
       createdAt: `${year}-01-05T10:00:00.000Z`,
     },
-    taxProfile: { ...taxProfile, amountSetAsideByYear: { [year]: amountSetAside } },
+    taxProfile: {
+      ...taxProfile,
+      amountSetAsideByYear: { [year]: amountSetAside },
+      estimatedPaymentsByYear: { [year]: paidQuarters },
+    },
     entries: ratedEntries,
     appSettings: {
       appLockEnabled: false,

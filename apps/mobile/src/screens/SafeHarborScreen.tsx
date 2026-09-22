@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import type { Entry, FiledYearTax, TaxProfile } from "../types";
 import { computeSafeHarborFromEntries, computeTaxEstimate, entriesForYear } from "../calculations";
+import { QUARTER_KEYS, summarizeQuarterlyPayments, type QuarterKey } from "../quarterlyPayments";
 import { Screen } from "../components/Screen";
 import { radius, shadow, shadowSm, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
@@ -14,6 +15,8 @@ interface SafeHarborScreenProps {
   onClose: () => void;
   /** Persists the user's prior-year filed figures (keyed by the year they describe — i.e. last year). */
   onUpdateFiledTax: (year: number, filed: FiledYearTax) => void;
+  /** Records a 1040-ES payment against one quarter ([D19]); `undefined` clears the entry. */
+  onUpdateQuarterlyPayment: (year: number, quarter: QuarterKey, amount: number | undefined) => void;
 }
 
 function formatCurrency(amount: number, fractionDigits = 0): string {
@@ -42,7 +45,13 @@ function parseAmount(text: string): number | undefined {
  * — with a suggestion derived from the app's own prior-year data when that exists. All the rules live
  * in computeSafeHarbor; this is a thin view + one persisted input.
  */
-export function SafeHarborScreen({ entries, taxProfile, onClose, onUpdateFiledTax }: SafeHarborScreenProps) {
+export function SafeHarborScreen({
+  entries,
+  taxProfile,
+  onClose,
+  onUpdateFiledTax,
+  onUpdateQuarterlyPayment,
+}: SafeHarborScreenProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const year = new Date().getFullYear();
@@ -72,6 +81,27 @@ export function SafeHarborScreen({ entries, taxProfile, onClose, onUpdateFiledTa
     const est = computeTaxEstimate(entries, taxProfile, priorYear).estimate;
     return Math.max(0, est.totalEstimatedTax - est.stateTax.stateTax);
   }, [entries, taxProfile, priorYear]);
+
+  // ─── Payments made vs. required ([D19]) ────────────────────────────────────────────────────────
+  const storedPayments = taxProfile.estimatedPaymentsByYear?.[year];
+  const payments = useMemo(
+    () => summarizeQuarterlyPayments(result.perQuarter, storedPayments, year),
+    [result.perQuarter, storedPayments, year]
+  );
+  // Local text mirrors of the four stored figures, so a half-typed "12" isn't parsed to $12 and
+  // written on every keystroke. Committed on blur, exactly like the prior-year input above.
+  const [paymentInputs, setPaymentInputs] = useState<Record<QuarterKey, string>>(() =>
+    QUARTER_KEYS.reduce(
+      (acc, key) => ({ ...acc, [key]: storedPayments?.[key] !== undefined ? String(storedPayments[key]) : "" }),
+      {} as Record<QuarterKey, string>
+    )
+  );
+
+  function persistPayment(quarter: QuarterKey, text: string) {
+    // A cleared field clears the record rather than storing 0 — "nothing recorded" and "I paid
+    // nothing" are different claims, and only the user can say which one they mean.
+    onUpdateQuarterlyPayment(year, quarter, parseAmount(text));
+  }
 
   function persistPriorYear(totalTaxText: string, agiText: string) {
     const totalTax = parseAmount(totalTaxText);
@@ -229,6 +259,74 @@ export function SafeHarborScreen({ entries, taxProfile, onClose, onUpdateFiledTa
               )}
             </View>
 
+            {/* Payments made vs. required ([D19]). Only worth showing once there is a target to
+                track against — with nothing owed, four empty boxes are a chore, not an answer. */}
+            {result.estimatedPaymentsNeeded > 0 && (
+              <View style={styles.inputCard}>
+                <Text style={styles.inputCardTitle}>What you've paid ({year})</Text>
+                <Text style={styles.inputCardHint}>
+                  Record each 1040-ES payment as you make it. ⚠️ This is money you've actually sent
+                  the IRS — not what you've set aside in savings, which the dashboard tracks
+                  separately. You can be fully set aside and still owe a penalty for not paying.
+                </Text>
+
+                {payments.quarters.map((quarter) => (
+                  <View key={quarter.key} style={styles.paymentRow}>
+                    <View style={styles.paymentLabels}>
+                      <Text style={styles.paymentQuarter}>Q{quarter.quarter}</Text>
+                      <Text style={styles.paymentDue}>
+                        due {quarter.dueDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </Text>
+                    </View>
+                    <View style={styles.paymentInputRow}>
+                      <Text style={styles.inputPrefix}>$</Text>
+                      <TextInput
+                        style={styles.paymentInput}
+                        value={paymentInputs[quarter.key]}
+                        onChangeText={(text) =>
+                          setPaymentInputs((previous) => ({ ...previous, [quarter.key]: text }))
+                        }
+                        // ⚠️ `onBlur`, not `onEndEditing` like the prior-year input above. The
+                        // latter is never reached by a web blur, so a value typed here was only
+                        // committed on a device — leaving the whole persistence path unverifiable
+                        // by the only suite that runs on this machine. `onBlur` fires in both.
+                        onBlur={() => persistPayment(quarter.key, paymentInputs[quarter.key])}
+                        keyboardType="decimal-pad"
+                        placeholder="—"
+                        placeholderTextColor={colors.inkFaint}
+                        accessibilityLabel={`Paid for Q${quarter.quarter}`}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.paymentStatus,
+                        quarter.isPast && quarter.shortfall > 0 && styles.paymentStatusLate,
+                      ]}
+                    >
+                      {quarter.shortfall === 0
+                        ? `of ${formatCurrency(quarter.required)} ✓`
+                        : quarter.isPast
+                          ? `${formatCurrency(quarter.shortfall)} short`
+                          : `of ${formatCurrency(quarter.required)}`}
+                    </Text>
+                  </View>
+                ))}
+
+                {/* Only past deadlines count. Summing every unpaid quarter would tell someone in
+                    May they are thousands behind on payments not due until January. */}
+                {payments.overdue > 0 ? (
+                  <Text style={[styles.paymentSummary, styles.paymentStatusLate]}>
+                    You're {formatCurrency(payments.overdue)} short on payments that were already due.
+                    Paying it now reduces the penalty, which accrues by the day.
+                  </Text>
+                ) : (
+                  <Text style={styles.paymentSummary}>
+                    Nothing overdue — every deadline that's passed is covered.
+                  </Text>
+                )}
+              </View>
+            )}
+
             <Text style={styles.sectionHeader}>How this works</Text>
             <Text style={styles.bodyText}>
               To avoid the federal underpayment penalty you generally need to pay in — through
@@ -342,6 +440,23 @@ function createStyles(colors: Colors) {
     breakdownTotalLabel: { ...type.body, color: colors.ink, fontWeight: "700" },
     breakdownTotalValue: { ...type.body, color: colors.primary, fontWeight: "800" },
     perQuarter: { ...type.micro, color: colors.inkSubtle, marginTop: spacing.sm, lineHeight: 16 },
+  paymentRow: { flexDirection: "row", alignItems: "center", marginTop: spacing.md, gap: spacing.sm },
+  paymentLabels: { width: 74 },
+  paymentQuarter: { ...type.caption, color: colors.ink, fontWeight: "600" },
+  paymentDue: { ...type.micro, color: colors.inkFaint },
+  paymentInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+  },
+  paymentInput: { ...type.body, color: colors.ink, flex: 1, paddingVertical: spacing.sm },
+  paymentStatus: { ...type.micro, color: colors.inkSubtle, width: 96, textAlign: "right" },
+  paymentStatusLate: { color: colors.danger },
+  paymentSummary: { ...type.micro, color: colors.inkSubtle, marginTop: spacing.md, lineHeight: 16 },
 
     safeCard: {
       flexDirection: "row",

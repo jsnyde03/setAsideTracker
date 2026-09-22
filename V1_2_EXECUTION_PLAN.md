@@ -27,12 +27,14 @@
 > ([D3]), decomposed below — pure JS, so every line is verifiable here. ✅ **1.2.6.2 is DONE** (the due-date
 > shift; its after-scan folded in a launch-time refresh without which the fix reached no existing
 > install). ✅ **1.2.6.1 is DONE** — the amount is on the dashboard, premium, beside a free date.
-> **▶ Next action: 1.2.6.3**, the safe-harbor payment tracker (payments made vs. required). ⚠️ It
-> needs a **per-year payments-made model**; `amountSetAsideByYear` is the shape to follow.
+> ✅ **1.2.6.3 is DONE** — the payment tracker ([D19]: per-quarter), plus a **live v1.1.1 data-loss
+> fix** its before-scan found: editing the tax profile erased `filedTaxByYear`.
+> **▶ Next action: 1.2.6.4**, the shift/earnings optimizer — 1.2.6's headline, pulled from v1.3.
+> ⚠️ Soft-gate below ~30 entries; **the demo persona is what makes it demoable** (it seeds 20).
 > ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
 > worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
-> Health: **321** mobile unit · **102** engine · **53/53** Playwright · typecheck clean · both tax-config
+> Health: **330** mobile unit · **102** engine · **57/57** Playwright · typecheck clean · both tax-config
 > gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
@@ -145,7 +147,7 @@ blur or remove anything already free. An item that fails that test is cut, not s
 |---|---|---|
 | **1.2.6.2** | ✅ **DONE 2026-09-21 — the IRS due-date business-day shift.** Dates now move past weekends, MLK Day and Emancipation Day; **the after-scan folded in a launch-time refresh**, without which the fix reached nobody already installed and the reminder queue drained after a year. **321 unit · 7 plants, 7 caught.** | ✅ |
 | **1.2.6.1** | ✅ **DONE 2026-09-21 — the per-quarter amount on the dashboard's due-date row**, premium, beside a date that stays free. Labelled as a projection. **53/53 Playwright (3 new) · 4 plants, 3 caught** — the one that passed is recorded as a coverage gap, not a pass. | ✅ |
-| **1.2.6.3** | **Safe-harbor payment tracker** — payments made vs. required, completing what v1.1 half-built. Needs a per-year payments-made model; `amountSetAsideByYear` is the shape to follow. ⚠️ **Depended on 1.2.2's safe-harbor fix** — built on the old maths this would have tracked payments against a target that said "no penalty expected" all spring. | ⬜ |
+| **1.2.6.3** | ✅ **DONE 2026-09-21 — the safe-harbor payment tracker.** Paid vs. required per quarter ([D19]), counting only deadlines already passed. 🔴 **Also fixed a live v1.1.1 data-loss bug** the before-scan found: editing the tax profile erased `filedTaxByYear`. **330 unit · 57/57 Playwright · 5 plants, 5 caught.** | ✅ |
 | **1.2.6.4** | **Shift/earnings optimizer** — the headline, pulled from v1.3, and the owed earning-optimization repositioning. Soft-gate below ~30 entries; **demo mode is what makes it demoable**. | ⬜ |
 | **1.2.6.5** | **Expense-breakdown drill-down.** | ⬜ |
 | **1.2.6.6** | **Verify + whole-item after-scan.** ⚠️ **Do not assert absolute dollar figures** — 1.2.2 and 1.2.4 both moved what the demo seed produces. | ⬜ |
@@ -264,6 +266,7 @@ map is at the head of the log's item-spec section._
 | **[D16]** | **`docs/privacy.html` is the single privacy policy; the markdown copy is retired.** It is already what the app links to, what App Store Connect points at and what the code comments treat as canonical. **Rejected keeping both in sync via a generator** — the drift that prompted this was a *factual* contradiction about third-party data sharing, and the fix for that is one document, not tooling that keeps two. ⚠️ Three places state the same claims and all must move together: the policy, the App Store Connect privacy labels, and the permission usage strings in `app.json`. | Jason 2026-09-21 |
 | **[D17]** | **The tracker keeps measuring while the app is off screen — `UIBackgroundModes: location` plus the visible iOS indicator, on WHEN-IN-USE permission. No "Always" prompt, so [D8]'s line holds.** ⛔ **The alternative was a tracker that under-counts by design:** a gig worker's phone shows the delivery app, not this one, so foreground-only capture would quietly miss most of the drive — and under-claiming a deduction is the same shape of defect as the three understating bugs 1.2.2 exists to fix. Accepted costs: a TaskManager background task, more App Store review scrutiny, and **nothing here is provable without a device**. ⚠️ **Android stays foreground-only** — its background-location permission is a separately justified Play review and Android ships in v1.3. | Jason 2026-09-21 |
 | **[D18]** | **The per-quarter figure goes on the DASHBOARD; the reminder notification carries no dollar amount.** A notification body is frozen when it is scheduled — only at onboarding or a Settings toggle, never on dashboard mount — and the OS delivers it up to a year later, while `perQuarter` moves with every entry logged. **A stale figure beside a payment instruction is the same defect class 1.2.6.2 exists to remove.** The existing "check your dashboard" pointer is the one part of a months-old message still true when it fires, and it routes to a number that recomputed today. Also sidesteps two entitlement edges: a lapsed subscriber still delivered premium content, and a later subscriber who is not. | Jason 2026-09-21 |
+| **[D19]** | **The payments-made model is PER-QUARTER, not a per-year total.** The plan said to follow `amountSetAsideByYear`'s `Record<year, number>` shape. ⛔ **That shape cannot answer the question the tracker exists to answer:** safe-harbor penalties are computed per period, so a single annual figure reports a user who paid nothing until January as fully compliant. Stored as `Record<year, { q1?, q2?, q3?, q4? }>`, checked against the four due dates 1.2.6.2 corrected. **Rejected the richer per-payment shape with dates** — it only pays for itself in an actual underpayment-penalty calculation, which v1.2 is not doing. | Jason 2026-09-21 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
@@ -290,6 +293,20 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.6.3 _(2026-09-21)_
+
+- 🔴 **`onEndEditing` is never reached by a web blur, so the prior-year filed-tax input's persist
+  path is unverified here.** Found because the payment tracker's own inputs used it and the e2e
+  proved they never committed; those moved to `onBlur`, the **existing** input on
+  `SafeHarborScreen` was left alone rather than changed without coverage. It works on device — the
+  gap is in what this machine can prove. Either move it to `onBlur` with a test, or make it a
+  device-checklist row.
+- **Sweep for other screens that rebuild a persisted object field-by-field.** Two are known: the
+  tax-profile form (fixed here) and the entry form, whose dropped `setAsideRate` is restored in
+  `AppDataContext.saveEntry` with a comment describing this exact hazard. ⚡ **The codebase already
+  knew this failure mode in one place and not the other** — worth one grep at 1.2.11 rather than
+  waiting for the third instance.
 
 ### From 1.2.6.1 _(2026-09-21)_
 

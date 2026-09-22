@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Entry, FiledYearTax, LocalUserProfile, TaxProfile } from "../types";
 import { reportError } from "../errorReporting";
 import { computeSetAsideRate } from "../calculations";
+import type { QuarterKey } from "../quarterlyPayments";
 import {
   addEntry,
   clearAllLocalData,
@@ -44,6 +45,8 @@ interface AppDataValue {
   saveTaxProfile: (taxProfile: TaxProfile) => Promise<void>;
   updateAmountSetAside: (year: number, amount: number) => Promise<void>;
   updateFiledTax: (year: number, filed: FiledYearTax) => Promise<void>;
+  /** Records a 1040-ES payment for one quarter ([D19]). `undefined` clears it. */
+  updateQuarterlyPayment: (year: number, quarter: QuarterKey, amount: number | undefined) => Promise<void>;
   setAppLockEnabled: (enabled: boolean) => Promise<void>;
   setRemindersEnabled: (enabled: boolean) => Promise<void>;
   clearAllData: () => Promise<void>;
@@ -207,6 +210,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [taxProfile]
   );
 
+  /**
+   * Records what the user paid toward one quarter's 1040-ES deadline ([D19]).
+   *
+   * ⚠️ `undefined` **clears** the entry rather than storing a zero, and the two are different
+   * claims: nothing-recorded versus "I paid nothing". `summarizeQuarterlyPayments` reports the
+   * shortfall identically for both — the distinction is so the screen can say which it is.
+   */
+  const updateQuarterlyPayment = useCallback(
+    async (year: number, quarter: QuarterKey, amount: number | undefined) => {
+      if (!taxProfile) return;
+      const forYear = { ...taxProfile.estimatedPaymentsByYear?.[year] };
+      if (amount === undefined) delete forYear[quarter];
+      else forYear[quarter] = amount;
+
+      const updated: TaxProfile = {
+        ...taxProfile,
+        estimatedPaymentsByYear: { ...taxProfile.estimatedPaymentsByYear, [year]: forYear },
+      };
+      await persistTaxProfile(updated);
+      setTaxProfile(updated);
+    },
+    [taxProfile]
+  );
+
   // ⛔ These two used to set state BEFORE awaiting the write, and nothing rolled them back. The
   // caller alerts on the failure, but the switch stayed where the user put it — so a failed write
   // left someone looking at an App Lock they did not have, believing their financial data was
@@ -297,6 +324,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       saveTaxProfile,
       updateAmountSetAside,
       updateFiledTax,
+      updateQuarterlyPayment,
       setAppLockEnabled,
       setRemindersEnabled,
       clearAllData,
@@ -321,6 +349,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       saveTaxProfile,
       updateAmountSetAside,
       updateFiledTax,
+      updateQuarterlyPayment,
       setAppLockEnabled,
       setRemindersEnabled,
       clearAllData,

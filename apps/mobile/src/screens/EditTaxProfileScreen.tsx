@@ -113,6 +113,17 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
     const ytdStateAmount = Math.max(0, parseFloat(w2YtdStateWithheld) || 0);
 
     onSave({
+      // ⛔ **Spread FIRST, then override only what this form edits.** `saveTaxProfile` replaces the
+      // stored profile wholesale, so every field this object omits is destroyed. Listing them by
+      // hand is what went wrong: `amountSetAsideByYear` was carried forward explicitly and
+      // `filedTaxByYear` — added later, for the safe-harbor screen — was not, so editing anything
+      // here silently erased the user's filed prior-year tax. That figure comes off their 1040 and
+      // the app cannot recompute it. Live in v1.1.1; found at 1.2.6.3's before-scan, which was
+      // about to add a third per-year field into the same trap.
+      //
+      // ⚠️ The explicit `undefined`s below still clear their fields — spread does not protect them,
+      // which is the behaviour the MFJ and W2 branches rely on.
+      ...taxProfile,
       filingStatus,
       dependents: Math.max(0, parseInt(dependents, 10) || 0),
       // Cleared when not filing jointly, so switching away from MFJ drops the figure rather than
@@ -129,7 +140,6 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
       w2YtdStateWithheld: hasW2Job && ytdStateAmount > 0 ? ytdStateAmount : undefined,
       state: state.trim().toUpperCase(),
       county,
-      amountSetAsideByYear: taxProfile.amountSetAsideByYear,
     });
   }
 

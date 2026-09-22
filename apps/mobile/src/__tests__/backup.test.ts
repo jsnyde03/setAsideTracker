@@ -44,6 +44,38 @@ describe("buildBackupSnapshot + parseBackupSnapshot round-trip", () => {
     expect(parsed.version).toBe(1);
   });
 
+  it("carries every optional per-year field on the tax profile", () => {
+    // ⚠️ The fixture above is a MINIMAL profile — no per-year records at all — so it would notice
+    // none of these going missing. A backup silently dropping `filedTaxByYear` or the payment record
+    // loses figures the user copied off their own 1040 and cannot be recomputed from anything the
+    // app holds. Asserted field by field against the values that went IN, never against a second
+    // trip through the writer, which would agree with itself about anything it dropped.
+    const populated: TaxProfile = {
+      ...taxProfile,
+      amountSetAsideByYear: { 2026: 1500 },
+      filedTaxByYear: { 2025: { totalTax: 3400, agi: 180000 } },
+      estimatedPaymentsByYear: { 2026: { q1: 800, q2: 0 } },
+    };
+
+    const parsed = parseBackupSnapshot(
+      JSON.stringify(
+        buildBackupSnapshot({
+          localUserProfile: profile,
+          taxProfile: populated,
+          entries,
+          appSettings: { appLockEnabled: false },
+        })
+      )
+    );
+
+    expect(parsed.taxProfile?.amountSetAsideByYear).toEqual({ 2026: 1500 });
+    expect(parsed.taxProfile?.filedTaxByYear).toEqual({ 2025: { totalTax: 3400, agi: 180000 } });
+    // A recorded zero has to survive as a zero: it is the user saying "I paid nothing that quarter",
+    // which is a different claim from the absent q3/q4, and `?? 0` anywhere on this path erases it.
+    expect(parsed.taxProfile?.estimatedPaymentsByYear).toEqual({ 2026: { q1: 800, q2: 0 } });
+    expect(parsed.taxProfile).toEqual(populated);
+  });
+
   it("round-trips a never-onboarded snapshot (null profiles, empty entries)", () => {
     const snapshot = buildBackupSnapshot({
       localUserProfile: null,

@@ -61,6 +61,32 @@ export interface TaxProfile {
    * the app can't know a return it didn't compute. Used only by the safe-harbor (Form 2210)
    * calculator. See {@link FiledYearTax}. */
   filedTaxByYear?: Record<number, FiledYearTax>;
+  /**
+   * Estimated tax payments the user has actually **sent the IRS**, keyed by tax year and then by
+   * quarter. Self-reported, like everything else here — the app cannot see a 1040-ES payment.
+   *
+   * ⚠️ **Not the same money as {@link amountSetAsideByYear}, and the distinction is the point.**
+   * That field is savings: money moved aside, still in the user's account. This one has left it.
+   * A user can be fully set aside and still owe an underpayment penalty for never having paid.
+   *
+   * ⛔ **Per-quarter, not a per-year total ([D19]).** Safe-harbor penalties are computed per period,
+   * so an annual figure cannot answer the question this exists to answer — somebody who paid
+   * nothing until January would report as fully compliant. See {@link QuarterlyPayments}.
+   */
+  estimatedPaymentsByYear?: Record<number, QuarterlyPayments>;
+}
+
+/**
+ * What the user has paid toward each of a tax year's four 1040-ES deadlines. Every quarter is
+ * optional and absence means **"nothing recorded"**, which is deliberately not the same claim as
+ * `0` ("I paid nothing"): the tracker says *unrecorded* for the former and calls out a real
+ * shortfall only for the latter or for a past-due quarter.
+ */
+export interface QuarterlyPayments {
+  q1?: number;
+  q2?: number;
+  q3?: number;
+  q4?: number;
 }
 
 /**
