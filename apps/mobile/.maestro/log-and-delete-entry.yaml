@@ -48,6 +48,13 @@ name: Log + delete entry (native picker + confirm dialog)
     centerElement: true
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
+# 1.2.14.5: the entry list is BELOW THE FOLD on today's dashboard — the save now works and the
+# hierarchy showed the dashboard at scroll 0% of 2 pages, with content running to y=920 on an
+# 874-tall screen. Same root cause as Save Entry: the flows were written against a smaller app.
+- scrollUntilVisible:
+    element:
+      text: "Edit DoorDash entry.*"
+    direction: DOWN
 - assertVisible:
     text: "Edit DoorDash entry.*"
 
@@ -65,5 +72,17 @@ name: Log + delete entry (native picker + confirm dialog)
     centerElement: true
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
+# ⛔ 1.2.14.5: this absence assertion was VACUOUS and pre-dates this item. The entry list sits below
+# the fold, so "Edit DoorDash entry" is not visible whether or not the delete worked — the flow
+# would pass over a delete that silently did nothing. Assert the empty state POSITIVELY first; that
+# string only renders when the list is genuinely empty, so it cannot be satisfied by scroll
+# position. The assertNotVisible stays as the direct statement of intent, now with a real control
+# in front of it.
+- scrollUntilVisible:
+    element:
+      text: "No entries yet.*"
+    direction: DOWN
+- assertVisible:
+    text: "No entries yet.*"
 - assertNotVisible:
     text: "Edit DoorDash entry.*"
