@@ -359,6 +359,23 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
 
+### From 1.2.14.5, the night the suite went green _(2026-09-23)_
+
+- 🔴 **Why does a NUMERIC keypad follow the state field?** The screen's only numeric input is
+  `Dependents` and nothing taps it; `StatePicker` sets no `keyboardType`. It cost 10 flows a run and
+  is worked around, not explained. **If focus really does jump to Dependents, a real user typing
+  their state gets the wrong keyboard.** The workflow dump now reports which node holds focus, so
+  the next failure there answers it for free.
+- ⚠️ **16 taps are immediately followed by a `scrollUntilVisible` with no settle.** One of them was
+  the last failure of the night. The other 15 pass and were deliberately left alone; the remedy is
+  written (`assertVisible` the destination, then `waitForAnimationToEnd`) if one ever flakes.
+- ⚙️ **Characterise the flakiness — first hard number: 1 in 6.** `onboarding.yaml` ran six times in
+  run `35821966222` and failed once, same bytes, same machine, same run. Previously only measurable
+  across runs and therefore confounded with edits.
+- 💰 **Cache the built `.app` — now the biggest lever left.** Eight runs tonight each spent ~35 min
+  building to exercise a few minutes of flows. ⛔ **Key it on the source hash**: a stale-binary cache
+  is the exact failure this portfolio has already paid for twice.
+
 ### From the repo-visibility check _(2026-09-22)_
 
 - 🔴 **[D16] is TRUE IN THIS REPO AND FALSE IN THE WORLD → 1.2.13 (promoted, ship blocker).**

@@ -11,6 +11,49 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.14.5 The suite went 2/12 → 11/12 in one night · 2026-09-23
+
+**Eight runs. 2/12 (the historical best) → harness failures → 1 → 7 → 10 → 11.** Nothing the app
+does was ever wrong. **Every defect was in the instrument**, and three of them were checks that
+could not do their job.
+
+**The arc, in the order each blocker was removed:**
+
+| # | blocker | what it actually was |
+|---|---|---|
+| 1 | `centerElement` | 5 forced centring iterations on a target at scroll 100% that can never be centred; passing depended on a 6th fitting in 20s |
+| 2 | two runs, zero flows | Maestro's XCUITest driver on a runner **4.5× slower than the last one** — 7m13s to boot a simulator vs 1m36s |
+| 3 | `hideKeyboard` ×10 | a NUMERIC keypad on screen, which has no Done key ⚠️ **why it is numeric is still unexplained** |
+| 4 | 11 selectors, 6 flows | a wrapper's `accessibilityLabel` **replaces every word inside it** |
+| 5 | 4 flows | header controls asserted from a scrolled-down position |
+| 6 | demo mode | a swipe sent into a route transition moves nothing |
+
+⛔ **Three checks were incapable of failing, and all three guarded something that matters:**
+- `assertNotVisible` on the demo banner's **visible** text — a string Maestro can never see, so it
+  passed every run while proving nothing about whether demo mode had exited.
+- `clear-all-data` proved a destructive clear by the **absence** of an entry, from a scroll position
+  where that entry is off screen whether it was cleared or sitting there intact. **A clear that did
+  nothing would have gone green.** Now asserts the empty state by name.
+- `assertVisible: "automatically renews"` — a fragment of a one-sentence disclosure, so a **full-match
+  selector could never match it.** It guards Apple **Guideline 3.1.2**. Wildcarded, and it now
+  passes, which is the first evidence the disclosure is actually on the paywall.
+
+⚡ **The pattern behind all three: they were written against what a human sees, on surfaces nothing
+had ever run.** Every one was reached for the first time tonight.
+
+**Harness hardening, all of it earned by a failure:** `MAESTRO_DRIVER_STARTUP_TIMEOUT=600000` · an
+automatic **restart-and-retry when no flow ran** (a real flow failure deliberately does *not* retry)
+· a banner that makes a harness failure unmistakable, which **fired on its first run** · and the
+dump now reports **which node holds focus**, printing every attribute key rather than guessing the
+schema.
+
+⛔ **Two instruments lied during this and both were caught before shipping:** the retry plant's stub
+ran in a pipeline subshell so its counter never incremented and all four scenarios took one branch,
+and a selector rewrite wrote single backslashes that YAML rejects — caught by a parse check one
+dispatch before it would have cost 40 minutes.
+
+⚠️ **And one claim of mine was withdrawn the same night** — see the correction in the entry below.
+
 ### 🔎 1.2.14.5 `centerElement` — ONE bug behind three symptoms · 2026-09-23 · ⏳ run `35813422434`
 
 ⚡ **The lead was right, and the mechanism came from Maestro's source rather than from the failure
