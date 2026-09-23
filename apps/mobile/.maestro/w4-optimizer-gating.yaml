@@ -24,7 +24,6 @@ name: W-4 optimizer gating (locked card → paywall)
     element:
       text: "State you primarily work in"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - tapOn: "e.g. CA"
 - inputText: "TX"
@@ -35,21 +34,18 @@ name: W-4 optimizer gating (locked card → paywall)
     element:
       text: "I understand this app provides estimates, not tax advice"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - tapOn: "I understand this app provides estimates, not tax advice"
 - scrollUntilVisible:
     element:
       text: "Continue"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - tapOn: "Continue"
 - scrollUntilVisible:
     element:
       text: "Set aside for taxes"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 
@@ -87,7 +83,6 @@ name: W-4 optimizer gating (locked card → paywall)
     element:
       text: "Set aside for taxes"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 
@@ -96,7 +91,6 @@ name: W-4 optimizer gating (locked card → paywall)
     element:
       text: "Skip quarterly payments.*Premium"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - tapOn:
     text: "Skip quarterly payments.*Premium"

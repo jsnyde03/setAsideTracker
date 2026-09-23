@@ -17,11 +17,19 @@ name: Onboarding → Dashboard
 # "Maestro Tester TX", the state field empty, and a native "State required" alert on screen.
 # That is why every flow "failed to reach the dashboard": onboarding was never valid.
 - hideKeyboard
+# ⛔ NO FLOW IN THIS SUITE USES `centerElement`, and the reason is in Maestro's own loop
+# (Orchestra.kt): while `centerElement` is set it accepts ONLY a near-centre element for the first
+# 5 iterations — `maxRetryCenterCount = 4` — and falls through to the plain visibility check on the
+# 6th. A target in the last screenful CANNOT be centred, because a further DOWN swipe at scroll
+# 100% moves nothing, so those 5 iterations are guaranteed to fail and the step passes only if a
+# 6th fits inside the 20s timeout. Each iteration costs a view-hierarchy fetch, so whether it fits
+# is a coin flip — which is why an untouched flow passed four runs and failed the fifth. Without it
+# the same step succeeds on iteration 1: `visibilityPercentage` defaults to 100, so the element is
+# already proven fully on screen before anything taps it.
 - scrollUntilVisible:
     element:
       text: "State you primarily work in"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - tapOn: "e.g. CA"
 - inputText: "TX"
@@ -33,7 +41,6 @@ name: Onboarding → Dashboard
     element:
       text: "I understand this app provides estimates, not tax advice"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 # Disclaimer checkbox — matched by the Pressable's accessibilityLabel.
 - tapOn: "I understand this app provides estimates, not tax advice"
@@ -41,7 +48,6 @@ name: Onboarding → Dashboard
     element:
       text: "Continue"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - tapOn: "Continue"
 # 🔎 DIAGNOSTIC (2026-09-20). Two hypotheses produce an identical "Your earnings is not
@@ -65,6 +71,5 @@ name: Onboarding → Dashboard
     element:
       text: "Set aside for taxes"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"

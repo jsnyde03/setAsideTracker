@@ -32,7 +32,6 @@ name: Expense breakdown gating (locked card → paywall)
     element:
       text: "Mileage (business miles driven)"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - tapOn: "Mileage (business miles driven)"
 - inputText: "500"
@@ -64,7 +63,6 @@ name: Expense breakdown gating (locked card → paywall)
     element:
       text: "Set aside for taxes"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 
@@ -73,7 +71,6 @@ name: Expense breakdown gating (locked card → paywall)
     element:
       text: "Expense breakdown.*Premium"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - tapOn:
     text: "Expense breakdown.*Premium"

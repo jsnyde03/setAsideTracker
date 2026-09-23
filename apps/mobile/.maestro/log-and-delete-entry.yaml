@@ -45,7 +45,6 @@ name: Log + delete entry (native picker + confirm dialog)
     element:
       text: "Set aside for taxes"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 # 1.2.14.5: the entry list is BELOW THE FOLD on today's dashboard — the save now works and the
@@ -69,7 +68,6 @@ name: Log + delete entry (native picker + confirm dialog)
     element:
       text: "Set aside for taxes"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 # ⛔ 1.2.14.5: this absence assertion was VACUOUS and pre-dates this item. The entry list sits below

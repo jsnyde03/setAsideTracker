@@ -44,7 +44,6 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
     element:
       text: "Set aside for taxes"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 
@@ -90,7 +89,6 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
     element:
       text: "Set aside for taxes"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 
@@ -99,7 +97,6 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
     element:
       text: "Year-over-year insights.*Premium"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - tapOn:
     text: "Year-over-year insights.*Premium"

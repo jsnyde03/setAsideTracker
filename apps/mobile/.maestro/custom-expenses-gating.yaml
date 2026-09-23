@@ -16,7 +16,6 @@ name: Custom expense categories gating (native Alert → paywall)
     element:
       text: "Custom expense categories.*Premium"
     direction: DOWN
-    centerElement: true
 - waitForAnimationToEnd
 - tapOn:
     text: "Custom expense categories.*Premium"
