@@ -140,7 +140,7 @@ design pass rather than code; starting it now would mean stopping for him immedi
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.9.1** | **The label-shadowing sweep** — every wrapper whose `accessibilityLabel` swallows its children, enumerated MECHANICALLY (a hand list undercounts here every time). Decide per site: is the spoken name better, or just different? | ⬜ |
+| **1.2.9.1** | ✅ **DONE 2026-09-23. 26 sites, not the ~12 counted by eye**, and three were lossy: the Subscribe button never spoke its **price**, the restore row never spoke that it **replaces everything**, the safe-harbor suggestion never spoke its **amount** — plus five cards naming the feature internally instead of the headline on screen. Kept as a **structural gate** (+4 unit). 12/12 Maestro. _Detail → [V1_2_LOG.md](V1_2_LOG.md)._ | ✅ |
 | **1.2.9.2** | **Dynamic Type** — the app at the largest accessibility text sizes. Truncation, clipped buttons, and any row whose height was assumed. | ⬜ |
 | **1.2.9.3** | **Touch targets ≥ 44pt** and **contrast**, both themes, measured rather than eyeballed. | ⬜ |
 | **1.2.9.4** | **Reduce Motion** — the Animated work has no honour-the-setting path that anyone has checked. | ⬜ |

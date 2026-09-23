@@ -102,6 +102,17 @@ backlog carries "cache the built `.app`", which is what makes this loop usable.
   **Gate demo invariants over `demoSeed.test.ts`'s sample dates, never over "now"**: planting the old
   rounding reds only **2 of those 7**, which is exactly why it shipped green.
 
+- ⛔ **CHANGING AN ACCESSIBLE NAME NEEDS BOTH SUITES, because the web one cannot see the break.**
+  Playwright's `getByLabel` is a **substring** match; Maestro's text selectors are **full-match**
+  regexes. So renaming the Subscribe button to carry its price left five Playwright specs green and
+  broke the Maestro flow — and, worse, meant **the fix itself had no test**: every one of those five
+  passes whether or not the price is in the label. ⚠️ **When a label changes, assert the NEW fact
+  explicitly** (here: the button's `aria-label` must match `/\$\d/`), or the suite is only checking
+  that the control still exists.
+- ⚠️ **Sweeping for "everything coupled to this rename" undercounts when you grep for the part of
+  the change you were thinking about.** 1.2.9.1 renamed eight labels, swept for six, and shipped a
+  broken flow — one commit after adding a gate about exactly this. **Grep for the class (every label
+  this commit touched), not for the headline.**
 - ⛔ **AN `accessibilityLabel` ON A WRAPPER REPLACES EVERY WORD INSIDE IT, so the text a human reads
   is often a string Maestro can NEVER match.** `DemoBanner` renders *"Sample data — not your
   account"* and labels its wrapper *"Sample data. This is an example account, not your own."*;

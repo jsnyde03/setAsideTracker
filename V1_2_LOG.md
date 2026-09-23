@@ -11,6 +11,50 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.9.1 Label shadowing — 26 sites, not the ~12 I counted · 2026-09-23 · ✅ DONE
+
+**The count was the finding.** A hand read produced *"about 12 wrappers, mostly benign"*; an AST
+walk found **26**, and *benign* was wrong three times:
+
+| control | sighted user | VoiceOver user, before |
+|---|---|---|
+| **Subscribe** | `Subscribe — $29.99 per year` | "Subscribe" — **no price** |
+| **Restore from Backup** | *"Replaces everything on this device"* | no warning at all |
+| **Safe-harbor suggestion** | *"…was about $4,210 — tap to use"* | no amount |
+
+Plus five insight cards naming the feature internally, so the benefit headline the card is built
+around — and its explanation — reached nobody using a screen reader. ⚡ **Fixing that made the
+flows' ORIGINAL selectors correct again**: the natural name and the spoken name finally agree.
+
+**Kept as a gate, not a sweep** — structural (a JSX element carrying `accessibilityLabel` that also
+renders text), so it cannot miss a synonym, and it asserts the set doing it is the set somebody
+reviewed rather than that shadowing is absent.
+
+⛔ **Two defects in the gate itself, both mine, both silent:**
+- A stray JSX comment made `SafeHarborScreen` unparseable; the count slid **26 → 25** and the gate
+  **passed**. An AST walk skips what it cannot read, so it reports "nothing to see" for exactly the
+  files most likely to have something. It now fails on any file it could not parse. ⚠️ **Same shape
+  as the `head -45` truncation at 1.2.16: a diagnostic's silence reading as evidence.**
+- The reviewed list was typed by hand and **2 of 23 entries were wrong**, transcribed from a console
+  dump truncated at 90 characters. It is now generated into a JSON fixture *by the same code that
+  checks it*, so there is one implementation rather than two that drift.
+
+🔴 **And the lesson that cost a run: my coupling sweep undercounted, one commit after I built a gate
+about undercounting.** Eight labels changed; I grepped for six. `"Subscribe"` was renamed in the
+same commit and never swept for. ⚡ **The web suite could not have caught it** — `getByLabel` is a
+substring match, Maestro is full-match — which also meant **the price fix had no test at all**.
+`paywall.spec.ts` now requires a currency amount in the button's accessible name, planted by
+reverting the label.
+
+⚙️ **Two other failures in that run were NOT the labels:** `assertVisible: "Welcome"` after
+`launchApp`, on a hierarchy showing "Welcome" plainly on screen — the first render losing a race
+with the default timeout on a slow runner. Now `extendedWaitUntil`, which is strictly more patient
+and still fails if the screen never arrives. ⚡ **The focus reporter earned itself**: the dump
+opened with *"(nothing reports focus)"*, which is how that read as timing rather than as something
+stealing focus.
+
+**404 unit (+4) · 108/108 e2e · 12/12 Maestro.**
+
 ### 🔎 1.2.7 Native iPad — WHOLE-ITEM after-scan · 2026-09-23 · ✅ CLOSED 6/8 built, 2 device-owed
 
 **.5 live resize — the item was neither stale nor done, which is the third way a pre-authored item
