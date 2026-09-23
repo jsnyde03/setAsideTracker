@@ -33,5 +33,23 @@ test.describe("premium paywall", () => {
     await expect(page.getByText("Privacy Policy")).toBeVisible();
     await expect(page.getByLabel("Subscribe")).toBeVisible();
     await expect(page.getByText("Restore purchases")).toBeVisible();
+
+    /**
+     * ⛔ The button must SPEAK its price, not just show it.
+     *
+     * Its `accessibilityLabel` replaces the text inside it, so until 1.2.9.1 a VoiceOver user
+     * reached the purchase button having been told only "Subscribe" — the one fact that matters
+     * about a purchase button was the one they could not get. This asserts the accessible name
+     * carries a currency amount.
+     *
+     * ⚠️ The four sibling specs assert `getByLabel("Subscribe")`, which is a SUBSTRING match and
+     * therefore stays green whether or not the price is there. That is why this check is explicit
+     * rather than assumed from those passing.
+     */
+    const subscribeName = await page
+      .getByRole("button", { name: /^Subscribe/ })
+      .first()
+      .getAttribute("aria-label");
+    expect(subscribeName, "the Subscribe button's spoken name").toMatch(/\$\d/);
   });
 });

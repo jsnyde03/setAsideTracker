@@ -84,7 +84,13 @@ name: Clear all data (destructive confirm + return to onboarding)
 - tapOn: "Clear Everything"
 
 # The app must land back on onboarding — not on a dashboard still holding the cleared profile.
-- assertVisible: "Welcome"
+# ⛔ extendedWaitUntil, not assertVisible: run 35902276697 failed here on a hierarchy that
+# SHOWS "Welcome" on screen at [20,154][382,192]. Element present + assertion failed = the app
+# had not finished its first render inside the default timeout, on a runner whose speed varies
+# about 4.5x between dispatches. This waits instead of guessing how slow the machine is.
+- extendedWaitUntil:
+    visible: "Welcome"
+    timeout: 20000
 - assertNotVisible: "Set aside for taxes"
 
 # And the data must be genuinely gone, not merely navigated away from: re-onboarding lands on an

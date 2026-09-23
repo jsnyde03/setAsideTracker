@@ -7,7 +7,13 @@ name: Premium Paywall (smoke)
 ---
 - launchApp:
     clearState: true
-- assertVisible: "Welcome"
+# ⛔ extendedWaitUntil, not assertVisible: run 35902276697 failed here on a hierarchy that
+# SHOWS "Welcome" on screen at [20,154][382,192]. Element present + assertion failed = the app
+# had not finished its first render inside the default timeout, on a runner whose speed varies
+# about 4.5x between dispatches. This waits instead of guessing how slow the machine is.
+- extendedWaitUntil:
+    visible: "Welcome"
+    timeout: 20000
 - tapOn: "Your name"
 - inputText: "Maestro Tester"
 - tapOn: "Single"
@@ -67,7 +73,10 @@ name: Premium Paywall (smoke)
 - assertVisible: "Upgrade to Premium"
 - tapOn: "Upgrade to Premium"
 - assertVisible: "SetAside Premium"
-- assertVisible: "Subscribe"
+# ⚡ Asserts the PRICE is spoken, not just the word. The label carries it deliberately (1.2.9.1)
+# because a VoiceOver user was reaching the purchase button without being told what it costs; a
+# selector of "Subscribe" alone would go green again the day that regressed.
+- assertVisible: "Subscribe — .*"
 - assertVisible: "Restore purchases"
 - assertVisible: "Terms of Use (EULA)"
 - assertVisible: "Privacy Policy"

@@ -139,7 +139,13 @@ name: Demo mode (enter, preview premium, exit)
 # perfectly at scroll 0: the exit had worked, the scroll never happened.
 # Asserting the destination first is also the honest probe -- it proves we left the demo, which
 # scrolling alone never did.
-- assertVisible: "Welcome"
+# ⛔ extendedWaitUntil, not assertVisible: run 35902276697 failed here on a hierarchy that
+# SHOWS "Welcome" on screen at [20,154][382,192]. Element present + assertion failed = the app
+# had not finished its first render inside the default timeout, on a runner whose speed varies
+# about 4.5x between dispatches. This waits instead of guessing how slow the machine is.
+- extendedWaitUntil:
+    visible: "Welcome"
+    timeout: 20000
 - waitForAnimationToEnd
 # ⛔ NO SCROLL HERE, and the scroll was never what this step needed. Two runs failed on it with the
 # hierarchy showing the outer ScrollView at 0% — the swipe moved nothing on a freshly-replaced

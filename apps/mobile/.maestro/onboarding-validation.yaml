@@ -7,7 +7,13 @@ name: Onboarding validation (native Alert dialogs)
 ---
 - launchApp:
     clearState: true
-- assertVisible: "Welcome"
+# ⛔ extendedWaitUntil, not assertVisible: run 35902276697 failed here on a hierarchy that
+# SHOWS "Welcome" on screen at [20,154][382,192]. Element present + assertion failed = the app
+# had not finished its first render inside the default timeout, on a runner whose speed varies
+# about 4.5x between dispatches. This waits instead of guessing how slow the machine is.
+- extendedWaitUntil:
+    visible: "Welcome"
+    timeout: 20000
 # Continue with no name entered → native "Name required" alert.
 - scrollUntilVisible:
     element:
