@@ -77,7 +77,9 @@ function createStyles(colors: Colors) {
       alignItems: "center",
       justifyContent: "center",
     },
-    primary: { backgroundColor: colors.primary, ...shadowSm },
+    // ⛔ primaryButton, not primary: the label on this is WHITE, and in dark mode `primary` under
+    // white is 3.68:1. See the token's note in theme.ts for why they had to split.
+    primary: { backgroundColor: colors.primaryButton, ...shadowSm },
     secondary: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border },
     ghost: { backgroundColor: "transparent", paddingVertical: 12 },
     pressed: { opacity: 0.85, transform: [{ scale: 0.985 }] },

@@ -30,6 +30,9 @@ export function Chip({ label, selected, onPress, flex }: ChipProps) {
         selected && styles.selected,
         pressed && styles.pressed,
       ]}
+      // 1.2.9.3: the chip renders 39pt tall, so it needs 3pt a side to clear Apple's 44pt
+      // minimum. hitSlop grows the touch target only — nothing on screen moves.
+      hitSlop={4}
       accessibilityRole="button"
       accessibilityState={{ selected }}
     >

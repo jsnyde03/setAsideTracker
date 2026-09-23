@@ -306,11 +306,11 @@ export function PaywallScreen({ onClose }: PaywallScreenProps) {
         <Text style={styles.disclosure}>{AUTO_RENEW_DISCLOSURE}</Text>
 
         <View style={styles.legalRow}>
-          <Pressable onPress={() => openLink(TERMS_OF_USE_URL)} hitSlop={8} accessibilityRole="link">
+          <Pressable onPress={() => openLink(TERMS_OF_USE_URL)} hitSlop={14} accessibilityRole="link">
             <Text style={styles.legalLink}>Terms of Use (EULA)</Text>
           </Pressable>
           <Text style={styles.legalDot}>·</Text>
-          <Pressable onPress={() => openLink(PRIVACY_POLICY_URL)} hitSlop={8} accessibilityRole="link">
+          <Pressable onPress={() => openLink(PRIVACY_POLICY_URL)} hitSlop={14} accessibilityRole="link">
             <Text style={styles.legalLink}>Privacy Policy</Text>
           </Pressable>
         </View>
@@ -368,9 +368,11 @@ function createStyles(colors: Colors) {
       justifyContent: "center",
       marginTop: spacing.md,
     },
-    radioSelected: { borderColor: colors.primary, backgroundColor: colors.primary },
+    // The checkmark inside this is WHITE, so the fill follows the same rule as the buttons.
+    radioSelected: { borderColor: colors.primary, backgroundColor: colors.primaryButton },
     subscribeButton: {
-      backgroundColor: colors.primary,
+      // White label — primaryButton, not primary. See theme.ts.
+      backgroundColor: colors.primaryButton,
       borderRadius: radius.md,
       paddingVertical: spacing.md,
       alignItems: "center",

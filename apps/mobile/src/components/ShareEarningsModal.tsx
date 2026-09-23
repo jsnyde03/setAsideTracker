@@ -112,7 +112,8 @@ function createStyles(colors: Colors) {
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
-      backgroundColor: colors.primary,
+      // White label — primaryButton, not primary. See theme.ts.
+      backgroundColor: colors.primaryButton,
       borderRadius: radius.md,
       paddingVertical: 14,
     },

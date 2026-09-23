@@ -8,13 +8,22 @@ export const lightColors = {
 
   ink: "#13161B",
   inkSubtle: "#5B6270",
-  inkFaint: "#9AA1AC",
+  /** ⚠️ WCAG AA against EVERY surface token, not just the three obvious ones — 1.2.9.3.
+   *  Was #9AA1AC, which read 2.45:1 and failed AA on hint text across eight routes. */
+  inkFaint: "#676C74",
 
   primary: "#0F5FE0",
   primaryDark: "#0A3F99",
   primarySoft: "#E8F0FE",
+  /** The primary BUTTON's fill, separate from `primary` on purpose.
+   *  ⛔ In dark mode one value cannot serve both: `primary` #3B82F6 is 4.54:1 as TEXT on a dark
+   *  surface and only 3.68:1 UNDER WHITE, so darkening it for the buttons would have broken the
+   *  twelve places it is read as text. Splitting the token is what lets both pass. */
+  primaryButton: "#0F5FE0",
 
-  accent: "#0E8F5E",
+  /** Was #0E8F5E — 4.11 on white and 4.04 on accentSoft, so it failed AA in both places it is
+   *  used as text ("You're on track", "Best value"). */
+  accent: "#0C7E53",
   accentSoft: "#E3F6ED",
 
   warn: "#B8860B",
@@ -39,11 +48,18 @@ export const darkColors: typeof lightColors = {
 
   ink: "#F2F4F7",
   inkSubtle: "#A8AFBC",
-  inkFaint: "#6B7280",
+  /** Was #6B7280 — 3.12:1 on surfaceAlt. Lightened rather than darkened: this is the dark theme.
+   *  ⚠️ Solved against every surface token including primarySoft — the first attempt passed on
+   *  bg/surface/surfaceAlt and still failed on the paywall's selected plan card. */
+  inkFaint: "#9197A1",
 
   primary: "#3B82F6",
-  primaryDark: "#1D4ED8",
+  /** ⛔ A DARK blue was wrong for a dark theme. This token colours the selected chip label and the
+   *  glossary terms, which sit on primarySoft (#1E2A44) — so #1D4ED8 was dark-on-dark at 2.13:1,
+   *  the worst contrast in the app. Lighter is the direction here. */
+  primaryDark: "#6E8DE6",
   primarySoft: "#1E2A44",
+  primaryButton: "#3473DA",
 
   accent: "#34D399",
   accentSoft: "#16302A",

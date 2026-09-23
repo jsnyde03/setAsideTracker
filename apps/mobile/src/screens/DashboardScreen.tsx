@@ -76,6 +76,7 @@ function MathBreakdownRow({ label, value, credit, onPress, styles }: MathBreakdo
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.breakdownRow, pressed && styles.breakdownRowPressed]}
+      hitSlop={10}
       accessibilityRole="button"
       accessibilityLabel={`${label}: ${value}. Tap to see how this is calculated.`}
     >
@@ -250,7 +251,7 @@ export function DashboardScreen({
                     <Pressable
                       onPress={handlePreviousYear}
                       disabled={selectedYearIndex >= availableYears.length - 1}
-                      hitSlop={8}
+                      hitSlop={11}
                       accessibilityLabel="Previous year"
                       accessibilityRole="button"
                     >
@@ -266,7 +267,7 @@ export function DashboardScreen({
                     <Pressable
                       onPress={handleNextYear}
                       disabled={selectedYearIndex <= 0}
-                      hitSlop={8}
+                      hitSlop={11}
                       accessibilityLabel="Next year"
                       accessibilityRole="button"
                     >
@@ -287,7 +288,7 @@ export function DashboardScreen({
                 {totalEarnings > 0 && (
                   <Pressable
                     onPress={() => setShowShare(true)}
-                    hitSlop={8}
+                    style={styles.headerIconButton}
                     accessibilityLabel="Share earnings"
                     accessibilityRole="button"
                   >
@@ -296,7 +297,7 @@ export function DashboardScreen({
                 )}
                 <Pressable
                   onPress={onOpenSettings}
-                  hitSlop={8}
+                  style={styles.headerIconButton}
                   accessibilityLabel="Settings"
                   accessibilityRole="button"
                 >
@@ -485,7 +486,7 @@ export function DashboardScreen({
                   />
                   <Pressable
                     onPress={handleSaveAmountSetAside}
-                    hitSlop={8}
+                    hitSlop={11}
                     accessibilityLabel="Save amount set aside"
                     accessibilityRole="button"
                   >
@@ -797,7 +798,12 @@ function createStyles(colors: Colors) {
     marginBottom: spacing.lg,
   },
   greetingTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
+  // ⛔ gap shrinks as the buttons grow. These were bare 22pt icons 16px apart: hitSlop big enough
+  // to reach 44 would have overlapped, so adjacent buttons would steal each other's taps — worse
+  // than a small target. Growing the box and closing the gap keeps them the same distance apart
+  // on screen while both become real 44pt targets (1.2.9.3).
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 0 },
+  headerIconButton: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   greeting: { ...type.display, color: colors.ink },
   yearBadge: {
     backgroundColor: colors.surfaceAlt,
