@@ -379,19 +379,25 @@ jobs:
 
           root = json.load(open(sys.argv[1], encoding="utf-8"))
 
-          out = []
-          walk(root, out)
-          if not out:
-              out = ["    (no text nodes)"]
-          for line in out[:150]:
-              print(line)
-
+          # ⛔ FOCUS FIRST, and that ordering is load-bearing. The consumer below pipes this through
+          # `head -45`, so anything printed after the node list is discarded -- which is exactly what
+          # happened on run 35860398087: the focus report was computed correctly and thrown away by
+          # the pipe, leaving a reader to conclude "nothing reports focus". A diagnostic that is
+          # silently truncated is worse than none, because its absence reads as evidence.
           keys, focused = set(), []
           focus_report(root, keys, focused)
           print("    --- FOCUS ---")
           for line in focused[:6] or ["    (nothing reports focus)"]:
               print(line)
           print("    attribute keys present: %s" % ", ".join(sorted(keys)))
+          print("    --- ON SCREEN ---")
+
+          out = []
+          walk(root, out)
+          if not out:
+              out = ["    (no text nodes)"]
+          for line in out[:150]:
+              print(line)
           PYEOF
 
             echo "=== ON-SCREEN TEXT AT EACH FAILURE (from Maestro's view hierarchy) ==="

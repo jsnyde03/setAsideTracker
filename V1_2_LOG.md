@@ -11,6 +11,62 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.16 The numeric keypad — NOT an app bug, and the probe said so in one run · 2026-09-23
+
+⛔ **Closed with a negative result, which is the useful kind.** The question was whether a real user
+typing their state gets the wrong keyboard — because a NUMERIC keypad was on screen at that moment
+in run `35818419992`, and the only numeric input there is `Dependents`, which nothing taps.
+
+**Two measurements, neither of them a guess:**
+- **Web (Playwright, free):** focus **stays on the state field** through the exact-code match that
+  fires `onChange` → `setState`. The only numeric input on the screen is `Dependents`
+  (`inputmode="numeric"`). So there is **no platform-independent focus bug.** ⚠️ RN-web is not RN,
+  so this narrows and cannot settle.
+- **iOS (probe flow, forced hierarchy dump):** at the exact moment after typing `TX`, the keyboard
+  is **ALPHABETIC** — `q w e r t y u i o`, with Typing Predictions offering *"T" / The / This*.
+
+⚡ **The difference between the two observations is the FIRST dismissal, not the app.** The numeric
+keypad appeared only when `hideKeyboard` opened the sequence; with the named-tap dismissal that
+replaced it, the keyboard is correct. **A real user never invokes `hideKeyboard`**, so nothing
+user-facing was ever wrong. ⚠️ **The precise mechanism by which `hideKeyboard` left a number pad is
+still unexplained, and is now moot** — the call is gone from every flow and the user-facing state is
+verified correct on both platforms. Recorded rather than quietly dropped.
+
+🔴 **Found while doing it: the focus reporter was silently truncated.** The dump printed the node
+list first and the FOCUS section after, while the workflow pipes it through `head -45` — so the
+report was **computed correctly and thrown away by the pipe.** Anyone reading that log would have
+concluded *"nothing reports focus"*. ⛔ **A diagnostic that is silently truncated is worse than
+none, because its absence reads as evidence.** FOCUS now prints first, verified through the real
+pipe against a fixture.
+
+### 🔎 1.2.15 Cache the built `.app` — 40 min → 13 min · 2026-09-23 · ✅ DONE
+
+**Proven both ways in two runs, which is the only way a cache can be trusted:**
+- **Miss** (`35854353124`): built, ran **12/12**, `Cache saved with key:
+  app-macOS-Xcode266-e1bfef977a53ecab`.
+- **Hit** (`35860398087`): `CACHE HIT: skipping prebuild + xcodebuild`, **13 minutes** against ~40.
+
+⚡ **The fingerprint CI computed matched the one computed locally, byte for byte** — a cross-machine
+check of the key derivation that cost nothing.
+
+⛔ **Three guards against the stale binary, none of which is "be careful":** the key is mechanical
+(`git ls-files -s`, so a file added tomorrow is covered without anyone extending a glob list) · the
+**workflow file is in its own fingerprint**, because `CODE_SIGN_IDENTITY="-"` alone decides whether
+the binary can use the Keychain at all · and the binary **carries a stamp** printed on every hit.
+
+⚡ **The stamp earned itself on its first run:** the hit reported *building commit `36a03f0`* while
+the binary was *built at `6536c12`*. Legitimate — only flows changed between them — but that is
+precisely the situation that is otherwise invisible, and it is now one line in the log.
+
+⚠️ **One measurement nearly became a false finding.** Adding the probe flow appeared to move the
+fingerprint, which would have meant the `.maestro` exclusion was broken. It was the **workflow
+commit entering the index** between the two measurements. Isolating it showed the exclusion holds
+for *added* files, not only modified ones. **The control has to be run before the conclusion.**
+
+**Accepted trade-off:** editing even a comment in the workflow rebuilds once. Splitting the file's
+hash by section would buy back that one build and is exactly the kind of clever thing that fails
+silently later.
+
 ### 🔎 1.2.14.5 The suite went 2/12 → 11/12 in one night · 2026-09-23
 
 **Eight runs. 2/12 (the historical best) → harness failures → 1 → 7 → 10 → 11.** Nothing the app

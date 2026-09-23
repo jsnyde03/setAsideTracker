@@ -32,9 +32,9 @@
 > would have gone green over a "Clear all data" that cleared nothing, and one guarded Apple
 > **Guideline 3.1.2**. Full arc + every mechanism → [V1_2_LOG.md](V1_2_LOG.md).
 >
-> ✅ **1.2.1–1.2.6, 1.2.10, 1.2.14 CLOSED.** ▶ **ACTIVE: 1.2.15 — cache the built `.app`**
-> (Jason 2026-09-23), decomposed below; **1.2.16** (the numeric keypad) follows it, and **1.2.7
-> re-parks at 4/8** — it was resumed for minutes before these two were picked ahead of it.
+> ✅ **1.2.1–1.2.6, 1.2.10, 1.2.14–1.2.16 CLOSED.** ▶ **ACTIVE: 1.2.7 — native iPad at 4/8**,
+> decomposed below. ⚡ **A Maestro run is now ~13 min, not ~40** (1.2.15), and **1.2.16 closed
+> negative — the keypad was never an app bug.**
 > 🔴 **1.2.13 is a SHIP BLOCKER and is not finished:** Pages now serves this repo's `docs/`, but it
 > serves **`master`**, which still carries the July policy. **Merging v1.2 to master at release is
 > what publishes the location disclosure**; `node tools/check-published-policy.mjs` fails the
@@ -129,26 +129,24 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ⚡ **1.2.15 — Cache the built `.app`** · **ACTIVE** _(2026-09-23, Jason)_
+### 📱 **1.2.7 — Native iPad** · **ACTIVE** _(resumed 2026-09-23 — 4/8 shipped)_
 
-**Why it is next:** eight runs last night each spent ~35 min building to exercise a few minutes of
-flows. It is the multiplier on every Maestro question left, **including 1.2.16's**.
+**Why it is next:** it was parked mid-item to take [D27]'s Maestro window, then stood aside again
+for 1.2.15/1.2.16. Both are closed, so it resumes — and it sits ahead of 1.2.8/1.2.9 in row order.
 
-⛔ **The whole risk is a STALE BINARY, which is this portfolio's most expensive failure mode** — a
-green run against code that is not in the artifact (`remembered-gate-result-is-unrun`; Hearthlight
-spent two build cycles and a written diagnosis on it). **A cache that never invalidates looks exactly
-like a cache that works.**
+✅ **.1–.4 shipped:** `supportsTablet` + iPad-only orientation · the size-class seam on
+`useWindowDimensions` · the dashboard two-column band · all four sheets capped, 12-route sweep.
+**Measured 1326px → 632px.** 15 plants, 15 caught. _Detail + 4 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.15.1** | **Derive the key MECHANICALLY** — `git ls-files` over the trees that reach the binary, not a hand-listed glob set (hand enumerations undercount every time they are measured). Exclude `.maestro/` and `e2e/`: neither is bundled, and both changed on *every* commit last night, so including them would mean the cache never hits in its main use case. | ⬜ |
-| **1.2.15.2** | **Cache the `.app`** and make prebuild + `xcodebuild` + their prerequisites conditional on a miss. | ⬜ |
-| **1.2.15.3** | **Make a cached binary announce itself** — stamp commit + source hash in at build time, print it on restore. A stale artifact cannot be caught by a check that ships inside it; the log has to say what it is. | ⬜ |
-| **1.2.15.4** | **Prove it BOTH ways, and plant.** A miss builds and populates; a hit skips the build *and* still runs 12/12; then change one source file and prove the key moves. ⛔ Without the plant this is a check that cannot fail. | ⬜ |
-| **1.2.15.5** | **After-scan.** | ⬜ |
+| **1.2.7.5** | **Live resize** — Split View and Slide Over change size *without remounting*, so the seam has to hold on re-layout, not just at first render. Verifiable here via the iPad Playwright projects. | ⬜ |
+| **1.2.7.6** | ⏸ **Hardware keyboard — DEVICE-OWED.** Cannot be reached from RN-web. → checklist. | ⛔ |
+| **1.2.7.7** | ⏸ **iPad App Store screenshots — DEVICE-OWED**, and a **submission requirement** that ships with the `supportsTablet` flip. → checklist. | ⛔ |
+| **1.2.7.8** | **Whole-item after-scan**, then close the way 1.2.1 did: built, verification banked, device rows carried to 1.2.12. | ⬜ |
 
-**Exit line:** a flow-only change runs the suite in minutes rather than ~40, a source change
-provably rebuilds, and the log always says which commit the binary under test came from.
+**Exit line:** the iPad layout holds through a live resize, and everything that does not need
+hardware is done — with .6/.7 explicitly owed to the one reserved TestFlight build, not forgotten.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
@@ -167,8 +165,6 @@ out-of-order number is worth less than one more round of that.
 
 | # | item | notes |
 |---|---|---|
-| **1.2.16** | 🔴 **The numeric keypad after the state field** | **Possible real app bug, found by 1.2.14.5.** Typing a state leaves a NUMBER PAD up, and the screen's only numeric field is `Dependents` — which nothing taps. If focus really jumps there, **a real user typing their state gets the wrong keyboard.** Start with the free web probe (does `activeElement` move?) before spending a run; the dump now reports focus. |
-| **1.2.7** | ⏸ **Native iPad — PARKED at 4/8** | `.1–.4` shipped (seam · two-column dashboard · four sheets · 12-route sweep). `.5` live-resize + `.8` after-scan doable here; **`.6` hardware keyboard and `.7` iPad screenshots are device-owed**, and the `supportsTablet` flip **obliges the screenshots at submission**. Decomposition → [V1_2_LOG.md](V1_2_LOG.md). |
 | 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
 | 1.2.9 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. ⚡ **Start from 1.2.14.5's finding:** ~12 wrappers set an `accessibilityLabel` that REPLACES their visible text, so a VoiceOver user and a sighted user are read different words on the demo banner and every locked premium card. Mostly benign, **but nobody chose it** — it was discovered because it broke the test suite, and it has never been audited as a11y copy. |
 | 1.2.11 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.7 rewrite those files. |
@@ -189,6 +185,24 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.15 — Cache the built `.app` ✅ DONE 2026-09-23, 5/5. ~40 min → 13 min.** Proven both ways:
+  a miss builds, runs 12/12 and saves; a hit skips prebuild + `xcodebuild` entirely. ⛔ **Three
+  guards against the stale binary** — a **mechanical** key (`git ls-files -s`, so a file added
+  tomorrow is covered without anyone extending a glob list) · the **workflow file in its own
+  fingerprint**, because `CODE_SIGN_IDENTITY="-"` alone decides whether the binary can use the
+  Keychain · and a **build stamp printed on every hit**, which on its first run already reported a
+  binary from a different commit than the one being built (legitimate, and otherwise invisible).
+  ⚡ CI's fingerprint matched the locally-computed one byte for byte.
+  _Detail + the near-false-finding → [V1_2_LOG.md](V1_2_LOG.md)._
+
+- **1.2.16 — The numeric keypad ✅ CLOSED 2026-09-23 with a NEGATIVE result: not an app bug.**
+  On web, focus **stays on the state field** through the exact-code match; on iOS the keyboard at
+  that exact moment is **alphabetic**. The number pad appeared only when `hideKeyboard` opened the
+  sequence — and **a real user never invokes `hideKeyboard`**. ⚠️ Its mechanism is unexplained and
+  now moot; the call is gone and the user-facing state is verified on both platforms. 🔴 Found on
+  the way: **the focus reporter was being silently truncated by a `head -45`**, so it computed the
+  answer and threw it away. _Detail → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.14 — Maestro on GitHub Actions ✅ DONE 2026-09-23, 6/6. The suite is GREEN: 12/12, twice.**
   Ported off Codemagic to free macOS runners (**0 billable ms**, [D27]) and Codemagic's copy retired,
