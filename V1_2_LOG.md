@@ -11,6 +11,49 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.14.5 Runs 3 and 4 — WHAT WENT WRONG, and it was me · 2026-09-22
+
+**Runs 1–4: 2/12 → 2/12 → 2/12 → 1/12. Three changes, each of which created the next failure.**
+⛔ **This is the honest record of a fix loop that thrashed, kept because the pattern is more
+valuable than the fixes were.**
+
+🔴 **Run 3 — "a coordinate is not a neutral point."** I added a post-scroll dismissal tap at
+`50%,15%`. The dump showed a **native date picker open** covering the form: `50%,15%` is y≈131, and
+once the keypad closes and the form reflows, **y=131 is inside the Date field `[20,96][382,141]`**.
+A tap meant to blur a field opened a calendar. ⚡ **The lesson generalises past Maestro: a coordinate
+is not a location, it is whatever the layout happens to put there** — and 1.2.5 changed this layout.
+
+🔴 **Run 4 — I broke the repo's own convention and then misread the result as the app's fault.**
+Replacing the coordinate with a name, I wrote
+`tapOn: "Measures your miles while a trip is running"`. It reported **"Element not found"** while the
+dump showed the element plainly present at `[20,439][382,465]`. ⛔ **Maestro text selectors are
+FULL-MATCH regexes**, so that string does not match *"…Stops the moment you stop the trip."* **Every
+existing selector in this file uses `.*`** (`"Custom expense categories.*Premium"`) for exactly this
+reason. The convention was in front of me in the same files I was editing.
+
+⚠️ **That same dump refuted two things I had already told Jason:** the keypad is **not** open at that
+point, and Save Entry sits around y=730, **on screen**. So the dismissal tap I had built two runs of
+reasoning on is mostly belt-and-braces.
+
+⛔ **The process failure is the real finding, and it is not "I made mistakes".** It is that **I kept
+making single 45-minute round trips on guesses** when the workflow had a single-flow input *I had
+built myself* in the first commit. Converge-per-surface says fix one surface and re-verify; I batched
+a guess into a full-suite run three times. **The loop length is the cause** — see the backlog item on
+caching the built `.app`: every dispatch re-runs install → prebuild → pods → `xcodebuild` (~35–40
+min) and the Maestro step is only the tail. A single-flow run is **barely faster**, which I claimed
+as "fast feedback" before checking.
+
+⚠️ **Independent flakiness, filed and deliberately NOT fixed:** `onboarding-validation` passed runs
+1–3 then failed run 4 (`Continue` not visible), and `mileage-log-gating` failed differently each run.
+**Neither was edited by any of my changes.** Stacking a speculative fix on an unstable baseline is
+how a run becomes unreadable, so it is characterised first.
+
+✅ **What is nonetheless true and banked:** the port is faithful (run 1 reproduced Codemagic's exact
+2/12), it costs **0 billable ms**, and a genuine app-side finding came out of it — the flows predate
+**1.2.5's GPS trip toggle**, which pushed `Save Entry` below the fold. ⚡ **At no point in four runs
+has the app been shown broken.** Every failure was a flow written against a layout that no longer
+exists.
+
 ### 🔎 1.2.14.3 / .4 Two Maestro runs on GitHub Actions — 2026-09-22
 
 **Run 1 `35788360578` (47m55s) · Run 2 `35793230630`. Both 2/12. Both 0 billable ms.**

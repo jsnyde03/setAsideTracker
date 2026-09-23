@@ -364,6 +364,24 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
   reserved Codemagic builds. Private repos drop to ~200 macOS minutes/month. **The two wishes are
   close to mutually exclusive on a free plan.**
 
+### From 1.2.14 _(2026-09-22)_
+
+- 🔴 **CACHE THE BUILT `.app` — the iteration cost is what made the flow work go badly → 1.2.14 or
+  its successor.** Every dispatch re-runs npm install → `expo prebuild` → pods → `xcodebuild`, ~35–40
+  min, and **the Maestro step is only the last few minutes of it.** That is why a single-flow run is
+  barely faster than all twelve, and why four cycles were spent on what should have been quick
+  checks. Key a cache on `package-lock.json` + `app.json` + the native project so a flow-only change
+  reuses the binary. ⚡ **This is the difference between a 10-minute loop and a 45-minute one**, and
+  the loop length is what turned three wrong guesses into an evening.
+- ⚠️ **The Maestro suite has flakiness independent of any change → triage before trusting a delta.**
+  `onboarding-validation` passed runs 1–3 and failed run 4 (`Continue` not visible);
+  `mileage-log-gating` failed differently each run. **Neither flow was edited.** Until this is
+  characterised, a single run's pass count is not a reliable measure of a fix — compare *where*
+  flows fail, and re-run before concluding.
+- **Codemagic's `maestro-ios` workflow is now a second home for the same suite → retire it.** Left
+  in place only until the GitHub Actions route is green, so there is a fallback; keeping both is how
+  a stale copy gets run by mistake.
+
 ### From 1.2.7.2 _(2026-09-22)_
 
 - **The pure-rule / native-wiring split is now a repo PATTERN with two instances, and nothing names
