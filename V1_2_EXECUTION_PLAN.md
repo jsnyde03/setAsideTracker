@@ -32,9 +32,11 @@
 > would have gone green over a "Clear all data" that cleared nothing, and one guarded Apple
 > **Guideline 3.1.2**. Full arc + every mechanism → [V1_2_LOG.md](V1_2_LOG.md).
 >
-> ✅ **1.2.1–1.2.6, 1.2.10, 1.2.14–1.2.16 CLOSED.** ▶ **ACTIVE: 1.2.7 — native iPad at 4/8**,
-> decomposed below. ⚡ **A Maestro run is now ~13 min, not ~40** (1.2.15), and **1.2.16 closed
-> negative — the keypad was never an app bug.**
+> ✅ **1.2.1–1.2.7, 1.2.10, 1.2.14–1.2.16 CLOSED.** ▶ **ACTIVE: 1.2.9 — accessibility depth audit**,
+> decomposed below, taken ahead of 1.2.8's row because **1.2.8 is feature/UX work that opens with a
+> design pass** while 1.2.9 has a measured head start from 1.2.14.5.
+> ⚡ **A Maestro run is now ~13 min, not ~40** (1.2.15) · **1.2.16 closed negative** — the keypad was
+> never an app bug · **the suite has been 12/12 four runs running.**
 > 🔴 **1.2.13 is a SHIP BLOCKER and is not finished:** Pages now serves this repo's `docs/`, but it
 > serves **`master`**, which still carries the July policy. **Merging v1.2 to master at release is
 > what publishes the location disclosure**; `node tools/check-published-policy.mjs` fails the
@@ -129,24 +131,25 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### 📱 **1.2.7 — Native iPad** · **ACTIVE** _(resumed 2026-09-23 — 4/8 shipped)_
+### ♿ **1.2.9 — Accessibility depth audit** · **ACTIVE** _(2026-09-23)_
 
-**Why it is next:** it was parked mid-item to take [D27]'s Maestro window, then stood aside again
-for 1.2.15/1.2.16. Both are closed, so it resumes — and it sits ahead of 1.2.8/1.2.9 in row order.
-
-✅ **.1–.4 shipped:** `supportsTablet` + iPad-only orientation · the size-class seam on
-`useWindowDimensions` · the dashboard two-column band · all four sheets capped, 12-route sweep.
-**Measured 1326px → 632px.** 15 plants, 15 caught. _Detail + 4 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
+**Why it is next, ahead of 1.2.8's row:** 1.2.14.5 handed this item a **measured** starting point —
+~12 wrappers whose `accessibilityLabel` replaces their visible text — and that is worth working
+while it is fresh. **1.2.8 (the guided tour) is feature/UX work Jason shapes**, so it opens with a
+design pass rather than code; starting it now would mean stopping for him immediately.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.7.5** | **Live resize** — Split View and Slide Over change size *without remounting*, so the seam has to hold on re-layout, not just at first render. Verifiable here via the iPad Playwright projects. | ⬜ |
-| **1.2.7.6** | ⏸ **Hardware keyboard — DEVICE-OWED.** Cannot be reached from RN-web. → checklist. | ⛔ |
-| **1.2.7.7** | ⏸ **iPad App Store screenshots — DEVICE-OWED**, and a **submission requirement** that ships with the `supportsTablet` flip. → checklist. | ⛔ |
-| **1.2.7.8** | **Whole-item after-scan**, then close the way 1.2.1 did: built, verification banked, device rows carried to 1.2.12. | ⬜ |
+| **1.2.9.1** | **The label-shadowing sweep** — every wrapper whose `accessibilityLabel` swallows its children, enumerated MECHANICALLY (a hand list undercounts here every time). Decide per site: is the spoken name better, or just different? | ⬜ |
+| **1.2.9.2** | **Dynamic Type** — the app at the largest accessibility text sizes. Truncation, clipped buttons, and any row whose height was assumed. | ⬜ |
+| **1.2.9.3** | **Touch targets ≥ 44pt** and **contrast**, both themes, measured rather than eyeballed. | ⬜ |
+| **1.2.9.4** | **Reduce Motion** — the Animated work has no honour-the-setting path that anyone has checked. | ⬜ |
+| **1.2.9.5** | ⏸ **VoiceOver end-to-end — DEVICE-OWED.** → 1.2.12's checklist. | ⛔ |
+| **1.2.9.6** | **Verify + whole-item after-scan.** | ⬜ |
 
-**Exit line:** the iPad layout holds through a live resize, and everything that does not need
-hardware is done — with .6/.7 explicitly owed to the one reserved TestFlight build, not forgotten.
+**Exit line:** the app is usable at the largest text size and with VoiceOver's own vocabulary, every
+spoken name is one somebody chose, and what needs hardware is written into 1.2.12 rather than
+assumed.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
@@ -166,7 +169,6 @@ out-of-order number is worth less than one more round of that.
 | # | item | notes |
 |---|---|---|
 | 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
-| 1.2.9 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. ⚡ **Start from 1.2.14.5's finding:** ~12 wrappers set an `accessibilityLabel` that REPLACES their visible text, so a VoiceOver user and a sighted user are read different words on the demo banner and every locked premium card. Mostly benign, **but nobody chose it** — it was discovered because it broke the test suite, and it has never been audited as a11y copy. |
 | 1.2.11 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.7 rewrite those files. |
 | **1.2.13** | ⚙️ **Publish the privacy policy — SHIP BLOCKER, mostly done 2026-09-22** | ✅ Pages now serves **this** repo's `docs/` ([D26]); audits moved out so `docs/` is the website exactly; all 9 URLs repointed; **`tools/check-published-policy.mjs`** added — it fetches the live page and fails on drift *(verified both ways: reds on the real defect, and a control proves it can pass)*. ⛔ **Remaining: the cutover.** Pages serves `master`, which still carries the July policy — correct for live v1.1.1, wrong the moment v1.2 ships. **Merging v1.2 to master at release publishes it; the gate fails the submission if it is forgotten.** |
 | 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
@@ -185,6 +187,16 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.7 — Native iPad ✅ CLOSED 2026-09-23, 6/8 built, 2 device-owed.** `supportsTablet` +
+  iPad-only orientation · the size-class seam on `useWindowDimensions` · the dashboard's two-column
+  band · four sheets capped and a 12-route sweep · **and the seam proven across a LIVE resize in
+  both directions**, the widen being the one a mount-time snapshot breaks. ⛔ **Planted: sticky-compact
+  reds the new test and leaves 5 of 6 green**, including the old live-resize control. 🔴 The
+  whole-item scan found the device-owed rows were owed to a checklist that never named them — one
+  line, under "not yet applicable", labelled with the wrong item — and two more stale numbers
+  behind it, one of which pointed the whole document at the wrong gate. **108/108 e2e.**
+  _Detail + 5 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.15 — Cache the built `.app` ✅ DONE 2026-09-23, 5/5. ~40 min → 13 min.** Proven both ways:
   a miss builds, runs 12/12 and saves; a hit skips prebuild + `xcodebuild` entirely. ⛔ **Three

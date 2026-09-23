@@ -2,7 +2,8 @@
 
 _Per the standing rule: **no submission until a real-device TestFlight run against a per-version
 full-surface checklist, native paths first.** Companion to [V1_2_EXECUTION_PLAN.md](V1_2_EXECUTION_PLAN.md);
-run at 1.2.9._
+run at **1.2.12**, the device-QA gate. ⚠️ Said "1.2.9" until 2026-09-23 — which since the renumber
+is the accessibility audit, so the header was pointing at the wrong gate._
 
 **Why this version's list is unusually load-bearing.** v1.2 replaced the entire navigation layer
 (`expo-router`), added `react-native-screens` beneath every screen, moved all app state above the
@@ -69,6 +70,21 @@ workflow prints the commit it built. Two build cycles were once spent on a month
 | ⬜ | **Reload/cold-start position** | Kill and reopen from a deep-linked screen. Confirm no crash and no stale state. |
 | ⬜ | **Both themes on device** | Light held to the same bar as dark — verify by looking, on real hardware, not in a simulator screenshot. |
 
+### iPad — 1.2.7's device-owed rows _(moved out of "not yet applicable" 2026-09-23)_
+
+⚠️ **`supportsTablet` is already `true` on this branch**, so the app ships to iPad whether or not
+these are checked. **RN-web at 1024px is not UIKit at 1024pt** — the local iPad Playwright projects
+catch layout *breaks*, never fidelity, so everything here is genuinely owed.
+
+| | check | why it matters on device |
+|---|---|---|
+| ⬜ | 🔴 **iPad App Store screenshots** _(1.2.7.7)_ | **A SUBMISSION REQUIREMENT that shipped with the `supportsTablet` flip** — App Store Connect will not accept the build without them. Capture in **dark** mode, per the standing screenshot rule. |
+| ⬜ | **Hardware keyboard** _(1.2.7.6)_ | Cannot be reached from RN-web at all: tab order, the return key moving between fields, and nothing trapped behind a software keyboard that never appears. |
+| ⬜ | **Split View + Stage Manager, dragged live** | The seam is proven to react in a browser resize; this is the real thing. Drag the divider through the 768pt breakpoint **both ways** and confirm the second column leaves and comes back. |
+| ⬜ | **Rotation** | The iPhone is pinned portrait and the iPad is not (1.2.7.1). Rotate on every route, not just the dashboard. |
+| ⬜ | **The two-column dashboard, looked at** | Geometry is asserted; *proportion* is not. Does the band read as spacious or as two cramped halves — in **both themes**? |
+| ⬜ | **The four bottom sheets** | Capped at 540pt and centred rather than full-bleed slabs. They are the surface most likely to look wrong at tablet width. |
+
 ## C. Regression surface — 🤖 Maestro covers these; spot-check the riskiest
 
 | | check |
@@ -79,8 +95,11 @@ workflow prints the commit it built. Two build cycles were once spent on a month
 
 ## D. Not yet applicable
 
-- **Widget (1.2.6)** — add its checks here when it lands: home-screen placement, data freshness, both themes, and the App Group actually sharing data.
-- **iPad (1.2.3)** — split-view, rotation, Stage Manager, and keyboard.
+- **The iOS home-screen widget** — ⛔ **cut to v1.3 ([D8], 2026-09-20)**, so nothing here is owed by
+  this version. When it lands: home-screen placement, data freshness, both themes, and the App Group
+  actually sharing data. _(This row cited "1.2.6", which since the renumber means the premium slice.)_
+- _iPad moved to §B on 2026-09-23 — it is applicable now, not later: `supportsTablet` is `true` and
+  1.2.7.1–.5 have shipped._
 
 ---
 

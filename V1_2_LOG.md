@@ -11,6 +11,43 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.7 Native iPad — WHOLE-ITEM after-scan · 2026-09-23 · ✅ CLOSED 6/8 built, 2 device-owed
+
+**.5 live resize — the item was neither stale nor done, which is the third way a pre-authored item
+fails.** A live resize was *already* covered in one direction (the phone-width control narrows the
+window and proves the cap releases); nothing exercised the **widen**, which is the direction a
+mount-time snapshot breaks — the second column simply never comes back.
+
+⛔ **The plant is what justified the new test.** Making the seam sticky-compact reds it at the exact
+line asserting the columns return, and leaves **5 of the other 6 GREEN** — including the existing
+live-resize control, which passes because narrowing still works under that defect. **The gap was
+measured, not argued.** Restore verified afterwards. **108/108** across chromium + both iPad
+projects.
+
+**Completeness, checked rather than assumed — and both enumerations held:**
+- The route sweep **derives routes from `app/` at run time** and throws if it finds fewer than 10,
+  so a route added later cannot silently escape it. No hand-built screen list to undercount.
+- Exactly **4 components have a bottom-sheet shape and exactly those 4** use `useSheetWidthStyle`.
+  The set matches; there is no fifth sheet quietly shipping as a slab.
+
+🔴 **What the whole-item scan actually caught: the device-owed rows were owed to a document that
+never named them.** The plan says .6/.7 go "to the checklist"; the checklist carried **one line**,
+under **"Not yet applicable"**, labelled **1.2.3** — which since the renumber is the data-safety
+block. iPad is applicable *now*: `supportsTablet` is already `true`, so the app ships to iPad
+whether or not anyone checks it. Moved to §B with six real rows, the **App Store screenshots flagged
+as a submission requirement** rather than a nicety.
+
+⚡ **Two more stale numbers fell out of sweeping the rest, and one mattered:** the checklist's own
+header said *"run at 1.2.9"* — the **accessibility audit** — when the device-QA gate is **1.2.12**.
+A reader following it would have run the whole document at the wrong gate. The widget row cited
+"1.2.6", which now means the premium slice; the widget was **cut to v1.3 ([D8])**. ⚠️ **Renumber rot
+does not announce itself** — every one of these read as a sensible sentence.
+
+⏸ **Carried to 1.2.12, not forgotten:** hardware keyboard (.6) and iPad screenshots (.7), plus
+Split View dragged live on real hardware, rotation on every route, and whether the two-column band
+reads as *spacious* rather than as two cramped halves — in both themes. **RN-web at 1024px is not
+UIKit at 1024pt; these tests catch breaks, never fidelity.**
+
 ### 🔎 1.2.16 The numeric keypad — NOT an app bug, and the probe said so in one run · 2026-09-23
 
 ⛔ **Closed with a negative result, which is the useful kind.** The question was whether a real user
