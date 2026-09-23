@@ -84,20 +84,20 @@ name: Demo mode (enter, preview premium, exit)
 # Web cannot prove these are native screens rather than a re-render; this can.
 - scrollUntilVisible:
     element:
-      text: "Open the safe-harbor calculator"
+      text: "Avoid the IRS penalty"
     direction: DOWN
 - waitForAnimationToEnd
-- tapOn: "Open the safe-harbor calculator"
+- tapOn: "Avoid the IRS penalty"
 - assertVisible: "Safe harbor"
 - assertNotVisible: "SetAside Premium"
 - tapOn: "Close"
 
 - scrollUntilVisible:
     element:
-      text: "Open the expense breakdown"
+      text: "Expense breakdown"
     direction: DOWN
 - waitForAnimationToEnd
-- tapOn: "Open the expense breakdown"
+- tapOn: "Expense breakdown"
 - assertVisible: "Expense breakdown"
 - assertNotVisible: "SetAside Premium"
 - tapOn: "Close"

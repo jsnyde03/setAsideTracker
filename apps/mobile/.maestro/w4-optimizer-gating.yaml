@@ -100,10 +100,10 @@ name: W-4 optimizer gating (locked card → paywall)
 # The optimizer card is present but locked behind Premium; tapping it opens the paywall directly.
 - scrollUntilVisible:
     element:
-      text: "W-4 withholding optimizer.*Premium.*"
+      text: "Skip quarterly payments.*Premium.*"
     direction: DOWN
 - waitForAnimationToEnd
 - tapOn:
-    text: "W-4 withholding optimizer.*Premium.*"
+    text: "Skip quarterly payments.*Premium.*"
 - assertVisible: "SetAside Premium"
 - tapOn: "Close"

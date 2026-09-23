@@ -274,7 +274,17 @@ export function PaywallScreen({ onClose }: PaywallScreenProps) {
           disabled={busy}
           style={[styles.subscribeButton, busy && styles.buttonDisabled]}
           accessibilityRole="button"
-          accessibilityLabel="Subscribe"
+          /**
+           * ⛔ The PRICE has to be in the label, because the wrapper's label REPLACES the button's
+           * visible text in the accessibility tree — so "Subscribe" alone meant a VoiceOver user
+           * reached the purchase button without ever being told what it costs. A sighted user reads
+           * the price on the button itself; this is the only way the same fact reaches everyone.
+           */
+          accessibilityLabel={
+            selectedPlan
+              ? `Subscribe — ${selectedPlan.priceString} ${selectedPlan.periodLabel}`
+              : "Subscribe"
+          }
         >
           {purchasing ? (
             <ActivityIndicator color="#FFFFFF" />

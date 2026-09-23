@@ -458,6 +458,13 @@ export function SettingsScreen({
           ]}
           accessibilityRole="button"
           accessibilityLabel="Restore from backup file"
+          /**
+           * ⛔ The row's subtitle says this REPLACES everything on the device, and the wrapper's
+           * label swallows that subtitle — so the one person who cannot see the warning was the one
+           * being asked to act on it. The consequence goes in a hint rather than the label, which
+           * is where VoiceOver expects "what happens if I do this".
+           */
+          accessibilityHint="Replaces everything on this device with the contents of the backup."
           accessibilityState={{ disabled: restoring, busy: restoring }}
         >
           <View style={styles.rowText}>

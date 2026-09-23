@@ -598,7 +598,15 @@ export function DashboardScreen({
                   onPress={canUsePremium ? onOpenW4Optimizer : onOpenPaywall}
                   style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
                   accessibilityRole="button"
-                  accessibilityLabel={canUsePremium ? "Open the W-4 withholding optimizer" : "W-4 withholding optimizer (Premium)"}
+                  /**
+                   * ⛔ LEAD WITH THE HEADLINE THE CARD ACTUALLY SHOWS. This wrapper's label
+                   * replaces both Texts below it, so naming the feature internally meant a
+                   * VoiceOver user heard "W-4 withholding optimizer" and never heard the benefit
+                   * the card is built around — the whole reason to tap it. The subtitle moves to a
+                   * hint rather than being lost. Same shape on all five insight cards.
+                   */
+                  accessibilityLabel={canUsePremium ? "Skip quarterly payments" : "Skip quarterly payments, Premium"}
+                  accessibilityHint="Cover your gig taxes through your W2 paycheck instead — see the W-4 amount."
                 >
                   <View style={styles.insightIconWrap}>
                     <Ionicons name={canUsePremium ? "options-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
@@ -620,7 +628,8 @@ export function DashboardScreen({
                   onPress={canUsePremium ? onOpenSafeHarbor : onOpenPaywall}
                   style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
                   accessibilityRole="button"
-                  accessibilityLabel={canUsePremium ? "Open the safe-harbor calculator" : "Safe-harbor calculator (Premium)"}
+                  accessibilityLabel={canUsePremium ? "Avoid the IRS penalty" : "Avoid the IRS penalty, Premium"}
+                  accessibilityHint="See the safe-harbor minimum to pay in — often less than your full bill."
                 >
                   <View style={styles.insightIconWrap}>
                     <Ionicons name={canUsePremium ? "shield-checkmark-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
@@ -642,7 +651,8 @@ export function DashboardScreen({
                   onPress={canUsePremium ? onOpenYearOverYear : onOpenPaywall}
                   style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
                   accessibilityRole="button"
-                  accessibilityLabel={canUsePremium ? "Open year-over-year insights" : "Year-over-year insights (Premium)"}
+                  accessibilityLabel={canUsePremium ? "Year-over-year insights" : "Year-over-year insights, Premium"}
+                  accessibilityHint="See how this year compares to last — earnings, miles, and tax."
                 >
                   <View style={styles.insightIconWrap}>
                     <Ionicons name={canUsePremium ? "trending-up-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
@@ -664,7 +674,8 @@ export function DashboardScreen({
                   onPress={canUsePremium ? onOpenExpenseBreakdown : onOpenPaywall}
                   style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
                   accessibilityRole="button"
-                  accessibilityLabel={canUsePremium ? "Open the expense breakdown" : "Expense breakdown (Premium)"}
+                  accessibilityLabel={canUsePremium ? "Expense breakdown" : "Expense breakdown, Premium"}
+                  accessibilityHint="See your write-offs grouped by Schedule C line — including custom categories."
                 >
                   <View style={styles.insightIconWrap}>
                     <Ionicons name={canUsePremium ? "receipt-outline" : "lock-closed-outline"} size={18} color={colors.primary} />
@@ -688,7 +699,8 @@ export function DashboardScreen({
                   onPress={canUsePremium ? onOpenBestDays : onOpenPaywall}
                   style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
                   accessibilityRole="button"
-                  accessibilityLabel={canUsePremium ? "Open best days to work" : "Best days to work (Premium)"}
+                  accessibilityLabel={canUsePremium ? "Best days to work" : "Best days to work, Premium"}
+                  accessibilityHint="Which days of the week have actually paid you best per hour."
                 >
                   <View style={styles.insightIconWrap}>
                     <Ionicons name={canUsePremium ? "calendar-outline" : "lock-closed-outline"} size={18} color={colors.primary} />

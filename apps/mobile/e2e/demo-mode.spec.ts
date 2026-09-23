@@ -143,9 +143,9 @@ test("a demo session leaves the real account provably untouched", async ({ page 
  * things that spend money or write a real file still refuse.
  */
 const PREVIEWABLE_CARDS = [
-  { card: "Open the W-4 withholding optimizer", locked: "W-4 withholding optimizer (Premium)", screen: "W-4 optimizer" },
-  { card: "Open the safe-harbor calculator", locked: "Safe-harbor calculator (Premium)", screen: "Safe harbor" },
-  { card: "Open the expense breakdown", locked: "Expense breakdown (Premium)", screen: "Expense breakdown" },
+  { card: "Skip quarterly payments", locked: "Skip quarterly payments, Premium", screen: "W-4 optimizer" },
+  { card: "Avoid the IRS penalty", locked: "Avoid the IRS penalty, Premium", screen: "Safe harbor" },
+  { card: "Expense breakdown", locked: "Expense breakdown, Premium", screen: "Expense breakdown" },
 ];
 
 /**
@@ -165,8 +165,8 @@ test("year-over-year cannot be previewed: the persona has only one year", async 
   await visible(page.getByText("Explore with sample data")).first().click();
   await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
 
-  await expect(visible(page.getByLabel("Open year-over-year insights"))).toHaveCount(0);
-  await expect(visible(page.getByLabel("Year-over-year insights (Premium)"))).toHaveCount(0);
+  await expect(visible(page.getByLabel("Year-over-year insights"))).toHaveCount(0);
+  await expect(visible(page.getByLabel("Year-over-year insights, Premium"))).toHaveCount(0);
 });
 
 test("the premium cards open their real screens inside a demo", async ({ page }) => {

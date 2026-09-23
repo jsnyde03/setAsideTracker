@@ -167,8 +167,16 @@ export function SafeHarborScreen({
             />
           </View>
 
+          {/* The AMOUNT belongs in the label: this wrapper's label replaces the sentence below it,
+              so without it a VoiceOver user is offered an estimate and never told what it is. */}
           {priorYearSuggestion !== undefined && (
-            <Pressable onPress={applySuggestion} hitSlop={6} accessibilityRole="button" accessibilityLabel="Use estimate from my logged data">
+            <Pressable
+              onPress={applySuggestion}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={`Use estimate from my logged data, about ${formatCurrency(priorYearSuggestion)} from ${priorYear}`}
+              accessibilityHint="Fills in last year's federal tax. Confirm it against your return."
+            >
               <Text style={styles.suggestion}>
                 From your logged {priorYear} data, that was about{" "}
                 <Text style={styles.suggestionEmphasis}>{formatCurrency(priorYearSuggestion)}</Text> — tap
