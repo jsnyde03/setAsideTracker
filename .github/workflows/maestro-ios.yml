@@ -59,7 +59,58 @@ jobs:
         # binary". Every run says what it built in its first ten lines.
         run: echo "=== Building commit $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s) ==="
 
+      - name: Derive the source fingerprint for the .app cache
+        id: fp
+        # ⛔ MECHANICAL, never a hand-listed set of globs. Hand-built enumerations undercount every
+        # time they are measured here, and the cost of missing ONE input is the worst failure this
+        # repo has: a green run against a binary that does not contain the code under test.
+        # `git ls-files -s` emits mode+blob-SHA+path for every TRACKED file, so a new source file is
+        # covered the moment it is added -- nobody has to remember to extend a list.
+        #
+        # ⚠️ `.maestro/` and `e2e/` are excluded ON PURPOSE. Neither is bundled into the binary, and
+        # both change on nearly every commit during flow work -- including them would bust the cache
+        # in precisely the case it exists to serve. Planted both ways before shipping: a flow edit
+        # leaves the fingerprint unchanged, a one-character source edit moves it.
+        #
+        # Xcode is in the key too: the runner image rolls, and a binary built by another toolchain
+        # is a different artifact even from identical source.
+        run: |
+          # ⚠️ THIS FILE is in the fingerprint too, and that is not tidiness. The xcodebuild flags
+          # below decide what the binary IS -- CODE_SIGN_IDENTITY="-" alone is the difference
+          # between an app that can use the Keychain and one that cannot save anything at all.
+          # Serving a cached binary built under different flags is the stale-artifact bug wearing a
+          # different hat. The cost is that editing even a comment here rebuilds once; correctness
+          # is worth more than one build.
+          SRC=$(git ls-files -s apps/mobile services/tax-engine package.json package-lock.json \
+                  .github/workflows/maestro-ios.yml \
+                  ':!:apps/mobile/.maestro/**' ':!:apps/mobile/e2e/**' \
+                | git hash-object --stdin | cut -c1-16)
+          XC=$(xcodebuild -version | head -1 | tr -d ' .')
+          echo "hash=$SRC" >> "$GITHUB_OUTPUT"
+          echo "key=app-${{ runner.os }}-$XC-$SRC" >> "$GITHUB_OUTPUT"
+          echo "=== source fingerprint $SRC · $XC ==="
+
+      - name: Restore the built .app
+        id: appcache
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile/ios/build/Build/Products/Release-iphonesimulator
+          key: ${{ steps.fp.outputs.key }}
+
+      - name: Say what the cached binary actually is
+        if: steps.appcache.outputs.cache-hit == 'true'
+        # ⛔ A check that ships inside the artifact it inspects cannot tell you the artifact is
+        # stale. So the binary carries a stamp written at BUILD time and the log prints it here:
+        # every cached run states which commit produced the thing it is about to test. If that ever
+        # disagrees with the commit at the top of this log in a way the fingerprint did not predict,
+        # the cache key is wrong and this line is how anyone finds out.
+        run: |
+          echo "=== CACHE HIT: skipping prebuild + xcodebuild ==="
+          cat apps/mobile/ios/build/Build/Products/Release-iphonesimulator/BUILDINFO.txt \
+            || echo "(no build stamp -- treat this binary as unidentified)"
+
       - uses: actions/setup-node@v4
+        if: steps.appcache.outputs.cache-hit != 'true'
         with:
           # Pinned to match codemagic.yaml. The runner ships Node 24; parity removes a variable from
           # a harness that is itself the thing under test on the first run.
@@ -67,14 +118,17 @@ jobs:
           cache: npm
 
       - name: Install root workspace dependencies
+        if: steps.appcache.outputs.cache-hit != 'true'
         # ⚠️ This is an npm WORKSPACE — everything hoists to the repo root and apps/mobile/node_modules
         # is empty. Install from the root or nothing resolves.
         run: npm install --prefer-offline --no-audit --no-fund
 
       - name: Build the tax-engine package
+        if: steps.appcache.outputs.cache-hit != 'true'
         run: npm run build --workspace services/tax-engine
 
       - name: Typecheck + unit test (fail fast before the slow native build)
+        if: steps.appcache.outputs.cache-hit != 'true'
         # Cheap gates before a ~15-minute xcodebuild. A type error found here costs seconds.
         working-directory: apps/mobile
         run: |
@@ -82,6 +136,7 @@ jobs:
           npm test
 
       - name: Cache CocoaPods
+        if: steps.appcache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -91,11 +146,13 @@ jobs:
           restore-keys: pods-${{ runner.os }}-
 
       - name: Generate the native iOS project (expo prebuild)
+        if: steps.appcache.outputs.cache-hit != 'true'
         # expo prebuild runs `pod install` itself on macOS, so no separate pod step is needed.
         working-directory: apps/mobile
         run: npx expo prebuild --platform ios
 
       - name: Build the app for the iOS Simulator
+        if: steps.appcache.outputs.cache-hit != 'true'
         # Release embeds the JS bundle, so no Metro at run time.
         #
         # ⛔ AD-HOC SIGNED, DELIBERATELY — this is the single most expensive lesson in this file.
@@ -129,6 +186,21 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="-" \
             build
+
+          # ⛔ Stamp the binary with what produced it, BEFORE it is cached. This is the only thing
+          # that can identify a restored artifact later: the cache key proves the inputs matched,
+          # but a human reading a green log needs to see WHICH commit the tested binary came from.
+          # A build of old code brings its own old everything -- the stamp is how that announces
+          # itself instead of passing silently.
+          cat > ios/build/Build/Products/Release-iphonesimulator/BUILDINFO.txt <<STAMP
+          built:  $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          commit: $(git rev-parse HEAD)
+          subject: $(git log -1 --pretty=%s)
+          source-fingerprint: ${{ steps.fp.outputs.hash }}
+          xcode: $(xcodebuild -version | head -1)
+          STAMP
+          echo "=== stamped ==="
+          cat ios/build/Build/Products/Release-iphonesimulator/BUILDINFO.txt
 
       - name: Boot a simulator and install the app
         # ⚠️ Do NOT hardcode a simulator name. The runner's Xcode image decides which devices exist,
