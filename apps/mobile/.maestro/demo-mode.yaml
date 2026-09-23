@@ -69,6 +69,13 @@ name: Demo mode (enter, preview premium, exit)
 # wrapper, and that REPLACES the child text in the accessibility tree -- so "Sample data — not your
 # account" is on screen for a human and unreachable for Maestro, which only ever sees this string.
 - assertVisible: "Sample data. This is an example account, not your own.*"
+# ⛔ Settings lives in the dashboard ListHeaderComponent, so scrolling DOWN to the entries
+# takes it off screen. Scroll back UP to it rather than tapping where it used to be.
+- scrollUntilVisible:
+    element:
+      text: "Settings"
+    direction: UP
+- waitForAnimationToEnd
 - tapOn: "Settings"
 - assertVisible: "Sample data. This is an example account, not your own.*"
 - tapOn: "Close"

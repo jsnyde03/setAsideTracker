@@ -55,10 +55,21 @@ name: Clear all data (destructive confirm + return to onboarding)
     direction: DOWN
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
+- scrollUntilVisible:
+    element:
+      text: "Edit DoorDash entry.*"
+    direction: DOWN
+- waitForAnimationToEnd
 - assertVisible:
     text: "Edit DoorDash entry.*"
 
 # --- Clear it, confirming the native destructive Alert ---
+# ⛔ Settings lives in the dashboard ListHeaderComponent, and the scroll above took it off screen.
+- scrollUntilVisible:
+    element:
+      text: "Settings"
+    direction: UP
+- waitForAnimationToEnd
 - tapOn: "Settings"
 - assertVisible: "Appearance"
 - scrollUntilVisible:
@@ -85,5 +96,14 @@ name: Clear all data (destructive confirm + return to onboarding)
     direction: DOWN
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
-- assertNotVisible:
-    text: "Edit DoorDash entry.*"
+# ⛔ ASSERT THE EMPTY STATE BY NAME, not the absence of the entry. This is the flow's whole point —
+# that a destructive clear really destroyed — and an absence assertion cannot carry it: the entry
+# list sits below this scroll position, so "Edit DoorDash entry" is off screen whether the data was
+# cleared or is sitting right there intact. The old line would have gone green over a clear that
+# did nothing. The empty state is only rendered when there is genuinely nothing left.
+- scrollUntilVisible:
+    element:
+      text: "No entries yet.*"
+    direction: DOWN
+- waitForAnimationToEnd
+- assertVisible: "No entries yet.*"

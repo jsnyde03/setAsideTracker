@@ -95,10 +95,10 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
 # The card now appears (entries span two years); tapping it opens the paywall directly.
 - scrollUntilVisible:
     element:
-      text: "Year-over-year insights.*Premium"
+      text: "Year-over-year insights.*Premium.*"
     direction: DOWN
 - waitForAnimationToEnd
 - tapOn:
-    text: "Year-over-year insights.*Premium"
+    text: "Year-over-year insights.*Premium.*"
 - assertVisible: "SetAside Premium"
 - tapOn: "Close"

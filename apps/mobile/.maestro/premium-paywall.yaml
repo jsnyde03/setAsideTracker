@@ -47,6 +47,13 @@ name: Premium Paywall (smoke)
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
 # Open Settings → the premium upsell row → the paywall.
+# ⛔ Settings lives in the dashboard ListHeaderComponent, so scrolling DOWN to the entries
+# takes it off screen. Scroll back UP to it rather than tapping where it used to be.
+- scrollUntilVisible:
+    element:
+      text: "Settings"
+    direction: UP
+- waitForAnimationToEnd
 - tapOn: "Settings"
 - assertVisible: "Upgrade to Premium"
 - tapOn: "Upgrade to Premium"
