@@ -33,8 +33,10 @@ on:
 jobs:
   maestro:
     runs-on: macos-latest
-    # The native build dominates; 60 costs nothing on a free runner and beats a truncated run.
-    timeout-minutes: 60
+    # The native build dominates; this costs nothing on a free runner and beats a truncated run.
+    # ⚠️ Raised 60 → 90 on 2026-09-23: a slow runner can spend 7 minutes just booting the simulator,
+    # and the Maestro step now allows a 10-minute driver wait plus one retry on a harness failure.
+    timeout-minutes: 90
 
     env:
       # ⚠️ REQUIRED — without it the build fails, and it did (Codemagic, first dispatch 2026-08-08).
@@ -170,6 +172,10 @@ jobs:
           xcrun simctl bootstatus "$DEVICE_ID" -b
           xcrun simctl install "$DEVICE_ID" \
             ios/build/Build/Products/Release-iphonesimulator/SetAsideTracker.app
+
+          # ⚠️ Shell variables do NOT cross step boundaries. The Maestro step needs this UDID to
+          # restart a wedged simulator, so it goes through GITHUB_ENV or it arrives empty there.
+          echo "DEVICE_ID=$DEVICE_ID" >> "$GITHUB_ENV"
         working-directory: apps/mobile
 
       - name: Cache the Maestro CLI
@@ -203,26 +209,57 @@ jobs:
             echo "Running a single flow: $TARGET"
           fi
 
-          # ⛔ The XCUITest runner is installed and launched on FIRST USE, and on a cold runner that
-          # does not fit in Maestro's 15s default -- run 35813422434 spent 40 minutes and executed
-          # ZERO flows, dying with IOSDriverTimeoutException before the first one started.
-          export MAESTRO_DRIVER_STARTUP_TIMEOUT=240000
+          # ⛔ The XCUITest runner is installed and launched on FIRST USE, and on a SLOW runner that
+          # does not fit in Maestro's 15s default. ⚠️ Runner speed varies ~4.5x between dispatches
+          # and it is the whole story here -- measured on the `simctl bootstatus` wait, which is the
+          # same work every run: 1m36s on 35810608829 (flows ran) vs 7m13s on 35815572229 (the
+          # driver never came up). 240000 was already applied on that second one and was not enough.
+          export MAESTRO_DRIVER_STARTUP_TIMEOUT=600000
 
-          # ⚠️ PIPESTATUS[0], never $? -- a pipeline reports the LAST command's status, so `$?` here
-          # would be tee's 0 and every failure would read as a pass.
-          maestro test "$TARGET" 2>&1 | tee /tmp/maestro-output.txt
-          MAESTRO_EXIT=${PIPESTATUS[0]}
+          run_maestro() {
+            # ⚠️ PIPESTATUS[0], never $? -- a pipeline reports the LAST command's status, so `$?`
+            # here would be tee's 0 and every failure would read as a pass.
+            maestro test "$TARGET" 2>&1 | tee /tmp/maestro-output.txt
+            return ${PIPESTATUS[0]}
+          }
+
+          # A harness failure executes NO flow, so there is nothing to re-read and nothing to think
+          # about -- the only useful response is to run it again on a fresh driver. Doing that here
+          # costs minutes; doing it by hand costs a whole 35-minute build, and two consecutive
+          # dispatches were already spent that way for zero information.
+          flows_ran() { grep -qE '\[(Passed|Failed)\]' /tmp/maestro-output.txt; }
+
+          MAESTRO_EXIT=0
+          run_maestro || MAESTRO_EXIT=$?
+
+          if [ "$MAESTRO_EXIT" -ne 0 ] && ! flows_ran; then
+            echo ""
+            echo "=== NO FLOW RAN -- harness failure. Restarting the driver and retrying once. ==="
+            grep -iE 'driver not ready|IOSDriverTimeout|Unable to launch' /tmp/maestro-output.txt \
+              | head -3 || true
+            # ⚠️ Addressed by UDID (exported from the boot step), never `booted` -- if the shutdown
+            # succeeds there is no longer a device named `booted` to bring back up.
+            if [ -n "$DEVICE_ID" ]; then
+              xcrun simctl shutdown "$DEVICE_ID" || true
+              xcrun simctl boot "$DEVICE_ID" || true
+              xcrun simctl bootstatus "$DEVICE_ID" -b || true
+            else
+              echo "(DEVICE_ID not set -- retrying against the existing simulator)"
+            fi
+            MAESTRO_EXIT=0
+            run_maestro || MAESTRO_EXIT=$?
+          fi
 
           # ⛔ "Failed" is not one outcome, it is two, and they mean opposite things. A HARNESS
           # failure executes no flow at all and says NOTHING about the app or about any fix under
           # test -- read it as a result and you will "verify" something that never ran. Two runs
-          # have now been misread this way, so the log says which one it was, unmissably.
-          if [ "$MAESTRO_EXIT" -ne 0 ] && ! grep -qE '\[(Passed|Failed)\]' /tmp/maestro-output.txt; then
+          # were misread that way before this banner existed.
+          if [ "$MAESTRO_EXIT" -ne 0 ] && ! flows_ran; then
             echo ""
             echo "################################################################"
-            echo "## NO FLOW RAN. This is a HARNESS failure, not a test result.  ##"
+            echo "## NO FLOW RAN, TWICE. This is a HARNESS failure, not a result.##"
             echo "## Nothing here confirms or refutes any change under test.     ##"
-            echo "## Re-dispatch. Do not draw a conclusion about the app.        ##"
+            echo "## Do not draw a conclusion about the app.                     ##"
             echo "################################################################"
             echo ""
             grep -iE 'driver not ready|IOSDriverTimeout|Unable to launch|simulator' /tmp/maestro-output.txt \
