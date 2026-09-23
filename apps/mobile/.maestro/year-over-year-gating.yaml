@@ -36,7 +36,7 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
 # so the dismissal tap opened the native date picker, which covered Save Entry and turned a working
 # scroll into "Element not found". Addressing a non-interactive label BY NAME cannot drift when the
 # layout moves, which is the whole failure mode 1.2.5 introduced here.
-- tapOn: "Measures your miles while a trip is running"
+- tapOn: "Measures your miles while a trip is running.*"
 - takeScreenshot: .maestro/diag-before-save
 - tapOn: "Save Entry"
 - takeScreenshot: .maestro/diag-after-save
@@ -82,7 +82,7 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
 # so the dismissal tap opened the native date picker, which covered Save Entry and turned a working
 # scroll into "Element not found". Addressing a non-interactive label BY NAME cannot drift when the
 # layout moves, which is the whole failure mode 1.2.5 introduced here.
-- tapOn: "Measures your miles while a trip is running"
+- tapOn: "Measures your miles while a trip is running.*"
 - takeScreenshot: .maestro/diag-before-save
 - tapOn: "Save Entry"
 - takeScreenshot: .maestro/diag-after-save
