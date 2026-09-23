@@ -17,11 +17,17 @@ Read the plan's `RESUME HERE` block first; it is kept current.
 mileage trip toggle · the premium slice (four surfaces) · filed correctness + submission compliance.
 **Per-item detail is in `V1_2_LOG.md` and belongs there, not here.**
 
-⏸ **1.2.1 (demo mode) is 7/7 built and cannot close** — Maestro resumes ~November.
-▶ **ACTIVE: 1.2.7, native iPad**, decomposed in the plan. ⚠️ **Its verification is almost entirely
-visual and device-owed**, so expect it to *bank* checks for the reserved build rather than clear
-them. 🔴 **Flipping `supportsTablet` obliges iPad screenshots in App Store Connect** — a submission
-requirement that ships with the flip, not after it.
+▶ **ACTIVE: 1.2.14 — Maestro on GitHub Actions**, decomposed in the plan.
+⏸ **1.2.7 (native iPad) PARKED at 4/8** — the seam, the dashboard's two columns and all four sheets
+shipped; **.6 hardware keyboard and .7 iPad screenshots are device-owed.** 🔴 **Flipping
+`supportsTablet` obliges iPad screenshots in App Store Connect** — a submission requirement that
+ships with the flip. ⏸ **1.2.1 (demo mode) is 7/7 built** and closes when the Maestro suite is green.
+
+🔴 **1.2.13 IS AN UNFINISHED SHIP BLOCKER.** `docs/privacy.html` is now served by GitHub Pages from
+**this** repo ([D26]) — but Pages serves **`master`**, which still carries the **July** policy that
+never mentions location. v1.2 ships location capture. **Merging v1.2 to master at release publishes
+it**, and `node tools/check-published-policy.mjs` fails the submission if that is forgotten. _(It is
+correct today: live v1.1.1 collects no location.)_
 
 ⚡ **Five live v1.1.1 defects were found by BUILDING ON TOP OF THEM, not by any backlog:** three
 money-wrong tax bugs · a data-loss path that greeted an unreadable-data user as brand new and
@@ -30,7 +36,7 @@ reached no existing install while their queue silently drained · and "Clear All
 app lock on, so the next launch demanded Face ID for an app with nothing in it. **None reach anyone
 until v1.2 ships** — [D10]'s accepted cost, and the reason to keep moving.
 
-⛔ **THE ONE RESERVED BUILD NOW OWES FOUR THINGS, and two are new.** The agenda is at the head of
+⛔ **THE ONE RESERVED BUILD NOW OWES FIVE THINGS.** The agenda is at the head of
 `V1_2_TESTFLIGHT_CHECKLIST.md`, ordered most-likely-broken first. **Do not spend a build on less.**
 1. **Does it upload?** ITMS-91053 names any required-reason API still undeclared — unknowable here.
 2. **Does it install?** ⚠️ **It will land as "Missing Compliance"** until the export questionnaire is
@@ -38,7 +44,9 @@ until v1.2 ships** — [D10]'s accepted cost, and the reason to keep moving.
    answer: Apple's own classification rather than our reading of the EAR.
 3. **1.2.5 (mileage)** — two native modules, a config plugin, a background task, all proven only
    against mocks in Node.
-4. **Every iPad layout**, once 1.2.7 lands.
+4. **Every iPad layout** — 1.2.7's .1–.4 have landed, so this is owed now. RN-web at 1024px is not
+   UIKit at 1024pt; the local iPad Playwright projects catch *breaks*, not fidelity.
+5. **1.2.7's device-owed rows** — the hardware keyboard (.6) and the App Store iPad screenshots (.7).
 
 ⚠️ **One privacy policy only: `docs/privacy.html`** ([D16]), and **one claim lives in three places** —
 the policy, the App Store Connect labels, and `app.json`. ⚡ **That rule is now a GATE**
@@ -46,9 +54,21 @@ the policy, the App Store Connect labels, and `app.json`. ⚡ **That rule is now
 earlier by my own edit. Analytics is gated too — `analyticsPrivacy.test.ts` fails any event property
 outside an allow-list, which is what catches the field nobody thought to forbid.
 
-⚠️ **"Out of Codemagic minutes" is wrong and it misled a session.** **~80% is consumed, and Jason
-stopped the Maestro work deliberately to RESERVE the rest for TestFlight** _(2026-09-21)_. A device
-build **is** available — it is scarce and spoken for.
+✅ **MAESTRO RUNS FREE ON GITHUB ACTIONS ([D27], 2026-09-22)** — measured, not assumed:
+`billable.MACOS.total_ms = 0`, because the repo is **public**. ⛔ **"Maestro resumes ~November" and
+"take the repo private" are both RETIRED** — private repos lose free macOS runners, so those two
+wishes were mutually exclusive. `gh workflow run maestro-ios.yml --ref v1.2` (add
+`-f flow=<name>.yaml` for one flow). **Codemagic's ~20% remainder is reserved for TestFlight alone.**
+
+⛔ **BEFORE EDITING ANY MAESTRO FLOW, read `V1_2_LOG.md` → "Runs 3 and 4 — WHAT WENT WRONG".** Four
+runs went **2/12 → 2/12 → 2/12 → 1/12** because flows were changed on guesses at ~45 min a cycle.
+Three instrument faults, none of them the app: **a coordinate is not a neutral point** (`50%,15%`
+landed in the Date field and opened a picker) · **Maestro text selectors are FULL-MATCH regexes**
+(every selector here uses `.*`; one without reports "not found" for an element the dump shows
+present) · **the suite is flaky on its own** (a flow passed runs 1–3 and failed run 4 untouched —
+re-run before believing a delta). ⚠️ **The build dominates each run (~35–40 min), so a single-flow
+run is barely faster** — the backlog carries "cache the built `.app`", which is what makes this loop
+usable.
 
 ## Rules that cost real time to rediscover
 

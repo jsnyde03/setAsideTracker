@@ -26,18 +26,23 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> ✅ **1.2.2–1.2.6 and 1.2.10 ARE ALL COMPLETE** and closed. **▶ ACTIVE: 1.2.7, native iPad**,
-> decomposed below — and promoted with its weakness stated: **its verification is almost entirely
-> visual and device-owed**, so it banks checks for the reserved build rather than clearing them here.
-> 🔴 **Flipping `supportsTablet` obliges iPad screenshots in App Store Connect.**
-> ⛔ **The reserved build now owes four things** — ITMS-91053, the **"Missing Compliance"** answer
-> ([D23], which is also how the export question gets answered at all), 1.2.5's mileage stack, and
-> every iPad layout once 1.2.7 lands. Agenda → [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
-> ⛔ **1.2.5 has ZERO device verification and cannot get any off-device.** The one-build agenda is at
-> the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — **one build, four items'
-> worth**, minutes reserved for it. **⏸ 1.2.1 is 7/7 built**, Maestro waiting on ~November.
-> Health: **378** mobile unit · **102** engine · **66/66** Playwright · typecheck clean · both tax-config
-> gates green · lint 15 _(the ledger says 14 — drift, all pre-existing, re-count at 1.2.11)_.
+> ⏳ **READ THIS FIRST: a Maestro run was still building when the session ended.**
+> `gh run view 35810608829 --log` — single flow, `log-and-delete-entry.yaml`. **Read its result
+> before changing anything**, because it tests the last fix and nobody has seen the answer.
+>
+> ✅ **1.2.2–1.2.6, 1.2.10 CLOSED.** ▶ **ACTIVE: 1.2.14 — Maestro on GitHub Actions**, decomposed
+> below. **⏸ 1.2.7 (native iPad) is PARKED at 4/8** — .5/.8 are doable here, .6/.7 are device-owed.
+> 🔴 **1.2.13 is a SHIP BLOCKER and is not finished:** Pages now serves this repo's `docs/`, but it
+> serves **`master`**, which still carries the July policy. **Merging v1.2 to master at release is
+> what publishes the location disclosure**; `node tools/check-published-policy.mjs` fails the
+> submission if it is forgotten.
+> ⛔ **The reserved Codemagic build owes five things** — ITMS-91053 · the **"Missing Compliance"**
+> answer ([D23], which is also how the export question gets answered) · 1.2.5's mileage stack ·
+> **every iPad layout** · 1.2.7's hardware-keyboard and screenshot rows. Agenda →
+> [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
+> Health: **400** mobile unit · **102** engine · **106/106** Playwright _(66 chromium + 20 + 20 iPad)_ ·
+> typecheck clean · both tax-config gates green · lint 15 _(ledger says 14 — drift, pre-existing,
+> re-count at 1.2.11)_.
 >
 > ⚠️ **Fixed 2026-09-21: four lines said "1.2.3 = the mileage toggle."**
 > **1.2.3 is the data-safety block; mileage is 1.2.5** — the queue table and the log's renumber map
@@ -58,28 +63,32 @@
 > else broke", not "this works on a phone"** — that happened three times in 1.2.1 alone. Device gates
 > → [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
 >
-> ⏸ **MAESTRO IS PAUSED — and "out of minutes" was the wrong summary.** ⚠️ **Codemagic is ~80%
-> consumed; Jason stopped the Maestro work deliberately to RESERVE the remainder for TestFlight
-> builds** _(Jason 2026-09-21, correcting this block)_. So a device build **is** available — it is
-> scarce and spoken for. **What follows: never spend one on a single item.** Accumulate the
-> device-owed work and send one build carrying all of it. Maestro resumes ~November 2026.
-> **Next Maestro action when minutes return: dispatch the CURRENT branch tip and read the log.**
-> Nothing is owed on this machine; everything is pushed. Full narrative → [V1_2_LOG.md](V1_2_LOG.md).
+> ✅ **MAESTRO IS UNPAUSED AND FREE — [D27], 2026-09-22.** It runs on **GitHub Actions**, measured at
+> **`billable.MACOS.total_ms = 0`** because the repo is public. ⛔ **"Resumes ~November" is retired**,
+> and so is the **"repo → private"** item — private repos lose free macOS runners, so the two were
+> mutually exclusive. Codemagic's remaining minutes are now reserved for TestFlight **alone**.
+> **Start a run:** `gh workflow run maestro-ios.yml --ref v1.2` · one flow:
+> `-f flow=demo-mode.yaml`. _(No push trigger — it was removed for starting a 48-min run on every
+> comment edit.)_
 >
-> **2 of 12 flows pass** (`Onboarding → Dashboard`, `Onboarding validation`). ⚡ **The app was never
-> broken** — thirteen dispatches diagnosed a *harness*, and the one real app question raised along
-> the way (does `enterDemo()` work on device?) resolved as **yes**.
+> ⚡ **The dump is still the single most useful thing here, and it earned it four more times.** A
+> failing assertion says what was ABSENT; the hierarchy says what was PRESENT. ⛔ **Do not diagnose
+> from assertion text — read the dump.**
 >
-> ⚡ **The single most useful thing built here: the Maestro step now prints every on-screen text
-> node into the build log on failure.** A failing assertion says what was ABSENT; that dump says
-> what was PRESENT, and it cracked the two hardest failures on its first run each. **Do not
-> diagnose from assertion text — read the dump.**
+> 🔴 **READ THE LOG'S "Runs 3 and 4 — WHAT WENT WRONG" ENTRY BEFORE EDITING ANY FLOW.** Four runs
+> went 2/12 → 2/12 → 2/12 → 1/12 because **I changed flows on guesses at 45 minutes a cycle.** The
+> three mechanisms are all instrument faults, not app faults:
+> 1. **A coordinate is not a neutral point.** `50%,15%` landed inside the Date field once the form
+>    reflowed, opening a date picker over the form.
+> 2. **Maestro text selectors are FULL-MATCH regexes** — every selector here uses `.*` for that
+>    reason. A selector without one reports "not found" for an element the dump shows present.
+> 3. **The suite is FLAKY independent of any edit** — `onboarding-validation` passed runs 1–3 and
+>    failed run 4 untouched. **Re-run before believing a delta.**
 >
-> **Three open questions, all answerable from the next log, none needing a code change first:**
-> 1. `custom-expenses-gating` / `mileage-log-gating` fail finding the Premium row — and they type
->    nothing, so the numeric keypad cannot be the cause. Unknown; the dump now covers them.
-> 2. `Premium Paywall` — `Settings` not found on the dashboard.
-> 3. `Demo mode` — now enters the demo successfully, then cannot find the seeded Uber entry.
+> ✅ **The one real app-side finding: the flows predate 1.2.5's GPS trip toggle**, which pushed
+> `Save Entry` below the fold — and **that surface is now CLOSED** (an entry saves; the dashboard
+> renders "You're $16.96 behind"). The same fault repeats one screen later: **v1.2 grew every screen,
+> and the flows assume the old layouts.** ⚠️ **In four runs the app has never been shown broken.**
 
 **Branch:** `v1.2` · **Target: none — ship ASAP** ([D9], superseding [D4]'s August)
 **Structural audit:** [`audits/2026-08-07-v1.2-structural/`](audits/2026-08-07-v1.2-structural/SYNTHESIS.md) · **Gap scan:** [`audits/2026-09-20-v1.2-gap-scan/`](audits/2026-09-20-v1.2-gap-scan/README.md) · **Ladder rationale:** [BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md)
@@ -154,7 +163,7 @@ re-buys it with a run.
 | **1.2.14.2** | **Port the workflow** to `.github/workflows/maestro-ios.yml`, carrying every lesson above. Pin Node 22 for parity (runner ships 24). | ⬜ |
 | **1.2.14.3** | ✅ **DONE 2026-09-22.** Two runs, **0 billable ms**. Every infra step passes — including `xcodebuild` ad-hoc signing and boot+install — and run 1 hit **the same 2/12 as Codemagic**, which is the port validating itself. | ✅ |
 | **1.2.14.4** | ⚙️ **The three questions are ANSWERED and two were mis-framed** *(Premium rows ARE present — never the keypad; `Settings` missing with `$0.00` at **y=-25**, i.e. scrolled past the header; demo now fails earlier, superseding it)*. 🔴 **Root cause found: the flows predate 1.2.5's GPS trip toggle, which grew the entry form.** Save Entry fixed → **all 5 of those flows moved past it**; the blocker relocated to the **numeric keypad staying open** (viewport 874→568) and the `50%,15%` neutral tap now landing on the trip-tracker description. | 🔵 |
-| **1.2.14.5** | **Green or triage all 12 flows**, then retire Codemagic's `maestro-ios` workflow so there is one Maestro home, not two. | ⬜ |
+| **1.2.14.5** | ⚙️ **IN PROGRESS — the Save Entry surface is CLOSED** *(an entry saves; the dashboard renders "You're $16.96 behind")*. The same below-the-fold fault repeats one screen later on the entry list, fixed in `log-and-delete-entry` along with a **vacuous `assertNotVisible`** that would have passed over a delete that did nothing. ⏳ **Run `35810608829` was still building at session end — read it first.** Then apply the same two-line pattern to the other flows, characterise the flakiness, and retire Codemagic's `maestro-ios` so there is one Maestro home. | 🔵 |
 | **1.2.14.6** | **Verify + whole-item after-scan.** | ⬜ |
 
 **Exit line:** the 12 flows run on GitHub Actions at zero cost, the harness questions are answered
