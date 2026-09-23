@@ -26,9 +26,18 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> ⏳ **READ THIS FIRST: a Maestro run was still building when the session ended.**
-> `gh run view 35810608829 --log` — single flow, `log-and-delete-entry.yaml`. **Read its result
-> before changing anything**, because it tests the last fix and nobody has seen the answer.
+> 🔴 **READ THIS FIRST — run `35810608829` FAILED, and it does NOT mean the last fix failed.**
+> It died at `step-011-scrollUntilVisible-State_you_primarily_w`, **in onboarding, upstream of
+> everything that was edited** — a step that passed in all four previous runs of this flow. ⛔ **So
+> the dashboard/entry-list fix is UNVERIFIED: the run never reached it.** Re-run before concluding
+> anything: `gh workflow run maestro-ios.yml --ref v1.2 -f flow=log-and-delete-entry.yaml`.
+>
+> ⚡ **And this is the third instance of the same thing, which makes it the most valuable lead here:
+> `scrollUntilVisible` fails on elements the hierarchy shows are PRESENT.** It explains the four
+> untouched "No visible element found" flows *and* the run-to-run flakiness *and* this failure —
+> possibly one bug, not three. ⛔ **Investigate that before fixing another flow.** Likely suspects,
+> in order: `centerElement: true` on a target that cannot be centred (every failure so far sits at
+> scrollbar 100%), and a visibility threshold that a bottom-edge element misses.
 >
 > ✅ **1.2.2–1.2.6, 1.2.10 CLOSED.** ▶ **ACTIVE: 1.2.14 — Maestro on GitHub Actions**, decomposed
 > below. **⏸ 1.2.7 (native iPad) is PARKED at 4/8** — .5/.8 are doable here, .6/.7 are device-owed.

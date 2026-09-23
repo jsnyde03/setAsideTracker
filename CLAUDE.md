@@ -60,6 +60,13 @@ outside an allow-list, which is what catches the field nobody thought to forbid.
 wishes were mutually exclusive. `gh workflow run maestro-ios.yml --ref v1.2` (add
 `-f flow=<name>.yaml` for one flow). **Codemagic's ~20% remainder is reserved for TestFlight alone.**
 
+⚡ **THE HIGHEST-VALUE LEAD, and it may be ONE bug rather than three: `scrollUntilVisible` fails on
+elements the hierarchy shows are PRESENT.** It would explain the four "No visible element found"
+flows, the run-to-run flakiness, **and** a step that passed four runs then failed a fifth untouched.
+⛔ **Investigate that before editing another flow.** Suspects in order: `centerElement: true` on a
+target that cannot be centred (every failure so far sits at scrollbar 100%), then a visibility
+threshold a bottom-edge element misses.
+
 ⛔ **BEFORE EDITING ANY MAESTRO FLOW, read `V1_2_LOG.md` → "Runs 3 and 4 — WHAT WENT WRONG".** Four
 runs went **2/12 → 2/12 → 2/12 → 1/12** because flows were changed on guesses at ~45 min a cycle.
 Three instrument faults, none of them the app: **a coordinate is not a neutral point** (`50%,15%`
