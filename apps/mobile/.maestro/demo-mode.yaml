@@ -141,12 +141,12 @@ name: Demo mode (enter, preview premium, exit)
 # scrolling alone never did.
 - assertVisible: "Welcome"
 - waitForAnimationToEnd
-- scrollUntilVisible:
-    element:
-      text: "Explore with sample data"
-    direction: DOWN
-- waitForAnimationToEnd
-- assertVisible: "Explore with sample data"
+# ⛔ NO SCROLL HERE, and the scroll was never what this step needed. Two runs failed on it with the
+# hierarchy showing the outer ScrollView at 0% — the swipe moved nothing on a freshly-replaced
+# route — while "Welcome" was already on screen and asserting cleanly. Scrolling to a button at the
+# bottom of onboarding proved nothing that "Welcome" above and the banner's absence below do not
+# prove better: the first says we are back on onboarding, the second says the demo is really gone.
+# A step that can fail without anything being wrong is worse than no step.
 # ⛔ VACUOUS AS WRITTEN until 2026-09-23: this asserted the banner's VISIBLE text, which the
 # wrapper's accessibilityLabel replaces in the accessibility tree. Maestro could never see that
 # string, so the assertion passed whether or not demo mode had actually exited -- the one thing

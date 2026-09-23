@@ -10,13 +10,18 @@ name: Onboarding → Dashboard
 - tapOn: "Your name"
 - inputText: "Maestro Tester"
 - tapOn: "Single"
-# ⚠️ hideKeyboard BEFORE reaching for the state field, not after. The field sits at y≈543 on
-# an 874-tall screen and the keyboard covers roughly the bottom third, so a blind tap lands on
-# the KEYBOARD: focus never leaves the name field and the next inputText appends there.
-# Proven, not guessed — dispatch #6's view hierarchy showed the name field holding
-# "Maestro Tester TX", the state field empty, and a native "State required" alert on screen.
-# That is why every flow "failed to reach the dashboard": onboarding was never valid.
-- hideKeyboard
+# ⛔ DISMISS THE KEYBOARD HERE, BEFORE REACHING FOR THE STATE FIELD. That field sits at y≈543 on
+# an 874-tall screen and the keyboard covers roughly the bottom third, so while it is up a tap
+# aimed at the field lands on the KEYBOARD: focus never leaves the name field and the next
+# inputText appends there. Proven, not guessed — dispatch #6's hierarchy showed the name field
+# holding "Maestro Tester TX", the state field empty, and a native "State required" alert.
+# ⚠️ By TAP rather than `hideKeyboard`, which is the least reliable primitive in this suite: it
+# took out 10 of 12 flows on run 35818419992, and when it under-delivers here it does so SILENTLY
+# — the state never gets typed, Continue fails validation, and the flow reports "Your earnings is
+# not visible" ten steps later. That is what read as random flakiness, at 1 run in 6.
+# A tap on a non-interactive label works for either keyboard (the screen sets
+# keyboardShouldPersistTaps="handled") and is what every other dismissal here already uses.
+- tapOn: "Tax profile.*"
 # ⛔ NO FLOW IN THIS SUITE USES `centerElement`, and the reason is in Maestro's own loop
 # (Orchestra.kt): while `centerElement` is set it accepts ONLY a near-centre element for the first
 # 5 iterations — `maxRetryCenterCount = 4` — and falls through to the plain visibility check on the
@@ -33,6 +38,9 @@ name: Onboarding → Dashboard
 - waitForAnimationToEnd
 - tapOn: "e.g. CA"
 - inputText: "TX"
+# ⚡ FAIL AT THE MIS-TYPE, not ten steps downstream. The "Texas" chip appears only once the
+# field really holds TX, so this turns a silent lost keystroke into a failure that names itself.
+- assertVisible: "Texas"
 # ⛔ NOT hideKeyboard. Once "TX" is in the field a NUMERIC KEYPAD is on screen, and iOS's numeric
 # keypad has no Done key, so hideKeyboard fails outright -- "Couldn't hide the keyboard", which
 # took out 10 of 12 flows on run 35818419992. The dump shows the pad at y=590-874 with TX already

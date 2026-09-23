@@ -19,7 +19,13 @@ name: W-4 optimizer gating (locked card → paywall)
 # Proven, not guessed — dispatch #6's view hierarchy showed the name field holding
 # "Maestro Tester TX", the state field empty, and a native "State required" alert on screen.
 # That is why every flow "failed to reach the dashboard": onboarding was never valid.
-- hideKeyboard
+# ⛔ NOT hideKeyboard. It is the least reliable primitive in this suite -- it took out 10 of
+# 12 flows on run 35818419992 -- and when it silently under-delivers here the keyboard still
+# covers the state field, the next tap lands on the KEYBOARD, and "TX" is never typed. That
+# surfaces ten steps later as "Your earnings is not visible", which is why it read as random
+# flakiness. Tapping a non-interactive label works for either keyboard
+# (keyboardShouldPersistTaps="handled") and is what every other dismissal here already uses.
+- tapOn: "Tax profile.*"
 - scrollUntilVisible:
     element:
       text: "State you primarily work in"
@@ -27,6 +33,9 @@ name: W-4 optimizer gating (locked card → paywall)
 - waitForAnimationToEnd
 - tapOn: "e.g. CA"
 - inputText: "TX"
+# ⚡ FAIL AT THE MIS-TYPE, not ten steps downstream. The "Texas" chip appears only once the
+# field really holds TX, so this turns a silent lost keystroke into a failure that names itself.
+- assertVisible: "Texas"
 # ⛔ NOT hideKeyboard: a NUMERIC keypad is up once "TX" is entered, and it has no Done key.
 # See onboarding.yaml for the evidence and the open question about why.
 - tapOn: "Tax profile.*"
