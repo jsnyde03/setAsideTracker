@@ -60,12 +60,8 @@ outside an allow-list, which is what catches the field nobody thought to forbid.
 wishes were mutually exclusive. `gh workflow run maestro-ios.yml --ref v1.2` (add
 `-f flow=<name>.yaml` for one flow). **Codemagic's ~20% remainder is reserved for TestFlight alone.**
 
-⚡ **THE HIGHEST-VALUE LEAD, and it may be ONE bug rather than three: `scrollUntilVisible` fails on
-elements the hierarchy shows are PRESENT.** It would explain the four "No visible element found"
-flows, the run-to-run flakiness, **and** a step that passed four runs then failed a fifth untouched.
-⛔ **Investigate that before editing another flow.** Suspects in order: `centerElement: true` on a
-target that cannot be centred (every failure so far sits at scrollbar 100%), then a visibility
-threshold a bottom-edge element misses.
+✅ **THAT LEAD IS ANSWERED, and it WAS one bug rather than three: `centerElement`.** See the rule
+below. Removed at all 43 sites in 12 flows (`a01facf`); **run `35813422434` is its verification.**
 
 ⛔ **BEFORE EDITING ANY MAESTRO FLOW, read `V1_2_LOG.md` → "Runs 3 and 4 — WHAT WENT WRONG".** Four
 runs went **2/12 → 2/12 → 2/12 → 1/12** because flows were changed on guesses at ~45 min a cycle.
@@ -102,6 +98,16 @@ usable.
   **Gate demo invariants over `demoSeed.test.ts`'s sample dates, never over "now"**: planting the old
   rounding reds only **2 of those 7**, which is exactly why it shipped green.
 
+- ⛔ **NEVER set `centerElement` on a Maestro `scrollUntilVisible` — it cost five runs and read as
+  three separate bugs.** `Orchestra.kt`: while it is set the loop accepts **only** a near-centre
+  element for five iterations (`maxRetryCenterCount = 4`) and reaches the plain visibility check on
+  the **sixth**. A target in the last screenful **cannot be centred** — at scroll 100% a further
+  swipe moves nothing — so those five are guaranteed to fail and the step passes **only if a sixth
+  fits inside the 20 s timeout.** Each iteration costs a hierarchy fetch, so whether it fits is a
+  coin flip. ⚡ **That is why "No visible element found" named elements the dump showed fully on
+  screen, why the suite was flaky with nothing edited, and why a step passed four runs and failed a
+  fifth.** Nothing needs to replace it: `visibilityPercentage` defaults to **100**, so the element is
+  already proven fully on screen before anything taps it.
 - ⛔ **A failing assertion tells you what was ABSENT; only the view hierarchy tells you what was
   PRESENT.** Thirteen Maestro dispatches went on diagnosing a *harness* — every app-level hypothesis
   raised along the way was wrong. The build now prints the commit it built, captures the simulator's

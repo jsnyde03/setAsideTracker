@@ -11,6 +11,55 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.14.5 `centerElement` — ONE bug behind three symptoms · 2026-09-23 · ⏳ run `35813422434`
+
+⚡ **The lead was right, and the mechanism came from Maestro's source rather than from the failure
+text.** `Orchestra.kt`'s `scrollUntilVisible` loop:
+
+```kotlin
+if (command.centerElement && visibility > 0.1 && retryCenterCount <= maxRetryCenterCount) {
+    if (element.isElementNearScreenCenter(...)) return true
+    retryCenterCount++          // maxRetryCenterCount = 4
+} else if (visibility >= command.visibilityPercentageNormalized) return true
+```
+
+**While `centerElement` is set the loop accepts ONLY a near-centre element for the first five
+iterations, and reaches the plain visibility check on the sixth.** A target in the last screenful
+**cannot be centred** — at scroll 100% a further DOWN swipe moves nothing — so those five iterations
+are guaranteed to fail, and the step passes **only if a sixth fits inside the 20 s timeout.** Each
+iteration costs a view-hierarchy fetch, whose cost varies with what the runner is doing.
+
+🔴 **That single mechanism accounts for all three symptoms**, which is why it was worth finding
+before editing another flow:
+
+| symptom | explanation |
+|---|---|
+| "No visible element found" on elements the dump shows **present and fully on screen** | the message describes the centring branch, not the element |
+| run-to-run **flakiness** on untouched flows | whether a 6th iteration fits inside 20 s |
+| a step that passed **four runs then failed a fifth**, nothing edited | same coin flip |
+
+**The evidence, all from logs rather than inference:**
+- Run `35810608829`, `step-011`: `State you primarily work in` present at `[21,375][380,417]` in a
+  `[0,0][402,874]` viewport — **fully visible** — with the scrollbar reading **`2 pages | 100%`**.
+- **Every failure in runs `35800565397` and `35804994900`** is a `scrollUntilVisible` target that had
+  `centerElement`: `Explore with sample data` · `Custom expense categories.*Premium` ·
+  `I understand this app provides estimates…` · `IRS mileage log.*Premium` · `Continue`.
+- The suite held **52 `scrollUntilVisible` steps, 43 with `centerElement` and 9 without. Every
+  observed failure is in the 43; none is in the 9** — including the Save Entry steps fixed at run 5,
+  which were fixed *by* omitting it, before the reason was known. ⚠️ **Weaker than it looks as a
+  control**: most of the 9 sit downstream of a failure, so they were never reached. The run is the
+  real test.
+
+✅ **Fix: removed at all 43 sites across 12 flows** (`a01facf`), diff verified as **0 insertions /
+43 deletions**, all 13 files re-parsed. **Nothing replaces it** — `visibilityPercentage` already
+defaults to 100, so the element is proven *fully* on screen before anything taps it, which is all the
+centring was there to guarantee. The rationale sits in `onboarding.yaml`, the flow every other flow
+runs first.
+
+⛔ **Unverified until run `35813422434` says so.** Dispatched as the **full 12-flow suite**, not one
+flow: the build dominates each run at ~35 min, so twelve flows cost barely more than one and test the
+mechanism at every failure site at once.
+
 ### 🔎 1.2.14.5 Runs 3 and 4 — WHAT WENT WRONG, and it was me · 2026-09-22
 
 **Runs 1–4: 2/12 → 2/12 → 2/12 → 1/12. Three changes, each of which created the next failure.**

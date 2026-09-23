@@ -26,18 +26,14 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> 🔴 **READ THIS FIRST — run `35810608829` FAILED, and it does NOT mean the last fix failed.**
-> It died at `step-011-scrollUntilVisible-State_you_primarily_w`, **in onboarding, upstream of
-> everything that was edited** — a step that passed in all four previous runs of this flow. ⛔ **So
-> the dashboard/entry-list fix is UNVERIFIED: the run never reached it.** Re-run before concluding
-> anything: `gh workflow run maestro-ios.yml --ref v1.2 -f flow=log-and-delete-entry.yaml`.
->
-> ⚡ **And this is the third instance of the same thing, which makes it the most valuable lead here:
-> `scrollUntilVisible` fails on elements the hierarchy shows are PRESENT.** It explains the four
-> untouched "No visible element found" flows *and* the run-to-run flakiness *and* this failure —
-> possibly one bug, not three. ⛔ **Investigate that before fixing another flow.** Likely suspects,
-> in order: `centerElement: true` on a target that cannot be centred (every failure so far sits at
-> scrollbar 100%), and a visibility threshold that a bottom-edge element misses.
+> 🔴 **READ THIS FIRST — the lead was right, and it was ONE bug: `centerElement`.** Read from
+> Maestro's `Orchestra.kt`, not inferred: while it is set, `scrollUntilVisible` accepts only a
+> near-centre element for five iterations and reaches the visibility check on the sixth — and a
+> target in the last screenful **cannot be centred**, so passing depends on a 6th iteration fitting
+> inside the 20 s timeout. **That is the "not visible" message on present elements, the flakiness,
+> and the pass-4-then-fail-5 all at once.** ✅ Removed at all 43 sites in 12 flows (`a01facf`).
+> ⛔ **Unverified until run `35813422434` (full suite) reports.** Mechanism + evidence →
+> [V1_2_LOG.md](V1_2_LOG.md).
 >
 > ✅ **1.2.2–1.2.6, 1.2.10 CLOSED.** ▶ **ACTIVE: 1.2.14 — Maestro on GitHub Actions**, decomposed
 > below. **⏸ 1.2.7 (native iPad) is PARKED at 4/8** — .5/.8 are doable here, .6/.7 are device-owed.
@@ -139,11 +135,11 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ⏸ **1.2.1 — Demo mode** · **7/7 built, validation DEFERRED to ~November**
+### ⏸ **1.2.1 — Demo mode** · **7/7 built, waiting on the Maestro suite**
 
 In-memory store · offset-dated persona · 4 leak guards · enter/exit + [D6] Settings row · banner on
 all 13 screens · premium preview ([D5]) · 34/34 Playwright. **⏸ Cannot close until the Maestro suite
-is green**, and Maestro resumes ~November (minutes reserved for TestFlight — see the resume block). ⚡ **Its one genuine open risk is now
+is green** — which [D27] made reachable now rather than in November. ⚡ **Its one genuine open risk is now
 answered:** `enterDemo()` works on a real simulator build, so demo mode is not broken on device.
 What remains unproven is the *flow*, not the feature. Detail + 10 scan records → [V1_2_LOG.md](V1_2_LOG.md).
 
@@ -172,7 +168,7 @@ re-buys it with a run.
 | **1.2.14.2** | **Port the workflow** to `.github/workflows/maestro-ios.yml`, carrying every lesson above. Pin Node 22 for parity (runner ships 24). | ⬜ |
 | **1.2.14.3** | ✅ **DONE 2026-09-22.** Two runs, **0 billable ms**. Every infra step passes — including `xcodebuild` ad-hoc signing and boot+install — and run 1 hit **the same 2/12 as Codemagic**, which is the port validating itself. | ✅ |
 | **1.2.14.4** | ⚙️ **The three questions are ANSWERED and two were mis-framed** *(Premium rows ARE present — never the keypad; `Settings` missing with `$0.00` at **y=-25**, i.e. scrolled past the header; demo now fails earlier, superseding it)*. 🔴 **Root cause found: the flows predate 1.2.5's GPS trip toggle, which grew the entry form.** Save Entry fixed → **all 5 of those flows moved past it**; the blocker relocated to the **numeric keypad staying open** (viewport 874→568) and the `50%,15%` neutral tap now landing on the trip-tracker description. | 🔵 |
-| **1.2.14.5** | ⚙️ **IN PROGRESS — the Save Entry surface is CLOSED** *(an entry saves; the dashboard renders "You're $16.96 behind")*. The same below-the-fold fault repeats one screen later on the entry list, fixed in `log-and-delete-entry` along with a **vacuous `assertNotVisible`** that would have passed over a delete that did nothing. ⏳ **Run `35810608829` was still building at session end — read it first.** Then apply the same two-line pattern to the other flows, characterise the flakiness, and retire Codemagic's `maestro-ios` so there is one Maestro home. | 🔵 |
+| **1.2.14.5** | ⚙️ **IN PROGRESS.** Save Entry surface CLOSED; the same below-the-fold fault fixed one screen later, with a **vacuous `assertNotVisible`** removed. ⚡ **Then the real one: `centerElement` was a single bug behind all three symptoms** — removed at 43 sites in 12 flows. ⏳ **Run `35813422434` (full suite) is its verification.** Remaining after it: characterise any residual flakiness, and retire Codemagic's `maestro-ios` so there is one Maestro home. | 🔵 |
 | **1.2.14.6** | **Verify + whole-item after-scan.** | ⬜ |
 
 **Exit line:** the 12 flows run on GitHub Actions at zero cost, the harness questions are answered
