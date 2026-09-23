@@ -50,13 +50,13 @@ name: Expense breakdown gating (locked card → paywall)
     element:
       text: "Save Entry"
     direction: DOWN
-# 1.2.14.5: dismiss the keypad AFTER the scroll, not only before it. Run 2 proved the ordering
-# matters: run 1's hierarchy showed no keypad at this point, run 2's showed it open with Save Entry
-# fully visible and unobstructed -- the scroll gesture above can land on a numeric input and
-# re-focus it. The screenshot is the instrument, not a decoration: if this still fails, the next
-# dump says whether the tap landed and the save was refused, or the tap never reached the button.
-- tapOn:
-    point: "50%,15%"
+# 1.2.14.5, corrected by run 3: dismiss the keypad after the scroll, but NEVER by coordinate.
+# ⛔ A coordinate is not a neutral point, it is whatever the layout puts there. "50%,15%" = y~131,
+# and once the keypad closes and the form reflows that is INSIDE the Date field [20,96][382,141] --
+# so the dismissal tap opened the native date picker, which covered Save Entry and turned a working
+# scroll into "Element not found". Addressing a non-interactive label BY NAME cannot drift when the
+# layout moves, which is the whole failure mode 1.2.5 introduced here.
+- tapOn: "Measures your miles while a trip is running"
 - takeScreenshot: .maestro/diag-before-save
 - tapOn: "Save Entry"
 - takeScreenshot: .maestro/diag-after-save
