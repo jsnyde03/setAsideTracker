@@ -117,6 +117,49 @@ test.describe("iPad layout — the size-class seam", () => {
     });
   });
 
+  test("the two-column band survives a LIVE resize in both directions (1.2.7.5)", async ({
+    page,
+  }) => {
+    /**
+     * Split View and Stage Manager resize the window **without remounting anything**, so a seam
+     * that reads its width once at mount looks perfect in every screenshot and is wrong the moment
+     * a user drags the divider. The control below already proves the seam reacts when a window
+     * NARROWS; this proves the harder direction — that the second column *appears* on a widen,
+     * which is where a mount-time snapshot would silently never come back.
+     *
+     * ⚠️ No `goto` and no reload anywhere in this test, deliberately. Reloading would re-mount the
+     * tree and re-read the width, which is exactly the thing that must not be required — and a test
+     * that reloads would pass against a seam that only works at mount.
+     */
+    await page.getByText("Log Earnings", { exact: true }).click();
+    await expect(page.getByText("Platform")).toBeVisible();
+    await page.getByText("DoorDash", { exact: true }).first().click();
+    await page.getByLabel("Gross pay", { exact: true }).first().fill("900");
+    await page.getByText("Save Entry", { exact: true }).click();
+
+    const moneyCard = "Total earnings logged (" + new Date().getFullYear() + ")";
+    const insightCard = "Avoid the IRS penalty  ·  Premium";
+
+    /** Side by side (the money column ends before the insight column starts) rather than stacked. */
+    async function sideBySide() {
+      const money = await cardBox(page, moneyCard);
+      const insight = await cardBox(page, insightCard);
+      return money.x + money.width <= insight.x;
+    }
+
+    await expect.poll(sideBySide, { message: "two columns at the project's iPad width" }).toBe(true);
+
+    await page.setViewportSize({ width: 393, height: 852 });
+    await expect
+      .poll(sideBySide, { message: "stacks when the window narrows to a phone, live" })
+      .toBe(false);
+
+    await page.setViewportSize({ width: 1024, height: 1366 });
+    await expect
+      .poll(sideBySide, { message: "columns come BACK when it widens again, live" })
+      .toBe(true);
+  });
+
   test("falls back to one centred column when there are no insight cards", async ({ page }) => {
     /**
      * The regression this prevents: a two-column band with an empty right half, which reads as a
