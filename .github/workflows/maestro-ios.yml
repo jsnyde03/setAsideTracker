@@ -22,10 +22,13 @@ on:
         description: "A single flow to run (e.g. onboarding.yaml). Blank runs all of .maestro."
         required: false
         default: ""
-  push:
-    branches: [v1.2]
-    paths:
-      - ".github/workflows/maestro-ios.yml"
+  # ⛔ The `push`/`paths` trigger that was here is REMOVED — it was a foot-gun I built and then set
+  # off. It started a full ~48-minute run on every edit to this file, including a one-line comment
+  # fix, and it spawned a duplicate of run 2 that had to be cancelled. It only existed to work
+  # around a dispatch limitation that turned out not to apply (see the note above), so it was
+  # buying nothing. Start runs with:
+  #     gh workflow run maestro-ios.yml --ref v1.2
+  #     gh workflow run maestro-ios.yml --ref v1.2 -f flow=demo-mode.yaml
 
 jobs:
   maestro:

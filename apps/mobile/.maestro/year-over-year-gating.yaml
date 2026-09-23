@@ -30,7 +30,16 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
     element:
       text: "Save Entry"
     direction: DOWN
+# 1.2.14.5: dismiss the keypad AFTER the scroll, not only before it. Run 2 proved the ordering
+# matters: run 1's hierarchy showed no keypad at this point, run 2's showed it open with Save Entry
+# fully visible and unobstructed -- the scroll gesture above can land on a numeric input and
+# re-focus it. The screenshot is the instrument, not a decoration: if this still fails, the next
+# dump says whether the tap landed and the save was refused, or the tap never reached the button.
+- tapOn:
+    point: "50%,15%"
+- takeScreenshot: .maestro/diag-before-save
 - tapOn: "Save Entry"
+- takeScreenshot: .maestro/diag-after-save
 - scrollUntilVisible:
     element:
       text: "Set aside for taxes"
@@ -67,7 +76,16 @@ name: Year-over-year gating (native prior-year picker → locked card → paywal
     element:
       text: "Save Entry"
     direction: DOWN
+# 1.2.14.5: dismiss the keypad AFTER the scroll, not only before it. Run 2 proved the ordering
+# matters: run 1's hierarchy showed no keypad at this point, run 2's showed it open with Save Entry
+# fully visible and unobstructed -- the scroll gesture above can land on a numeric input and
+# re-focus it. The screenshot is the instrument, not a decoration: if this still fails, the next
+# dump says whether the tap landed and the save was refused, or the tap never reached the button.
+- tapOn:
+    point: "50%,15%"
+- takeScreenshot: .maestro/diag-before-save
 - tapOn: "Save Entry"
+- takeScreenshot: .maestro/diag-after-save
 - scrollUntilVisible:
     element:
       text: "Set aside for taxes"
