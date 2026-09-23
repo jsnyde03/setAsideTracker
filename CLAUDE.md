@@ -8,20 +8,23 @@ Native, iOS first. **LIVE on the App Store as "SetAside" at v1.1.1**; bundle id
 `V1_2_LOG.md` is the detail store — every scan record and the reasoning behind every decision.
 Read the plan's `RESUME HERE` block first; it is kept current.
 
-## Status (2026-09-22)
+## Status (2026-09-23)
 
 **v1.2 in development on branch `v1.2`.** No ship date — [D9]: work the queue and ship when done.
 **Do not reintroduce a target date.**
 
-✅ **1.2.2–1.2.6 and 1.2.10 are CLOSED.** Tax correctness · data safety · set-aside by week · the
-mileage trip toggle · the premium slice (four surfaces) · filed correctness + submission compliance.
-**Per-item detail is in `V1_2_LOG.md` and belongs there, not here.**
+✅ **1.2.1–1.2.6, 1.2.10 and 1.2.14 are CLOSED.** Demo mode · tax correctness · data safety ·
+set-aside by week · the mileage trip toggle · the premium slice · filed correctness + submission
+compliance · Maestro on GitHub Actions. **Per-item detail is in `V1_2_LOG.md` and belongs there.**
 
-▶ **ACTIVE: 1.2.14 — Maestro on GitHub Actions**, decomposed in the plan.
-⏸ **1.2.7 (native iPad) PARKED at 4/8** — the seam, the dashboard's two columns and all four sheets
-shipped; **.6 hardware keyboard and .7 iPad screenshots are device-owed.** 🔴 **Flipping
-`supportsTablet` obliges iPad screenshots in App Store Connect** — a submission requirement that
-ships with the flip. ⏸ **1.2.1 (demo mode) is 7/7 built** and closes when the Maestro suite is green.
+✅ **THE NATIVE SUITE IS GREEN — 12/12, twice** (2026-09-23). It had never run clean before. ⚡ **In
+eight runs the app was never once shown broken**; every blocker was in the instrument, and **three
+checks were incapable of failing** — see the rules below.
+
+▶ **ACTIVE: 1.2.7 — native iPad, resumed at 4/8**, decomposed in the plan: **.5 live-resize and .8
+after-scan are doable here; .6 hardware keyboard and .7 iPad screenshots are device-owed.**
+🔴 **Flipping `supportsTablet` obliges iPad screenshots in App Store Connect** — a submission
+requirement that ships with the flip.
 
 🔴 **1.2.13 IS AN UNFINISHED SHIP BLOCKER.** `docs/privacy.html` is now served by GitHub Pages from
 **this** repo ([D26]) — but Pages serves **`master`**, which still carries the **July** policy that
@@ -60,18 +63,19 @@ outside an allow-list, which is what catches the field nobody thought to forbid.
 wishes were mutually exclusive. `gh workflow run maestro-ios.yml --ref v1.2` (add
 `-f flow=<name>.yaml` for one flow). **Codemagic's ~20% remainder is reserved for TestFlight alone.**
 
-✅ **THAT LEAD IS ANSWERED, and it WAS one bug rather than three: `centerElement`.** See the rule
-below. Removed at all 43 sites in 12 flows (`a01facf`); **run `35813422434` is its verification.**
+⛔ **BEFORE EDITING ANY MAESTRO FLOW, read `V1_2_LOG.md`.** Four runs went **2/12 → 1/12** because
+flows were changed on guesses at ~45 min a cycle. Two rules survive that and still bind: **a
+coordinate is not a neutral point** (`50%,15%` landed in the Date field and opened a picker) ·
+**Maestro text selectors are FULL-MATCH regexes** (a selector without `.*` reports "not found" for
+an element the dump shows present).
 
-⛔ **BEFORE EDITING ANY MAESTRO FLOW, read `V1_2_LOG.md` → "Runs 3 and 4 — WHAT WENT WRONG".** Four
-runs went **2/12 → 2/12 → 2/12 → 1/12** because flows were changed on guesses at ~45 min a cycle.
-Three instrument faults, none of them the app: **a coordinate is not a neutral point** (`50%,15%`
-landed in the Date field and opened a picker) · **Maestro text selectors are FULL-MATCH regexes**
-(every selector here uses `.*`; one without reports "not found" for an element the dump shows
-present) · **the suite is flaky on its own** (a flow passed runs 1–3 and failed run 4 untouched —
-re-run before believing a delta). ⚠️ **The build dominates each run (~35–40 min), so a single-flow
-run is barely faster** — the backlog carries "cache the built `.app`", which is what makes this loop
-usable.
+✅ **"The suite is flaky on its own" is RETIRED — it was a silent lost keystroke.** `hideKeyboard`
+intermittently left the keyboard covering the state field, so the tap landed on the keyboard, `TX`
+was never typed, and it surfaced **ten steps later** as *"Your earnings is not visible"* in a
+different flow each run. ⚡ **A defect that moves between flows still has one cause.**
+
+⚠️ **The build dominates each run (~35–40 min), so a single-flow run is barely faster** — the
+backlog carries "cache the built `.app`", which is what makes this loop usable.
 
 ## Rules that cost real time to rediscover
 

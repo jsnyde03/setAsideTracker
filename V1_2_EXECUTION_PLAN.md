@@ -26,17 +26,14 @@
 > ✅ **No ship date ([D9]).** August is retired and deliberately not replaced — **work the queue and
 > ship as soon as it is done.** Do not reintroduce a target.
 >
-> 🔴 **READ THIS FIRST — the lead was right, and it was ONE bug: `centerElement`.** Read from
-> Maestro's `Orchestra.kt`, not inferred: while it is set, `scrollUntilVisible` accepts only a
-> near-centre element for five iterations and reaches the visibility check on the sixth — and a
-> target in the last screenful **cannot be centred**, so passing depends on a 6th iteration fitting
-> inside the 20 s timeout. **That is the "not visible" message on present elements, the flakiness,
-> and the pass-4-then-fail-5 all at once.** ✅ Removed at all 43 sites in 12 flows (`a01facf`).
-> ⛔ **Unverified until run `35813422434` (full suite) reports.** Mechanism + evidence →
-> [V1_2_LOG.md](V1_2_LOG.md).
+> ✅ **THE MAESTRO SUITE IS GREEN — 12/12, twice in a row** (runs `35839506550`, `35845056277`),
+> which closed **1.2.14** and with it **1.2.1**. ⚡ **In eight runs the app was never once shown
+> broken**; every blocker was in the instrument. ⛔ **Three checks were incapable of failing** — one
+> would have gone green over a "Clear all data" that cleared nothing, and one guarded Apple
+> **Guideline 3.1.2**. Full arc + every mechanism → [V1_2_LOG.md](V1_2_LOG.md).
 >
-> ✅ **1.2.2–1.2.6, 1.2.10 CLOSED.** ▶ **ACTIVE: 1.2.14 — Maestro on GitHub Actions**, decomposed
-> below. **⏸ 1.2.7 (native iPad) is PARKED at 4/8** — .5/.8 are doable here, .6/.7 are device-owed.
+> ✅ **1.2.1–1.2.6, 1.2.10, 1.2.14 CLOSED.** ▶ **ACTIVE: 1.2.7 — native iPad, resumed at 4/8**,
+> decomposed below: **.5 live-resize and .8 after-scan are doable here; .6/.7 are device-owed.**
 > 🔴 **1.2.13 is a SHIP BLOCKER and is not finished:** Pages now serves this repo's `docs/`, but it
 > serves **`master`**, which still carries the July policy. **Merging v1.2 to master at release is
 > what publishes the location disclosure**; `node tools/check-published-policy.mjs` fails the
@@ -80,20 +77,16 @@
 > failing assertion says what was ABSENT; the hierarchy says what was PRESENT. ⛔ **Do not diagnose
 > from assertion text — read the dump.**
 >
-> 🔴 **READ THE LOG'S "Runs 3 and 4 — WHAT WENT WRONG" ENTRY BEFORE EDITING ANY FLOW.** Four runs
-> went 2/12 → 2/12 → 2/12 → 1/12 because **I changed flows on guesses at 45 minutes a cycle.** The
-> three mechanisms are all instrument faults, not app faults:
-> 1. **A coordinate is not a neutral point.** `50%,15%` landed inside the Date field once the form
->    reflowed, opening a date picker over the form.
-> 2. **Maestro text selectors are FULL-MATCH regexes** — every selector here uses `.*` for that
->    reason. A selector without one reports "not found" for an element the dump shows present.
-> 3. **The suite is FLAKY independent of any edit** — `onboarding-validation` passed runs 1–3 and
->    failed run 4 untouched. **Re-run before believing a delta.**
+> 🔴 **READ THE LOG BEFORE EDITING ANY FLOW.** Four runs went 2/12 → 1/12 because flows were changed
+> on guesses at 45 minutes a cycle. Two rules survive that and still bind: **a coordinate is not a
+> neutral point** (it is whatever the layout puts there), and **Maestro text selectors are FULL-MATCH
+> regexes** — a selector without `.*` reports "not found" for an element the dump shows present.
 >
-> ✅ **The one real app-side finding: the flows predate 1.2.5's GPS trip toggle**, which pushed
-> `Save Entry` below the fold — and **that surface is now CLOSED** (an entry saves; the dashboard
-> renders "You're $16.96 behind"). The same fault repeats one screen later: **v1.2 grew every screen,
-> and the flows assume the old layouts.** ⚠️ **In four runs the app has never been shown broken.**
+> ✅ **"The suite is flaky independent of any edit" is RETIRED — it was a silent lost keystroke.**
+> `hideKeyboard` intermittently left the keyboard covering the state field, so the tap landed on the
+> keyboard and `TX` was never typed; Continue then failed validation and it surfaced ten steps later
+> as *"Your earnings is not visible"*, in a different flow each run. Dismissal is now a named tap,
+> and `"Texas"` is asserted at the point of typing so a lost keystroke names itself.
 
 **Branch:** `v1.2` · **Target: none — ship ASAP** ([D9], superseding [D4]'s August)
 **Structural audit:** [`audits/2026-08-07-v1.2-structural/`](audits/2026-08-07-v1.2-structural/SYNTHESIS.md) · **Gap scan:** [`audits/2026-09-20-v1.2-gap-scan/`](audits/2026-09-20-v1.2-gap-scan/README.md) · **Ladder rationale:** [BUILD_ORDER_REVIEW_2026-08-07.md](BUILD_ORDER_REVIEW_2026-08-07.md)
@@ -135,58 +128,25 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ⏸ **1.2.1 — Demo mode** · **7/7 built, waiting on the Maestro suite**
+### 📱 **1.2.7 — Native iPad** · **ACTIVE** _(resumed 2026-09-23 — 4/8 shipped)_
 
-In-memory store · offset-dated persona · 4 leak guards · enter/exit + [D6] Settings row · banner on
-all 13 screens · premium preview ([D5]) · 34/34 Playwright. **⏸ Cannot close until the Maestro suite
-is green** — which [D27] made reachable now rather than in November. ⚡ **Its one genuine open risk is now
-answered:** `enterDemo()` works on a real simulator build, so demo mode is not broken on device.
-What remains unproven is the *flow*, not the feature. Detail + 10 scan records → [V1_2_LOG.md](V1_2_LOG.md).
+**Why it is next:** it was parked mid-item purely to take [D27]'s Maestro window while it was fresh.
+That window is closed — the suite is green — so this resumes where it stopped, and it sits ahead of
+1.2.8/1.2.9 in row order.
 
-✅ **[D11] the persona stays at ONE tax year** — year-over-year therefore cannot be previewed, accepted
-because the gate is about data, not payment. An e2e asserts the absence.
-
----
-
-### 🤖 **1.2.14 — Maestro on GitHub Actions** · **ACTIVE**
-
-**Why it is next ([D27], Jason 2026-09-22):** twelve native flows have been stalled since ~August for
-one reason — Codemagic is ~80% consumed — and macOS runners are **free on a public repo**. This
-unblocks them at zero cost *and* takes simulator builds off Codemagic, so the reserved TestFlight
-minutes stretch further.
-
-⛔ **The port's real payload is not YAML, it is thirteen dispatches of hard-won knowledge** sitting in
-`codemagic.yaml`'s comments: ad-hoc signing (`CODE_SIGN_IDENTITY="-"`, because an unsigned build has
-no entitlements and `expo-secure-store` then cannot save **anything**) · never hardcode a simulator
-name · never swallow a boot failure with `|| true` · `SENTRY_DISABLE_AUTO_UPLOAD` passed as a **build
-setting**, not an env var · and **print every on-screen text node on failure**. Losing any of these
-re-buys it with a run.
+✅ **.1–.4 shipped:** `supportsTablet` + iPad-only orientation · the size-class seam on
+`useWindowDimensions` · the dashboard two-column band · all four sheets capped, 12-route sweep.
+**Measured 1326px → 632px.** 15 plants, 15 caught. _Detail + 4 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.14.1** | ✅ **DONE 2026-09-22.** Probed the runner rather than trusting the docs, which contradict themselves on macOS. **Measured `billable.MACOS.total_ms = 0`.** Image `macos-26-arm64`, Xcode 26.6, 15 iPhone simulators — **no "iPhone 15"**, so the don't-hardcode lesson still bites; the derivation picks iPhone 17. | ✅ |
-| **1.2.14.2** | ✅ **DONE 2026-09-22.** Ported to `.github/workflows/maestro-ios.yml`, Node 22 pinned. Codemagic's copy **retired 2026-09-23** after every lesson in its comments was verified present here — one Maestro home. | ✅ |
-| **1.2.14.3** | ✅ **DONE 2026-09-22.** Two runs, **0 billable ms**. Every infra step passes — including `xcodebuild` ad-hoc signing and boot+install — and run 1 hit **the same 2/12 as Codemagic**, which is the port validating itself. | ✅ |
-| **1.2.14.4** | ⚙️ **The three questions are ANSWERED and two were mis-framed** *(Premium rows ARE present — never the keypad; `Settings` missing with `$0.00` at **y=-25**, i.e. scrolled past the header; demo now fails earlier, superseding it)*. 🔴 **Root cause found: the flows predate 1.2.5's GPS trip toggle, which grew the entry form.** Save Entry fixed → **all 5 of those flows moved past it**; the blocker relocated to the **numeric keypad staying open** (viewport 874→568) and the `50%,15%` neutral tap now landing on the trip-tracker description. | 🔵 |
-| **1.2.14.5** | ⚙️ **IN PROGRESS.** Save Entry surface CLOSED; the same below-the-fold fault fixed one screen later, with a **vacuous `assertNotVisible`** removed. ⚡ **Then the real one: `centerElement` was a single bug behind all three symptoms** — removed at 43 sites in 12 flows. ⏳ **Run `35813422434` (full suite) is its verification.** Remaining after it: characterise any residual flakiness, and retire Codemagic's `maestro-ios` so there is one Maestro home. | 🔵 |
-| **1.2.14.6** | **Verify + whole-item after-scan.** | ⬜ |
+| **1.2.7.5** | **Live resize** — Split View and Slide Over change size *without remounting*, so the seam has to hold on re-layout, not just at first render. Verifiable here via the iPad Playwright projects. | ⬜ |
+| **1.2.7.6** | ⏸ **Hardware keyboard — DEVICE-OWED.** Cannot be reached from RN-web. → checklist. | ⛔ |
+| **1.2.7.7** | ⏸ **iPad App Store screenshots — DEVICE-OWED**, and a **submission requirement** that ships with the `supportsTablet` flip. → checklist. | ⛔ |
+| **1.2.7.8** | **Whole-item after-scan**, then close the way 1.2.1 did: built, verification banked, device rows carried to 1.2.12. | ⬜ |
 
-**Exit line:** the 12 flows run on GitHub Actions at zero cost, the harness questions are answered
-from a log rather than by inference, and Codemagic's remaining minutes are spoken for by TestFlight
-alone.
-
----
-
-### 📱 **1.2.7 — Native iPad** · ⏸ **PARKED at 4/8, 2026-09-22**
-
-✅ **.1–.4 shipped:** `supportsTablet` + iPad-only orientation (the iPhone stays portrait) · the
-size-class seam on `useWindowDimensions` · the dashboard two-column band · all four sheets capped and
-a 12-route sweep. **Measured 1326px → 632px.** 15 plants, 15 caught — **three of them only after a
-TEST was fixed.**
-
-⛔ **Remaining: .5 live-resize + .8 after-scan are doable here; .6 hardware keyboard and .7 iPad
-screenshots are DEVICE-OWED**, so this item closes the way 1.2.1 did — built, verification banked.
-Parked to take [D27]'s Maestro window while it is fresh. _Detail + 4 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
+**Exit line:** the iPad layout holds through a live resize, and everything that does not need
+hardware is done — with .6/.7 explicitly owed to the one reserved TestFlight build, not forgotten.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
@@ -206,7 +166,7 @@ out-of-order number is worth less than one more round of that.
 | # | item | notes |
 |---|---|---|
 | 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
-| 1.2.9 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. |
+| 1.2.9 | **Accessibility depth audit** | Dynamic Type · VoiceOver · 44pt targets · contrast · reduce-motion. VoiceOver end-to-end is device-owed. ⚡ **Start from 1.2.14.5's finding:** ~12 wrappers set an `accessibilityLabel` that REPLACES their visible text, so a VoiceOver user and a sighted user are read different words on the demo banner and every locked premium card. Mostly benign, **but nobody chose it** — it was discovered because it broke the test suite, and it has never been audited as a11y copy. |
 | 1.2.11 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.7 rewrite those files. |
 | **1.2.13** | ⚙️ **Publish the privacy policy — SHIP BLOCKER, mostly done 2026-09-22** | ✅ Pages now serves **this** repo's `docs/` ([D26]); audits moved out so `docs/` is the website exactly; all 9 URLs repointed; **`tools/check-published-policy.mjs`** added — it fetches the live page and fails on drift *(verified both ways: reds on the real defect, and a control proves it can pass)*. ⛔ **Remaining: the cutover.** Pages serves `master`, which still carries the July policy — correct for live v1.1.1, wrong the moment v1.2 ships. **Merging v1.2 to master at release publishes it; the gate fails the submission if it is forgotten.** |
 | 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
@@ -225,6 +185,25 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.14 — Maestro on GitHub Actions ✅ DONE 2026-09-23, 6/6. The suite is GREEN: 12/12, twice.**
+  Ported off Codemagic to free macOS runners (**0 billable ms**, [D27]) and Codemagic's copy retired,
+  so there is one Maestro home. ⚡ **The flows had never all run; nothing the app does was ever
+  wrong.** Eight runs took it 2/12 → 12/12, and every blocker was in the instrument: `centerElement`
+  forcing 5 impossible centring iterations · a runner **4.5× slower** than the last · `hideKeyboard`
+  against a numeric keypad · **11 selectors addressing text an `accessibilityLabel` replaces** ·
+  header controls asserted from a scrolled-down page · a swipe into a route transition. 🔴 **Three
+  checks could not fail**, including one that would have gone green over a "Clear all data" that
+  cleared nothing, and one guarding **Apple Guideline 3.1.2**. ⚙️ Harness hardened: driver timeout,
+  auto-retry on a harness failure, a no-flow-ran banner, and a focus-reporting dump.
+  _Sub-step detail + scan records → [V1_2_LOG.md](V1_2_LOG.md)._
+
+- **1.2.1 — Demo mode ✅ CLOSED 2026-09-23, 7/7 — its one blocker was the Maestro suite, now green.**
+  In-memory store · offset-dated persona · 4 leak guards · enter/exit + [D6] Settings row · banner on
+  all 13 screens · premium preview ([D5]) · **34/34 Playwright + `demo-mode.yaml` passing on a real
+  simulator**, which is what was actually owed: entering survives a real stacked-route push, the
+  premium previews open real native screens, and exiting genuinely leaves. ✅ **[D11] the persona
+  stays at ONE tax year.** _Detail + 10 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.10 — Filed correctness + submission compliance ✅ DONE 2026-09-22, 6/8 built, 2 deferred.**
   The app had **no privacy manifest** (Expo writes one only when asked) · **[D22]** analytics stopped
