@@ -5,6 +5,8 @@ import type { BreakdownDetail } from "../breakdownDetails";
 import { glossaryEntry, type GlossaryTermKey } from "../glossary";
 import { radius, shadow, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
+import { resolveSheetAnimation } from "../motion";
+import { useReduceMotion } from "../useReduceMotion";
 import { useSheetWidthStyle } from "../useSizeClass";
 
 interface BreakdownDetailSheetProps {
@@ -15,7 +17,9 @@ interface BreakdownDetailSheetProps {
 
 // react-native-web's rAF-driven animations can stall on headless/backgrounded tabs (see Screen.tsx
 // and the dashboard summary card) — skip the slide animation on web, keep it on native.
-const SHEET_ANIMATION = Platform.OS === "web" ? "none" : "slide";
+// web stays "none" (react-native-web's Animated can stall); Reduce Motion turns the slide
+// into a cross-fade rather than removing the transition. Rule + reasoning in ../motion.
+const IS_WEB = Platform.OS === "web";
 
 /**
  * Bottom-sheet modal that explains how one dashboard tax figure was calculated — the UI side of the
@@ -24,6 +28,7 @@ const SHEET_ANIMATION = Platform.OS === "web" ? "none" : "slide";
  */
 export function BreakdownDetailSheet({ detail, onClose }: BreakdownDetailSheetProps) {
   const { colors } = useTheme();
+  const sheetAnimation = resolveSheetAnimation(useReduceMotion(), IS_WEB);
   const styles = createStyles(colors);
   const sheetWidth = useSheetWidthStyle();
 
@@ -38,7 +43,7 @@ export function BreakdownDetailSheet({ detail, onClose }: BreakdownDetailSheetPr
     <Modal
       visible={detail !== null}
       transparent
-      animationType={SHEET_ANIMATION}
+      animationType={sheetAnimation}
       onRequestClose={onClose}
       accessibilityViewIsModal
     >

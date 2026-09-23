@@ -7,6 +7,8 @@ import {
 } from "../calculations";
 import { radius, shadow, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
+import { resolveSheetAnimation } from "../motion";
+import { useReduceMotion } from "../useReduceMotion";
 import { useSheetWidthStyle } from "../useSizeClass";
 
 interface WeeklySetAsideSheetProps {
@@ -26,7 +28,9 @@ function formatCurrency(amount: number): string {
 
 // Same reason as BreakdownDetailSheet: react-native-web's rAF-driven animations can stall on a
 // headless or backgrounded tab, so the slide is native-only.
-const SHEET_ANIMATION = Platform.OS === "web" ? "none" : "slide";
+// web stays "none" (react-native-web's Animated can stall); Reduce Motion turns the slide
+// into a cross-fade rather than removing the transition. Rule + reasoning in ../motion.
+const IS_WEB = Platform.OS === "web";
 
 /** "Mon 15 Jun" from a YYYY-MM-DD string, formatted in UTC so it cannot slip a day — the same
  *  reason `weekStartOf` never touches local time. */
@@ -50,6 +54,7 @@ function formatWeekDay(date: string): string {
  */
 export function WeeklySetAsideSheet({ weeks, summary, year, onClose }: WeeklySetAsideSheetProps) {
   const { colors } = useTheme();
+  const sheetAnimation = resolveSheetAnimation(useReduceMotion(), IS_WEB);
   const styles = createStyles(colors);
   const sheetWidth = useSheetWidthStyle();
   const anyEstimated = (weeks ?? []).some((week) => week.estimated);
@@ -62,7 +67,7 @@ export function WeeklySetAsideSheet({ weeks, summary, year, onClose }: WeeklySet
     <Modal
       visible={weeks !== null}
       transparent
-      animationType={SHEET_ANIMATION}
+      animationType={sheetAnimation}
       onRequestClose={onClose}
       accessibilityViewIsModal
     >

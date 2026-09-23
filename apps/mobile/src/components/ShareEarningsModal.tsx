@@ -7,6 +7,8 @@ import { ShareCard, type ShareCardData } from "./ShareCard";
 import { reportError } from "../errorReporting";
 import { radius, shadow, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
+import { resolveSheetAnimation } from "../motion";
+import { useReduceMotion } from "../useReduceMotion";
 import { useSheetWidthStyle } from "../useSizeClass";
 
 interface ShareEarningsModalProps {
@@ -16,7 +18,9 @@ interface ShareEarningsModalProps {
 }
 
 // Match the rest of the app: skip slide animation on web, where rAF-driven animations can stall.
-const SHEET_ANIMATION = Platform.OS === "web" ? "none" : "slide";
+// web stays "none" (react-native-web's Animated can stall); Reduce Motion turns the slide
+// into a cross-fade rather than removing the transition. Rule + reasoning in ../motion.
+const IS_WEB = Platform.OS === "web";
 
 /**
  * Bottom sheet that previews the shareable earnings card and exports it as an image via the native
@@ -26,6 +30,7 @@ const SHEET_ANIMATION = Platform.OS === "web" ? "none" : "slide";
  */
 export function ShareEarningsModal({ visible, onClose, data }: ShareEarningsModalProps) {
   const { colors } = useTheme();
+  const sheetAnimation = resolveSheetAnimation(useReduceMotion(), IS_WEB);
   const styles = createStyles(colors);
   const sheetWidth = useSheetWidthStyle();
   const cardRef = useRef<View>(null);
@@ -48,7 +53,7 @@ export function ShareEarningsModal({ visible, onClose, data }: ShareEarningsModa
   }
 
   return (
-    <Modal visible={visible} transparent animationType={SHEET_ANIMATION} onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={sheetAnimation} onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={styles.backdropFill} onPress={onClose} accessibilityLabel="Dismiss share" />
         <View style={[styles.sheet, sheetWidth]}>

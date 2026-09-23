@@ -70,6 +70,21 @@ workflow prints the commit it built. Two build cycles were once spent on a month
 | ⬜ | **Reload/cold-start position** | Kill and reopen from a deep-linked screen. Confirm no crash and no stale state. |
 | ⬜ | **Both themes on device** | Light held to the same bar as dark — verify by looking, on real hardware, not in a simulator screenshot. |
 
+### Accessibility — 1.2.9's device-owed rows _(added 2026-09-23)_
+
+⚠️ **ALL of this is device-owed for a structural reason, not because nobody got to it.** Every
+animation in the app is native-only (`Screen`'s entrance and all four sheets pass `"none"` on web),
+and react-native-web has neither an accessibility text-size setting nor VoiceOver — so the browser
+suite renders a motionless, screen-reader-less app that looks correct whether or not any of this
+works. The rules are unit-tested; the behaviour is only visible here.
+
+| | check | why it matters on device |
+|---|---|---|
+| ⬜ | **VoiceOver end-to-end** _(1.2.9.5)_ | Onboard, log an entry, open a premium card, reach the paywall — entirely by screen reader. The labels were audited and 26 shadowing sites reviewed, but nobody has *listened* to the app. |
+| ⬜ | **Reduce Motion** _(1.2.9.4)_ | Turn it on in Control Center **while the app is open** — the hook subscribes, so sheets should switch from slide to cross-fade and screen entrances should stop, without a relaunch. |
+| ⬜ | **Dynamic Type at AX5** | The browser check scales text 1.5× and proves nothing clips; iOS goes far higher. Walk every screen at the largest accessibility size. |
+| ⬜ | **The small touch targets** | Chips, the paywall legal links, the dashboard chevrons and the breakdown rows all reach 44pt **through `hitSlop`, which react-native-web ignores** — so this is the first time anything actually measures them. |
+
 ### iPad — 1.2.7's device-owed rows _(moved out of "not yet applicable" 2026-09-23)_
 
 ⚠️ **`supportsTablet` is already `true` on this branch**, so the app ships to iPad whether or not

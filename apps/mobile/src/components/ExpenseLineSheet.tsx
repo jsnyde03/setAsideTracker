@@ -3,6 +3,8 @@ import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "
 import type { LineContribution, ScheduleCLine } from "../scheduleC";
 import { radius, shadow, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
+import { resolveSheetAnimation } from "../motion";
+import { useReduceMotion } from "../useReduceMotion";
 import { useSheetWidthStyle } from "../useSizeClass";
 
 interface ExpenseLineSheetProps {
@@ -16,7 +18,9 @@ interface ExpenseLineSheetProps {
 // ⚠️ Same reason as `BreakdownDetailSheet` and `Screen`: react-native-web's rAF-driven animations
 // can stall on a headless or backgrounded tab, which hangs the e2e suite rather than failing it.
 // Native keeps the slide.
-const SHEET_ANIMATION = Platform.OS === "web" ? "none" : "slide";
+// web stays "none" (react-native-web's Animated can stall); Reduce Motion turns the slide
+// into a cross-fade rather than removing the transition. Rule + reasoning in ../motion.
+const IS_WEB = Platform.OS === "web";
 
 function formatCurrency(amount: number): string {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -39,6 +43,7 @@ function formatDate(iso: string): string {
  */
 export function ExpenseLineSheet({ line, contributions, onClose }: ExpenseLineSheetProps) {
   const { colors } = useTheme();
+  const sheetAnimation = resolveSheetAnimation(useReduceMotion(), IS_WEB);
   const styles = createStyles(colors);
   const sheetWidth = useSheetWidthStyle();
 
@@ -46,7 +51,7 @@ export function ExpenseLineSheet({ line, contributions, onClose }: ExpenseLineSh
     <Modal
       visible={line !== null}
       transparent
-      animationType={SHEET_ANIMATION}
+      animationType={sheetAnimation}
       onRequestClose={onClose}
       accessibilityViewIsModal
     >

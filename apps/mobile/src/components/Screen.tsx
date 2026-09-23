@@ -5,6 +5,8 @@ import { DemoBanner } from "../demo/DemoBanner";
 import { resolveContentMaxWidth, type ContentWidth } from "../layout";
 import type { Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
+import { shouldAnimateScreenEntrance } from "../motion";
+import { useReduceMotion } from "../useReduceMotion";
 
 interface ScreenProps {
   children: React.ReactNode;
@@ -19,8 +21,9 @@ interface ScreenProps {
 }
 
 // react-native-web's rAF-driven Animated can stall mid-transition on backgrounded/headless
-// tabs, leaving the screen permanently semi-transparent — skip the entrance animation there.
-const ANIMATE_ENTRANCE = Platform.OS !== "web";
+// tabs, leaving the screen permanently semi-transparent — which is why web never animates. That
+// reason is now one half of `shouldAnimateScreenEntrance`; Reduce Motion is the other (1.2.9.4).
+const IS_WEB = Platform.OS === "web";
 
 export function Screen({
   children,
@@ -34,16 +37,27 @@ export function Screen({
   // any screen handling a resize itself.
   const { width: windowWidth } = useWindowDimensions();
   const maxWidth = resolveContentMaxWidth(windowWidth, width);
-  const opacity = useRef(new Animated.Value(ANIMATE_ENTRANCE ? 0 : 1)).current;
-  const translateY = useRef(new Animated.Value(ANIMATE_ENTRANCE ? 8 : 0)).current;
+  // ⚠️ Read BEFORE the Animated.Values are seeded: a screen that starts at opacity 0 and then
+  // decides not to animate would stay invisible.
+  const reduceMotion = useReduceMotion();
+  const animateEntrance = shouldAnimateScreenEntrance(reduceMotion, IS_WEB);
+  const opacity = useRef(new Animated.Value(animateEntrance ? 0 : 1)).current;
+  const translateY = useRef(new Animated.Value(animateEntrance ? 8 : 0)).current;
 
   useEffect(() => {
-    if (!ANIMATE_ENTRANCE) return;
+    if (!animateEntrance) {
+      // ⛔ Snap to the resting values rather than returning. `useReduceMotion` starts false and
+      // corrects on its first tick, so a screen can seed itself at opacity 0 and only then learn
+      // it must not animate — bailing out here would leave it invisible for good.
+      opacity.setValue(1);
+      translateY.setValue(0);
+      return;
+    }
     Animated.parallel([
       Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }),
       Animated.timing(translateY, { toValue: 0, duration: 220, useNativeDriver: true }),
     ]).start();
-  }, [opacity, translateY]);
+  }, [animateEntrance, opacity, translateY]);
 
   return (
     <SafeAreaView edges={edges} style={[styles.safeArea, style]}>
