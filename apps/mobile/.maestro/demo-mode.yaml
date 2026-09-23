@@ -105,6 +105,12 @@ name: Demo mode (enter, preview premium, exit)
 # ── 4. [D5]: previewing is not owning. PDF export writes a real file, so it still refuses. ───────
 # This is the one assertion here that a simulator proves better than the web suite ever could: the
 # export path reaches a real filesystem and a real share sheet on device.
+# ⛔ Same as the first Settings tap: the header scrolls away with the list.
+- scrollUntilVisible:
+    element:
+      text: "Settings"
+    direction: UP
+- waitForAnimationToEnd
 - tapOn: "Settings"
 - assertNotVisible: "Premium active"
 - scrollUntilVisible:

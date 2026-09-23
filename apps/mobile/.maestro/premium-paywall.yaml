@@ -62,4 +62,7 @@ name: Premium Paywall (smoke)
 - assertVisible: "Restore purchases"
 - assertVisible: "Terms of Use (EULA)"
 - assertVisible: "Privacy Policy"
-- assertVisible: "automatically renews"
+# ⚠ Maestro text selectors are FULL-MATCH: this is a fragment of AUTO_RENEW_DISCLOSURE,
+# one long sentence, so without the wildcards it could never pass. Apple Guideline 3.1.2
+# requires the disclosure, which makes a permanently-failing check worse than no check.
+- assertVisible: ".*automatically renews.*"
