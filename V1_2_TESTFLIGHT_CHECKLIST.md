@@ -90,9 +90,9 @@ workflow prints the commit it built. Two build cycles were once spent on a month
 now runnable**, and §A is the whole reason this document exists: those checks cannot be automated by
 anything, so they are the only way that surface ever gets verified.
 
-⏳ **Still owed: dispatch `maestro-ios` on `v1.2`.** The flows have not run since the migration began.
-**Treat the first run as a validation pass, not a regression check** — 1.2.0.8 relabelled every input,
-so five flows moved from placeholder-and-index to accessible names, and none of that has executed once.
+⚙️ **The flows now run, on GitHub Actions ([D27]) — `gh workflow run maestro-ios.yml --ref v1.2`.**
+Six runs so far; the suite is not green yet, and that work is 1.2.14, not a device gate. **Nothing
+here waits on it** — §A exists precisely for the checks Maestro cannot make.
 
 ### If there's only time for a few checks, do these — highest value first
 

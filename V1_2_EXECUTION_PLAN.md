@@ -165,7 +165,7 @@ re-buys it with a run.
 | # | sub-step | scan |
 |---|---|---|
 | **1.2.14.1** | ✅ **DONE 2026-09-22.** Probed the runner rather than trusting the docs, which contradict themselves on macOS. **Measured `billable.MACOS.total_ms = 0`.** Image `macos-26-arm64`, Xcode 26.6, 15 iPhone simulators — **no "iPhone 15"**, so the don't-hardcode lesson still bites; the derivation picks iPhone 17. | ✅ |
-| **1.2.14.2** | **Port the workflow** to `.github/workflows/maestro-ios.yml`, carrying every lesson above. Pin Node 22 for parity (runner ships 24). | ⬜ |
+| **1.2.14.2** | ✅ **DONE 2026-09-22.** Ported to `.github/workflows/maestro-ios.yml`, Node 22 pinned. Codemagic's copy **retired 2026-09-23** after every lesson in its comments was verified present here — one Maestro home. | ✅ |
 | **1.2.14.3** | ✅ **DONE 2026-09-22.** Two runs, **0 billable ms**. Every infra step passes — including `xcodebuild` ad-hoc signing and boot+install — and run 1 hit **the same 2/12 as Codemagic**, which is the port validating itself. | ✅ |
 | **1.2.14.4** | ⚙️ **The three questions are ANSWERED and two were mis-framed** *(Premium rows ARE present — never the keypad; `Settings` missing with `$0.00` at **y=-25**, i.e. scrolled past the header; demo now fails earlier, superseding it)*. 🔴 **Root cause found: the flows predate 1.2.5's GPS trip toggle, which grew the entry form.** Save Entry fixed → **all 5 of those flows moved past it**; the blocker relocated to the **numeric keypad staying open** (viewport 874→568) and the `50%,15%` neutral tap now landing on the trip-tracker description. | 🔵 |
 | **1.2.14.5** | ⚙️ **IN PROGRESS.** Save Entry surface CLOSED; the same below-the-fold fault fixed one screen later, with a **vacuous `assertNotVisible`** removed. ⚡ **Then the real one: `centerElement` was a single bug behind all three symptoms** — removed at 43 sites in 12 flows. ⏳ **Run `35813422434` (full suite) is its verification.** Remaining after it: characterise any residual flakiness, and retire Codemagic's `maestro-ios` so there is one Maestro home. | 🔵 |
@@ -392,9 +392,10 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
   `mileage-log-gating` failed differently each run. **Neither flow was edited.** Until this is
   characterised, a single run's pass count is not a reliable measure of a fix — compare *where*
   flows fail, and re-run before concluding.
-- **Codemagic's `maestro-ios` workflow is now a second home for the same suite → retire it.** Left
-  in place only until the GitHub Actions route is green, so there is a fallback; keeping both is how
-  a stale copy gets run by mistake.
+- ✅ **Codemagic's `maestro-ios` retired 2026-09-23.** Its "fallback" was not one — Codemagic's
+  remaining minutes are reserved for TestFlight, so running it there spends the reserved build.
+  Every lesson in its comments was verified present in the GitHub Actions file first; the recipe is
+  in git history at `897d7df~1`.
 
 ### From 1.2.7.2 _(2026-09-22)_
 

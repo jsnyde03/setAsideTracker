@@ -22,12 +22,25 @@ maestro test .maestro
 
 ## Run in CI
 
-The `maestro-ios` Codemagic workflow (see `codemagic.yaml`) does this on a mac instance: prebuild →
-Release simulator build via `xcodebuild` → `simctl install` → `maestro test .maestro`. A Release
-build embeds the JS bundle, so no Metro server is needed during the run.
+**GitHub Actions**, not Codemagic: `.github/workflows/maestro-ios.yml` does prebuild → Release
+simulator build via `xcodebuild` → `simctl install` → `maestro test .maestro`. A Release build
+embeds the JS bundle, so no Metro server is needed during the run.
 
-> **First-run caveat:** like the `ios-testflight` workflow before it, the `maestro-ios` CI workflow
-> is expected to need a round of tuning against a real Codemagic mac runner (simulator name/runtime,
-> exact build-products path). The flows themselves and the build recipe encode the intended shape;
-> treat the first CI run as the validation pass. Selectors that rely on placeholder/label text may
-> need a `testID` fallback if Maestro can't see them on the real accessibility tree.
+```bash
+gh workflow run maestro-ios.yml --ref v1.2                      # the whole suite
+gh workflow run maestro-ios.yml --ref v1.2 -f flow=demo-mode.yaml   # one flow
+```
+
+⚡ **macOS runners are free here because the repo is public** — measured at
+`billable.MACOS.total_ms = 0` ([D27], 2026-09-22). Codemagic's `maestro-ios` workflow was retired
+the next day; its remaining minutes are reserved for TestFlight alone.
+
+> ⛔ **Never set `centerElement` on a `scrollUntilVisible`.** While it is set the loop accepts only
+> a near-centre element for five iterations and reaches the plain visibility check on the sixth —
+> and a target in the last screenful cannot be centred, so passing depends on a sixth iteration
+> fitting inside the timeout. It reads as three separate bugs: "not visible" on elements that are
+> plainly on screen, run-to-run flakiness, and a step that passes four runs then fails a fifth
+> untouched. `visibilityPercentage` already defaults to 100.
+
+> ⚠️ **The build dominates each run at ~35 min**, so a single-flow run is barely faster than the
+> whole suite. Prefer the full suite unless you are iterating on one thing.
