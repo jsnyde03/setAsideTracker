@@ -69,10 +69,10 @@ name: Expense breakdown gating (locked card → paywall)
 # The breakdown card is present but locked behind Premium; tapping it opens the paywall directly.
 - scrollUntilVisible:
     element:
-      text: "Expense breakdown.*Premium"
+      text: "Expense breakdown.*Premium.*"
     direction: DOWN
 - waitForAnimationToEnd
 - tapOn:
-    text: "Expense breakdown.*Premium"
+    text: "Expense breakdown.*Premium.*"
 - assertVisible: "SetAside Premium"
 - tapOn: "Close"

@@ -33,7 +33,17 @@ name: Onboarding → Dashboard
 - waitForAnimationToEnd
 - tapOn: "e.g. CA"
 - inputText: "TX"
-- hideKeyboard
+# ⛔ NOT hideKeyboard. Once "TX" is in the field a NUMERIC KEYPAD is on screen, and iOS's numeric
+# keypad has no Done key, so hideKeyboard fails outright -- "Couldn't hide the keyboard", which
+# took out 10 of 12 flows on run 35818419992. The dump shows the pad at y=590-874 with TX already
+# entered, so this is not a typing failure.
+# ⚠️ WHY a number pad follows a plain-text field is NOT yet established -- the only numeric field
+# on the screen is Dependents, and nothing here taps it. The workflow's hierarchy dump now reports
+# which node holds focus, so the next failure answers it instead of inviting another guess.
+# Tapping a non-interactive label dismisses whatever keyboard is up (the screen sets
+# keyboardShouldPersistTaps="handled", so a tap outside an input blurs it), and it does not care
+# which keyboard that turns out to be. BY NAME, never by coordinate.
+- tapOn: "Tax profile.*"
 # ⚠️ Onboarding is a ScrollView (OnboardingScreen.tsx:140) and its lower half is below the fold on
 # a shorter device. `tapOn` does NOT scroll, so tapping blind here is what failed 12/12 flows on
 # 2026-09-20 -- every one of them on this screen, most on "Continue". Scroll first, always.

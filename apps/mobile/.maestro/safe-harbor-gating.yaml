@@ -26,7 +26,9 @@ name: Safe-harbor gating (locked card → paywall)
 - waitForAnimationToEnd
 - tapOn: "e.g. CA"
 - inputText: "TX"
-- hideKeyboard
+# ⛔ NOT hideKeyboard: a NUMERIC keypad is up once "TX" is entered, and it has no Done key.
+# See onboarding.yaml for the evidence and the open question about why.
+- tapOn: "Tax profile.*"
 - scrollUntilVisible:
     element:
       text: "I understand this app provides estimates, not tax advice"
@@ -86,10 +88,10 @@ name: Safe-harbor gating (locked card → paywall)
 # The safe-harbor card is present but locked behind Premium; tapping it opens the paywall directly.
 - scrollUntilVisible:
     element:
-      text: "Avoid the IRS penalty.*Premium"
+      text: "Safe-harbor calculator.*Premium.*"
     direction: DOWN
 - waitForAnimationToEnd
 - tapOn:
-    text: "Avoid the IRS penalty.*Premium"
+    text: "Safe-harbor calculator.*Premium.*"
 - assertVisible: "SetAside Premium"
 - tapOn: "Close"

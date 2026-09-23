@@ -14,11 +14,11 @@ name: Custom expense categories gating (native Alert → paywall)
 # Scroll the locked Premium row into view and open the upsell Alert.
 - scrollUntilVisible:
     element:
-      text: "Custom expense categories.*Premium"
+      text: "Custom expense categories.*Premium.*"
     direction: DOWN
 - waitForAnimationToEnd
 - tapOn:
-    text: "Custom expense categories.*Premium"
+    text: "Custom expense categories.*Premium.*"
 - assertVisible: "Custom expense categories"
 - assertVisible: "See Premium"
 

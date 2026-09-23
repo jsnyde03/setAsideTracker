@@ -25,7 +25,9 @@ name: Premium Paywall (smoke)
 - waitForAnimationToEnd
 - tapOn: "e.g. CA"
 - inputText: "TX"
-- hideKeyboard
+# ⛔ NOT hideKeyboard: a NUMERIC keypad is up once "TX" is entered, and it has no Done key.
+# See onboarding.yaml for the evidence and the open question about why.
+- tapOn: "Tax profile.*"
 - scrollUntilVisible:
     element:
       text: "I understand this app provides estimates, not tax advice"

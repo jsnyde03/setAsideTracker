@@ -27,7 +27,9 @@ name: W-4 optimizer gating (locked card → paywall)
 - waitForAnimationToEnd
 - tapOn: "e.g. CA"
 - inputText: "TX"
-- hideKeyboard
+# ⛔ NOT hideKeyboard: a NUMERIC keypad is up once "TX" is entered, and it has no Done key.
+# See onboarding.yaml for the evidence and the open question about why.
+- tapOn: "Tax profile.*"
 # Flip on the W2 job (no paycheck details needed to surface the card).
 - tapOn: "I also have a W2 job"
 - scrollUntilVisible:
@@ -89,10 +91,10 @@ name: W-4 optimizer gating (locked card → paywall)
 # The optimizer card is present but locked behind Premium; tapping it opens the paywall directly.
 - scrollUntilVisible:
     element:
-      text: "Skip quarterly payments.*Premium"
+      text: "W-4 withholding optimizer.*Premium.*"
     direction: DOWN
 - waitForAnimationToEnd
 - tapOn:
-    text: "Skip quarterly payments.*Premium"
+    text: "W-4 withholding optimizer.*Premium.*"
 - assertVisible: "SetAside Premium"
 - tapOn: "Close"

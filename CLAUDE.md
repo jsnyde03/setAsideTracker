@@ -98,6 +98,18 @@ usable.
   **Gate demo invariants over `demoSeed.test.ts`'s sample dates, never over "now"**: planting the old
   rounding reds only **2 of those 7**, which is exactly why it shipped green.
 
+- ⛔ **AN `accessibilityLabel` ON A WRAPPER REPLACES EVERY WORD INSIDE IT, so the text a human reads
+  is often a string Maestro can NEVER match.** `DemoBanner` renders *"Sample data — not your
+  account"* and labels its wrapper *"Sample data. This is an example account, not your own."*;
+  every locked premium card renders *"Expense breakdown · Premium"* and labels its `Pressable`
+  *"Expense breakdown (Premium)"*. ⚡ **Eleven selectors across six flows were addressing text that
+  is not in the tree** — and one of them, an `assertNotVisible` on the banner, **passed for free
+  every run**: it asserted the absence of a string that is never present, which is the one thing it
+  existed to disprove. ⛔ **Select by the ACCESSIBLE name, and confirm it in a dump before
+  believing a flow proves anything.** ⚠️ A selector audit that only checks *"does this string exist
+  in the source"* cannot see this — the string does exist, one line under the label that hides it.
+- ⚠️ **`canUsePremium` is TRUE in demo mode** (`isPremium || (isDemo && !isPremium)`), so a card's
+  accessible name differs between the demo flow and the gating flows. Same card, two selectors.
 - ⛔ **NEVER set `centerElement` on a Maestro `scrollUntilVisible` — it cost five runs and read as
   three separate bugs.** `Orchestra.kt`: while it is set the loop accepts **only** a near-centre
   element for five iterations (`maxRetryCenterCount = 4`) and reaches the plain visibility check on

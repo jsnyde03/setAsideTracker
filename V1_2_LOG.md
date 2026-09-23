@@ -29,8 +29,20 @@ iterations, and reaches the plain visibility check on the sixth.** A target in t
 are guaranteed to fail, and the step passes **only if a sixth fits inside the 20 s timeout.** Each
 iteration costs a view-hierarchy fetch, whose cost varies with what the runner is doing.
 
-🔴 **That single mechanism accounts for all three symptoms**, which is why it was worth finding
-before editing another flow:
+🔴 **CORRECTION, same night, run `35818419992`: "one bug behind all three symptoms" was an
+OVERCLAIM, and it is Law IV again — a mechanism that arrives sounding complete still needs
+measuring.** `centerElement` is real and its removal is **verified**: every flow now runs *past*
+`step-011`, the step that had blocked five runs. But it does **not** explain all four
+"No visible element found" failures. At least two of them —
+`Custom expense categories.*Premium` and `IRS mileage log.*Premium` — were **independently
+unmatchable**, because a wrapper's `accessibilityLabel` replaces the visible text and the real
+string ends `(Premium)`, which a full-match regex ending in `Premium` cannot consume. **Those two
+were never going to pass, centring or not**, and they remain untested because the keyboard failure
+now sits upstream of them. ⚠️ **The tell was available and I did not take it:** the fix was
+verified against the step it unblocked, then generalised to failures it had never been tested on.
+
+🔴 **The mechanism accounts for the symptoms below** — the claim that it accounts for *every*
+failure is withdrawn:
 
 | symptom | explanation |
 |---|---|

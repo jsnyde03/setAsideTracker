@@ -52,33 +52,45 @@ name: Demo mode (enter, preview premium, exit)
     direction: DOWN
 - waitForAnimationToEnd
 - assertVisible: "Set aside for taxes"
+# ⛔ SCROLL to the entry rather than asserting it from here. "Set aside for taxes" sits at y≈328 on
+# the dashboard, and the entry list is far below it -- run 35818419992 failed this assertion on a
+# screen the dump shows working perfectly, seeded persona and all. Absence of an element on screen
+# is not absence of the data.
+- scrollUntilVisible:
+    element:
+      text: "Edit Uber entry.*"
+    direction: DOWN
+- waitForAnimationToEnd
 - assertVisible:
     text: "Edit Uber entry.*"
 
 # ── 2. The demo is marked, on more than one screen ──────────────────────────────────────────────
-- assertVisible: "Sample data — not your account"
+# ⚠️ The ACCESSIBLE name, which is not the visible text. DemoBanner sets accessibilityLabel on the
+# wrapper, and that REPLACES the child text in the accessibility tree -- so "Sample data — not your
+# account" is on screen for a human and unreachable for Maestro, which only ever sees this string.
+- assertVisible: "Sample data. This is an example account, not your own.*"
 - tapOn: "Settings"
-- assertVisible: "Sample data — not your account"
+- assertVisible: "Sample data. This is an example account, not your own.*"
 - tapOn: "Close"
 
 # ── 3. Premium previews open the real screens (1.2.1.6, [D5]) ───────────────────────────────────
 # Web cannot prove these are native screens rather than a re-render; this can.
 - scrollUntilVisible:
     element:
-      text: "Avoid the IRS penalty"
+      text: "Open the safe-harbor calculator"
     direction: DOWN
 - waitForAnimationToEnd
-- tapOn: "Avoid the IRS penalty"
+- tapOn: "Open the safe-harbor calculator"
 - assertVisible: "Safe harbor"
 - assertNotVisible: "SetAside Premium"
 - tapOn: "Close"
 
 - scrollUntilVisible:
     element:
-      text: "Expense breakdown"
+      text: "Open the expense breakdown"
     direction: DOWN
 - waitForAnimationToEnd
-- tapOn: "Expense breakdown"
+- tapOn: "Open the expense breakdown"
 - assertVisible: "Expense breakdown"
 - assertNotVisible: "SetAside Premium"
 - tapOn: "Close"
@@ -90,11 +102,11 @@ name: Demo mode (enter, preview premium, exit)
 - assertNotVisible: "Premium active"
 - scrollUntilVisible:
     element:
-      text: "Tax Summary \\(PDF\\).*Premium"
+      text: "Export tax summary as PDF"
     direction: DOWN
 - waitForAnimationToEnd
 - tapOn:
-    text: "Tax Summary \\(PDF\\).*Premium"
+    text: "Export tax summary as PDF"
 - assertVisible: "SetAside Premium"
 - tapOn: "Close"
 
@@ -113,4 +125,8 @@ name: Demo mode (enter, preview premium, exit)
     direction: DOWN
 - waitForAnimationToEnd
 - assertVisible: "Explore with sample data"
-- assertNotVisible: "Sample data — not your account"
+# ⛔ VACUOUS AS WRITTEN until 2026-09-23: this asserted the banner's VISIBLE text, which the
+# wrapper's accessibilityLabel replaces in the accessibility tree. Maestro could never see that
+# string, so the assertion passed whether or not demo mode had actually exited -- the one thing
+# this line exists to prove. It now names the string the tree really carries.
+- assertNotVisible: "Sample data. This is an example account, not your own.*"

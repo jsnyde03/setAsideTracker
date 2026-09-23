@@ -274,6 +274,27 @@ jobs:
             cat > /tmp/dump_hierarchy.py <<'PYEOF'
           import json, sys
 
+          # ⚡ Which node has FOCUS, not just what is on screen. A keyboard belongs to whatever is
+          # focused, so "a number pad is up on a screen whose only numeric field is Dependents" is
+          # only half an answer -- this prints the other half. The attribute key differs between
+          # Maestro versions and iOS releases, so rather than guess one, this reports every key any
+          # node carries (once) and every node whose key mentions focus and is truthy.
+          def focus_report(node, keys, focused):
+              attrs = node.get("attributes") or {}
+              keys.update(attrs.keys())
+              for k, v in attrs.items():
+                  if "focus" in k.lower() and v not in (None, "", "false", False, "0"):
+                      label = " | ".join(
+                          dict.fromkeys(
+                              str(attrs.get(x))
+                              for x in ("accessibilityText", "text", "hintText", "value")
+                              if attrs.get(x)
+                          )
+                      )
+                      focused.append("    %s=%s  %s  %s" % (k, v, label[:50], attrs.get("bounds", "")))
+              for child in (node.get("children") or []):
+                  focus_report(child, keys, focused)
+
           def walk(node, out):
               attrs = node.get("attributes") or {}
               shown = [attrs.get(k) for k in ("accessibilityText", "text", "hintText", "value")]
@@ -284,12 +305,21 @@ jobs:
               for child in (node.get("children") or []):
                   walk(child, out)
 
+          root = json.load(open(sys.argv[1], encoding="utf-8"))
+
           out = []
-          walk(json.load(open(sys.argv[1], encoding="utf-8")), out)
+          walk(root, out)
           if not out:
               out = ["    (no text nodes)"]
           for line in out[:150]:
               print(line)
+
+          keys, focused = set(), []
+          focus_report(root, keys, focused)
+          print("    --- FOCUS ---")
+          for line in focused[:6] or ["    (nothing reports focus)"]:
+              print(line)
+          print("    attribute keys present: %s" % ", ".join(sorted(keys)))
           PYEOF
 
             echo "=== ON-SCREEN TEXT AT EACH FAILURE (from Maestro's view hierarchy) ==="
