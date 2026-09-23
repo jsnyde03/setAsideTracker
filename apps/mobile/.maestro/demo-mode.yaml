@@ -132,6 +132,15 @@ name: Demo mode (enter, preview premium, exit)
 - tapOn: "Exit sample data"
 
 # No real profile was ever created, so leaving lands back on onboarding with the marker gone.
+# ⛔ SETTLE ON THE NEW SCREEN BEFORE SCROLLING IT. Exiting `replace`s the route, and a swipe sent
+# during that transition lands on a view that is still animating in -- it moves nothing, and the
+# scroll then reports "No visible element found" for a button that is merely further down an
+# un-scrolled page. Run 35828767212 failed exactly here, on a dump showing onboarding mounted
+# perfectly at scroll 0: the exit had worked, the scroll never happened.
+# Asserting the destination first is also the honest probe -- it proves we left the demo, which
+# scrolling alone never did.
+- assertVisible: "Welcome"
+- waitForAnimationToEnd
 - scrollUntilVisible:
     element:
       text: "Explore with sample data"
