@@ -203,8 +203,31 @@ jobs:
             echo "Running a single flow: $TARGET"
           fi
 
-          MAESTRO_EXIT=0
-          maestro test "$TARGET" || MAESTRO_EXIT=$?
+          # ⛔ The XCUITest runner is installed and launched on FIRST USE, and on a cold runner that
+          # does not fit in Maestro's 15s default -- run 35813422434 spent 40 minutes and executed
+          # ZERO flows, dying with IOSDriverTimeoutException before the first one started.
+          export MAESTRO_DRIVER_STARTUP_TIMEOUT=240000
+
+          # ⚠️ PIPESTATUS[0], never $? -- a pipeline reports the LAST command's status, so `$?` here
+          # would be tee's 0 and every failure would read as a pass.
+          maestro test "$TARGET" 2>&1 | tee /tmp/maestro-output.txt
+          MAESTRO_EXIT=${PIPESTATUS[0]}
+
+          # ⛔ "Failed" is not one outcome, it is two, and they mean opposite things. A HARNESS
+          # failure executes no flow at all and says NOTHING about the app or about any fix under
+          # test -- read it as a result and you will "verify" something that never ran. Two runs
+          # have now been misread this way, so the log says which one it was, unmissably.
+          if [ "$MAESTRO_EXIT" -ne 0 ] && ! grep -qE '\[(Passed|Failed)\]' /tmp/maestro-output.txt; then
+            echo ""
+            echo "################################################################"
+            echo "## NO FLOW RAN. This is a HARNESS failure, not a test result.  ##"
+            echo "## Nothing here confirms or refutes any change under test.     ##"
+            echo "## Re-dispatch. Do not draw a conclusion about the app.        ##"
+            echo "################################################################"
+            echo ""
+            grep -iE 'driver not ready|IOSDriverTimeout|Unable to launch|simulator' /tmp/maestro-output.txt \
+              | head -5 || true
+          fi
 
           if [ "$MAESTRO_EXIT" -ne 0 ]; then
             echo "=== Flows failed. Capturing the simulator's final frame. ==="
