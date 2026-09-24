@@ -75,5 +75,11 @@ const styles = StyleSheet.create({
   statRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.sm },
   statLabel: { ...type.caption, color: "#D1D5DB" },
   statValue: { ...type.caption, color: "#fff", fontWeight: "700" },
-  footer: { ...type.micro, color: "#6B7280", marginTop: spacing.md, textAlign: "center" },
+  /**
+   * ⚠️ Was #6B7280 — 3.04:1 against the gradient's lighter end, the only element on this card
+   * below WCAG AA. ⛔ Found by hand, because this card is NOT a route: the contrast gate sweeps
+   * routes and never sees it, and this is the one surface users post in PUBLIC.
+   * The same value failed for the same reason as the dark theme's old `inkFaint`.
+   */
+  footer: { ...type.micro, color: "#898F9A", marginTop: spacing.md, textAlign: "center" },
 });
