@@ -57,7 +57,7 @@
 > [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
 > Health: **453** mobile unit _(measured 2026-09-24; the line said 400, the closed 1.2.17 row said
 > 411 and CLAUDE.md said 414 — three stale counts, so **re-measure rather than copy this**)_ ·
-> **102** engine · **130/130** Playwright _(measured 2026-09-24)_ ·
+> **102** engine · **134/134** Playwright _(measured 2026-09-24)_ ·
 > typecheck clean · both tax-config gates green · lint 15 _(ledger says 14 — drift, pre-existing,
 > re-count at 1.2.11)_.
 >
@@ -414,6 +414,25 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
 
 ### From 1.2.8.6's after-scan _(2026-09-24)_
+
+- 🔴 **ADDING A SETTINGS ROW IS A TWO-SUITE CHANGE — and the suite that broke is the one I did not
+  check.** The "Replay the tour" row pushed **"Appearance" below the fold**, and
+  `clear-all-data.yaml` used it as its *"did Settings open"* probe — so the flow failed on a Settings
+  screen that had opened perfectly. ⚡ **The assertion was reading a row's POSITION, not the
+  screen's presence.** Fixed by asserting **"Sample data"**, the first section, which nothing can
+  push down. ⚠️ **This is 1.2.9.1's both-suites lesson one level up**: that one was about *renaming*
+  a label, this says the same about *adding a row* — and the Playwright helper that clicks through
+  Appearance **was** checked beforehand, which is exactly why the gap felt covered.
+- ⚙️ **A "did this screen open" probe should name something that cannot move.** Three other flows use
+  mid-screen markers the same way. None broke this time, and none is protected either. **Worth a
+  sweep, not a rewrite** — the fix is one selector each.
+- ⛔ **NEVER busy-wait on `gh`. A `until …; do :; done` loop tripped GitHub's SECONDARY rate limit**
+  and locked this session out of the API for the rest of the hour — with a Maestro run still in
+  flight and unreadable. ⚠️ **`gh api rate_limit` reported `remaining=5000` throughout**, because the
+  abuse limiter is a different bucket from the quota: **the obvious diagnostic says everything is
+  fine while every other call 403s.** ⚡ Poll with a real interval (`sleep 45`) or, better, one
+  delayed check — this is the same shape as the `| head` truncation earlier today: a shell habit,
+  not a knowledge gap, and the third self-inflicted tooling fault in one session.
 
 - 🔴 **The tour had never been measured at iPad width, and the config's own reasoning is why.**
   `guided-tour.spec.ts` runs in the **chromium project only**; the iPad projects are scoped to

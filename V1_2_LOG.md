@@ -11,6 +11,37 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.8.6 Verify — after-scan · 2026-09-24 · ✅ DONE
+
+**⚡ The tour ran on real hardware for the first time, and it worked.** `demo-mode.yaml` **PASSED**
+on run `36059108612`: the `extendedWaitUntil` for "Step 1 of 4", the `assertVisible` on "What to set
+aside", the `tapOn: "Skip"` and the assertion that the dismissal took. ⛔ **Everything else known
+about the tour had been learned in a browser** — no real `Modal` presentation, no native `Animated`,
+no VoiceOver. A screenshot of stop 1 on device is captured at `diag-02b-tour-stop-1`.
+
+**The planted run did its job.** On a throwaway branch with the stranded alert restored,
+`demo-mode.yaml` reds with *"Assertion is false: `Your data has been restored.*` is not visible"* and
+the dump shows the text on screen at `[71,414][331,452]`. ⛔ **So the new `assertNotVisible` is not
+one of the free-passing kind** — which this suite has shipped before. Branch deleted; `v1.2` never
+carried the plant.
+
+**🔴 The one failure was `clear-all-data.yaml`, and nothing to do with the tour.** It asserted
+**"Appearance"** as its *"did Settings open"* probe, and the new "Replay the tour" row pushed
+Appearance **below the fold** — so the flow failed on a Settings screen that had opened perfectly.
+⚡ **The assertion was reading a row's POSITION rather than the screen's presence.** Now asserts
+**"Sample data"**, the first section, which nothing can push down.
+
+⛔ **Diagnosed from the dump in one pass, not from the assertion text** — the hierarchy listed the
+whole Settings screen with `Vertical scroll bar, 3 pages | 0%` and no "Appearance" in it, which
+names the cause outright. This is the instrument the project built after thirteen dispatches spent
+theorising, and it earned itself again.
+
+⚠️ **The lesson generalises: adding a Settings row is a TWO-SUITE change.** 1.2.9.1 established this
+for *renaming a label*; this is the same thing for *adding a row*. ⛔ **And the near-miss is the
+instructive part** — the Playwright `chooseScheme()` helper that clicks through Appearance **was**
+checked before the row shipped, which is precisely why the gap felt covered. Checking one suite
+carefully is what makes forgetting the other feel like diligence.
+
 ### 🔎 1.2.8 Guided onboarding tour — WHOLE-ITEM after-scan · 2026-09-24
 
 **What only shows when the item is viewed whole.** Six sub-steps, and the same three shapes recur.
