@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { resetAppStorage, visible } from "./helpers";
+import { dismissTourIfShowing, resetAppStorage, visible } from "./helpers";
 
 /**
  * 1.2.6.5 — tapping a Schedule C line to see which entries make it up.
@@ -15,6 +15,7 @@ test.describe("Expense breakdown drill-down", () => {
 
   async function openBreakdown(page: import("@playwright/test").Page) {
     await visible(page.getByText("Explore with sample data")).first().click();
+    await dismissTourIfShowing(page);
     await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
     await visible(page.getByText(/Expense breakdown/)).first().click();
     await expect(visible(page.getByText("By Schedule C line")).first()).toBeVisible();

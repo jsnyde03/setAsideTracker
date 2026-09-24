@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { resetAppStorage, visible } from "./helpers";
+import { dismissTourIfShowing, resetAppStorage, visible } from "./helpers";
 
 /**
  * 1.2.6.3 — the safe-harbor payment tracker ([D19]).
@@ -16,6 +16,7 @@ test.describe("Safe-harbor payment tracker", () => {
 
   async function openSafeHarbor(page: import("@playwright/test").Page) {
     await visible(page.getByText("Explore with sample data")).first().click();
+    await dismissTourIfShowing(page);
     await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
     await visible(page.getByText(/Avoid the IRS penalty/)).first().click();
   }

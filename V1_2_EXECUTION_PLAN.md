@@ -34,9 +34,13 @@
 >
 > ✅ **1.2.1–1.2.7, 1.2.9–1.2.11, 1.2.14–1.2.17 CLOSED.** ▶ **ACTIVE: 1.2.8 — the guided onboarding
 > tour.** ✅ **1.2.8.1 closed 2026-09-24 → [D29]:** the tour **rides sample data** (fires on first
-> demo entry, replays from Settings) and is **dashboard-only, four stops**. ✅ **1.2.8.2 done** —
-> `tour.ts` (pure geometry, 25 tests, 3 planted claims) + `TourOverlay.tsx`, **no new native dep**.
-> ▶ **Next is 1.2.8.3, the four stops.** ⛔ **Its before-scan killed two pre-authored premises:** there is **no
+> demo entry, replays from Settings) and is **dashboard-only, four stops**. ✅ **1.2.8.2, .3 and .4
+> are done** — the primitive, the four stops, the trigger and the replay row. **The tour runs, and
+> 6 e2e drive it.** 🔴 **Building it found two LIVE defects** *(a stranded "Restored…" alert on every
+> demo exit since 2026-08-08; two dashboards mounting on demo entry)* **and one vacuous test that a
+> plant caught by PASSING.** ▶ **Next is 1.2.8.5, accessibility — and it must widen the contrast gate
+> before the row means anything.**
+> ⛔ **Its before-scan killed two pre-authored premises:** there is **no
 > `GestureDetector` anywhere in this app** (the row repeating that lesson is now a rule against
 > *introducing* one), and **the contrast gate sweeps routes only**, so "the tour passes it" was
 > unsatisfiable — 1.2.8.5 widens the gate rather than inheriting its silence. **1.2.12** still needs
@@ -53,7 +57,7 @@
 > [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
 > Health: **439** mobile unit _(measured 2026-09-24; the line said 400, the closed 1.2.17 row said
 > 411 and CLAUDE.md said 414 — three stale counts, so **re-measure rather than copy this**)_ ·
-> **102** engine · **106/106** Playwright _(66 chromium + 20 + 20 iPad)_ ·
+> **102** engine · **128/128** Playwright _(measured 2026-09-24)_ ·
 > typecheck clean · both tax-config gates green · lint 15 _(ledger says 14 — drift, pre-existing,
 > re-count at 1.2.11)_.
 >
@@ -157,7 +161,7 @@ by not being looked at, which is the thing this project keeps catching.
 | **1.2.8.1** | ✅ **[DECISION] DONE 2026-09-24 → [D29].** Shape, trigger and reach settled; four premises corrected. | ✅ |
 | **1.2.8.2** | ✅ **DONE 2026-09-24.** `src/tour.ts` (pure geometry, **25 new unit tests**, 3 planted claims each seen to red) + `src/components/TourOverlay.tsx` + `shouldAnimateTourStep`. Four-`View` mask, **no new native dep**. ⚡ **The a11y shadowing gate caught the new code on its first run** — and the fix exposed that the gate is **blind to ternary-rendered text** (→ backlog). 439 unit · typecheck · lint 0. | ✅ |
 | **1.2.8.3** | ✅ **DONE 2026-09-24.** `dashboardTour.ts` (four stops, copy approved by Jason) + four anchors wired + `scrollDeltaToReveal` (5 more tests) + `TourAnchorProvider` scoped to the dashboard route. 444 unit · **122/122 Playwright** _(the dashboard layout is unchanged — the real risk, since two wrapper `View`s went inside the gradient card)_ · lint 0. 🔴 **The tour itself has never rendered: `showTour` is hard-false until 1.2.8.4 builds the trigger.** | ✅ |
-| **1.2.8.4** | **Trigger + flag:** fires on **first demo entry** (offered at onboarding's last step, replayed from Settings' Sample-data row). ⚠️ **The flag cannot live in `AppSettings`** — the demo store is a fresh `Map`, so entering demo resets it and the tour replays every time. Needs a real-store one-shot; `gigTaxTracker:reviewRequested` (`src/appReview.ts:15`) is the precedent. Skip must stay skipped. | ⬜ |
+| **1.2.8.4** | ✅ **DONE 2026-09-24.** `tourFlag.ts` (raw-AsyncStorage one-shot, **5th thing outside `repository.ts`**, all three directions pinned in `demoLeaks.test.ts`) · Settings "Replay the tour" row · `?tour=1` replay path · **6 e2e that actually drive the tour** — it had never rendered before this. 🔴 **Two live defects fixed:** a stranded "Restored…" alert on every demo exit *(since 2026-08-08)*, and **two dashboards mounting** on demo entry, which stacked two tour cards. 🔴 **A plant PASSED and exposed a vacuous test** — rewritten, re-planted, now reds. 449 unit · lint 0. | ✅ |
 | **1.2.8.5** | **Accessibility — and the gate has to be WIDENED first, or this row means nothing.** Honour Reduce Motion (`useReduceMotion`, and ⚠️ it *starts* `false` and self-corrects — `Screen.tsx:56-64` has the workaround) · reachable by VoiceOver, `accessibilityViewIsModal` like the four sheets · ⚠️ no focus trap. **Teach `a11y-contrast.spec.ts` to open the tour** (one opener, via the replay entry point) so it is measured rather than assumed. | ⬜ |
 | **1.2.8.6** | **Verify + whole-item after-scan.** Includes the **one** Maestro flow the trigger touches (`demo-mode.yaml`) and a new `a11yLabelShadowing` entry if the coach-mark labels its wrapper. | ⬜ |
 
@@ -407,6 +411,51 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.8.4's after-scan _(2026-09-24)_
+
+- 🔴 **[D29] said riding demo entry "touches ONE flow". It touches one Maestro flow AND FIFTEEN
+  Playwright tests across six spec files.** The before-scan enumerated the Maestro flows that enter
+  a demo, never enumerated the browser specs, and reported the Maestro figure as the total — **the
+  undercount class, and in the flattering direction.** ⚠️ **The decision still holds** (first-run
+  would have needed ~43 suppressions) but the number quoted for the chosen option was wrong.
+  ⚡ **The tour's dim bands intercept pointer events**, so *visibility* assertions passed straight
+  through a covering overlay and only the tests that CLICK failed.
+- ⛔ **THE SAME COUNT WAS THEN UNDERCOUNTED BY MY OWN SHELL.** The first full run was read through
+  `| head -12`, which **truncated the failure list at 6 of 9**, so the "complete" set that got fixed
+  was a prefix and the next run surfaced three more files the first list never named. ⚠️ That
+  pipeline also swallowed the exit code — `| head` reports **head's** status, so a 9-failure run
+  printed `EXIT=0`, which is the `cmd | tail` rule this repo already wrote down. **Runs now redirect
+  to a file and echo `$?` directly.** ⚡ **Self-inflicted, one step after citing the same lesson
+  about hand-built lists** — worth a gate, not just a note: a CI check that greps a truncated
+  reporter would fail identically.
+
+- 🔴 **`router.replace("/")` MOUNTS A SECOND DASHBOARD, and a `Modal` portal escapes the covered
+  route's `display:none`.** Measured, not reasoned: after entering the sample account from Settings
+  the DOM held **two `tour-card`s, both visible, with one spotlight between them** — the unfocused
+  copy cannot measure its anchors, so it drew the degraded centred card on top of the working one.
+  ⚠️ **The duplicate dashboard is pre-existing** (`handleEnterDemo` has always done this) and
+  harmless while nothing overlays; the tour is simply the first thing to render a `Modal` from a
+  route that can be covered. **The tour is fixed narrowly with `useIsFocused`.** The nav quirk, and
+  whether the four sheets can be reached the same way, is a separate item. → **v1.3 / its own item.**
+- ⚙️ **"Clear All Data" does not reset the tour flag** — and it must not be made to naively:
+  `clearAllLocalData` writes through `backend()`, which **is the demo store during a demo**, so
+  clearing a raw key there would need an `AsyncStorage` call that wipes the **real** user's flag from
+  inside a demo. That is the 1.2.5 trip-tracker defect exactly. ⚠️ The published policy says Clear
+  All Data "permanently deletes everything stored on your device", which this makes fractionally
+  untrue — **the same sentence `appSettings` already fails**, filed at 1.2.10. **Decide both
+  together, at that item**, not as a side effect of the tour.
+- ⚙️ **`demo-mode.yaml` owes an `assertNotVisible` for the alert removed this session** — it exited
+  a demo through a spurious "Restored…" dialog **twelve green runs running**, because an iOS `Alert`
+  does not remove the view hierarchy behind it. ⛔ **Do not add the line unplanted:** an
+  `assertNotVisible` for a string that is never present passes for free, which is the vacuous shape
+  this repo has already been bitten by. **Add it with a planted run**, at 1.2.8.6 where a Maestro
+  dispatch is owed anyway.
+- ⚙️ **The repo now has exactly two `testID`s**, both on the tour's structural elements, with the
+  reasoning recorded at the call site. They exist because a decorative mask has **no text and no
+  accessible name**, so nothing else can select it — and without a handle the degraded path is
+  untestable. This does not settle the wider convention (still filed below for v1.3); it is the
+  narrowest possible precedent and should be cited, not silently widened.
 
 ### From 1.2.8.2's after-scan _(2026-09-24)_
 

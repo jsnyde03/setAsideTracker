@@ -14,6 +14,7 @@ import {
   scheduleQuarterlyReminders,
 } from "../src/notifications/scheduleReminders";
 import { reportError } from "../src/errorReporting";
+import { resetDashboardTour } from "../src/tourFlag";
 
 const SAVE_FAILED = "An unexpected error occurred. Please try again.";
 
@@ -143,7 +144,26 @@ export default function SettingsRoute() {
       reportError(error, { where: "handleExitDemo" });
       Alert.alert("Couldn't exit the demo", error instanceof Error ? error.message : SAVE_FAILED);
     }
-    Alert.alert("Restored", "Your data has been restored from the backup file.");
+  }
+
+  /**
+   * Replay: clear the one-shot, make sure we are in the sample account, and land on the dashboard
+   * with the tour requested.
+   *
+   * ⚠️ **The request is a route param, not a second flag.** Clearing `dashboardTourSeen` alone would
+   * not re-open the tour for somebody *already* in a demo — the dashboard only consults the flag
+   * when demo mode changes, and it has not. The param says "show it now" regardless, which also
+   * makes the tour reachable from a URL and therefore testable in the browser suite.
+   */
+  async function handleReplayTour() {
+    try {
+      await resetDashboardTour();
+      if (!isDemo) await enterDemo();
+      router.replace("/?tour=1");
+    } catch (error) {
+      reportError(error, { where: "handleReplayTour" });
+      Alert.alert("Couldn't start the tour", error instanceof Error ? error.message : SAVE_FAILED);
+    }
   }
 
   return (
@@ -168,6 +188,7 @@ export default function SettingsRoute() {
         isDemo={isDemo}
         onEnterDemo={handleEnterDemo}
         onExitDemo={handleExitDemo}
+        onReplayTour={handleReplayTour}
       />
       </ScreenFrame>
     </RequireTaxProfile>

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { resetAppStorage, visible } from "./helpers";
+import { dismissTourIfShowing, resetAppStorage, visible } from "./helpers";
 
 /**
  * Editing the tax profile must not destroy the fields the form does not edit.
@@ -24,6 +24,7 @@ test.describe("Tax-profile edits preserve fields the form does not own", () => {
     // there is no RevenueCat SDK, so this is the only way to reach it. The persona seeds a filed
     // prior-year figure, so there is something real to lose.
     await visible(page.getByText("Explore with sample data")).first().click();
+    await dismissTourIfShowing(page);
     await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
 
     await visible(page.getByText(/Avoid the IRS penalty/)).first().click();

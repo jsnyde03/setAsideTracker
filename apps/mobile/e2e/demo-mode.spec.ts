@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, grossPayField, resetAppStorage, visible } from "./helpers";
+import { completeOnboarding, dismissTourIfShowing, grossPayField, resetAppStorage, visible } from "./helpers";
 
 /**
  * Demo mode's enter/exit wiring (1.2.1.4).
@@ -24,6 +24,7 @@ test("the demo affordance is offered on onboarding", async ({ page }) => {
 
 test("entering the demo populates the app with the seeded persona", async ({ page }) => {
   await visible(page.getByText("Explore with sample data")).first().click();
+  await dismissTourIfShowing(page);
 
   // Leaves onboarding for the dashboard, and the dashboard has entries on it — the whole point of
   // seeding. An empty demo would still satisfy "navigated", which is why this asserts content.
@@ -37,6 +38,7 @@ test("every screen is marked while the demo runs, and unmarked when it isn't", a
 
   await expect(banner()).toHaveCount(0);
   await visible(page.getByText("Explore with sample data")).first().click();
+  await dismissTourIfShowing(page);
 
   // The dashboard, and then a screen that isn't it — the claim is about the shared wrapper covering
   // every screen, not about one of them remembering to render a marker.
@@ -50,6 +52,7 @@ test("every screen is marked while the demo runs, and unmarked when it isn't", a
 
 test("the banner is itself the way out", async ({ page }) => {
   await visible(page.getByText("Explore with sample data")).first().click();
+  await dismissTourIfShowing(page);
   await expect(visible(page.getByText("Sample data — not your account")).first()).toBeVisible();
 
   await visible(page.getByLabel(/Sample data\. This is an example account/)).first().click();
@@ -61,6 +64,7 @@ test("the banner is itself the way out", async ({ page }) => {
 
 test("the demo can be left from Settings, and offers no exit when not in one", async ({ page }) => {
   await visible(page.getByText("Explore with sample data")).first().click();
+  await dismissTourIfShowing(page);
   await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
 
   await visible(page.getByLabel("Settings")).first().click();
@@ -102,6 +106,7 @@ test("a demo session leaves the real account provably untouched", async ({ page 
   // Into the demo, from Settings.
   await visible(page.getByLabel("Settings")).first().click();
   await visible(page.getByLabel("Explore sample data")).first().click();
+  await dismissTourIfShowing(page);
 
   // The demo's world: its entries are here, the real one is not.
   await expect(visible(page.getByLabel(/Edit Uber entry/)).first()).toBeVisible();
@@ -163,6 +168,7 @@ const PREVIEWABLE_CARDS = [
  */
 test("year-over-year cannot be previewed: the persona has only one year", async ({ page }) => {
   await visible(page.getByText("Explore with sample data")).first().click();
+  await dismissTourIfShowing(page);
   await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
 
   await expect(visible(page.getByLabel("Year-over-year insights"))).toHaveCount(0);
@@ -171,6 +177,7 @@ test("year-over-year cannot be previewed: the persona has only one year", async 
 
 test("the premium cards open their real screens inside a demo", async ({ page }) => {
   await visible(page.getByText("Explore with sample data")).first().click();
+  await dismissTourIfShowing(page);
   await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
 
   for (const { card, screen } of PREVIEWABLE_CARDS) {
@@ -204,6 +211,7 @@ test("CONTROL: the same cards send a free account to the paywall", async ({ page
 
 test("[D5]: the demo previews premium WITHOUT claiming the entitlement", async ({ page }) => {
   await visible(page.getByText("Explore with sample data")).first().click();
+  await dismissTourIfShowing(page);
   await visible(page.getByLabel("Settings")).first().click();
 
   // Settings still reports the account as unsubscribed, because it is. A demo may lie about the

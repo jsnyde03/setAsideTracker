@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, grossPayField, platformChip, resetAppStorage, visible } from "./helpers";
+import { completeOnboarding, dismissTourIfShowing, grossPayField, platformChip, resetAppStorage, visible } from "./helpers";
 
 /**
  * 1.2.6.4 — best days to work ([D20]).
@@ -30,6 +30,7 @@ test.describe("Best days to work", () => {
 
   test("the persona clears the gate and the days are ranked by hourly rate", async ({ page }) => {
     await visible(page.getByText("Explore with sample data")).first().click();
+    await dismissTourIfShowing(page);
     await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
 
     await visible(page.getByText(/Best days to work/)).first().click();
@@ -51,6 +52,7 @@ test.describe("Best days to work", () => {
     // "Compare platforms". Putting it here would have taken something away from free, and this is
     // the assertion that keeps it out.
     await visible(page.getByText("Explore with sample data")).first().click();
+    await dismissTourIfShowing(page);
     await visible(page.getByText(/Best days to work/)).first().click();
 
     await expect(visible(page.getByText(/ranked by what you actually kept per hour/)).first()).toBeVisible();

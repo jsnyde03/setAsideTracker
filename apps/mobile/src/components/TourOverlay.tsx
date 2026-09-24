@@ -238,8 +238,17 @@ export function TourOverlay({ steps, visible, onFinish, onStepChange }: TourOver
             importantForAccessibility="no-hide-descendants"
           />
         ))}
+        {/* ⚠️ **The first two `testID`s in this repo, and they are deliberate.** Every other
+            selector here matches visible text or an accessible name, which is the right default —
+            but the spotlight is a decorative mask with **no text at all**, and giving it an
+            accessible name to make it selectable would put a meaningless node in the VoiceOver
+            tree purely to serve a test. ⛔ **Without a handle the degraded path is untestable:**
+            when an anchor cannot be measured the tour falls back to a centred card with no
+            cut-out, which renders the same copy as a working step — so a suite that checks only
+            the words passes either way. This is the one thing that tells them apart. */}
         {hole && (
           <View
+            testID="tour-spotlight"
             pointerEvents="none"
             style={[
               styles.holeRing,
@@ -248,6 +257,7 @@ export function TourOverlay({ steps, visible, onFinish, onStepChange }: TourOver
           />
         )}
         <View
+          testID="tour-card"
           onLayout={onTooltipLayout}
           style={[
             styles.card,

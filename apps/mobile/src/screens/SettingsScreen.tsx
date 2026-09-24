@@ -40,6 +40,8 @@ interface SettingsScreenProps {
   isDemo?: boolean;
   onEnterDemo?: () => void;
   onExitDemo?: () => void;
+  /** Clears the "seen" flag and reopens the dashboard tour in the sample account (1.2.8.4). */
+  onReplayTour?: () => void;
 }
 
 const FILING_STATUS_LABELS: Record<TaxProfile["filingStatus"], string> = {
@@ -72,6 +74,7 @@ export function SettingsScreen({
   isDemo,
   onEnterDemo,
   onExitDemo,
+  onReplayTour,
   onRestoreBackup,
   onClose,
 }: SettingsScreenProps) {
@@ -268,6 +271,28 @@ export function SettingsScreen({
               </View>
               <Ionicons name={isDemo ? "exit-outline" : "eye-outline"} size={20} color={colors.primary} />
             </Pressable>
+            {/* Replay sits with the sample data because that is where the tour runs ([D29]): it is
+                the same "show me around" affordance, one step further. ⚠️ A SEPARATE row rather than
+                folding replay into the row above — entering the sample account and asking to be
+                walked through it are different intents, and conflating them would mean the tour
+                reappears every time somebody just wants to look around, which is the opposite of
+                "skip stays skipped". */}
+            {onReplayTour ? (
+              <Pressable
+                onPress={onReplayTour}
+                accessibilityRole="button"
+                accessibilityHint="Opens the sample account and walks you through the dashboard again."
+                style={styles.row}
+              >
+                <View style={styles.rowText}>
+                  <Text style={styles.rowLabel}>Replay the tour</Text>
+                  <Text style={styles.rowHint}>
+                    Walk through the dashboard again in the sample account.
+                  </Text>
+                </View>
+                <Ionicons name="refresh-outline" size={20} color={colors.primary} />
+              </Pressable>
+            ) : null}
           </>
         ) : null}
 

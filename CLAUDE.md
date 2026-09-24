@@ -18,10 +18,23 @@ set-aside by week · mileage · the premium slice · native iPad · accessibilit
 lint · Maestro on CI · the `.app` cache · the keypad question · CI visibility.
 **Per-item detail is in `V1_2_LOG.md` and belongs there.**
 
-▶ **ACTIVE: 1.2.8 — the guided onboarding tour**, decomposed in the plan. ✅ **1.2.8.1 closed
-2026-09-24 → [D29]:** the tour **rides sample data** — it fires on first demo entry, replays from
-Settings' existing Sample-data row, and is **dashboard-only, four stops**. ▶ **Next: 1.2.8.2, the
-overlay primitive.**
+▶ **ACTIVE: 1.2.8 — the guided onboarding tour**, decomposed in the plan. ✅ **[D29], 2026-09-24:**
+the tour **rides sample data** — fires on first demo entry, replays from Settings, **dashboard-only,
+four stops**. ✅ **1.2.8.1–.4 done; the tour runs and 6 e2e drive it.** ▶ **Next: 1.2.8.5,
+accessibility.**
+
+⚡ **Building it found two LIVE defects that no backlog had, which is the pattern this project keeps
+repeating.** *(1)* **Every demo exit showed "Restored — Your data has been restored from the backup
+file."** — a call stranded from `handleRestoreBackup` by the 2026-08-08 routing port, sitting
+*outside* the `try`. ⛔ **`demo-mode.yaml` exited through that dialog twelve green runs running**: an
+iOS `Alert` does not remove the hierarchy behind it, so the assertion kept passing. *(2)*
+**`router.replace("/")` mounts a SECOND dashboard**, and a `Modal`'s portal **escapes the covered
+route's `display:none`** — measured as two visible tour cards with one spotlight between them.
+
+⛔ **A PLANT THAT PASSED caught a vacuous test, and the test was the smaller half.** `showTour`
+requires `isDemo`; the original "skip stays skipped" spec never entered demo, so it passed for an
+unrelated reason. Chasing it found the real fault: `dismissed`, a session variable, was sticky
+across demo re-entry — so **it, not the persisted flag, was deciding** whether the tour returned.
 
 ⛔ **"Render coach-marks outside any `GestureDetector`" WAS FALSE HERE, and it sat in this file.**
 There is no `GestureDetector`, `PanGestureHandler` or `GestureHandlerRootView` anywhere in this app —

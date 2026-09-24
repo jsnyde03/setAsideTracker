@@ -198,3 +198,82 @@ describe("the mileage trip tracker", () => {
     expect(getItem, "a demo read the real user's trip back").not.toHaveBeenCalled();
   });
 });
+
+/**
+ * The fifth thing outside `repository.ts` (1.2.8.4) — and the first where crossing the boundary is
+ * the **intent** rather than the bug.
+ *
+ * ⛔ **These tests assert the OPPOSITE of the trip tracker's, on purpose.** The tour runs over demo
+ * data ([D29]), so a flag inside the demo store would reset on every entry — a fresh `Map` each
+ * time — and the tour could never be skipped for good. Sharing is what makes "skip stays skipped"
+ * true.
+ *
+ * ⚠️ **They exist so nobody `fixes` this into isolation.** Every other raw-AsyncStorage user in this
+ * app is guarded against demo mode, so this one reads as an oversight at a glance; without a test
+ * saying "shared, deliberately", the next sweep for unguarded keys would helpfully break it. All
+ * three directions are pinned, which is the lesson the trip tracker paid for — it guarded the write
+ * and left the read and the remove open.
+ */
+describe("the guided tour's seen flag", () => {
+  async function loadFlag() {
+    const store = new Map<string, string>();
+    const setItem = vi.fn(async (k: string, v: string) => {
+      store.set(k, v);
+    });
+    const getItem = vi.fn(async (k: string) => store.get(k) ?? null);
+    const removeItem = vi.fn(async (k: string) => {
+      store.delete(k);
+    });
+    vi.doMock("@react-native-async-storage/async-storage", () => ({
+      default: { getItem, setItem, removeItem },
+    }));
+    const module = await import("../tourFlag");
+    const demoMode = await import("../demo/demoMode");
+    return { module, demoMode, setItem, getItem, removeItem };
+  }
+
+  it("writes the flag from inside a demo — that is where the tour runs", async () => {
+    const { module, demoMode, setItem } = await loadFlag();
+    demoMode.startDemoStore();
+    await module.markDashboardTourSeen();
+    expect(
+      setItem,
+      "the tour only runs in demo, so a guarded write would never fire at all",
+    ).toHaveBeenCalledWith("gigTaxTracker:dashboardTourSeen", "true");
+  });
+
+  it("a skip inside a demo still stays skipped after the demo ends", async () => {
+    const { module, demoMode } = await loadFlag();
+    demoMode.startDemoStore();
+    await module.markDashboardTourSeen();
+    demoMode.stopDemoStore();
+    expect(
+      await module.hasSeenDashboardTour(),
+      "the flag did not survive leaving the demo — the tour would replay forever",
+    ).toBe(true);
+  });
+
+  it("reports unseen before anything has been written", async () => {
+    const { module } = await loadFlag();
+    expect(await module.hasSeenDashboardTour()).toBe(false);
+  });
+
+  it("resets so the Settings replay row can run the tour again", async () => {
+    const { module, removeItem } = await loadFlag();
+    await module.markDashboardTourSeen();
+    await module.resetDashboardTour();
+    expect(removeItem).toHaveBeenCalledWith("gigTaxTracker:dashboardTourSeen");
+    expect(await module.hasSeenDashboardTour()).toBe(false);
+  });
+
+  it("touches only its own key, so it can never reach the user's entries or profile", async () => {
+    const { module, setItem, getItem, removeItem } = await loadFlag();
+    await module.markDashboardTourSeen();
+    await module.hasSeenDashboardTour();
+    await module.resetDashboardTour();
+    const keys = [...setItem.mock.calls, ...getItem.mock.calls, ...removeItem.mock.calls].map(
+      (call) => call[0],
+    );
+    expect(new Set(keys)).toEqual(new Set(["gigTaxTracker:dashboardTourSeen"]));
+  });
+});

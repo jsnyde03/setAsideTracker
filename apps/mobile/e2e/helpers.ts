@@ -60,6 +60,32 @@ export function platformChip(page: Page, platform: string): Locator {
   return visible(page.getByText(platform, { exact: true })).first();
 }
 
+/**
+ * Get past the guided tour if it is showing (1.2.8.4).
+ *
+ * ⛔ **Entering a demo now opens the tour, and its dim bands INTERCEPT POINTER EVENTS** — so any
+ * spec that clicks after entering the sample account has to dismiss it, exactly as a visitor does.
+ * That is not test scaffolding; it is the app's behaviour. Playwright named the culprit precisely:
+ * *"`<div class='…r-position-u8s1d'>` from `<div>…</div>` subtree intercepts pointer events"*.
+ *
+ * ⚠️ **Deliberately tolerant, and the tolerance is safe because the claim lives elsewhere.**
+ * `guided-tour.spec.ts` owns *"the tour appears on first demo entry"* and is plant-verified — it
+ * reds when `markDashboardTourSeen` is stubbed out. Here the only job is to reach the screen
+ * underneath. A strict assertion would be wrong as well as redundant: a test that enters a demo
+ * twice correctly sees the tour only the first time.
+ */
+export async function dismissTourIfShowing(page: Page): Promise<void> {
+  // The tour mounts only after its anchor has been measured, so it is not on screen the instant
+  // the demo opens — polling `count()` straight away would miss it and silently do nothing.
+  await page
+    .getByTestId("tour-card")
+    .first()
+    .waitFor({ state: "visible", timeout: 3000 })
+    .catch(() => {});
+  const skip = visible(page.getByText("Skip", { exact: true }));
+  if ((await skip.count()) > 0) await skip.first().click();
+}
+
 export interface OnboardingInput {
   name?: string;
   state?: string;

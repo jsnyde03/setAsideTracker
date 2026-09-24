@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, grossPayField, resetAppStorage, visible } from "./helpers";
+import { completeOnboarding, dismissTourIfShowing, grossPayField, resetAppStorage, visible } from "./helpers";
 
 /**
  * 1.2.6.1 — the per-quarter estimated payment on the dashboard's due-date card.
@@ -34,6 +34,7 @@ test.describe("Per-quarter estimated payment", () => {
 
   test("the demo's premium preview shows the amount, beside the same free date row", async ({ page }) => {
     await visible(page.getByText("Explore with sample data")).first().click();
+    await dismissTourIfShowing(page);
     await expect(visible(page.getByText("Set aside for taxes")).first()).toBeVisible();
 
     // Both halves on screen together: the date a free user also gets, and the amount they do not.
@@ -46,6 +47,7 @@ test.describe("Per-quarter estimated payment", () => {
 
   test("the projection is labelled as one, not left to read as an instruction", async ({ page }) => {
     await visible(page.getByText("Explore with sample data")).first().click();
+    await dismissTourIfShowing(page);
     await expect(visible(page.getByText("Estimated payment")).first()).toBeVisible();
 
     // The persona is dated into the current year, so its figure is earnings-so-far scaled up. A

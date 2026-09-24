@@ -11,6 +11,86 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.8.4 Trigger, flag and entry points — after-scan · 2026-09-24 · ✅ DONE
+
+**Shipped.** `src/tourFlag.ts` — a raw-`AsyncStorage` one-shot · Settings' **"Replay the tour"** row ·
+the `?tour=1` replay path · **6 Playwright specs that actually drive the tour**, which had never
+rendered once before this sub-step. 449 unit, lint 0.
+
+**The flag is deliberately OUTSIDE demo isolation, making it the fifth such thing** — and the first
+where crossing the boundary is the *intent*. In `AppSettings` it would live in the demo store, a
+fresh `Map` per entry, so it would reset every time and the tour could never be skipped for good.
+⚠️ **All three directions are pinned in `demoLeaks.test.ts`** precisely because the previous addition
+got this wrong: the trip tracker guarded its write and left the read and the remove open, and a demo
+deleted a real user's running trip. Here read, write and reset are all shared on purpose, and the
+tests say so — otherwise the next sweep for unguarded keys would helpfully "fix" it.
+
+**🔴 Live defect 1 — every demo exit showed "Restored — Your data has been restored from the backup
+file."** The call belonged to `handleRestoreBackup` and was stranded in `handleExitDemo` by the
+routing port on **2026-08-08**. It sits *outside* the `try`, so a failed exit showed "Couldn't exit
+the demo" and then claimed a restore. ⛔ **`demo-mode.yaml` exited through this dialog twelve green
+runs running** — an iOS `Alert` does not remove the hierarchy behind it, so `extendedWaitUntil
+visible: "Welcome"` kept passing with an unexpected dialog on screen. ⚡ **The assertion said what
+was absent; nothing was asking what was present.**
+
+**🔴 Live defect 2 — two dashboards, two tour cards.** The first e2e run failed with *"resolved to 2
+elements"*. ⛔ **Diagnosed from the DOM rather than the assertion text**, per the standing rule: a
+throwaway spec counted **2 `tour-card`s, both visible, 1 spotlight**. `router.replace("/")` from
+Settings mounts a second `DashboardScreen` while one is already below in the stack, and a covered
+route is only `display:none` — which a `Modal`'s **portal escapes entirely**. The unfocused copy
+cannot measure its anchors, so it rendered the degraded centred card *on top of* the working one.
+Fixed narrowly with `useIsFocused` (exported by `expo-router` itself — no new dependency). The
+duplicate dashboard is pre-existing and filed.
+
+**🔴 The plant that PASSED, and what it was really telling me.** `markDashboardTourSeen` was planted
+as a no-op and the suite stayed **green**. The "skip survives a reload" test never entered demo
+mode — and `showTour` requires `isDemo` — so the tour was hidden after the reload for a reason that
+had nothing to do with the flag. ⚡ **Chasing it surfaced a design fault, not just a test fault:**
+`dismissed`, a within-session shortcut, was sticky across demo re-entry, so *the session variable
+rather than the stored flag* was deciding whether the tour reappeared. Clearing `dismissed` on the
+`isDemo` edge put the flag back in charge of the behaviour **and** of the test. Rewritten to enter
+the sample account, skip, exit, and enter again; **re-planted, and it now reds** with the message
+*"the skip did not stick"*.
+
+**⚠️ The same rewrite fixed a coverage hole nobody had noticed: all five original specs entered
+through `?tour=1`, so [D29]'s actual trigger — first demo entry — was never exercised.** The replay
+URL is the shipping replay path, so testing it was not wrong; it was just not the main one.
+
+**🔴 CORRECTION to [D29]'s own reasoning: "riding demo entry touches ONE flow" was wrong.** It
+touches one Maestro flow **and fifteen Playwright tests across six spec files**. ⚡ **The error was
+in what I counted, not in how I counted it:** the before-scan enumerated the *Maestro* flows that
+enter a demo, never enumerated the *browser* specs, and reported the Maestro number as the total.
+**This is `audit-site-lists-undercount` again** — every hand-built enumeration in this portfolio has
+come up short when it was finally measured.
+
+⛔ **And the count was then undercounted a SECOND time, by my own shell.** The first full run's
+output was read through `| head -12`, which **truncated the failure list at 6 of 9** — so the
+"complete" set I fixed was a prefix. The next run surfaced the rest, in files the first list never
+mentioned. ⚡ **`truncated-search-hides-a-class`, self-inflicted, one step after citing the same
+lesson about hand-built lists.** ⚠️ The same pipeline also swallowed the exit code (`| head`
+reports *head's* status), so a 9-failure run reported `EXIT=0`. **Both runs after that redirected to
+a file and echoed `$?` directly.**
+⚠️ **The decision itself still holds** and by a wide margin: the rejected first-run trigger would
+have needed suppressing in ~43 places. But the figure quoted for the chosen option was wrong, and it
+was wrong in the flattering direction.
+
+⛔ **Diagnosed from Playwright's own output rather than guessed:** *"`<div class='…
+r-position-u8s1d'>` from `<div>…</div>` subtree intercepts pointer events"* — the tour's dim bands.
+Visibility assertions sailed through (a portal overlay does not hide what is under it), so **only
+the tests that CLICK failed**, which is why the count was not obvious even after the first run.
+
+**Fixed with `dismissTourIfShowing`, which is deliberately tolerant** — `guided-tour.spec.ts` owns
+the claim that the tour appears and is plant-verified, so the helper's only job is to reach the
+screen underneath. A strict assertion there would also be *wrong*: a test that enters a demo twice
+correctly sees the tour only the first time. ⚠️ **The set of specs to fix came from the suite, not
+from a grep** — a grep found 7 spec files touching demo mode, of which only 2 actually broke.
+
+**⚙️ Two `testID`s were added, the first in this repo.** A decorative mask has no text and no
+accessible name, so nothing else can select it — and without a handle the degraded path is
+untestable, since a centred no-cut-out card renders identical copy. ⛔ Giving it an
+`accessibilityLabel` instead would have put a meaningless node in the VoiceOver tree to serve a
+test. This is the narrowest precedent, not the wider convention (still filed for v1.3).
+
 ### 🔎 1.2.8.3 The four stops — after-scan · 2026-09-24 · ✅ DONE
 
 **Shipped.** `src/dashboardTour.ts` — the four stops and their anchor ids, pure and react-native
