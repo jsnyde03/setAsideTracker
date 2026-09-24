@@ -8,7 +8,7 @@ Native, iOS first. **LIVE on the App Store as "SetAside" at v1.1.1**; bundle id
 `V1_2_LOG.md` is the detail store — every scan record and the reasoning behind every decision.
 Read the plan's `RESUME HERE` block first; it is kept current.
 
-## Status (2026-09-23)
+## Status (2026-09-24)
 
 **v1.2 in development on branch `v1.2`.** No ship date — [D9]: work the queue and ship when done.
 **Do not reintroduce a target date.**
@@ -18,11 +18,28 @@ set-aside by week · mileage · the premium slice · native iPad · accessibilit
 lint · Maestro on CI · the `.app` cache · the keypad question · CI visibility.
 **Per-item detail is in `V1_2_LOG.md` and belongs there.**
 
-▶ **ACTIVE: 1.2.8 — the guided onboarding tour**, decomposed in the plan.
-⛔ **Its first sub-step is a `[DECISION]`, not code.** It is feature/UX work Jason shapes, and the
-standing rule is design agreement *before* building. Open with 2–3 shapes and a recommendation.
-🔴 **Render coach-marks OUTSIDE any `GestureDetector`** — it swallows taps on device, and that is a
-measured lesson. Build the tour over **populated** views (demo mode exists for exactly this).
+▶ **ACTIVE: 1.2.8 — the guided onboarding tour**, decomposed in the plan. ✅ **1.2.8.1 closed
+2026-09-24 → [D29]:** the tour **rides sample data** — it fires on first demo entry, replays from
+Settings' existing Sample-data row, and is **dashboard-only, four stops**. ▶ **Next: 1.2.8.2, the
+overlay primitive.**
+
+⛔ **"Render coach-marks outside any `GestureDetector`" WAS FALSE HERE, and it sat in this file.**
+There is no `GestureDetector`, `PanGestureHandler` or `GestureHandlerRootView` anywhere in this app —
+the lesson was **measured in a sibling finance app** and carried across as though it described this
+one. ⚡ **It survives inverted: do not INTRODUCE one.** ⚠️ `react-native-svg` is **absent**, and
+reanimated/gesture-handler are `expo-router`'s **undeclared optional peers** with a missing required
+`react-native-worklets` — they resolve in the editor and fail at build. **The spotlight is a
+four-`View` mask + `measureInWindow`, no new native dep.**
+
+🔴 **A FIRST-RUN tour would have had to be suppressed in 43 places.** All 12 Maestro flows and ~31
+Playwright specs `clearState`/`resetAppStorage`, launch into a virgin state, and assert on screen
+text — so anything auto-firing there lands on top of every one of them. **Riding demo entry touches
+one flow.** That, not aesthetics, decided [D29].
+
+⚠️ **The contrast gate sweeps ROUTES ONLY** (`e2e/a11y-contrast.spec.ts:24-35`), so a tour overlay
+would be **green by never being looked at**. 1.2.8.5 widens the gate with an opener instead of
+inheriting its silence. ⛔ **Zero `testID`s exist in this repo** — every selector in both suites
+matches visible text or `accessibilityLabel`.
 
 ⚙️ **What changed under your feet, if you are a new session:**
 - **Every cheap gate now runs on every push and REPORTS to the commit** —

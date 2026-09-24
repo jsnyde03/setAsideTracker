@@ -11,6 +11,78 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.8 Guided onboarding tour — TASK before-scan · 2026-09-24 · 1.2.8.1 closed → [D29]
+
+**The pre-authored item was treated as a hypothesis and four of its premises did not hold.** Two of
+the four changed the work; two changed only the wording.
+
+**🔴 Premise 1 — FALSE. "Render coach-marks outside any `GestureDetector`."** There is no
+`GestureDetector` in this app. `grep -rn "GestureDetector|PanGestureHandler|GestureHandlerRootView"`
+over `app/` and `src/` returns **zero**. The root wrapper is
+`SafeAreaProvider > ThemeProvider > PremiumProvider > AppDataProvider > DemoProvider > ErrorBoundary >
+AppGate > Stack` (`app/_layout.tsx:44-64`) — no gesture root, no portal host. The lesson is real but
+it was **measured in a sibling finance app** and carried here as though it described this codebase.
+⚡ **It survives inverted:** not "render outside one" but **"do not introduce one."** Rewritten on
+1.2.8.2.
+
+**🔴 Premise 2 — UNSATISFIABLE AS WRITTEN. "The tour must pass the contrast gate in both themes."**
+`e2e/a11y-contrast.spec.ts` enumerates **routes** — `readdirSync(app/)`, filtered — and says out loud
+at `:24-35` that the four sheets, `LockScreen`, `RecoveryScreen` and onboarding are **not covered**.
+A tour overlay is not a route. ⛔ **So the row as written would have been satisfied by a green run
+that never looked at the tour** — the exact failure mode this project has now caught four times
+(a check whose two sides come from one source; a gate that cannot fail). 1.2.8.5 is rewritten to
+**widen the gate with an opener** rather than inherit its silence. ⚠️ Separately, `:69` skips
+gradient-backed text, and the dashboard hero the tour points at **is** a gradient.
+
+**⚠️ Premise 3 — "first run" is not a flag.** It is derived from `!localUserProfile || !taxProfile`
+(`app/index.tsx:16-18`). A tour needs a new persisted one-shot, and the obvious home is wrong:
+`AppSettings` (`src/types.ts:190-199`) round-trips through the **demo store**, which is a fresh `Map`
+per entry (`src/storage/demoStore.ts`), so a flag living there is reset on every demo entry and the
+tour replays forever. The precedent that works is `gigTaxTracker:reviewRequested`
+(`src/appReview.ts:15`) — raw AsyncStorage, deliberately outside demo isolation, already
+demo-guarded at `:41`.
+
+**⚠️ Premise 4 — no dependency exists for a spotlight.** `react-native-svg` is **absent**.
+`react-native-reanimated@4.5.3` and `react-native-gesture-handler@3.1.0` are physically in
+`node_modules` but only as `expo-router`'s **optional peers** (`package-lock.json:7158-7176`,
+`"optional": true` / `"peer": true`) — undeclared in both `package.json`s, no `app.json` plugin, and
+reanimated 4's required `react-native-worklets` is missing. Treat both as unavailable. **A
+four-`View` dimming mask + `View.measureInWindow` needs no new dep**, which matters because the one
+reserved TestFlight build already owes five things and a new native module would make it six.
+
+**✅ Premises that HELD.** Demo mode is fully built, populated (`buildDemoSeed`, entries + mileage
+logs + custom expenses), isolated at one expression (`repository.ts:32-34`), and toggleable at will
+from Settings' first section (`SettingsScreen.tsx:247-272`) — so *"demo mode first, so the tour runs
+over populated views"* is not just true, it is already paid for. `useReduceMotion` and `motion.ts`
+exist and are unit-tested. `src/components/Screen.tsx` is a genuine single wrapper for all 15 screens
+and already carries a cross-cutting overlay (`DemoBanner`, `:76`) — a proven seam. The four sheets
+give one consistent overlay pattern to copy: `transparent` Modal + the `colors.overlay` token +
+`accessibilityViewIsModal`.
+
+**⚡ What the scan found that the plan did not know, and it decided the shape:** **all 12 Maestro
+flows and ~31 Playwright specs `clearState`/`resetAppStorage`, launch into a virgin state, and
+immediately assert on screen text.** A tour that auto-fires at first run appears on top of every one
+of them. That is 43 suppress hooks — and 43 places for one to be forgotten. **Riding demo entry
+instead touches one flow (`demo-mode.yaml`).** It was the deciding argument for [D29] and it came
+from looking, not from the plan.
+
+**⚠️ Also found: there are ZERO `testID`s in the repo.** Every selector in both suites matches
+visible text or `accessibilityLabel` — the same coupling that broke a Maestro flow at 1.2.9.1 and
+that put eleven selectors onto text hidden by a wrapper label. Filed to the backlog for v1.3; a tour
+anchors by measured ref, so it does not need one.
+
+**Decision — [D29], Jason 2026-09-24, both recommendations taken.** Rides sample data; dashboard-only,
+four stops. The two rejected shapes and their costs are recorded on [D29] in the plan.
+
+**The four stops, drafted for 1.2.8.3** _(copy is execution, open to redirection)_: **1.** the
+set-aside hero — *this is the part of what you have earned that is not yours to spend* · **2.** the
+weekly row — *your weekly target; move this much aside and you are square* · **3.** Log Earnings —
+*every shift you log moves both numbers, and it takes about ten seconds* · **4.** the Settings gear —
+*your state, filing status and any W-2 job live here; getting those right is what makes these numbers
+yours*, closing on the exit line back to the user's own data. ⚠️ **Three of the four anchors are
+below the fold** (`Log Earnings` is `DashboardScreen.tsx:558`), so the primitive must **scroll, then
+measure** — measuring first returns an off-screen rect.
+
 ### 🔎 1.2.17 The gates become visible, and every one is seen to fail · 2026-09-23 · ✅ DONE 5/5
 
 **The premise was confirmed before it was acted on.** Codemagic has **never** reported to GitHub on

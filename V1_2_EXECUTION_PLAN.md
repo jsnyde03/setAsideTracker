@@ -4,7 +4,7 @@
 > here and nowhere else. Detail of completed work → [V1_2_LOG.md](V1_2_LOG.md). Version ladder →
 > [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Nothing else carries a v1.2 queue.
 
-> ## ⏭️ RESUME HERE — 2026-09-22
+> ## ⏭️ RESUME HERE — 2026-09-24
 >
 > ✅ **Clean and pushed, verified** — `git rev-list --count origin/v1.2..HEAD` = 0.
 > ⚠️ **Check that count; never assume it.** A previous resume block asserted "clean and pushed"
@@ -33,9 +33,13 @@
 > **Guideline 3.1.2**. Full arc + every mechanism → [V1_2_LOG.md](V1_2_LOG.md).
 >
 > ✅ **1.2.1–1.2.7, 1.2.9–1.2.11, 1.2.14–1.2.17 CLOSED.** ▶ **ACTIVE: 1.2.8 — the guided onboarding
-> tour**, decomposed below. ⛔ **Its first sub-step is a DECISION, not code** — open the session by
-> bringing Jason design options with a recommendation. **1.2.12** still needs the reserved
-> TestFlight build authorized; **1.2.13**'s remaining work happens at release.
+> tour.** ✅ **1.2.8.1 closed 2026-09-24 → [D29]:** the tour **rides sample data** (fires on first
+> demo entry, replays from Settings) and is **dashboard-only, four stops**. ▶ **Next is 1.2.8.2, the
+> overlay primitive.** ⛔ **Its before-scan killed two pre-authored premises:** there is **no
+> `GestureDetector` anywhere in this app** (the row repeating that lesson is now a rule against
+> *introducing* one), and **the contrast gate sweeps routes only**, so "the tour passes it" was
+> unsatisfiable — 1.2.8.5 widens the gate rather than inheriting its silence. **1.2.12** still needs
+> the reserved TestFlight build authorized; **1.2.13**'s remaining work happens at release.
 > ⚡ **A Maestro run is now ~13 min, not ~40** (1.2.15) · **1.2.16 closed negative** — the keypad was
 > never an app bug · **the suite has been 12/12 four runs running.**
 > 🔴 **1.2.13 is a SHIP BLOCKER and is not finished:** Pages now serves this repo's `docs/`, but it
@@ -134,21 +138,28 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ### 🧭 **1.2.8 — Guided onboarding tour** · **ACTIVE** _(2026-09-23, Jason: "start a new session with 1.2.8")_
 
-⛔ **1.2.8.1 IS A DECISION GATE, AND IT COMES FIRST.** This is feature/UX work Jason shapes, and the
-standing rule is design agreement *before* code. Open with options and a recommendation, not a
-blank page and not a built tour.
+✅ **1.2.8.1 CLOSED 2026-09-24 → [D29]: rides sample data, dashboard-only, four stops.** Re-decomposed
+below against the **corrected** premises — the switch-in before-scan found four of the pre-authored
+ones stale or false. _Detail → [V1_2_LOG.md](V1_2_LOG.md)._
+
+🔴 **Two plan premises did NOT survive the before-scan, and both changed the work.** *(1)* There is
+**no `GestureDetector` in this app** — none, nor `PanGestureHandler` nor `GestureHandlerRootView`; the
+lesson was carried from a sibling finance app, and the row that repeated it is rewritten as a *rule
+against introducing one*. *(2)* **The contrast gate sweeps ROUTES ONLY** and excludes overlays by
+design, so "the tour passes the contrast gate" was **unsatisfiable as written** — it would have passed
+by not being looked at, which is the thing this project keeps catching.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.8.1** | **[DECISION] The design pass.** What the tour says, how many stops, what fires it, whether it is skippable *and* replayable. Bring 2–3 shapes with a recommendation. ⛔ No component code before Jason picks. | ⬜ |
-| **1.2.8.2** | **The overlay primitive** — reusable, built to move to the other two finance apps. 🔴 **Render coach-marks OUTSIDE any `GestureDetector`**: it swallows taps on device, and a tour whose tooltips do not respond is the failure mode. That is a measured lesson, not a caution. | ⬜ |
-| **1.2.8.3** | **The stops themselves, over POPULATED views** — which is why demo mode (1.2.1) came first; an empty dashboard teaches nothing. | ⬜ |
-| **1.2.8.4** | **Entry points:** first run · replay from Settings · skip that actually stays skipped. | ⬜ |
-| **1.2.8.5** | **Accessibility, which is now gated** — the tour must honour Reduce Motion (`useReduceMotion`, 1.2.9.4), pass the contrast gate in both themes, and be reachable by VoiceOver. ⚠️ A coachmark that traps focus is worse than no tour. | ⬜ |
-| **1.2.8.6** | **Verify + whole-item after-scan.** | ⬜ |
+| **1.2.8.1** | ✅ **[DECISION] DONE 2026-09-24 → [D29].** Shape, trigger and reach settled; four premises corrected. | ✅ |
+| **1.2.8.2** | **The overlay primitive** — reusable, built to move to the other two finance apps. **Four-`View` dimming mask + `measureInWindow`; NO new native dep** (`react-native-svg` is absent; reanimated/gesture-handler are undeclared optional peers of expo-router, and reanimated 4's `react-native-worklets` is missing). Mounts at `src/components/Screen.tsx`. ⛔ **Do not introduce `react-native-gesture-handler` for this** — a `GestureDetector` swallows taps on device, which is why the sibling app's tour tooltips went dead. | ⬜ |
+| **1.2.8.3** | **The four stops, over demo data:** set-aside hero → weekly row → Log Earnings → Settings gear. ⚠️ **Three of the four are below the fold** (`Log Earnings` is `DashboardScreen.tsx:558`), so the primitive must scroll-then-measure, not measure-then-hope. | ⬜ |
+| **1.2.8.4** | **Trigger + flag:** fires on **first demo entry** (offered at onboarding's last step, replayed from Settings' Sample-data row). ⚠️ **The flag cannot live in `AppSettings`** — the demo store is a fresh `Map`, so entering demo resets it and the tour replays every time. Needs a real-store one-shot; `gigTaxTracker:reviewRequested` (`src/appReview.ts:15`) is the precedent. Skip must stay skipped. | ⬜ |
+| **1.2.8.5** | **Accessibility — and the gate has to be WIDENED first, or this row means nothing.** Honour Reduce Motion (`useReduceMotion`, and ⚠️ it *starts* `false` and self-corrects — `Screen.tsx:56-64` has the workaround) · reachable by VoiceOver, `accessibilityViewIsModal` like the four sheets · ⚠️ no focus trap. **Teach `a11y-contrast.spec.ts` to open the tour** (one opener, via the replay entry point) so it is measured rather than assumed. | ⬜ |
+| **1.2.8.6** | **Verify + whole-item after-scan.** Includes the **one** Maestro flow the trigger touches (`demo-mode.yaml`) and a new `a11yLabelShadowing` entry if the coach-mark labels its wrapper. | ⬜ |
 
-**Exit line:** a first-run tour a new user can follow, skip, or replay — calm, one stop at a time,
-over real-looking data — and it passes the same gates every other surface now passes.
+**Exit line:** a tour a new user can follow, skip, or replay — calm, one stop at a time, over
+populated data — that is **measured** by the contrast gate rather than exempt from it.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
@@ -366,6 +377,7 @@ map is at the head of the log's item-spec section._
 | **[D26]** | **GitHub Pages serves THIS repo's `docs/`; the canonical file and the published URL become one object.** ⛔ **[D16]'s "one privacy policy" was true in this repo and false in the world** — the served copy lived in `jsnyde03/Set_Aside_Tracker` and was **83 days stale**, never mentioning location while the canonical file had disclosed it since 1.2.5. **The drift [D16] existed to kill had simply moved to a repository the gate could not reach.** Rejected a copy-on-release step: that is the same promise that failed, automated. ⚠️ Consequences: `docs/audits/` moved to `audits/` (Pages serves only `/` or `/docs`, and the gap scan enumerating known correctness gaps should not be an indexable site) · all 9 URLs repointed · **`tools/check-published-policy.mjs` checks the LIVE page**, because the lesson is that a check which cannot see the published artifact will pass while it rots. | Jason 2026-09-22 |
 | **[D25]** | **The iPad dashboard is a two-column band — money left, insights right — with the entry list full-width beneath it, in ONE scroll region.** Rejected the truer tablet split (cards in a left rail, shifts scrolling independently on the right): it gives permanent real estate to the *secondary* content, when the screen's job is "what do I owe", and it costs two scroll regions plus lifting the header out of the `FlatList`. Also rejected 2-up-ing only the insight cards — lowest risk, but it leaves most of a 13" screen unused and does not read as an iPad layout. ⚠️ **One scroll also keeps VoiceOver reading order intact**, which matters for 1.2.9. | Jason 2026-09-22 |
 | **[D24]** | **The iPad size-class seam is built on `useWindowDimensions`, and iPad viewports join the Playwright suite.** ⛔ **1.2.7 was promoted as "almost entirely device-owed" and that was a property of the intended implementation, not of the item.** The e2e suite already runs at **1280×720 — wider than iPad portrait** — so the app is proven to *survive* regular width; the item's real content is appearance. On `useWindowDimensions` the breakpoint re-renders on resize, so **Split View live-resize (1.2.7.5) falls out by construction** and is assertable by resizing the viewport mid-test; on a `Platform.isPad`-style constant both the behaviour and the check are lost. ⚠️ **Does not make the reserved build optional** — RN-web at 1024px is not UIKit at 1024pt, and 1.2.7.6 (hardware keyboard) stays device-owed. It moves the build from *discovering* layout breaks to *confirming* their absence. | Jason 2026-09-22 |
+| **[D29]** | **The tour RIDES SAMPLE DATA, and it is dashboard-only — four stops.** It fires the first time a user enters demo mode (offered at onboarding's last step, replayed from Settings' existing Sample-data row), so it is **populated by construction** — which is what demo mode was built first for. ⛔ **Rejected firing at first run on the user's own dashboard:** a brand-new user has zero entries, so every figure the tour points at reads **$0** — and it would auto-fire into exactly the virgin state that **12 Maestro flows and ~31 Playwright specs** launch into and assert text on, needing a suppress hook in all 43. Riding demo entry touches **one** flow. ⛔ **Rejected a value-prop card stack** — cheapest by far, and a route the contrast gate already sweeps, but it never shows the user *where* anything is, and it drops the overlay primitive the other two finance apps inherit. It also contradicts the standing 2026-06-30 call below. **Reach stops at the dashboard:** no step state survives navigation, the overlay mounts at `Screen.tsx` (the seam `DemoBanner` already rides), and the last stop *points at* Log Earnings rather than driving the user into it. ⚠️ **No new native dependency** — `react-native-svg` is absent and reanimated/gesture-handler are undeclared optional peers, so a four-`View` dimming mask + `measureInWindow` is the spotlight. | Jason 2026-09-24 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |
@@ -392,6 +404,33 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.8.1's before-scan _(2026-09-24)_
+
+- 🔴 **There are ZERO `testID`s in the entire repo** — `grep -rn "testID" src app e2e` returns nothing.
+  Every selector in both suites matches **visible text or `accessibilityLabel`**, which is precisely
+  the coupling that broke a Maestro flow at 1.2.9.1 when eight labels were renamed, and the coupling
+  behind the eleven selectors that were addressing text hidden by a wrapper label. ⚡ **A testID
+  convention would decouple every flow from user-facing copy in one move.** Not v1.2 — retrofitting
+  43 specs/flows is its own item — but it is the structural fix to a class that has now cost three
+  separate incidents. → **v1.3.**
+- ⚙️ **`react-native-reanimated@4.5.3` and `react-native-gesture-handler@3.1.0` are on disk but are
+  TRAPS.** Both are auto-installed **optional peers of `expo-router`** (`package-lock.json:7158-7176`,
+  `"optional": true` / `"peer": true`) — declared in neither `package.json`, given no `app.json`
+  plugin entry, and reanimated 4's **required** `react-native-worklets` peer is **absent**. So
+  `import Animated from "react-native-reanimated"` resolves in the editor and very likely fails at
+  build or runtime. ⚠️ **The next person who reaches for a nicer animation will find them and assume
+  they are available.** Worth a one-line note at the head of `motion.ts`, or a lint restriction.
+- ⚙️ **After 1.2.8.5, SIX of the seven non-route surfaces are still unmeasured** by the contrast and
+  Dynamic Type gates — the four sheets, `LockScreen`, `RecoveryScreen`, onboarding _(filed from 1.2.9;
+  re-stated here because the cost just dropped)_. 1.2.8.5 builds the **opener** pattern the widened
+  gate needs, so once it exists the remaining six are mechanical rather than novel. **Pick this up
+  immediately after 1.2.8** while the pattern is warm.
+- ⚙️ **The overlay primitive is built "reusable across the three finance apps" but has nowhere to
+  live.** It will land in `apps/mobile/src/components/` like everything else; there is no shared
+  package in this workspace and no cross-repo mechanism. **Extraction is a v1.3 decision** — building
+  it *portable* (no app-specific imports, theme passed in) costs nothing now and is folded into
+  1.2.8.2; actually *moving* it is not v1.2 work.
 
 ### From 1.2.11 _(2026-09-23)_
 
