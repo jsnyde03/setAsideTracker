@@ -45,6 +45,24 @@ name: Demo mode (enter, preview premium, exit)
 - assertNotVisible: "Explore with sample data"
 - assertNotVisible: "Something went wrong"
 
+# ── The guided tour greets a first demo entry (1.2.8.4) ─────────────────────────────────────────
+# ⛔ Its dim bands cover the whole screen, so every tap and scroll below this point would land on
+# the tour instead of the dashboard. Dismissing it is not scaffolding — a real visitor meets the
+# tour here too, and this is the only flow that enters a demo.
+# ⚡ It is also the FIRST TIME THE TOUR HAS BEEN ON A DEVICE. Everything else about it was proven in
+# a browser, where there is no VoiceOver, no real Modal presentation and no native Animated.
+# ⚠️ FULL-MATCH selectors: "Step 1 of 4", "What to set aside" and "Skip" are the exact strings the
+# card renders, so no `.*` is needed — and adding one would match more than intended.
+- extendedWaitUntil:
+    visible: "Step 1 of 4"
+    timeout: 20000
+- assertVisible: "What to set aside"
+- takeScreenshot: .maestro/diag-02b-tour-stop-1
+- tapOn: "Skip"
+# Proves the dismissal actually took. Without this the flow would simply fail later, somewhere
+# unrelated, in the way this suite has already lost four runs to.
+- assertNotVisible: "Step 1 of 4"
+
 # Seeded content, not just a navigation — an empty demo would satisfy "we moved" and prove nothing.
 - scrollUntilVisible:
     element:
@@ -158,3 +176,15 @@ name: Demo mode (enter, preview premium, exit)
 # string, so the assertion passed whether or not demo mode had actually exited -- the one thing
 # this line exists to prove. It now names the string the tree really carries.
 - assertNotVisible: "Sample data. This is an example account, not your own.*"
+
+# ⛔ The alert that sat here for six weeks. `handleExitDemo` ended with a call stranded from
+# `handleRestoreBackup` by the 2026-08-08 routing port, so EVERY demo exit told the user their data
+# had been restored from a backup file — and it was outside the `try`, so a FAILED exit said both.
+# ⚡ This flow walked through that dialog twelve green runs running: an iOS Alert does not remove
+# the view hierarchy behind it, so `extendedWaitUntil visible: "Welcome"` kept passing with an
+# unexpected modal on screen. The assertion above it said what was ABSENT and nothing asked what
+# was PRESENT.
+# ⚠️ Added WITH A PLANTED RUN — the stranded call was restored and this line was watched to FAIL.
+# An `assertNotVisible` for a string that is never present passes for free, and this suite has
+# already shipped one of those.
+- assertNotVisible: "Your data has been restored.*"
