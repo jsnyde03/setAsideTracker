@@ -186,7 +186,8 @@ out-of-order number is worth less than one more round of that.
 | # | item | notes |
 |---|---|---|
 | **1.2.13** | ⚙️ **Publish the privacy policy — SHIP BLOCKER, mostly done 2026-09-22** | ✅ Pages now serves **this** repo's `docs/` ([D26]); audits moved out so `docs/` is the website exactly; all 9 URLs repointed; **`tools/check-published-policy.mjs`** added — it fetches the live page and fails on drift *(verified both ways: reds on the real defect, and a control proves it can pass)*. ⛔ **Remaining: the cutover.** Pages serves `master`, which still carries the July policy — correct for live v1.1.1, wrong the moment v1.2 ships. **Merging v1.2 to master at release publishes it; the gate fails the submission if it is forgotten.** |
-| 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
+| **1.2.18** | ⚙️ **The gates that cannot see what they claim to** — **RECOMMENDED NEXT ACTIVE BUILD** | Three filed findings, one class: a gate reporting green over something it structurally cannot read. **(a)** the contrast/Dynamic-Type sweeps miss **5 non-route surfaces** (four sheets + `LockScreen`/`RecoveryScreen`) — 1.2.8.5 built the opener pattern and it cost four lines · **(b)** `TextField` hides its label and hint with props **react-native-web drops**, so the intent is unverifiable here; `aria-hidden` fixes both platforms, and it sits behind most of the suite's `getByLabel` selectors so it needs its own suite run · **(c)** `a11yLabelShadowing.test.ts` **cannot see ternary-rendered text**, proven on new code. ⚠️ Chosen because **both remaining items are externally blocked** — 1.2.12 needs a build authorized, 1.2.13 happens at release — and all three of these are warm right now. |
+| 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. ⛔ **Blocked on Jason authorizing the one reserved build**, which owes five things (+ now the tour). |
 
 ⚠️ **Sequencing, and it is the point of the restructure:** the correctness blocks run **before** the
 feature items, not after. 1.2.4 renders a per-entry set-aside in ~52 rows a year — building it on an
@@ -411,6 +412,17 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.8.6's after-scan _(2026-09-24)_
+
+- 🔴 **The tour had never been measured at iPad width, and the config's own reasoning is why.**
+  `guided-tour.spec.ts` runs in the **chromium project only**; the iPad projects are scoped to
+  `ipad-*.spec.ts`. ⚠️ That scoping is argued on "the iPad projects check *appearance*, not
+  behaviour" — and **a spotlight's position is exactly appearance**, on a screen where the dashboard
+  becomes a **two-column band** ([D25]) and the anchors move columns. ✅ **Closed in-item**
+  (`ipad-tour.spec.ts`, 4 passing across both orientations, planted by displacing the measured rect
+  300px so the wrong-column case reds). ⚡ **The general point outlives the tour: "viewport-
+  independent" is a claim about the thing under test, and it has to be re-asked for each new one.**
 
 ### From 1.2.8.5's after-scan _(2026-09-24)_
 

@@ -71,7 +71,14 @@ name: Clear all data (destructive confirm + return to onboarding)
     direction: UP
 - waitForAnimationToEnd
 - tapOn: "Settings"
-- assertVisible: "Appearance"
+# ⛔ "Sample data", not "Appearance" — and the change is the point. This is a "did Settings open"
+# probe, and it was reading a row's POSITION rather than the screen's presence: "Appearance" sits
+# mid-list, so when 1.2.8.4 added a "Replay the tour" row above it, it fell below the fold and this
+# flow failed on a Settings screen that had opened perfectly.
+# ⚠️ **Adding a Settings row is a TWO-SUITE change.** The Playwright helper that clicks through
+# Appearance was checked before shipping the row; this flow was not, and it is the one that broke.
+# "Sample data" is the FIRST section on the screen, so nothing can push it down.
+- assertVisible: "Sample data"
 - scrollUntilVisible:
     element: "Clear all data"
     direction: DOWN
