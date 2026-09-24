@@ -86,7 +86,20 @@ jobs:
           npm test --workspace services/tax-engine
           npm run audit --workspace services/tax-engine
 
+      - name: Cache the Playwright browser
+        # Carried from the Codemagic workflow: ~/.cache/ms-playwright is where `playwright install`
+        # puts the browser, and without this every run re-downloads chromium. Keyed on the resolved
+        # Playwright version, because a version bump needs a different binary and a stale one fails
+        # in a way that reads like a test problem.
+        id: pwcache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright Chromium
+        # ⚠️ Still runs on a cache hit: the binary is restored but the OS dependencies are not, and
+        # `--with-deps` is what installs those. On a hit this mostly just re-checks them.
         run: npx playwright install --with-deps chromium
         working-directory: apps/mobile
 

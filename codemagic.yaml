@@ -197,98 +197,19 @@ workflows:
   # runs on every branch incl. PRs. Catches UI-logic regressions across whole flows that the Vitest
   # unit suite can't. See apps/mobile/e2e/. Validated locally before landing.
   # ─────────────────────────────────────────────────────────────────────────────────────────────
-  web-e2e:
-    name: SetAsideTracker — Web E2E (Playwright)
+  # ⛔ `web-e2e` LIVED HERE AND WAS RETIRED 2026-09-23 (1.2.17). Every gate it held —
+  # typecheck, lint, 411 mobile unit tests, 102 tax-engine tests, both tax-config audits and
+  # the 122-test Playwright suite — now runs in `.github/workflows/web-checks.yml`.
+  #
+  # ⚡ The reason is not cost, it is VISIBILITY. Measured at 1.2.11:
+  # `gh api .../commits/<sha>/status` returned 0 statuses and 0 check-runs on every commit
+  # sampled across four months, so whatever this workflow did, nobody could see it. A gate
+  # whose verdict never reaches the commit is in the same position as a remembered green.
+  #
+  # ⛔ All five gates were then SEEN TO FAIL from GitHub Actions before this was deleted —
+  # one planted defect each, on a throwaway branch. A pipeline that has only ever been green
+  # is indistinguishable from one that cannot fail. The recipe is in git history at 83a8d14~1.
 
-    # Cache npm downloads + the Playwright browser binaries so re-runs skip the (slow) chromium
-    # download and most of `npm install`. ms-playwright is where `playwright install` puts browsers.
-    cache:
-      cache_paths:
-        - $HOME/.npm
-        - $HOME/.cache/ms-playwright
-
-    environment:
-      node: 22
-
-    triggering:
-      events:
-        - push
-        - pull_request
-      branch_patterns:
-        # RE-ENABLED 2026-08-07 at the v1.2 switch-in. It was disabled 2026-06-30 "temporarily,
-        # until the monthly reset" and two resets then passed with it still off — which meant the
-        # repo spent five weeks with no automated gate on any push at all. This is the cheap Linux
-        # workflow, so the conserve-minutes rule points at the mac ones, not this.
-        - pattern: "*"
-          include: true
-
-    scripts:
-      - name: Install root workspace dependencies
-        script: |
-          rm -rf node_modules
-          npm install --prefer-offline --no-audit --no-fund
-
-      - name: Build the tax-engine package
-        # apps/mobile consumes @gig-tax-tracker/tax-engine via its compiled dist/, so build it first.
-        script: |
-          cd services/tax-engine
-          npm run build
-
-      - name: Install Playwright Chromium
-        # With $HOME/.cache/ms-playwright cached, the browser binary is reused across runs and this
-        # mostly just re-checks OS deps.
-        script: |
-          cd apps/mobile
-          npx playwright install --with-deps chromium
-
-      - name: Typecheck + unit tests (fail fast before the slow browser run)
-        # Added 2026-08-07. This workflow previously ran ONLY Playwright, so the 101 tax-engine and
-        # 144 mobile unit tests never ran on a push — they were reachable only via the expensive mac
-        # maestro workflow. Cheap checks belong first: a type error shouldn't cost a chromium boot.
-        # ⚡ LINT IS NOW A GATE (1.2.11, 2026-09-23). It was held back while a pre-existing ledger
-        # sat at 15 — adding it then would have landed this pipeline red on every push, which is how
-        # a gate gets disabled and never re-enabled. The ledger is now ZERO, so it goes in.
-        # ⚠️ `lint:ci` rather than `lint`: --max-warnings=0, because the two warnings that were in
-        # that ledger were both DEAD IMPORTS, and one of them was worth checking before deleting
-        # (an unused `totalCustomExpenses` in scheduleC.ts could have meant custom categories were
-        # missing from the Schedule C export — they were not; that file aggregates them itself).
-        # Warnings that nobody must fix are warnings nobody reads.
-        script: |
-          cd services/tax-engine
-          npm test
-
-          # ⚠️ Tax-config audits, added 1.2.2.7. Both EXIT NON-ZERO, so they are gates rather than
-          # reports nobody runs — which is the only difference that matters. Each exists because a
-          # real defect got through:
-          #
-          #   audit:dependents — GA/SC/MN modelled dependent EXEMPTIONS as dollar-for-dollar tax
-          #     CREDITS, telling a $40k Georgia filer with two dependents they owed $0 state tax
-          #     instead of ~$891. Fails on any per-dependent credit >= $1,000; no real one is close.
-          #
-          #   audit:staleness — Georgia raised that exemption $4,000 -> $5,000 effective TY2026 and
-          #     nothing here noticed; a web search found it during an unrelated audit. Fails when a
-          #     live year's figures have not been re-checked in 6 months, or when the current
-          #     calendar year has no config and the engine would silently fall back to another
-          #     year's brackets.
-          npm run audit
-
-          cd ../../apps/mobile
-          npm run typecheck
-          npm run lint:ci
-          npm test
-
-      - name: Run web E2E (Playwright boots Expo web itself)
-        # The playwright.config.ts webServer block starts `npm run web` and waits for :8081, so no
-        # separate server step is needed. CI=true makes Expo non-interactive and turns on retries.
-        script: |
-          cd apps/mobile
-          CI=true npm run e2e
-
-    artifacts:
-      - apps/mobile/playwright-report/**
-      - apps/mobile/e2e/.results/**
-
-  # ─────────────────────────────────────────────────────────────────────────────────────────────
   # ─────────────────────────────────────────────────────────────────────────────────────────────
   # ⛔ `maestro-ios` LIVED HERE AND WAS RETIRED 2026-09-23 ([D27]). Maestro now runs on GitHub
   # Actions -- `.github/workflows/maestro-ios.yml` -- where macOS runners are FREE on a public repo
