@@ -13,28 +13,42 @@ Read the plan's `RESUME HERE` block first; it is kept current.
 **v1.2 in development on branch `v1.2`.** No ship date — [D9]: work the queue and ship when done.
 **Do not reintroduce a target date.**
 
-✅ **CLOSED: 1.2.1–1.2.7, 1.2.9–1.2.11, 1.2.14–1.2.17.** Demo mode · tax correctness · data safety ·
+✅ **CLOSED: 1.2.1–1.2.11, 1.2.14–1.2.17.** Demo mode · tax correctness · data safety ·
 set-aside by week · mileage · the premium slice · native iPad · accessibility · filed correctness ·
 lint · Maestro on CI · the `.app` cache · the keypad question · CI visibility.
 **Per-item detail is in `V1_2_LOG.md` and belongs there.**
 
-▶ **ACTIVE: 1.2.8 — the guided onboarding tour**, decomposed in the plan. ✅ **[D29], 2026-09-24:**
-the tour **rides sample data** — fires on first demo entry, replays from Settings, **dashboard-only,
-four stops**. ✅ **1.2.8.1–.4 done; the tour runs and 6 e2e drive it.** ▶ **Next: 1.2.8.5,
-accessibility.**
+✅ **1.2.8 CLOSED 2026-09-24 — the guided tour ships, verified 12/12 on device.** [D29]: it rides
+sample data, fires on first demo entry, replays from Settings, **dashboard-only, four stops**.
+▶ **ACTIVE: 1.2.18 — the gates that cannot see what they claim to**, decomposed in the plan.
 
-⚡ **Building it found two LIVE defects that no backlog had, which is the pattern this project keeps
-repeating.** *(1)* **Every demo exit showed "Restored — Your data has been restored from the backup
-file."** — a call stranded from `handleRestoreBackup` by the 2026-08-08 routing port, sitting
-*outside* the `try`. ⛔ **`demo-mode.yaml` exited through that dialog twelve green runs running**: an
-iOS `Alert` does not remove the hierarchy behind it, so the assertion kept passing. *(2)*
-**`router.replace("/")` mounts a SECOND dashboard**, and a `Modal`'s portal **escapes the covered
-route's `display:none`** — measured as two visible tour cards with one spotlight between them.
+⚡ **Building the tour found two LIVE defects that no backlog had.** *(1)* **Every demo exit showed
+"Restored — Your data has been restored from the backup file."** — a call stranded from
+`handleRestoreBackup` by the 2026-08-08 routing port, sitting *outside* the `try`. ⛔
+**`demo-mode.yaml` exited through that dialog twelve green runs running**: an iOS `Alert` does not
+remove the hierarchy behind it, so the assertion kept passing. *(2)* **`router.replace("/")` mounts
+a SECOND dashboard**, and a `Modal`'s portal **escapes the covered route's `display:none`** —
+measured as two visible tour cards with one spotlight between them.
 
 ⛔ **A PLANT THAT PASSED caught a vacuous test, and the test was the smaller half.** `showTour`
 requires `isDemo`; the original "skip stays skipped" spec never entered demo, so it passed for an
 unrelated reason. Chasing it found the real fault: `dismissed`, a session variable, was sticky
 across demo re-entry — so **it, not the persisted flag, was deciding** whether the tour returned.
+
+⛔ **Four of 1.2.8's pre-authored premises were stale, and the two that mattered would each have
+produced work that COULD NOT FAIL** — a rule defending against a `GestureDetector` **this app does
+not have**, and "pass the contrast gate" on a surface the gate **does not sweep**. ⚡ **Neither
+would have broken the build. Both would have been ticked.** The switch-in before-scan is what caught
+them, and 1.2.18 exists to close the same class elsewhere.
+
+⚠️ **`accessibilityElementsHidden` and `importantForAccessibility` are DROPPED by
+react-native-web** — use `aria-hidden`, which RN maps natively and RN-web emits. `TextField` still
+relies on the dropped pair (1.2.18.2).
+
+⛔ **Two shell faults cost real time in one session, both already written down here:** `| head`
+truncated a failure list at 6 of 9 **and swallowed the exit code**, and a `gh` busy-wait tripped
+GitHub's **secondary** rate limit — where `gh api rate_limit` reports `remaining=5000` throughout,
+because the abuse limiter is a different bucket.
 
 ⛔ **"Render coach-marks outside any `GestureDetector`" WAS FALSE HERE, and it sat in this file.**
 There is no `GestureDetector`, `PanGestureHandler` or `GestureHandlerRootView` anywhere in this app —
@@ -44,24 +58,27 @@ reanimated/gesture-handler are `expo-router`'s **undeclared optional peers** wit
 `react-native-worklets` — they resolve in the editor and fail at build. **The spotlight is a
 four-`View` mask + `measureInWindow`, no new native dep.**
 
-🔴 **A FIRST-RUN tour would have had to be suppressed in 43 places.** All 12 Maestro flows and ~31
+🔴 **A FIRST-RUN tour would have had to be suppressed in ~43 places.** All 12 Maestro flows and ~31
 Playwright specs `clearState`/`resetAppStorage`, launch into a virgin state, and assert on screen
-text — so anything auto-firing there lands on top of every one of them. **Riding demo entry touches
-one flow.** That, not aesthetics, decided [D29].
+text. That, not aesthetics, decided [D29]. ⚠️ **But "riding demo entry touches ONE flow" was wrong —
+it touches one Maestro flow and FIFTEEN Playwright tests.** The estimate counted Maestro and never
+enumerated the browser specs. **The decision still holds; the number quoted for it did not.**
 
-⚠️ **The contrast gate sweeps ROUTES ONLY** (`e2e/a11y-contrast.spec.ts:24-35`), so a tour overlay
-would be **green by never being looked at**. 1.2.8.5 widens the gate with an opener instead of
-inheriting its silence. ⛔ **Zero `testID`s exist in this repo** — every selector in both suites
-matches visible text or `accessibilityLabel`.
+⚠️ **The contrast gate sweeps ROUTES, plus the tour.** 1.2.8.5 widened it with an opener rather
+than inheriting its silence; **5 non-route surfaces are still unmeasured** and are 1.2.18.1.
+⛔ **The repo has exactly TWO `testID`s**, both on the tour's mask and card, because a decorative
+overlay has no text and no accessible name. **Everything else in both suites still selects on
+visible text or `accessibilityLabel`** — a repo-wide convention is filed for v1.3.
 
 ⚙️ **What changed under your feet, if you are a new session:**
 - **Every cheap gate now runs on every push and REPORTS to the commit** —
-  `.github/workflows/web-checks.yml`: typecheck · `lint:ci` · 414 mobile unit · 102 engine · both
-  tax-config audits · 122 Playwright. Each has been **seen to fail** from CI. Codemagic's copy is
+  `.github/workflows/web-checks.yml`: typecheck · `lint:ci` · 453 mobile unit · 102 engine · both
+  tax-config audits · 134 Playwright. Each has been **seen to fail** from CI. Codemagic's copy is
   retired; `ios-testflight` is all that is left there.
 - **Lint is a gate at zero, with `--max-warnings=0`.** New code cannot land a warning.
-- **Contrast is gated in both themes** on every route, so new UI must pass it. ⚠️ The sweeps cover
-  **routes**, not sheets or `AppGate` screens — a green run is not whole-app coverage.
+- **Contrast is gated in both themes** on every route **and on the guided tour**, so new UI must
+  pass it. ⚠️ The sweeps still miss the four sheets and the `AppGate` screens — a green run is not
+  whole-app coverage, and closing that is 1.2.18.1.
 - **Reduce Motion is honoured** (`useReduceMotion` + `motion.ts`); anything the tour animates must
   ask it.
 - **The native suite is green at 12/12** and a run is ~13 min on a cache hit:

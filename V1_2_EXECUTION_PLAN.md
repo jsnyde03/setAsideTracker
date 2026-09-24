@@ -32,19 +32,17 @@
 > would have gone green over a "Clear all data" that cleared nothing, and one guarded Apple
 > **Guideline 3.1.2**. Full arc + every mechanism → [V1_2_LOG.md](V1_2_LOG.md).
 >
-> ✅ **1.2.1–1.2.7, 1.2.9–1.2.11, 1.2.14–1.2.17 CLOSED.** ▶ **ACTIVE: 1.2.8 — the guided onboarding
-> tour.** ✅ **1.2.8.1 closed 2026-09-24 → [D29]:** the tour **rides sample data** (fires on first
-> demo entry, replays from Settings) and is **dashboard-only, four stops**. ✅ **1.2.8.2, .3 and .4
-> are done** — the primitive, the four stops, the trigger and the replay row. **The tour runs, and
-> 6 e2e drive it.** 🔴 **Building it found two LIVE defects** *(a stranded "Restored…" alert on every
-> demo exit since 2026-08-08; two dashboards mounting on demo entry)* **and one vacuous test that a
-> plant caught by PASSING.** ▶ **Next is 1.2.8.5, accessibility — and it must widen the contrast gate
-> before the row means anything.**
-> ⛔ **Its before-scan killed two pre-authored premises:** there is **no
-> `GestureDetector` anywhere in this app** (the row repeating that lesson is now a rule against
-> *introducing* one), and **the contrast gate sweeps routes only**, so "the tour passes it" was
-> unsatisfiable — 1.2.8.5 widens the gate rather than inheriting its silence. **1.2.12** still needs
-> the reserved TestFlight build authorized; **1.2.13**'s remaining work happens at release.
+> ✅ **1.2.1–1.2.11 and 1.2.14–1.2.17 CLOSED — 1.2.8 closed 2026-09-24, verified 12/12 on device.**
+> ▶ **ACTIVE: 1.2.18 — the gates that cannot see what they claim to**, decomposed below.
+> ⚡ **1.2.8 is worth reading before starting anything:** building it found **two LIVE defects**
+> *(a stranded "Restored…" alert on every demo exit since 2026-08-08, which twelve green Maestro
+> runs walked straight through; two dashboards mounting on demo entry)*, **one vacuous test caught
+> by a plant that PASSED**, and **three self-inflicted tooling faults**. ⛔ **Four of its
+> pre-authored premises were stale, and the two that mattered would each have produced work that
+> COULD NOT FAIL** — a rule defending against something absent from this app, and a gate row an
+> overlay passes by never being looked at. **That is why 1.2.18 exists.**
+> **1.2.12** still needs the reserved TestFlight build authorized; **1.2.13**'s remaining work
+> happens at release.
 > ⚡ **A Maestro run is now ~13 min, not ~40** (1.2.15) · **1.2.16 closed negative** — the keypad was
 > never an app bug · **the suite has been 12/12 four runs running.**
 > 🔴 **1.2.13 is a SHIP BLOCKER and is not finished:** Pages now serves this repo's `docs/`, but it
@@ -143,30 +141,24 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### 🧭 **1.2.8 — Guided onboarding tour** · **ACTIVE** _(2026-09-23, Jason: "start a new session with 1.2.8")_
+### 🧪 **1.2.18 — The gates that cannot see what they claim to** · **ACTIVE** _(2026-09-24)_
 
-✅ **1.2.8.1 CLOSED 2026-09-24 → [D29]: rides sample data, dashboard-only, four stops.** Re-decomposed
-below against the **corrected** premises — the switch-in before-scan found four of the pre-authored
-ones stale or false. _Detail → [V1_2_LOG.md](V1_2_LOG.md)._
-
-🔴 **Two plan premises did NOT survive the before-scan, and both changed the work.** *(1)* There is
-**no `GestureDetector` in this app** — none, nor `PanGestureHandler` nor `GestureHandlerRootView`; the
-lesson was carried from a sibling finance app, and the row that repeated it is rewritten as a *rule
-against introducing one*. *(2)* **The contrast gate sweeps ROUTES ONLY** and excludes overlays by
-design, so "the tour passes the contrast gate" was **unsatisfiable as written** — it would have passed
-by not being looked at, which is the thing this project keeps catching.
+⚠️ **Promoted because both remaining queue items are externally blocked** — 1.2.12 needs Jason to
+authorize the one reserved build, 1.2.13 happens at release. These three are filed findings, all
+warm right now, and all one class: **a gate reporting green over something it structurally cannot
+read.** 1.2.8.5 already built the opener pattern the first one needs.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.8.1** | ✅ **[DECISION] DONE 2026-09-24 → [D29].** Shape, trigger and reach settled; four premises corrected. | ✅ |
-| **1.2.8.2** | ✅ **DONE 2026-09-24.** `src/tour.ts` (pure geometry, **25 new unit tests**, 3 planted claims each seen to red) + `src/components/TourOverlay.tsx` + `shouldAnimateTourStep`. Four-`View` mask, **no new native dep**. ⚡ **The a11y shadowing gate caught the new code on its first run** — and the fix exposed that the gate is **blind to ternary-rendered text** (→ backlog). 439 unit · typecheck · lint 0. | ✅ |
-| **1.2.8.3** | ✅ **DONE 2026-09-24.** `dashboardTour.ts` (four stops, copy approved by Jason) + four anchors wired + `scrollDeltaToReveal` (5 more tests) + `TourAnchorProvider` scoped to the dashboard route. 444 unit · **122/122 Playwright** _(the dashboard layout is unchanged — the real risk, since two wrapper `View`s went inside the gradient card)_ · lint 0. 🔴 **The tour itself has never rendered: `showTour` is hard-false until 1.2.8.4 builds the trigger.** | ✅ |
-| **1.2.8.4** | ✅ **DONE 2026-09-24.** `tourFlag.ts` (raw-AsyncStorage one-shot, **5th thing outside `repository.ts`**, all three directions pinned in `demoLeaks.test.ts`) · Settings "Replay the tour" row · `?tour=1` replay path · **6 e2e that actually drive the tour** — it had never rendered before this. 🔴 **Two live defects fixed:** a stranded "Restored…" alert on every demo exit *(since 2026-08-08)*, and **two dashboards mounting** on demo entry, which stacked two tour cards. 🔴 **A plant PASSED and exposed a vacuous test** — rewritten, re-planted, now reds. 449 unit · lint 0. | ✅ |
-| **1.2.8.5** | ✅ **DONE 2026-09-24. The contrast gate now OPENS the tour** and walks all four stops in both themes — planted, and it reds on all four with a named ratio. 🔴 **`accessibilityElementsHidden` is DROPPED BY react-native-web** *(the DOM showed the dim bands carrying no a11y attribute at all)* — switched to `aria-hidden`, which RN maps natively **and** RN-web emits, so one line serves the device and the gate. `accessibilityViewIsModal` on the card like the four sheets · 4 `shouldAnimateTourStep` tests it shipped without · 453 unit. ⚠️ **VoiceOver order and focus-escape stay device-owed.** | ✅ |
-| **1.2.8.6** | **Verify + whole-item after-scan.** Includes the **one** Maestro flow the trigger touches (`demo-mode.yaml`) and a new `a11yLabelShadowing` entry if the coach-mark labels its wrapper. | ⬜ |
+| **1.2.18.1** | **Widen the a11y sweeps to the 5 remaining non-route surfaces** — the four sheets plus `LockScreen`/`RecoveryScreen`. Each needs a path to open it, which is what 1.2.8.5's tour opener demonstrated in four lines. ⛔ **Plant each opener**: a surface that fails to open measures nothing and passes. | ⬜ |
+| **1.2.18.2** | **`TextField`'s label/hint → `aria-hidden`.** `accessibilityElementsHidden` + `importantForAccessibility` are **dropped by react-native-web**, so the intent is unverifiable here. ⚠️ **It sits behind most of the suite's `getByLabel` selectors** — full Playwright run required, not a spot check. | ⬜ |
+| **1.2.18.3** | **`a11yLabelShadowing.test.ts` cannot see ternary-rendered text** — `renderedText` requires the literal's DIRECT parent to be the `JsxExpression`. ⚠️ **The fix is not a one-liner**: relaxing it sweeps in `key=`, `style={{…}}` and every attribute literal, so it needs a JSX-children-only walk **plus a re-review of whatever new sites it surfaces**. | ⬜ |
+| **1.2.18.4** | **Sweep the Maestro "did this screen open" probes.** Three flows still name mid-screen markers that any new row can push below the fold — the defect 1.2.8.6 hit. One selector each. | ⬜ |
+| **1.2.18.5** | **Verify + whole-item after-scan.** | ⬜ |
 
-**Exit line:** a tour a new user can follow, skip, or replay — calm, one stop at a time, over
-populated data — that is **measured** by the contrast gate rather than exempt from it.
+**Exit line:** every a11y gate either measures the surface it names, or says in the file which half
+it cannot see — and no gate in this set can pass over a class it never reads.
+
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
@@ -186,7 +178,6 @@ out-of-order number is worth less than one more round of that.
 | # | item | notes |
 |---|---|---|
 | **1.2.13** | ⚙️ **Publish the privacy policy — SHIP BLOCKER, mostly done 2026-09-22** | ✅ Pages now serves **this** repo's `docs/` ([D26]); audits moved out so `docs/` is the website exactly; all 9 URLs repointed; **`tools/check-published-policy.mjs`** added — it fetches the live page and fails on drift *(verified both ways: reds on the real defect, and a control proves it can pass)*. ⛔ **Remaining: the cutover.** Pages serves `master`, which still carries the July policy — correct for live v1.1.1, wrong the moment v1.2 ships. **Merging v1.2 to master at release publishes it; the gate fails the submission if it is forgotten.** |
-| **1.2.18** | ⚙️ **The gates that cannot see what they claim to** — **RECOMMENDED NEXT ACTIVE BUILD** | Three filed findings, one class: a gate reporting green over something it structurally cannot read. **(a)** the contrast/Dynamic-Type sweeps miss **5 non-route surfaces** (four sheets + `LockScreen`/`RecoveryScreen`) — 1.2.8.5 built the opener pattern and it cost four lines · **(b)** `TextField` hides its label and hint with props **react-native-web drops**, so the intent is unverifiable here; `aria-hidden` fixes both platforms, and it sits behind most of the suite's `getByLabel` selectors so it needs its own suite run · **(c)** `a11yLabelShadowing.test.ts` **cannot see ternary-rendered text**, proven on new code. ⚠️ Chosen because **both remaining items are externally blocked** — 1.2.12 needs a build authorized, 1.2.13 happens at release — and all three of these are warm right now. |
 | 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. ⛔ **Blocked on Jason authorizing the one reserved build**, which owes five things (+ now the tour). |
 
 ⚠️ **Sequencing, and it is the point of the restructure:** the correctness blocks run **before** the
@@ -203,6 +194,19 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.8 — Guided onboarding tour ✅ DONE 2026-09-24, 6/6.** [D29]: rides sample data,
+  dashboard-only, four stops; fires on first demo entry, replays from Settings. Pure geometry in
+  `tour.ts` (react-native free, 30 tests), `TourOverlay.tsx`, **no new native dependency**.
+  **Verified: Maestro 12/12 on device** _(run `36064480542`; the tour's first run on real
+  hardware)_ · **134/134 Playwright** incl. 8 tour specs + iPad at both orientations · contrast
+  gate now **opens the tour** and walks all four stops in both themes · 453 unit.
+  ⚡ **Building it found two LIVE defects** *(a stranded "Restored…" alert on every demo exit since
+  2026-08-08, which twelve green Maestro runs walked through; two dashboards mounting on demo
+  entry)*, **one vacuous test caught by a plant that PASSED**, and **three self-inflicted tooling
+  faults** *(a hand enumeration, a `| head` truncation, a `gh` busy-wait)*. ⛔ **Four of the
+  pre-authored premises were stale, and the two that mattered would each have produced work that
+  could not fail.** _Detail → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.17 — Make the cheap gates visible ✅ DONE 2026-09-23, 5/5.** Typecheck, lint, 411 mobile
   unit, 102 engine, both tax-config audits and 122 Playwright tests now run on every push in
