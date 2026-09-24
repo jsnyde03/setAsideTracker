@@ -55,9 +55,9 @@
 > answer ([D23], which is also how the export question gets answered) · 1.2.5's mileage stack ·
 > **every iPad layout** · 1.2.7's hardware-keyboard and screenshot rows. Agenda →
 > [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
-> Health: **439** mobile unit _(measured 2026-09-24; the line said 400, the closed 1.2.17 row said
+> Health: **453** mobile unit _(measured 2026-09-24; the line said 400, the closed 1.2.17 row said
 > 411 and CLAUDE.md said 414 — three stale counts, so **re-measure rather than copy this**)_ ·
-> **102** engine · **128/128** Playwright _(measured 2026-09-24)_ ·
+> **102** engine · **130/130** Playwright _(measured 2026-09-24)_ ·
 > typecheck clean · both tax-config gates green · lint 15 _(ledger says 14 — drift, pre-existing,
 > re-count at 1.2.11)_.
 >
@@ -162,7 +162,7 @@ by not being looked at, which is the thing this project keeps catching.
 | **1.2.8.2** | ✅ **DONE 2026-09-24.** `src/tour.ts` (pure geometry, **25 new unit tests**, 3 planted claims each seen to red) + `src/components/TourOverlay.tsx` + `shouldAnimateTourStep`. Four-`View` mask, **no new native dep**. ⚡ **The a11y shadowing gate caught the new code on its first run** — and the fix exposed that the gate is **blind to ternary-rendered text** (→ backlog). 439 unit · typecheck · lint 0. | ✅ |
 | **1.2.8.3** | ✅ **DONE 2026-09-24.** `dashboardTour.ts` (four stops, copy approved by Jason) + four anchors wired + `scrollDeltaToReveal` (5 more tests) + `TourAnchorProvider` scoped to the dashboard route. 444 unit · **122/122 Playwright** _(the dashboard layout is unchanged — the real risk, since two wrapper `View`s went inside the gradient card)_ · lint 0. 🔴 **The tour itself has never rendered: `showTour` is hard-false until 1.2.8.4 builds the trigger.** | ✅ |
 | **1.2.8.4** | ✅ **DONE 2026-09-24.** `tourFlag.ts` (raw-AsyncStorage one-shot, **5th thing outside `repository.ts`**, all three directions pinned in `demoLeaks.test.ts`) · Settings "Replay the tour" row · `?tour=1` replay path · **6 e2e that actually drive the tour** — it had never rendered before this. 🔴 **Two live defects fixed:** a stranded "Restored…" alert on every demo exit *(since 2026-08-08)*, and **two dashboards mounting** on demo entry, which stacked two tour cards. 🔴 **A plant PASSED and exposed a vacuous test** — rewritten, re-planted, now reds. 449 unit · lint 0. | ✅ |
-| **1.2.8.5** | **Accessibility — and the gate has to be WIDENED first, or this row means nothing.** Honour Reduce Motion (`useReduceMotion`, and ⚠️ it *starts* `false` and self-corrects — `Screen.tsx:56-64` has the workaround) · reachable by VoiceOver, `accessibilityViewIsModal` like the four sheets · ⚠️ no focus trap. **Teach `a11y-contrast.spec.ts` to open the tour** (one opener, via the replay entry point) so it is measured rather than assumed. | ⬜ |
+| **1.2.8.5** | ✅ **DONE 2026-09-24. The contrast gate now OPENS the tour** and walks all four stops in both themes — planted, and it reds on all four with a named ratio. 🔴 **`accessibilityElementsHidden` is DROPPED BY react-native-web** *(the DOM showed the dim bands carrying no a11y attribute at all)* — switched to `aria-hidden`, which RN maps natively **and** RN-web emits, so one line serves the device and the gate. `accessibilityViewIsModal` on the card like the four sheets · 4 `shouldAnimateTourStep` tests it shipped without · 453 unit. ⚠️ **VoiceOver order and focus-escape stay device-owed.** | ✅ |
 | **1.2.8.6** | **Verify + whole-item after-scan.** Includes the **one** Maestro flow the trigger touches (`demo-mode.yaml`) and a new `a11yLabelShadowing` entry if the coach-mark labels its wrapper. | ⬜ |
 
 **Exit line:** a tour a new user can follow, skip, or replay — calm, one stop at a time, over
@@ -411,6 +411,22 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.8.5's after-scan _(2026-09-24)_
+
+- 🔴 **`accessibilityElementsHidden` and `importantForAccessibility` ARE DROPPED BY
+  react-native-web, and `TextField` relies on both.** `TextField.tsx:23,28` hide the visual label
+  and hint from the accessibility tree so the input's own name is not read twice — correct on iOS,
+  and **emitting nothing whatsoever on web**, which the tour's DOM proved directly. ⚡ **`aria-hidden`
+  is the fix in all three places**: React Native maps it to the native props and RN-web emits the
+  real attribute, so the intent becomes true on both platforms *and* checkable on one. ⛔ **Not done
+  as a drive-by:** `TextField` is behind most of the suite's `getByLabel` selectors, and changing
+  what is exposed to the accessibility tree could move them. **Its own item, with the suite run
+  against it.**
+- ⚙️ **Five of the seven non-route surfaces remain unmeasured** by the contrast gate — the four
+  sheets plus `LockScreen`/`RecoveryScreen`. The tour's opener is now the worked pattern and cost
+  four lines; the remaining ones are mechanical. _(Was six; onboarding is walked by
+  `completeOnboarding` but still not measured.)_ **Pick up right after 1.2.8.**
 
 ### From 1.2.8.4's after-scan _(2026-09-24)_
 

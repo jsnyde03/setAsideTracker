@@ -119,6 +119,36 @@ test.describe("the guided tour", () => {
     ).toBeHidden();
   });
 
+  /**
+   * Accessibility (1.2.8.5) — **only the half a browser can actually answer.**
+   *
+   * ⛔ react-native-web has no VoiceOver, so the reading *order* and whether focus escapes the card
+   * are device-owed and stay on the TestFlight agenda. What is exactly answerable here is the
+   * accessibility *tree*: whether the four dim bands are hidden from it, and whether the controls'
+   * accessible names are the words on screen. Contrast is answered separately and thoroughly by
+   * `a11y-contrast.spec.ts`, which now opens the tour and walks all four stops.
+   */
+  test("the dim is hidden from the accessibility tree, not read as four blank regions", async ({
+    page,
+  }) => {
+    await openTour(page);
+    const bands = page.locator('[aria-hidden="true"]').filter({ visible: true });
+    // The four mask rects carry accessibilityElementsHidden; nothing else on this overlay does.
+    expect(await bands.count(), "the dim bands are exposed to screen readers").toBeGreaterThan(0);
+  });
+
+  /**
+   * ⛔ **The anti-shadowing claim, asserted positively.** Neither control carries an
+   * `accessibilityLabel`, so the accessible name must BE the visible word — that is what makes the
+   * button findable by Maestro's full-match selectors and what a screen reader reads. Asserting the
+   * absence of a label would not catch a future one that merely happened to differ.
+   */
+  test("the controls' accessible names are the words on screen", async ({ page }) => {
+    await openTour(page);
+    await expect(visible(page.getByRole("button", { name: "Skip", exact: true }))).toBeVisible();
+    await expect(visible(page.getByRole("button", { name: "Next", exact: true }))).toBeVisible();
+  });
+
   test("Settings offers a replay, and it brings the tour back after a skip", async ({ page }) => {
     await resetAppStorage(page);
     await completeOnboarding(page);

@@ -24,14 +24,21 @@ import { completeOnboarding, resetAppStorage, visible } from "./helpers";
 /**
  * ⚠️ **WHAT THIS DOES NOT COVER, said out loud so its silence is not mistaken for evidence.**
  *
- * It sweeps ROUTES. Seven user-visible surfaces are not routes and are therefore unmeasured here:
- * the four bottom sheets (`BreakdownDetailSheet`, `ExpenseLineSheet`, `WeeklySetAsideSheet`,
- * `ShareEarningsModal`) and the three screens `AppGate` renders directly (`LockScreen`,
- * `RecoveryScreen`, onboarding). Each needs a path to open it rather than a URL to visit.
+ * It sweeps ROUTES, **plus the guided tour** (1.2.8.5 — see the sweep at the end of each test).
+ * **Six** user-visible surfaces remain unmeasured: the four bottom sheets (`BreakdownDetailSheet`,
+ * `ExpenseLineSheet`, `WeeklySetAsideSheet`, `ShareEarningsModal`) and the three screens `AppGate`
+ * renders directly (`LockScreen`, `RecoveryScreen`, onboarding) — minus onboarding, which
+ * `completeOnboarding` now walks through anyway but is not *measured*. Each needs a path to open it
+ * rather than a URL to visit.
  *
- * ⛔ A green run here means "every route passes", not "the app passes". Filed to the backlog at
+ * ⛔ A green run means "every route and the tour pass", not "the app passes". The rest stay filed at
  * 1.2.9.6 rather than quietly widened, because opening each sheet is real work and half-doing it
  * would be worse than the honest gap.
+ *
+ * ⚡ **The tour was added here because the alternative was a row that could not fail.** 1.2.8.5
+ * required the tour to "pass the contrast gate in both themes" — and an overlay is not a route, so
+ * it would have passed by never being looked at. The opener below is the pattern the remaining six
+ * need, and it cost four lines.
  */
 
 const ROUTES = readdirSync(join(__dirname, "..", "app"))
@@ -129,9 +136,31 @@ for (const scheme of ["Light", "Dark"] as const) {
       for (const f of failures) all.push(`${route}  ${f}`);
     }
 
+    // The guided tour (1.2.8.5). An overlay, not a route, so the sweep above cannot reach it —
+    // every stop is walked because the last one swaps "Next" for "Done" on the filled button,
+    // which is the highest-risk pairing on the card.
+    await page.goto("/?tour=1");
+    await expect(visible(page.getByTestId("tour-card")).first()).toBeVisible();
+    let tourChecked = 0;
+    for (let stop = 1; stop <= 4; stop += 1) {
+      await expect(visible(page.getByText(`Step ${stop} of 4`))).toBeVisible();
+      const { failures, checked } = (await page.evaluate(MEASURE)) as {
+        failures: string[];
+        gradient: number;
+        checked: number;
+      };
+      tourChecked += checked;
+      for (const f of failures) all.push(`/?tour=1 stop ${stop}  ${f}`);
+      if (stop < 4) await visible(page.getByText("Next", { exact: true })).click();
+    }
+    checkedTotal += tourChecked;
+
     // ⛔ The instrument first. If the walk ever stops finding text — a selector change, a render
     // failure — every assertion below passes for the wrong reason, silently and forever.
     expect(checkedTotal, "measured no text at all — the instrument, not the app").toBeGreaterThan(100);
+    // ⛔ And the tour's half of it separately, because `checkedTotal` is dominated by the routes:
+    // the tour could render nothing at all and the total above would barely move.
+    expect(tourChecked, "measured no tour text — the opener, not the tour").toBeGreaterThan(20);
 
     expect([...new Set(all)].sort(), `${scheme} mode text below WCAG AA`).toEqual([]);
   });

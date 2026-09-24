@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { resolveSheetAnimation, shouldAnimateScreenEntrance } from "../motion";
+import {
+  resolveSheetAnimation,
+  shouldAnimateScreenEntrance,
+  shouldAnimateTourStep,
+} from "../motion";
 
 /**
  * ⚠️ These test the RULE, which is all that can be tested here — and saying so is the point.
@@ -58,5 +62,38 @@ describe("Reduce Motion", () => {
         expect(isWeb, "animating on web, where Animated can stall").toBe(false);
       }
     }
+  });
+
+  /**
+   * The guided tour's spotlight (1.2.8.5).
+   *
+   * ⚠️ **Tested separately from the screen entrance even though the two rules agree today**, which
+   * is the same reason they are separate functions: they agree by argument, not by coincidence. A
+   * cut-out travelling between anchors is pure movement carrying no information, so Reduce Motion
+   * should make it simply appear at the next anchor. If the entrance rule is ever revisited, these
+   * cases must be argued again rather than dragged along.
+   */
+  describe("shouldAnimateTourStep", () => {
+    it("slides the spotlight normally", () => {
+      expect(shouldAnimateTourStep(false, false)).toBe(true);
+    });
+
+    it("cuts instead of sliding under Reduce Motion", () => {
+      expect(shouldAnimateTourStep(true, false)).toBe(false);
+    });
+
+    it("never animates on web, where Animated can stall mid-transition", () => {
+      expect(shouldAnimateTourStep(false, true)).toBe(false);
+      expect(shouldAnimateTourStep(true, true)).toBe(false);
+    });
+
+    it("honours Reduce Motion wherever it is asked", () => {
+      for (const isWeb of [true, false]) {
+        expect(
+          shouldAnimateTourStep(true, isWeb),
+          `animated a tour step with Reduce Motion on (isWeb=${isWeb})`,
+        ).toBe(false);
+      }
+    });
   });
 });

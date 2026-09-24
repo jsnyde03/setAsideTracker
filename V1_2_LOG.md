@@ -11,6 +11,43 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.8.5 Accessibility — after-scan · 2026-09-24 · ✅ DONE
+
+**The substantive half was the gate, not the tour.** 1.2.8.5 as written required the tour to "pass
+the contrast gate in both themes", and `a11y-contrast.spec.ts` sweeps **routes**. An overlay is not
+a route, so the row would have been satisfied by a green run that never looked at it — the shape
+this project keeps catching. **The gate now opens the tour and walks all four stops in both
+themes**, and the opener is four lines.
+
+⛔ **Planted, because a widened gate that cannot fail is worse than the honest gap it replaced.**
+Setting the card's body text to `colors.borderSoft` reds **both themes on all four stops** with a
+named ratio — `1.14:1 (needs 4.5, 15px)` in light, `1.13:1` in dark. ⚠️ A second assertion guards
+the opener itself: `tourChecked > 20`, because `checkedTotal` is dominated by the routes and the
+tour could render nothing at all without moving it.
+
+**🔴 The finding, and it generalises past the tour: `accessibilityElementsHidden` and
+`importantForAccessibility` are DROPPED ENTIRELY by react-native-web.** The first version of the
+a11y test failed, and ⛔ **the instrument was diagnosed before the app was changed** — a throwaway
+spec dumped the dim bands' attributes and found them carrying **`class` and `style` and nothing
+else**. Not a defect on iOS, where both props work; simply unrepresentable in the browser, so
+nothing could confirm it either way. ⚡ **`aria-hidden` fixes it on both sides at once:** React
+Native maps it to the native props and RN-web emits the real attribute, so one line serves the
+device and the gate. Planted by removing it — the test reds.
+
+⚠️ **`TextField.tsx:23,28` uses the same two dropped props** for its label and hint. Correct on iOS,
+invisible on web, and **not changed here**: `TextField` sits behind most of the suite's `getByLabel`
+selectors, so altering what it exposes to the accessibility tree is its own item with its own suite
+run. Filed.
+
+**Also closed:** `accessibilityViewIsModal` on the card, matching what all four sheets already do on
+both the `Modal` and the inner view · **4 tests for `shouldAnimateTourStep`**, which shipped in
+1.2.8.2 with none — including the property case that it never animates while Reduce Motion is on,
+whatever the platform.
+
+⛔ **What stays device-owed, stated so its silence is not read as coverage:** VoiceOver reading
+**order**, and whether focus can escape the card. react-native-web has no VoiceOver; the browser can
+inspect the accessibility *tree* and never hear it.
+
 ### 🔎 1.2.8.4 Trigger, flag and entry points — after-scan · 2026-09-24 · ✅ DONE
 
 **Shipped.** `src/tourFlag.ts` — a raw-`AsyncStorage` one-shot · Settings' **"Replay the tour"** row ·

@@ -233,9 +233,18 @@ export function TourOverlay({ steps, visible, onFinish, onStepChange }: TourOver
           <View
             key={`band-${i}`}
             style={[styles.band, { left: band.x, top: band.y, width: band.width, height: band.height }]}
-            // Decorative: the card carries every word a screen reader needs.
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
+            /*
+             * Decorative: the card carries every word a screen reader needs, and four unlabelled
+             * regions in the tree are four things to swipe past.
+             *
+             * ⚠️ **`aria-hidden` is what makes this TRUE ON BOTH PLATFORMS and checkable on one.**
+             * It was `accessibilityElementsHidden` + `importantForAccessibility`, which are correct
+             * on iOS and **dropped entirely by react-native-web** — the DOM showed the bands
+             * carrying no accessibility attribute at all, so nothing here could confirm it either
+             * way. React Native maps `aria-hidden` to the native props, and RN-web emits the real
+             * attribute, so the same line serves the device and the gate.
+             */
+            aria-hidden
           />
         ))}
         {/* ⚠️ **The first two `testID`s in this repo, and they are deliberate.** Every other
@@ -258,6 +267,9 @@ export function TourOverlay({ steps, visible, onFinish, onStepChange }: TourOver
         )}
         <View
           testID="tour-card"
+          // Matches what all four sheets do: on the Modal *and* on the inner view. It is what keeps
+          // VoiceOver inside the card rather than wandering onto the dashboard the dim is covering.
+          accessibilityViewIsModal
           onLayout={onTooltipLayout}
           style={[
             styles.card,
