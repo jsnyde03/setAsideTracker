@@ -74,6 +74,19 @@ export function useTourAnchor(id: string) {
   );
 }
 
+/**
+ * Measure a registered anchor in window coordinates, or `null` outside a provider.
+ *
+ * This is what lets the host bring an anchor on screen without the tour knowing anything about
+ * scrolling: the host measures, computes a delta with `scrollDeltaToReveal`, and moves its own
+ * list. ⛔ **Keep `ScrollView`/`FlatList` knowledge out of this file** — it is the difference
+ * between a primitive the other two finance apps can take and one they would have to rewrite.
+ */
+export function useTourMeasure(): ((id: string) => Promise<Rect | null>) | null {
+  const registry = useContext(TourContext);
+  return registry?.measure ?? null;
+}
+
 export function TourAnchorProvider({ children }: { children: React.ReactNode }) {
   const anchors = useRef(new Map<string, View>());
 

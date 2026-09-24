@@ -3,6 +3,7 @@ import { Redirect, useRouter } from "expo-router";
 import type { Entry, TaxProfile } from "../src/types";
 import { ScreenFrame } from "../src/components/ScreenFrame";
 import { DashboardScreen } from "../src/screens/DashboardScreen";
+import { TourAnchorProvider } from "../src/components/TourOverlay";
 import { useAppData } from "../src/state/AppDataContext";
 import { reportError } from "../src/errorReporting";
 
@@ -31,22 +32,29 @@ export default function DashboardRoute() {
 
   return (
     <ScreenFrame>
-      <DashboardScreen
-        entries={entries}
-        taxProfile={taxProfile as TaxProfile}
-        onAddEntry={() => router.push("/entry")}
-        onEditEntry={(entry: Entry) => router.push({ pathname: "/entry", params: { id: entry.id } })}
-        onOpenSettings={() => router.push("/settings")}
-        onOpenWhatIf={() => router.push("/what-if")}
-        onOpenPlatforms={() => router.push("/platform-comparison")}
-        onOpenW4Optimizer={() => router.push("/w4-optimizer")}
-        onOpenSafeHarbor={() => router.push("/safe-harbor")}
-        onOpenYearOverYear={() => router.push("/year-over-year")}
-        onOpenExpenseBreakdown={() => router.push("/expense-breakdown")}
-        onOpenBestDays={() => router.push("/best-days")}
-        onOpenPaywall={() => router.push("/paywall")}
-        onUpdateAmountSetAside={handleUpdateAmountSetAside}
-      />
+      {/* The tour's anchor registry wraps the dashboard rather than the whole app: [D29] scopes the
+          tour to this one screen, and a provider mounted here cannot be reached — or leaked into —
+          by any other route. */}
+      <TourAnchorProvider>
+        <DashboardScreen
+          entries={entries}
+          taxProfile={taxProfile as TaxProfile}
+          onAddEntry={() => router.push("/entry")}
+          onEditEntry={(entry: Entry) =>
+            router.push({ pathname: "/entry", params: { id: entry.id } })
+          }
+          onOpenSettings={() => router.push("/settings")}
+          onOpenWhatIf={() => router.push("/what-if")}
+          onOpenPlatforms={() => router.push("/platform-comparison")}
+          onOpenW4Optimizer={() => router.push("/w4-optimizer")}
+          onOpenSafeHarbor={() => router.push("/safe-harbor")}
+          onOpenYearOverYear={() => router.push("/year-over-year")}
+          onOpenExpenseBreakdown={() => router.push("/expense-breakdown")}
+          onOpenBestDays={() => router.push("/best-days")}
+          onOpenPaywall={() => router.push("/paywall")}
+          onUpdateAmountSetAside={handleUpdateAmountSetAside}
+        />
+      </TourAnchorProvider>
     </ScreenFrame>
   );
 }

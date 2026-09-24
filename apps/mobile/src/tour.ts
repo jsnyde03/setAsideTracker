@@ -180,6 +180,29 @@ export function isRectOnScreen(rect: Rect | null, window: Size, insets: Insets):
   );
 }
 
+/**
+ * How far to scroll — in points, positive meaning "further down the list" — to bring a measured
+ * anchor fully inside the safe band. `0` when it is already there.
+ *
+ * ⚡ **Expressed as a DELTA from wherever the list happens to be**, which is what lets the tour
+ * scroll to an anchor it knows nothing about: no per-anchor content offset, no layout table to keep
+ * in step with the screen. The caller adds this to its current offset. ⚠️ An anchor taller than the
+ * band is aligned to its **top** — the alternative is scrolling past the thing being pointed at.
+ */
+export function scrollDeltaToReveal(
+  rect: Rect,
+  window: Size,
+  insets: Insets,
+  margin: number = TOUR_EDGE_MARGIN,
+): number {
+  const bandTop = insets.top + margin;
+  const bandBottom = window.height - insets.bottom - margin;
+  if (rect.height > bandBottom - bandTop) return rect.y - bandTop;
+  if (rect.y < bandTop) return rect.y - bandTop;
+  if (rect.y + rect.height > bandBottom) return rect.y + rect.height - bandBottom;
+  return 0;
+}
+
 export function isLastStep(index: number, total: number): boolean {
   return index >= total - 1;
 }

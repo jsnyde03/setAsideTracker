@@ -1,7 +1,18 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Entry, TaxProfile } from "../types";
 import {
   aggregateEntries,
@@ -29,6 +40,10 @@ import { PLATFORM_ICONS, PLATFORM_LABELS } from "../platforms";
 import { usePremiumAccess } from "../premium/usePremiumAccess";
 import { radius, shadow, shadowSm, spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
+import { useReduceMotion } from "../useReduceMotion";
+import { TourOverlay, useTourAnchor, useTourMeasure } from "../components/TourOverlay";
+import { DASHBOARD_TOUR_ANCHORS, DASHBOARD_TOUR_STEPS } from "../dashboardTour";
+import { scrollDeltaToReveal, type TourStep } from "../tour";
 
 interface DashboardScreenProps {
   entries: Entry[];
@@ -51,6 +66,13 @@ interface DashboardScreenProps {
   /** Opens the paywall — invoked when a free user taps a locked Premium card (W-4, safe harbor). */
   onOpenPaywall: () => void;
   onUpdateAmountSetAside: (year: number, amount: number) => void;
+  /**
+   * Whether the guided tour is running (1.2.8). Off unless the route says otherwise — what turns it
+   * on is 1.2.8.4's business, not this screen's.
+   */
+  showTour?: boolean;
+  /** `completed` is true when the visitor reached the last stop, false when they skipped. */
+  onTourFinish?: (completed: boolean) => void;
 }
 
 function formatCurrency(amount: number): string {
@@ -104,10 +126,50 @@ export function DashboardScreen({
   onOpenBestDays,
   onOpenPaywall,
   onUpdateAmountSetAside,
+  showTour = false,
+  onTourFinish,
 }: DashboardScreenProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const { canUsePremium } = usePremiumAccess();
+
+  // ── Guided tour (1.2.8.3) ────────────────────────────────────────────────────────────────────
+  // ⚠️ Three of the four anchors start BELOW THE FOLD, so the tour cannot simply measure them: it
+  // asks this screen to bring each one into view first. The delta is computed by
+  // `scrollDeltaToReveal`, which is pure and tested — this side only tracks where the list is and
+  // moves it.
+  const listRef = useRef<FlatList<Entry>>(null);
+  const scrollOffset = useRef(0);
+  const measureAnchor = useTourMeasure();
+  const tourWindow = useWindowDimensions();
+  const tourInsets = useSafeAreaInsets();
+  const reduceMotion = useReduceMotion();
+  const setAsideAnchor = useTourAnchor(DASHBOARD_TOUR_ANCHORS.setAside);
+  const weekAnchor = useTourAnchor(DASHBOARD_TOUR_ANCHORS.week);
+  const logEarningsAnchor = useTourAnchor(DASHBOARD_TOUR_ANCHORS.logEarnings);
+  const settingsAnchor = useTourAnchor(DASHBOARD_TOUR_ANCHORS.settings);
+
+  const handleTourStep = useCallback(
+    async (step: TourStep) => {
+      if (step.anchorId === null || measureAnchor === null || listRef.current === null) return;
+      const rect = await measureAnchor(step.anchorId);
+      if (rect === null) return;
+      const delta = scrollDeltaToReveal(
+        rect,
+        { width: tourWindow.width, height: tourWindow.height },
+        tourInsets,
+      );
+      if (delta === 0) return;
+      listRef.current.scrollToOffset({
+        offset: Math.max(0, scrollOffset.current + delta),
+        animated: !reduceMotion,
+      });
+      // Let the scroll land before the tour measures. The overlay retries once on its own, so a
+      // slow frame costs a retry rather than a missed spotlight.
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    },
+    [measureAnchor, tourWindow.width, tourWindow.height, tourInsets, reduceMotion],
+  );
 
   // The current calendar year is always selectable, even before any entry exists for it yet —
   // otherwise a brand-new year would have no way to be picked until an entry is logged for it.
@@ -242,9 +304,16 @@ export function DashboardScreen({
     // screen laying out real columns, which need more room than a column of prose. See ../layout.
     <Screen edges={["top", "left", "right"]} width={twoColumn ? "full" : "readable"}>
       <FlatList
+        ref={listRef}
         data={sortedEntries}
         keyExtractor={(entry) => entry.id}
         contentContainerStyle={styles.listContent}
+        // Tracked only so the tour can scroll by a delta to an anchor whose content offset nobody
+        // knows. `scrollEventThrottle` is required on iOS or this fires once per gesture.
+        onScroll={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
+          scrollOffset.current = event.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         ListHeaderComponent={
           <View>
             <View style={styles.greetingRow}>
@@ -300,6 +369,7 @@ export function DashboardScreen({
                   </Pressable>
                 )}
                 <Pressable
+                  ref={settingsAnchor}
                   onPress={onOpenSettings}
                   style={styles.headerIconButton}
                   accessibilityLabel="Settings"
@@ -349,24 +419,32 @@ export function DashboardScreen({
                 end={{ x: 1, y: 1 }}
                 style={styles.setAsideCard}
               >
-                <View style={styles.setAsideHeader}>
-                  <Ionicons name="shield-checkmark-outline" size={16} color="#F5C451" />
-                  <Text style={styles.setAsideLabel}>Set aside for taxes</Text>
-                </View>
-                <Text style={styles.setAsideValue}>{formatCurrency(netAmountToSetAside)}</Text>
-                <Text style={styles.setAsideSubtext}>
+                {/* The tour's first stop spotlights the HEADLINE, not the whole gradient card —
+                    the card also holds the weekly row and every breakdown line, so a cut-out around
+                    it would be most of the screen and would point at nothing in particular.
+                    ⚠️ Layout-neutral: `setAsideCard` uses padding and the children carry their own
+                    `marginTop`, so this wrapper adds no spacing (it would if the card used `gap`). */}
+                <View ref={setAsideAnchor}>
+                  <View style={styles.setAsideHeader}>
+                    <Ionicons name="shield-checkmark-outline" size={16} color="#F5C451" />
+                    <Text style={styles.setAsideLabel}>Set aside for taxes</Text>
+                  </View>
+                  <Text style={styles.setAsideValue}>{formatCurrency(netAmountToSetAside)}</Text>
+                  <Text style={styles.setAsideSubtext}>
                   ~
                   {(
                     (estimate.netProfitAfterMileage > 0
                       ? netAmountToSetAside / estimate.netProfitAfterMileage
                       : 0) * 100
                   ).toFixed(1)}
-                  % of net earnings, tax year {estimate.taxYear}
-                </Text>
+                    % of net earnings, tax year {estimate.taxYear}
+                  </Text>
+                </View>
                 {/* [D7]/[D15]: the week is the unit a gig worker can act on — one lump sum for the
                     whole year is the thing that "makes it hard to keep track". It sits beside the year
                     total rather than replacing it, because the year total is what is actually owed. */}
                 <Pressable
+                  ref={weekAnchor}
                   onPress={() => setWeeksOpen(true)}
                   style={styles.weekRow}
                   accessibilityRole="button"
@@ -556,11 +634,15 @@ export function DashboardScreen({
               </View>
 
               <View style={styles.addButtonWrap}>
-                <PrimaryButton
-                  label="Log Earnings"
-                  onPress={onAddEntry}
-                  icon={<Ionicons name="add" size={20} color="#fff" />}
-                />
+                {/* Wrapped so the spotlight is the button alone — `addButtonWrap` also holds the
+                    what-if link, and a cut-out around both would point at two different things. */}
+                <View ref={logEarningsAnchor}>
+                  <PrimaryButton
+                    label="Log Earnings"
+                    onPress={onAddEntry}
+                    icon={<Ionicons name="add" size={20} color="#fff" />}
+                  />
+                </View>
                 <Pressable
                   onPress={onOpenWhatIf}
                   style={({ pressed }) => [styles.whatIfButton, pressed && styles.whatIfButtonPressed]}
@@ -779,6 +861,14 @@ export function DashboardScreen({
           hourlyRate,
           topPlatformLabel: topPlatform ? PLATFORM_LABELS[topPlatform.platform] : undefined,
         }}
+      />
+      {/* Last, so it sits above every sheet — a tour interrupted by a sheet appearing over it would
+          leave the visitor with no visible way out. It renders nothing unless `showTour`. */}
+      <TourOverlay
+        steps={DASHBOARD_TOUR_STEPS}
+        visible={showTour}
+        onStepChange={handleTourStep}
+        onFinish={(completed) => onTourFinish?.(completed)}
       />
     </Screen>
   );

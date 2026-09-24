@@ -11,6 +11,43 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.8.3 The four stops — after-scan · 2026-09-24 · ✅ DONE
+
+**Shipped.** `src/dashboardTour.ts` — the four stops and their anchor ids, pure and react-native
+free like `tour.ts` · four anchors wired into `DashboardScreen` · `scrollDeltaToReveal` added to
+`tour.ts` with **5 more tests** (suite 439 → 444) · `TourAnchorProvider` mounted in `app/index.tsx`,
+**scoped to the dashboard route** rather than the app, since [D29] scopes the tour to one screen.
+
+**Copy approved by Jason 2026-09-24** — the two numbers that *are* the product, then the loop that
+moves them, then the profile that makes them correct.
+
+**⚠️ Two anchors are wrappers, and that was a finding, not a choice.** The survey's line numbers
+were right but the *shape* was not: the weekly row lives **inside** the gradient set-aside card, and
+`Log Earnings` shares `addButtonWrap` with the what-if link. Anchoring on either container would
+have cut a hole around most of the screen, or around two unrelated controls. Both stops now anchor a
+wrapper around the thing itself. ⚡ **Layout-neutral by inspection, not by hope:** `setAsideCard` is
+`padding` + `marginBottom` and `addButtonWrap` is `marginVertical` — **neither uses `gap`**, so an
+extra `View` adds no spacing. Had either used `gap`, the wrapper would have shifted the card.
+
+**⚙️ The scroll is a DELTA, which is what made it tractable.** The dashboard is a `FlatList` with no
+ref and no `onScroll`, and the anchors' content offsets are unknown and would have to be maintained
+against a 1,000-line screen. Instead the host tracks its own offset, the tour measures the anchor in
+window coordinates, and `scrollDeltaToReveal` returns how far to move. **The tour still knows
+nothing about `ScrollView` or `FlatList`** — which is what keeps the primitive portable to the other
+two finance apps.
+
+**🔴 What is NOT verified, stated plainly: the tour has never rendered once.** `showTour` is
+hard-false and nothing sets it; the trigger is 1.2.8.4. So the spotlight, the measure, the
+scroll-to-anchor and the tooltip placement are **written and unexercised** — 30 unit tests cover the
+arithmetic they rest on and nothing has driven the code itself. ⛔ **122/122 Playwright proves the
+dashboard is unchanged, NOT that the tour works** — which is exactly the "green means nothing else
+broke" caveat this version carries, and it would be easy to read the green as coverage it is not.
+
+**⚙️ Carried into 1.2.8.4** _(from 1.2.8.2's after-scan, still open)_: a stop whose `onStepChange`
+fails to scroll **degrades silently to a plain card with no cut-out**. Three of the four start below
+the fold. **The e2e must assert the cut-out, not merely that the copy appeared** — otherwise the one
+failure mode this design has is the one nothing checks.
+
 ### 🔎 1.2.8.2 The overlay primitive — after-scan · 2026-09-24 · ✅ DONE
 
 **Shipped.** `src/tour.ts` — geometry and sequencing, **no react-native import**, so vitest can

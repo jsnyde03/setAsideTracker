@@ -8,6 +8,7 @@ import {
   maskRects,
   nextStepIndex,
   placeTooltip,
+  scrollDeltaToReveal,
   stepProgressLabel,
   type Insets,
   type Rect,
@@ -186,6 +187,37 @@ describe("isRectOnScreen", () => {
   it("rejects an unmeasured anchor rather than cutting a hole in empty space", () => {
     expect(isRectOnScreen(null, WINDOW, INSETS)).toBe(false);
     expect(isRectOnScreen({ x: 0, y: 0, width: 0, height: 0 }, WINDOW, NO_INSETS)).toBe(false);
+  });
+});
+
+describe("scrollDeltaToReveal", () => {
+  it("does not move a rect already inside the band", () => {
+    expect(scrollDeltaToReveal({ x: 0, y: 300, width: 390, height: 100 }, WINDOW, INSETS)).toBe(0);
+  });
+
+  it("scrolls down for an anchor below the fold — the Log Earnings case", () => {
+    // Bottom of the band is 844 - 34 - 16 = 794. The anchor ends at 1000, so 206 past it.
+    const delta = scrollDeltaToReveal({ x: 0, y: 940, width: 390, height: 60 }, WINDOW, INSETS);
+    expect(delta).toBe(206);
+  });
+
+  it("scrolls up for an anchor above the band — the settings gear after scrolling away", () => {
+    // Top of the band is 59 + 16 = 75; the anchor starts at 20, so 55 above it.
+    const delta = scrollDeltaToReveal({ x: 0, y: 20, width: 44, height: 44 }, WINDOW, INSETS);
+    expect(delta).toBe(-55);
+  });
+
+  it("lands the anchor inside the band when the delta is applied", () => {
+    const rect: Rect = { x: 0, y: 940, width: 390, height: 60 };
+    const delta = scrollDeltaToReveal(rect, WINDOW, INSETS);
+    const moved: Rect = { ...rect, y: rect.y - delta };
+    expect(isRectOnScreen(moved, WINDOW, INSETS)).toBe(true);
+  });
+
+  it("aligns a too-tall anchor to its top rather than scrolling past it", () => {
+    // Taller than the band: showing the bottom would put the thing being pointed at off-screen.
+    const delta = scrollDeltaToReveal({ x: 0, y: 200, width: 390, height: 900 }, WINDOW, INSETS);
+    expect(delta).toBe(200 - (INSETS.top + TOUR_EDGE_MARGIN));
   });
 });
 
