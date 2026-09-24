@@ -152,7 +152,14 @@ export async function stopTripTracking(): Promise<number> {
     // Already stopped, or the platform refused. The trip is over either way — the miles above are
     // what the user gets, and failing here must not lose them.
   }
-  void AsyncStorage.removeItem(TRIP_STORAGE_KEY).catch(() => {});
+  // ⛔ GUARDED, and this direction is worse than the write. `persist()` already refuses to WRITE in
+  // demo mode — but stopping a demo trip would have REMOVED the key, and the key belongs to the
+  // real user. [D6] lets an onboarded person enter a demo from Settings, so someone with a trip
+  // actually running could open the demo, touch the trip button, and lose the miles their phone was
+  // holding for them. A demo has nothing of its own to clean up here.
+  if (!isDemoModeActive()) {
+    void AsyncStorage.removeItem(TRIP_STORAGE_KEY).catch(() => {});
+  }
   state = startTrip();
   publish();
   return miles;
@@ -216,7 +223,9 @@ export async function resumeTripIfRunning(): Promise<boolean> {
   try {
     if (!(await TaskManager.isTaskRegisteredAsync(TRIP_TASK))) return false;
 
-    const raw = await AsyncStorage.getItem(TRIP_STORAGE_KEY);
+    // ⛔ And the read is guarded too, for the leak in the other direction: without this a demo
+    // session would restore the REAL user's trip and show their miles as the persona's.
+    const raw = isDemoModeActive() ? null : await AsyncStorage.getItem(TRIP_STORAGE_KEY);
     if (raw) {
       const restored = JSON.parse(raw) as PersistedTrip;
       // No anchor: the next fix starts one. The metres between the kill and the next reading are

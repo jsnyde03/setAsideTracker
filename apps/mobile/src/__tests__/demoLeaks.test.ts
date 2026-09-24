@@ -3,8 +3,14 @@ import { setAnalyticsSink, trackEvent } from "../analytics";
 import { startDemoStore, stopDemoStore } from "../demo/demoMode";
 
 /**
- * The three things that persist or act **outside** `repository.ts`, and therefore outside demo
- * mode's storage isolation. Each is guarded at its own choke point; these are the tests that make
+ * The things that persist or act **outside** `repository.ts`, and therefore outside demo mode's
+ * storage isolation.
+ *
+ * ⚠️ **It was three until 1.2.5 quietly added a fourth.** The trip tracker writes raw AsyncStorage
+ * and its author guarded the WRITE — but not the remove or the read, and those are the dangerous
+ * directions: the key belongs to the real user, so stopping a demo trip DELETED a trip their phone
+ * was holding. Found at the 1.2.8 handoff, from a backlog note that had been orphaned by a
+ * renumber ("filed to 1.2.8, the lint item" — the lint item is now 1.2.11). Each is guarded at its own choke point; these are the tests that make
  * those guards load-bearing rather than decorative.
  *
  * Two of the three (the review prompt and reminder scheduling) reach native modules, so they are
@@ -139,5 +145,56 @@ describe("quarterly reminders", () => {
     const { module, cancelAllScheduledNotificationsAsync } = await loadReminders();
     await module.cancelQuarterlyReminders();
     expect(cancelAllScheduledNotificationsAsync).toHaveBeenCalled();
+  });
+});
+
+describe("the mileage trip tracker", () => {
+  /**
+   * Loads tripTracker with the native bits mocked, fresh each time. Same reason as the review
+   * prompt: `demoMode` must come from the SAME module graph, or the guard reads a different flag
+   * than the test sets.
+   */
+  async function loadTracker() {
+    const removeItem = vi.fn(async () => {});
+    const getItem = vi.fn(async () => JSON.stringify({ metres: 9999, startedAt: 1 }));
+    vi.doMock("@react-native-async-storage/async-storage", () => ({
+      default: { getItem, setItem: vi.fn(async () => {}), removeItem },
+    }));
+    vi.doMock("expo-location", () => ({
+      stopLocationUpdatesAsync: vi.fn(async () => {}),
+      startLocationUpdatesAsync: vi.fn(async () => {}),
+      Accuracy: { Balanced: 3 },
+    }));
+    vi.doMock("expo-task-manager", () => ({
+      isTaskRegisteredAsync: vi.fn(async () => true),
+      defineTask: vi.fn(),
+    }));
+    const module = await import("../mileage/tripTracker");
+    const demoMode = await import("../demo/demoMode");
+    return { module, demoMode, removeItem, getItem };
+  }
+
+  it("clears the persisted trip when demo mode is off", async () => {
+    const { module, removeItem } = await loadTracker();
+    await module.stopTripTracking();
+    expect(removeItem).toHaveBeenCalled();
+  });
+
+  /**
+   * ⛔ The one that matters. [D6] lets an onboarded user open a demo from Settings, so a person with
+   * a trip actually running can reach this — and the key is theirs, not the persona's.
+   */
+  it("never deletes the real user's trip from inside a demo", async () => {
+    const { module, demoMode, removeItem } = await loadTracker();
+    demoMode.startDemoStore();
+    await module.stopTripTracking();
+    expect(removeItem, "a demo stopped a real trip's persistence").not.toHaveBeenCalled();
+  });
+
+  it("does not restore the real user's trip into a demo session", async () => {
+    const { module, demoMode, getItem } = await loadTracker();
+    demoMode.startDemoStore();
+    await module.resumeTripIfRunning();
+    expect(getItem, "a demo read the real user's trip back").not.toHaveBeenCalled();
   });
 });
