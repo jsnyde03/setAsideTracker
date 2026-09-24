@@ -32,9 +32,10 @@
 > would have gone green over a "Clear all data" that cleared nothing, and one guarded Apple
 > **Guideline 3.1.2**. Full arc + every mechanism → [V1_2_LOG.md](V1_2_LOG.md).
 >
-> ✅ **1.2.1–1.2.7, 1.2.10, 1.2.14–1.2.16 CLOSED.** ▶ **ACTIVE: 1.2.9 — accessibility depth audit**,
-> decomposed below, taken ahead of 1.2.8's row because **1.2.8 is feature/UX work that opens with a
-> design pass** while 1.2.9 has a measured head start from 1.2.14.5.
+> ✅ **1.2.1–1.2.7, 1.2.9–1.2.11, 1.2.14–1.2.16 CLOSED.** ▶ **ACTIVE: 1.2.17 — make the cheap gates
+> visible**, decomposed below. 🔴 **Measured at 1.2.11: the commit API returns 0 statuses and 0
+> check-runs** — every gate but Maestro reports nowhere anyone can see. **1.2.8 still waits on a
+> design pass**, which is Jason's to shape.
 > ⚡ **A Maestro run is now ~13 min, not ~40** (1.2.15) · **1.2.16 closed negative** — the keypad was
 > never an app bug · **the suite has been 12/12 four runs running.**
 > 🔴 **1.2.13 is a SHIP BLOCKER and is not finished:** Pages now serves this repo's `docs/`, but it
@@ -131,25 +132,28 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ♿ **1.2.9 — Accessibility depth audit** · **ACTIVE** _(2026-09-23)_
+### 👁 **1.2.17 — Make the cheap gates visible** · **ACTIVE** _(2026-09-23)_
 
-**Why it is next, ahead of 1.2.8's row:** 1.2.14.5 handed this item a **measured** starting point —
-~12 wrappers whose `accessibilityLabel` replaces their visible text — and that is worth working
-while it is fresh. **1.2.8 (the guided tour) is feature/UX work Jason shapes**, so it opens with a
-design pass rather than code; starting it now would mean stopping for him immediately.
+**Why it is next:** 1.2.11's after-scan measured it — `gh api .../commits/<sha>/status` returns
+**0 statuses and 0 check-runs**, so the only CI anyone can observe is the GitHub Actions `maestro`
+job. **Typecheck, 411 unit tests, both tax-config audits, 122 Playwright tests and the brand-new
+lint gate** all live in a Codemagic workflow whose result is invisible from the repo. ⛔ **That is
+not proof it never runs — it is proof nobody can tell**, which leaves every gate built this version
+in the same position as a remembered green.
+
+⚡ **It is [D27]'s argument a second time:** GitHub Actions is free on Linux for a public repo,
+far cheaper than the macOS runners already in use there, and its output is readable.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.9.1** | ✅ **DONE 2026-09-23. 26 sites, not the ~12 counted by eye**, and three were lossy: the Subscribe button never spoke its **price**, the restore row never spoke that it **replaces everything**, the safe-harbor suggestion never spoke its **amount** — plus five cards naming the feature internally instead of the headline on screen. Kept as a **structural gate** (+4 unit). 12/12 Maestro. _Detail → [V1_2_LOG.md](V1_2_LOG.md)._ | ✅ |
-| **1.2.9.2** | **Dynamic Type** — the app at the largest accessibility text sizes. Truncation, clipped buttons, and any row whose height was assumed. | ⬜ |
-| **1.2.9.3** | **Touch targets ≥ 44pt** and **contrast**, both themes, measured rather than eyeballed. | ⬜ |
-| **1.2.9.4** | **Reduce Motion** — the Animated work has no honour-the-setting path that anyone has checked. | ⬜ |
-| **1.2.9.5** | ⏸ **VoiceOver end-to-end — DEVICE-OWED.** → 1.2.12's checklist. | ⛔ |
-| **1.2.9.6** | **Verify + whole-item after-scan.** | ⬜ |
+| **1.2.17.1** | **Confirm the premise before acting on it** — check whether Codemagic is building at all and simply not reporting, or not building. The fix differs: one is a missing status hook, the other a dead pipeline. | ⬜ |
+| **1.2.17.2** | **Port `web-e2e` to `.github/workflows/`** — typecheck · lint:ci · tax-engine tests · both audits · unit · Playwright. Carry the comments, which are the asset. | ⬜ |
+| **1.2.17.3** | **Prove each gate can FAIL from CI**, not just pass: plant one violation per gate and watch the run red. ⛔ A pipeline that has only ever been green is indistinguishable from one that cannot fail. | ⬜ |
+| **1.2.17.4** | **Retire the Codemagic copy** once green, so there is one home — exactly as 1.2.14.2 did for Maestro. | ⬜ |
+| **1.2.17.5** | **Verify + whole-item after-scan.** | ⬜ |
 
-**Exit line:** the app is usable at the largest text size and with VoiceOver's own vocabulary, every
-spoken name is one somebody chose, and what needs hardware is written into 1.2.12 rather than
-assumed.
+**Exit line:** every gate this version added runs on every push, its result is visible on the commit,
+and each one has been seen to fail at least once.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
@@ -169,7 +173,6 @@ out-of-order number is worth less than one more round of that.
 | # | item | notes |
 |---|---|---|
 | 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
-| 1.2.11 | **Lint ledger → CI gate** | 14 findings; runs late because 1.2.0–1.2.7 rewrite those files. |
 | **1.2.13** | ⚙️ **Publish the privacy policy — SHIP BLOCKER, mostly done 2026-09-22** | ✅ Pages now serves **this** repo's `docs/` ([D26]); audits moved out so `docs/` is the website exactly; all 9 URLs repointed; **`tools/check-published-policy.mjs`** added — it fetches the live page and fails on drift *(verified both ways: reds on the real defect, and a control proves it can pass)*. ⛔ **Remaining: the cutover.** Pages serves `master`, which still carries the July policy — correct for live v1.1.1, wrong the moment v1.2 ships. **Merging v1.2 to master at release publishes it; the gate fails the submission if it is forgotten.** |
 | 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
 
@@ -187,6 +190,25 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.11 — Lint ledger → CI gate ✅ DONE 2026-09-23, 4/4. 15 → 0, and the gate can fail.**
+  Nine of thirteen errors were **one idiom in one component** (`useRef(new Animated.Value()).current`);
+  the other four were "reset state on a prop change" written as effects, now adjusted during render —
+  which on the dashboard also removed a frame showing the **old amount right after a save**. ⛔ A dead
+  import was checked before deletion in case it meant custom categories were missing from the premium
+  **Schedule C PDF**; they were not. ⚡ `--max-warnings=0` is measured, not preferred: with a warning
+  planted, `npm run lint` **exits 0** while `lint:ci` exits 1. **411 unit · 122/122 e2e · 12/12 Maestro.**
+  _Detail + the four-case equivalence check → [V1_2_LOG.md](V1_2_LOG.md)._
+
+- **1.2.9 — Accessibility depth audit ✅ CLOSED 2026-09-23, 5/6, VoiceOver device-owed.**
+  26 label-shadowing sites reviewed and the lossy ones fixed — a purchase button that never spoke
+  its **price**, a destructive action that never spoke its **warning** · Dynamic Type proven not to
+  clip at 1.5× on every route · **52 contrast failures → 0 in both themes** ([D28]: fix all five
+  tokens), including the dark-mode CTAs at 3.68:1 · Reduce Motion honoured for the first time ·
+  small touch targets raised, the two `hitSlop` could not fix rebuilt as real 44pt boxes.
+  ⚡ **The cross-cutting finding: react-native-web is blind to most of accessibility**, so only
+  contrast became a gate and the rest are unit-tested rules plus device rows.
+  **411 unit · 122/122 e2e · both themes looked at.** _Detail + 5 scan records → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.7 — Native iPad ✅ CLOSED 2026-09-23, 6/8 built, 2 device-owed.** `supportsTablet` +
   iPad-only orientation · the size-class seam on `useWindowDimensions` · the dashboard's two-column
@@ -338,6 +360,7 @@ map is at the head of the log's item-spec section._
 | **[D22]** | **Analytics stops sending the user's state code.** A US state describes where someone is at lower precision than three decimal places, which is Apple's definition of **Coarse Location** however the app came by it — so declaring it would have put a location category in the privacy manifest, the App Store labels **and** the policy, on a tax app that collects no location otherwise. ⚡ **Not collecting it removes the question from all three places rather than answering it three times.** Rejected declaring it as "Other Data" — defensible, but being wrong about a location category is an App Store rejection. Cost: the state distribution of the user base is no longer measurable, which mattered because state tax configs are per-state work. | Jason 2026-09-22 |
 | **[D23]** | **`ITSAppUsesNonExemptEncryption` is REMOVED, so App Store Connect asks instead of being pre-answered.** The key's only function is to bypass the export-compliance questionnaire. The app encrypts local data with **crypto-js AES-256** — not the OS's crypto — and whether that is exempt turns on **Note 4 to Category 5 Part 2**, the *primary-function* test, **not on whose library it is** _(which is how this was first framed, wrongly)_. The reading that the app qualifies is defensible — its primary function is tax **calculation**, and BIS lists inventory-management software as a Note 4 example — **but it is a reading, and this is a legal declaration.** ⚡ **So we stopped answering the question and started asking it:** Apple's own flow produces the classification at first upload, and it gets recorded then. ⚠️ Cost: every build lands as **"Missing Compliance"** until answered in ASC — documented in both checklists so it is not mistaken for a broken build. | Jason 2026-09-22 |
 | **[D27]** | **The repo STAYS PUBLIC, and Maestro moves to GitHub Actions.** ⚡ **GitHub Actions is free on macOS runners for public repos**, so the Maestro iOS-simulator suite — paused since ~August and scheduled to resume ~November purely because **Codemagic is ~80% consumed** — can run at zero cost, which also takes simulator builds off Codemagic and stretches the reserved TestFlight minutes. ⛔ **This retires the deferred "repo → private" item rather than postponing it:** private repos drop to ~200 macOS minutes/month, so the two wishes are close to mutually exclusive on a free plan. Source privacy was a preference with no stated driver; a blocked test suite is a measured cost. ⚠️ `Set_Aside_Tracker` must also stay public if anything still points at it — old v1.1.1 binaries do. | Jason 2026-09-22 |
+| **[D28]** | **Fix all five failing contrast tokens to WCAG AA**, rather than only the worst two or deferring the palette to a design pass. ⚡ The audit measured **52 failing text nodes across both themes — which were five theme tokens, not 52 defects**: one muted-ink value alone accounted for most of them, at 2.45:1 in light and 3.12:1 in dark, on hint text across eight routes since the beginning. The worst single value was a **dark** blue used for the selected chip label on a **dark** navy chip (2.13:1), and the most consequential was white on the primary fill at 3.68:1 — the "Log Earnings", "Save Entry" and "Subscribe" buttons the whole app funnels toward. ⛔ The button fill had to become **its own token**: `primary` is read as TEXT in twelve places where darkening it to satisfy white drops it to 3.66, so one value genuinely could not serve both jobs. Verified by a gate on every route in both themes, and by looking at screenshots in both. | Jason 2026-09-23 |
 | **[D26]** | **GitHub Pages serves THIS repo's `docs/`; the canonical file and the published URL become one object.** ⛔ **[D16]'s "one privacy policy" was true in this repo and false in the world** — the served copy lived in `jsnyde03/Set_Aside_Tracker` and was **83 days stale**, never mentioning location while the canonical file had disclosed it since 1.2.5. **The drift [D16] existed to kill had simply moved to a repository the gate could not reach.** Rejected a copy-on-release step: that is the same promise that failed, automated. ⚠️ Consequences: `docs/audits/` moved to `audits/` (Pages serves only `/` or `/docs`, and the gap scan enumerating known correctness gaps should not be an indexable site) · all 9 URLs repointed · **`tools/check-published-policy.mjs` checks the LIVE page**, because the lesson is that a check which cannot see the published artifact will pass while it rots. | Jason 2026-09-22 |
 | **[D25]** | **The iPad dashboard is a two-column band — money left, insights right — with the entry list full-width beneath it, in ONE scroll region.** Rejected the truer tablet split (cards in a left rail, shifts scrolling independently on the right): it gives permanent real estate to the *secondary* content, when the screen's job is "what do I owe", and it costs two scroll regions plus lifting the header out of the `FlatList`. Also rejected 2-up-ing only the insight cards — lowest risk, but it leaves most of a 13" screen unused and does not read as an iPad layout. ⚠️ **One scroll also keeps VoiceOver reading order intact**, which matters for 1.2.9. | Jason 2026-09-22 |
 | **[D24]** | **The iPad size-class seam is built on `useWindowDimensions`, and iPad viewports join the Playwright suite.** ⛔ **1.2.7 was promoted as "almost entirely device-owed" and that was a property of the intended implementation, not of the item.** The e2e suite already runs at **1280×720 — wider than iPad portrait** — so the app is proven to *survive* regular width; the item's real content is appearance. On `useWindowDimensions` the breakpoint re-renders on resize, so **Split View live-resize (1.2.7.5) falls out by construction** and is assertable by resizing the viewport mid-test; on a `Platform.isPad`-style constant both the behaviour and the check are lost. ⚠️ **Does not make the reserved build optional** — RN-web at 1024px is not UIKit at 1024pt, and 1.2.7.6 (hardware keyboard) stays device-owed. It moves the build from *discovering* layout breaks to *confirming* their absence. | Jason 2026-09-22 |
@@ -367,6 +390,29 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.11 _(2026-09-23)_
+
+- 🔴 **EVERY CHEAP GATE REPORTS NOWHERE VISIBLE.** Measured, not suspected:
+  `gh api .../commits/<sha>/status` returns **0 statuses and 0 check-runs** on the last three
+  commits — the only thing that reports is the GitHub Actions `maestro` job. Codemagic's `web-e2e`
+  holds **typecheck, 411 unit tests, both tax-config audits, the 122-test Playwright suite and now
+  lint**, and whether any of them ran is unobservable from the repo. ⛔ **That does not prove it is
+  not running — it proves nobody can tell**, which is the same thing a stale green is
+  (`remembered-gate-result-is-unrun`). ⚡ **The fix is the [D27] argument again:** GitHub Actions is
+  free on Linux for a public repo, an order of magnitude cheaper than the macOS runners already in
+  use, and its output is readable from here. **Recommended as the next active build.**
+
+### From 1.2.9 _(2026-09-23)_
+
+- ⚠️ **The a11y sweeps cover ROUTES, not the whole app.** Seven user-visible surfaces are not routes
+  and so are unmeasured by both the contrast and Dynamic Type gates: the **four bottom sheets** and
+  the **three `AppGate`-rendered screens** (`LockScreen`, `RecoveryScreen`, onboarding). Each needs a
+  path to open it rather than a URL to visit. ⛔ **Recorded inside both spec files**, so their
+  silence cannot be mistaken for coverage — the gap is honest, not hidden.
+- ⚙️ **`accent` and `inkFaint` changed in light mode**, and `ShareCard` renders the shared IMAGE from
+  its own palette rather than the route tree. It is not swept by either gate. Worth one look before
+  release — what it produces is the thing users post publicly.
 
 ### From 1.2.14.5, the night the suite went green _(2026-09-23)_
 

@@ -11,6 +11,84 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.11 Lint ledger 15 → 0, and a gate that can fail · 2026-09-23
+
+**The re-count was step one, and it mattered:** the ledger said 14, the plan's health line said 15,
+the linter said **15**. None came from that night's work — 15 before it, 15 after.
+
+**Thirteen errors were two shapes:**
+- **9 of them were ONE idiom in ONE component** — `useRef(new Animated.Value(x)).current`, which is
+  what React Native's own docs show and what `react-hooks/refs` forbids, because it reads a ref
+  during render. A lazy `useState` initializer is the same object with the same lifetime and no ref
+  read.
+- **4 were "reset local state when a prop changes", written as effects.** React documents adjusting
+  state *during render* instead. On the dashboard that also removes a frame which showed the **old
+  amount right after a save landed**.
+
+⚠️ **The `EditTaxProfileScreen` one collapsed, and collapsing is where a silent change hides — so it
+was checked case by case** rather than eyeballed:
+
+| `county` | `availableCounties` | in list? | before | after |
+|---|---|---|---|---|
+| falsy | — | — | no reset | no reset ✓ |
+| truthy | present | no | reset (branch 1) | reset ✓ |
+| truthy | present | yes | no reset | no reset ✓ |
+| truthy | absent | — | reset (branch 2) | reset ✓ |
+
+Equivalent in all four, and simpler: it is a **validity test**, not a prop-changed reset, so it
+needs no previous-value bookkeeping and its two branches were the same question asked twice.
+
+⛔ **One warning was worth investigating rather than deleting.** `totalCustomExpenses`, imported into
+`scheduleC.ts` and never called, could have meant custom categories were **missing from the premium
+Schedule C export** — a money defect in a CPA-facing PDF. They are not: that file aggregates them
+itself, by label, into Line 27. Deleted on evidence, not on the lint message. ⚠️ Separately,
+`stateName` is exported and unit-tested with **zero production callers** — left alone (the app shows
+state *codes* deliberately) but now known.
+
+⚡ **`--max-warnings=0` is measured, not preferred.** With a warning planted, **`npm run lint` exits
+0** and `lint:ci` exits 1. Wiring the default script into CI would have built a gate that tolerates
+a ledger regrowing in warnings forever.
+
+🔴 **And the finding the item did not set out to make: every cheap gate reports nowhere visible.**
+`gh api .../commits/<sha>/status` returns **0 statuses and 0 check-runs** on the last three commits;
+the only thing that reports is the GitHub Actions `maestro` job. Typecheck, 411 unit tests, both
+tax-config audits, 122 Playwright tests and now lint all live in a Codemagic workflow whose result
+is unobservable from the repo. **That does not prove it is not running — it proves nobody can
+tell.** Filed as the recommended next build.
+
+### 🔎 1.2.9 Accessibility — WHOLE-ITEM after-scan · 2026-09-23 · ✅ CLOSED 5/6, 1 device-owed
+
+⚡ **The finding that only appears when the four sub-steps are read together: react-native-web is
+blind to most of accessibility, and each part hit it independently.**
+
+| sub-step | what the browser could see |
+|---|---|
+| **.1** labels | the tree, but **not** whether Maestro's full-match selectors resolve — the web suite stayed green over a broken flow |
+| **.2** Dynamic Type | no text-size setting exists; only `font-size` scaled by hand and remeasured |
+| **.3** targets | **`hitSlop` is ignored** — a 22pt icon measures 22pt here and 44pt on the device |
+| **.3** contrast | **everything.** Pure computation over colours — the one part a browser answers exactly |
+| **.4** motion | nothing: all motion is native-only, so the browser renders a motionless app either way |
+
+⛔ **So only contrast became a gate.** The rest are unit-tested rules plus device rows with the
+reason attached. **A browser suite's silence is not an accessibility check** — and the four gates
+now say in their own comments which half they cannot see.
+
+**What shipped:** 26 shadowing sites reviewed and the lossy ones fixed (a purchase button that never
+spoke its price, a destructive action that never spoke its warning) · Dynamic Type proven not to
+clip at 1.5× on every route · **52 contrast failures → 0 in both themes**, which were five theme
+tokens, not 52 defects · Reduce Motion honoured for the first time · small touch targets raised,
+with the two that `hitSlop` could not fix rebuilt as real 44pt boxes.
+
+🔴 **A pattern worth keeping: three separate enumerations of mine came up short, and each time the
+instrument caught it.** ~12 shadowing sites when there were 26 · contrast values solved against
+three surfaces when there are seven · a coupling sweep that covered six renamed labels out of eight.
+⚡ **Every complete list came from a script; every short one came from me** — measured again here,
+three more times.
+
+⚠️ **Coverage gap, recorded rather than quietly widened:** both sweeps cover **routes**, and seven
+surfaces are not routes — the four bottom sheets and the three `AppGate` screens. Filed to the
+backlog and written inside both spec files.
+
 ### 🔎 1.2.9.1 Label shadowing — 26 sites, not the ~12 I counted · 2026-09-23 · ✅ DONE
 
 **The count was the finding.** A hand read produced *"about 12 wrappers, mostly benign"*; an AST

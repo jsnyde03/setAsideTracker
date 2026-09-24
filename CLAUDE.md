@@ -102,6 +102,16 @@ backlog carries "cache the built `.app`", which is what makes this loop usable.
   **Gate demo invariants over `demoSeed.test.ts`'s sample dates, never over "now"**: planting the old
   rounding reds only **2 of those 7**, which is exactly why it shipped green.
 
+- ⛔ **REACT-NATIVE-WEB IS BLIND TO MOST OF ACCESSIBILITY, and a green web suite says nothing about
+  any of it.** All four parts of 1.2.9 hit this independently: **motion** is native-only (`Screen`'s
+  entrance and all four sheets pass `"none"` on web, so the browser renders a motionless app whether
+  or not Reduce Motion is honoured) · **`hitSlop` is ignored**, so a 22pt icon measures 22pt in a
+  browser and 44pt on the device · **there is no text-size setting** to turn up, so Dynamic Type can
+  only be approximated by scaling `font-size` and remeasuring · and **there is no VoiceOver**, so
+  the accessibility *tree* can be inspected but never heard. ⚡ **What the browser CAN answer
+  exactly is contrast** — it is pure computation over colours — which is why that one is a gate and
+  the rest are unit-tested rules plus device rows. ⛔ **Never let a browser suite's silence stand in
+  for an accessibility check; write down which half it cannot see.**
 - ⛔ **CHANGING AN ACCESSIBLE NAME NEEDS BOTH SUITES, because the web one cannot see the break.**
   Playwright's `getByLabel` is a **substring** match; Maestro's text selectors are **full-match**
   regexes. So renaming the Subscribe button to carry its price left five Playwright specs green and
