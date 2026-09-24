@@ -13,18 +13,29 @@ Read the plan's `RESUME HERE` block first; it is kept current.
 **v1.2 in development on branch `v1.2`.** No ship date — [D9]: work the queue and ship when done.
 **Do not reintroduce a target date.**
 
-✅ **1.2.1–1.2.6, 1.2.10 and 1.2.14 are CLOSED.** Demo mode · tax correctness · data safety ·
-set-aside by week · the mileage trip toggle · the premium slice · filed correctness + submission
-compliance · Maestro on GitHub Actions. **Per-item detail is in `V1_2_LOG.md` and belongs there.**
+✅ **CLOSED: 1.2.1–1.2.7, 1.2.9–1.2.11, 1.2.14–1.2.17.** Demo mode · tax correctness · data safety ·
+set-aside by week · mileage · the premium slice · native iPad · accessibility · filed correctness ·
+lint · Maestro on CI · the `.app` cache · the keypad question · CI visibility.
+**Per-item detail is in `V1_2_LOG.md` and belongs there.**
 
-✅ **THE NATIVE SUITE IS GREEN — 12/12, twice** (2026-09-23). It had never run clean before. ⚡ **In
-eight runs the app was never once shown broken**; every blocker was in the instrument, and **three
-checks were incapable of failing** — see the rules below.
+▶ **ACTIVE: 1.2.8 — the guided onboarding tour**, decomposed in the plan.
+⛔ **Its first sub-step is a `[DECISION]`, not code.** It is feature/UX work Jason shapes, and the
+standing rule is design agreement *before* building. Open with 2–3 shapes and a recommendation.
+🔴 **Render coach-marks OUTSIDE any `GestureDetector`** — it swallows taps on device, and that is a
+measured lesson. Build the tour over **populated** views (demo mode exists for exactly this).
 
-▶ **ACTIVE: 1.2.7 — native iPad, resumed at 4/8**, decomposed in the plan: **.5 live-resize and .8
-after-scan are doable here; .6 hardware keyboard and .7 iPad screenshots are device-owed.**
-🔴 **Flipping `supportsTablet` obliges iPad screenshots in App Store Connect** — a submission
-requirement that ships with the flip.
+⚙️ **What changed under your feet, if you are a new session:**
+- **Every cheap gate now runs on every push and REPORTS to the commit** —
+  `.github/workflows/web-checks.yml`: typecheck · `lint:ci` · 414 mobile unit · 102 engine · both
+  tax-config audits · 122 Playwright. Each has been **seen to fail** from CI. Codemagic's copy is
+  retired; `ios-testflight` is all that is left there.
+- **Lint is a gate at zero, with `--max-warnings=0`.** New code cannot land a warning.
+- **Contrast is gated in both themes** on every route, so new UI must pass it. ⚠️ The sweeps cover
+  **routes**, not sheets or `AppGate` screens — a green run is not whole-app coverage.
+- **Reduce Motion is honoured** (`useReduceMotion` + `motion.ts`); anything the tour animates must
+  ask it.
+- **The native suite is green at 12/12** and a run is ~13 min on a cache hit:
+  `gh workflow run maestro-ios.yml --ref v1.2`.
 
 🔴 **1.2.13 IS AN UNFINISHED SHIP BLOCKER.** `docs/privacy.html` is now served by GitHub Pages from
 **this** repo ([D26]) — but Pages serves **`master`**, which still carries the **July** policy that
@@ -74,8 +85,12 @@ intermittently left the keyboard covering the state field, so the tap landed on 
 was never typed, and it surfaced **ten steps later** as *"Your earnings is not visible"* in a
 different flow each run. ⚡ **A defect that moves between flows still has one cause.**
 
-⚠️ **The build dominates each run (~35–40 min), so a single-flow run is barely faster** — the
-backlog carries "cache the built `.app`", which is what makes this loop usable.
+✅ **THE `.app` IS CACHED (1.2.15), so a flow-only change runs in ~13 min instead of ~40.** The key
+is derived mechanically from `git ls-files` over everything that reaches the binary — **including
+this workflow file**, because its `xcodebuild` flags decide what the binary *is*. `.maestro/` and
+`e2e/` are excluded on purpose: neither is bundled, and both change on nearly every flow commit.
+⛔ **Every cache hit prints the commit the binary was BUILT from**, because a check that ships
+inside an artifact cannot tell you the artifact is stale.
 
 ## Rules that cost real time to rediscover
 

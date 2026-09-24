@@ -32,10 +32,10 @@
 > would have gone green over a "Clear all data" that cleared nothing, and one guarded Apple
 > **Guideline 3.1.2**. Full arc + every mechanism → [V1_2_LOG.md](V1_2_LOG.md).
 >
-> ✅ **1.2.1–1.2.7, 1.2.9–1.2.11, 1.2.14–1.2.17 CLOSED.** ⏸ **NO ITEM IS IN ACTIVE BUILD, and that
-> is accurate rather than idle:** everything buildable without a decision is done. **1.2.8 needs a
-> design pass** and **1.2.12 needs the reserved TestFlight build authorized** — both Jason's.
-> **1.2.13**'s remaining work happens at release, not now.
+> ✅ **1.2.1–1.2.7, 1.2.9–1.2.11, 1.2.14–1.2.17 CLOSED.** ▶ **ACTIVE: 1.2.8 — the guided onboarding
+> tour**, decomposed below. ⛔ **Its first sub-step is a DECISION, not code** — open the session by
+> bringing Jason design options with a recommendation. **1.2.12** still needs the reserved
+> TestFlight build authorized; **1.2.13**'s remaining work happens at release.
 > ⚡ **A Maestro run is now ~13 min, not ~40** (1.2.15) · **1.2.16 closed negative** — the keypad was
 > never an app bug · **the suite has been 12/12 four runs running.**
 > 🔴 **1.2.13 is a SHIP BLOCKER and is not finished:** Pages now serves this repo's `docs/`, but it
@@ -132,19 +132,23 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### ⏸ **No item is in active BUILD — and both candidates need Jason** _(2026-09-23)_
+### 🧭 **1.2.8 — Guided onboarding tour** · **ACTIVE** _(2026-09-23, Jason: "start a new session with 1.2.8")_
 
-⛔ **This is the honest state, not an idle queue.** Everything buildable without a decision is done.
-The two remaining workstreams are each blocked on something only Jason can give:
+⛔ **1.2.8.1 IS A DECISION GATE, AND IT COMES FIRST.** This is feature/UX work Jason shapes, and the
+standing rule is design agreement *before* code. Open with options and a recommendation, not a
+blank page and not a built tour.
 
-| blocked item | what it needs |
-|---|---|
-| **1.2.8 — guided onboarding tour** | **A design pass.** It is feature/UX work Jason shapes, and the standing rule is to reach design agreement *before* code. |
-| **1.2.12 — device QA** | **Authorization to spend the one reserved TestFlight build**, and a device in hand. 27 checklist rows, native-only, every one unreachable from here. |
+| # | sub-step | scan |
+|---|---|---|
+| **1.2.8.1** | **[DECISION] The design pass.** What the tour says, how many stops, what fires it, whether it is skippable *and* replayable. Bring 2–3 shapes with a recommendation. ⛔ No component code before Jason picks. | ⬜ |
+| **1.2.8.2** | **The overlay primitive** — reusable, built to move to the other two finance apps. 🔴 **Render coach-marks OUTSIDE any `GestureDetector`**: it swallows taps on device, and a tour whose tooltips do not respond is the failure mode. That is a measured lesson, not a caution. | ⬜ |
+| **1.2.8.3** | **The stops themselves, over POPULATED views** — which is why demo mode (1.2.1) came first; an empty dashboard teaches nothing. | ⬜ |
+| **1.2.8.4** | **Entry points:** first run · replay from Settings · skip that actually stays skipped. | ⬜ |
+| **1.2.8.5** | **Accessibility, which is now gated** — the tour must honour Reduce Motion (`useReduceMotion`, 1.2.9.4), pass the contrast gate in both themes, and be reachable by VoiceOver. ⚠️ A coachmark that traps focus is worse than no tour. | ⬜ |
+| **1.2.8.6** | **Verify + whole-item after-scan.** | ⬜ |
 
-**1.2.13** is a ship blocker whose remaining work happens **at release**: Pages serves `master`, so
-merging v1.2 publishes the location disclosure, and `check-published-policy.mjs` fails the
-submission if it is forgotten. Nothing to build now.
+**Exit line:** a first-run tour a new user can follow, skip, or replay — calm, one stop at a time,
+over real-looking data — and it passes the same gates every other surface now passes.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
@@ -163,7 +167,6 @@ out-of-order number is worth less than one more round of that.
 
 | # | item | notes |
 |---|---|---|
-| 1.2.8 | **Guided onboarding tour** | Full coachmark tour over populated views. Reusable overlay system. Render **outside** gesture handlers. |
 | **1.2.13** | ⚙️ **Publish the privacy policy — SHIP BLOCKER, mostly done 2026-09-22** | ✅ Pages now serves **this** repo's `docs/` ([D26]); audits moved out so `docs/` is the website exactly; all 9 URLs repointed; **`tools/check-published-policy.mjs`** added — it fetches the live page and fails on drift *(verified both ways: reds on the real defect, and a control proves it can pass)*. ⛔ **Remaining: the cutover.** Pages serves `master`, which still carries the July policy — correct for live v1.1.1, wrong the moment v1.2 ships. **Merging v1.2 to master at release publishes it; the gate fails the submission if it is forgotten.** |
 | 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. |
 
