@@ -11,6 +11,55 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.8 Guided onboarding tour — WHOLE-ITEM after-scan · 2026-09-24
+
+**What only shows when the item is viewed whole.** Six sub-steps, and the same three shapes recur.
+
+**1. Every defect this item found came from BUILDING, never from reading.** Two live defects — a
+stranded alert on every demo exit since 2026-08-08, and two dashboards mounting on demo entry — plus
+a vacuous test and two miscounts. ⛔ **None of them was in a backlog, a review or an audit**, and
+the two live ones had both survived twelve green Maestro runs. This is now the fifth time this
+version has recorded it, which makes it a property of the work rather than an anecdote.
+
+**2. A pre-authored item's premises fail in the direction that makes the work look DONE.** Four of
+1.2.8's premises were stale; the two that mattered would each have produced unfalsifiable work:
+- *"Render coach-marks outside any `GestureDetector`"* — defending against something **not present
+  in this app**. Obeying it costs nothing and proves nothing.
+- *"The tour must pass the contrast gate"* — the gate sweeps routes, so an overlay would have
+  **passed by never being looked at**.
+⚡ **Neither would have failed. Both would have been ticked.** That is the class worth naming: a
+stale premise is dangerous not when it breaks the build but when it quietly turns a row into a
+formality. **The before-scan is what caught both, and it is cheap.**
+
+**3. Eight claims were planted this item; seven reddened, and THE ONE THAT PASSED was the most
+valuable.** Stubbing `markDashboardTourSeen` left the suite green — which exposed not merely a weak
+test but a **design fault**: `dismissed`, a session variable, was deciding whether the tour returned
+instead of the persisted flag. ⚡ **A plant that passes is the only cheap way to discover that the
+thing you were testing was not the thing deciding the behaviour.**
+
+**4. Two undercounts, both in the flattering direction, each already covered by a standing rule.**
+[D29] said "one flow" because it enumerated Maestro and never enumerated the browser specs — the
+real figure was one flow **and fifteen Playwright tests**. Then the first full run was read through
+`| head -12`, which truncated the failure list **at 6 of 9** and swallowed the exit code. ⛔ Two
+different rules, both already written down here, both broken inside one afternoon. **Neither is a
+knowledge problem; both are habits that only hold when the enumeration comes from a script.**
+
+**5. A browser can answer far more than expected — once something is selectable.** The tour looked
+web-unverifiable (a decorative mask, no text, no accessible name). **Two `testID`s turned it into 8
+specs**, including the one that distinguishes a working stop from the silently degraded centred
+card. ⚠️ The converse also held: `accessibilityElementsHidden` is **dropped entirely** by
+react-native-web, so that claim was unverifiable until `aria-hidden` replaced it. **Both directions
+were settled by dumping the DOM, not by reasoning about the framework.**
+
+**⚙️ Accepted product consequence of [D29], recorded so it is a decision and not a drift: the tour
+is OPT-IN.** It runs only in the sample account, so a user who onboards and never taps "Explore with
+sample data" never sees it. That was the trade for showing it over populated data — on a brand-new
+account every figure it points at reads $0. ⚠️ **The onboarding affordance's LABEL was deliberately
+not changed** to [D29]'s "take a quick tour with sample data": three Maestro flows and ~10 Playwright
+call sites full-match `"Explore with sample data"`, and renaming labels is exactly what broke a flow
+at 1.2.9.1. **The hint below it carries the promise instead** — it has no selectors and is shadowed
+by the wrapper's label, so it was the free half of the sentence.
+
 ### 🔎 1.2.8.5 Accessibility — after-scan · 2026-09-24 · ✅ DONE
 
 **The substantive half was the gate, not the tour.** 1.2.8.5 as written required the tour to "pass

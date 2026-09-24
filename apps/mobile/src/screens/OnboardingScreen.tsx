@@ -343,7 +343,15 @@ export function OnboardingScreen({ onComplete, onExploreDemo }: OnboardingScreen
               style={styles.demoLink}
             >
               <Text style={styles.demoLinkText}>Explore with sample data</Text>
-              <Text style={styles.demoLinkHint}>See how it works before entering anything of your own</Text>
+              {/* ⚠️ The HINT mentions the tour; the LABEL deliberately does not. [D29] described
+                  this as "take a quick tour with sample data", but "Explore with sample data" is
+                  matched by three Maestro flows and roughly ten Playwright call sites, and a
+                  full-match selector breaks on any rename — the 1.2.9.1 lesson. The hint carries
+                  no selectors and is shadowed by the wrapper's accessibilityLabel, so it is the
+                  free half of the sentence. */}
+              <Text style={styles.demoLinkHint}>
+                See how it works before entering anything of your own — we&apos;ll show you around
+              </Text>
             </Pressable>
           ) : null}
         </ScrollView>
