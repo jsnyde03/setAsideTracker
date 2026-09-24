@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { BreakdownDetail } from "../breakdownDetails";
@@ -35,9 +35,18 @@ export function BreakdownDetailSheet({ detail, onClose }: BreakdownDetailSheetPr
   // Which glossary term's plain-language definition is expanded inline (null = none). Reset whenever
   // a different breakdown is opened so a term left open on one sheet doesn't bleed into the next.
   const [openTerm, setOpenTerm] = useState<GlossaryTermKey | null>(null);
-  useEffect(() => {
+  /**
+   * ⚠️ Adjusted DURING render, not in an effect — React's own documented replacement for "reset
+   * state when a prop changes". Identical behaviour: React re-runs this component immediately with
+   * the new state before touching the screen, so nobody ever sees the stale term. The effect
+   * version rendered once with the wrong value first, which is the cascading render the lint rule
+   * is pointing at.
+   */
+  const [lastTitle, setLastTitle] = useState(detail?.title);
+  if (detail?.title !== lastTitle) {
+    setLastTitle(detail?.title);
     setOpenTerm(null);
-  }, [detail?.title]);
+  }
 
   return (
     <Modal

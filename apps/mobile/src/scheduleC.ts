@@ -1,4 +1,3 @@
-import { totalCustomExpenses } from "./calculations";
 import { PLATFORM_LABELS } from "./platforms";
 import type { Entry } from "./types";
 

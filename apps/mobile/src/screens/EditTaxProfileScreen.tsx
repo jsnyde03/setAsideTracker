@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Alert,
@@ -80,15 +80,18 @@ export function EditTaxProfileScreen({ taxProfile, onSave, onCancel }: EditTaxPr
 
   const availableCounties = getCountiesForState(state);
 
-  useEffect(() => {
-    // Only reset if the county no longer applies to the (possibly newly typed) state — avoids
-    // clobbering the existing county on first render when it's still valid for the initial state.
-    if (county && availableCounties && !availableCounties.includes(county)) {
-      setCounty(undefined);
-    } else if (!availableCounties && county) {
-      setCounty(undefined);
-    }
-  }, [state, availableCounties, county]);
+  /**
+   * Drop the county once it no longer applies to the (possibly newly typed) state — but never on
+   * first render while it is still valid, or editing an existing profile would silently clear it.
+   *
+   * ⚠️ During render rather than in an effect. This one is a VALIDITY test rather than a
+   * prop-changed reset, so it needs no "previous value" bookkeeping: it is idempotent, because
+   * once `county` is undefined the condition is false. The two branches of the effect version were
+   * the same question asked twice.
+   */
+  if (county && (!availableCounties || !availableCounties.includes(county))) {
+    setCounty(undefined);
+  }
 
   function handleSave() {
     if (state.trim().length === 0) {

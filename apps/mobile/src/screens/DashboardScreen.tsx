@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
@@ -180,9 +180,13 @@ export function DashboardScreen({
   const [amountSetAsideInput, setAmountSetAsideInput] = useState(String(amountSetAsideSoFar));
   // Resync the input whenever the persisted value changes from outside this screen's own edits
   // (e.g. after a successful save round-trips a new taxProfile prop back down).
-  useEffect(() => {
+  // ⚠️ During render rather than in an effect — see BreakdownDetailSheet for why. It matters a
+  // little more here: the effect version briefly rendered the OLD amount after a save landed.
+  const [lastPersistedAmount, setLastPersistedAmount] = useState(amountSetAsideSoFar);
+  if (amountSetAsideSoFar !== lastPersistedAmount) {
+    setLastPersistedAmount(amountSetAsideSoFar);
     setAmountSetAsideInput(String(amountSetAsideSoFar));
-  }, [amountSetAsideSoFar]);
+  }
   const nextDueDate = getUpcomingQuarterlyDueDates()[0];
   const catchUp = computeCatchUpStatus(netAmountToSetAside, amountSetAsideSoFar, nextDueDate);
 

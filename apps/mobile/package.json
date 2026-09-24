@@ -49,6 +49,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
+    "lint:ci": "eslint . --ext .ts,.tsx --max-warnings=0",
     "e2e": "playwright test --config e2e/playwright.config.ts",
     "e2e:install": "playwright install chromium"
   },

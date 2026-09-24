@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Animated, Platform, StyleSheet, useWindowDimensions, ViewStyle } from "react-native";
 import { SafeAreaView, Edge } from "react-native-safe-area-context";
 import { DemoBanner } from "../demo/DemoBanner";
@@ -41,8 +41,17 @@ export function Screen({
   // decides not to animate would stay invisible.
   const reduceMotion = useReduceMotion();
   const animateEntrance = shouldAnimateScreenEntrance(reduceMotion, IS_WEB);
-  const opacity = useRef(new Animated.Value(animateEntrance ? 0 : 1)).current;
-  const translateY = useRef(new Animated.Value(animateEntrance ? 8 : 0)).current;
+  /**
+   * ⚠️ `useState` with a lazy initializer, NOT `useRef(new Animated.Value(x)).current`.
+   *
+   * The ref idiom is what React Native's own docs show, and it is what was here — but reading
+   * `.current` during render is exactly what `react-hooks/refs` forbids, and it accounted for
+   * **9 of the repo's 13 lint errors from this one component**. `useState`'s initializer runs
+   * once and the value is stable across renders, so this is the same object with the same
+   * lifetime; nothing about the animation changes.
+   */
+  const [opacity] = useState(() => new Animated.Value(animateEntrance ? 0 : 1));
+  const [translateY] = useState(() => new Animated.Value(animateEntrance ? 8 : 0));
 
   useEffect(() => {
     if (!animateEntrance) {

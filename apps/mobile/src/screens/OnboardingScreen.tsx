@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Alert,
@@ -70,11 +70,15 @@ export function OnboardingScreen({ onComplete, onExploreDemo }: OnboardingScreen
 
   const availableCounties = getCountiesForState(state);
 
-  useEffect(() => {
-    // Reset the picked county whenever the state changes (or no longer has counties) so a
-    // stale county from a previously entered state can't silently linger in the profile.
+  // Reset the picked county whenever the state changes (or no longer has counties) so a
+  // stale county from a previously entered state can't silently linger in the profile.
+  // ⚠️ During render rather than in an effect — see EditTaxProfileScreen. Onboarding starts with
+  // no county at all, so unlike that screen this one can reset unconditionally on a state change.
+  const [lastState, setLastState] = useState(state);
+  if (state !== lastState) {
+    setLastState(state);
     setCounty(undefined);
-  }, [state]);
+  }
 
   function handleContinue() {
     if (displayName.trim().length === 0) {

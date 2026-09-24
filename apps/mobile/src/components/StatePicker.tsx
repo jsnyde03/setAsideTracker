@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { Chip } from "./Chip";
 import { TextField } from "./TextField";
-import { searchStates, stateName, US_STATES } from "../states";
+import { searchStates, US_STATES } from "../states";
 import { spacing, type, type Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
 

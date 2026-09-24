@@ -25,7 +25,11 @@ import { completeOnboarding, resetAppStorage, visible } from "./helpers";
  */
 
 /** Derived from `app/`, for the same reason the iPad sweep derives its list: a hand-built screen
- * list in this repo has come up short every time one was measured. */
+ * list in this repo has come up short every time one was measured.
+ *
+ * ⚠️ ROUTES ONLY. The four bottom sheets and the three AppGate-rendered screens (LockScreen,
+ * RecoveryScreen, onboarding) are not routes and are not measured here — see the same note in
+ * a11y-contrast.spec.ts. A green run means every route passes, not that the app does. */
 const ROUTES = readdirSync(join(__dirname, "..", "app"))
   .filter((f) => f.endsWith(".tsx") && !f.startsWith("_") && f !== "onboarding.tsx")
   .map((f) => (f === "index.tsx" ? "/" : `/${f.replace(/\.tsx$/, "")}`))

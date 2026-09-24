@@ -245,8 +245,14 @@ workflows:
         # Added 2026-08-07. This workflow previously ran ONLY Playwright, so the 101 tax-engine and
         # 144 mobile unit tests never ran on a push — they were reachable only via the expensive mac
         # maestro workflow. Cheap checks belong first: a type error shouldn't cost a chromium boot.
-        # (Lint is deliberately NOT here yet — it has a 14-item pre-existing ledger to clear first;
-        # it becomes a gate in v1.2 once that's green, so this pipeline never lands red.)
+        # ⚡ LINT IS NOW A GATE (1.2.11, 2026-09-23). It was held back while a pre-existing ledger
+        # sat at 15 — adding it then would have landed this pipeline red on every push, which is how
+        # a gate gets disabled and never re-enabled. The ledger is now ZERO, so it goes in.
+        # ⚠️ `lint:ci` rather than `lint`: --max-warnings=0, because the two warnings that were in
+        # that ledger were both DEAD IMPORTS, and one of them was worth checking before deleting
+        # (an unused `totalCustomExpenses` in scheduleC.ts could have meant custom categories were
+        # missing from the Schedule C export — they were not; that file aggregates them itself).
+        # Warnings that nobody must fix are warnings nobody reads.
         script: |
           cd services/tax-engine
           npm test
@@ -268,6 +274,7 @@ workflows:
 
           cd ../../apps/mobile
           npm run typecheck
+          npm run lint:ci
           npm test
 
       - name: Run web E2E (Playwright boots Expo web itself)

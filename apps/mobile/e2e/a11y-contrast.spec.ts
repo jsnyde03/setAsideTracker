@@ -21,6 +21,19 @@ import { completeOnboarding, resetAppStorage, visible } from "./helpers";
  * done. See the log.
  */
 
+/**
+ * ⚠️ **WHAT THIS DOES NOT COVER, said out loud so its silence is not mistaken for evidence.**
+ *
+ * It sweeps ROUTES. Seven user-visible surfaces are not routes and are therefore unmeasured here:
+ * the four bottom sheets (`BreakdownDetailSheet`, `ExpenseLineSheet`, `WeeklySetAsideSheet`,
+ * `ShareEarningsModal`) and the three screens `AppGate` renders directly (`LockScreen`,
+ * `RecoveryScreen`, onboarding). Each needs a path to open it rather than a URL to visit.
+ *
+ * ⛔ A green run here means "every route passes", not "the app passes". Filed to the backlog at
+ * 1.2.9.6 rather than quietly widened, because opening each sheet is real work and half-doing it
+ * would be worse than the honest gap.
+ */
+
 const ROUTES = readdirSync(join(__dirname, "..", "app"))
   .filter((f) => f.endsWith(".tsx") && !f.startsWith("_") && f !== "onboarding.tsx")
   .map((f) => (f === "index.tsx" ? "/" : `/${f.replace(/\.tsx$/, "")}`))
