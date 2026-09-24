@@ -11,6 +11,66 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.8.2 The overlay primitive — after-scan · 2026-09-24 · ✅ DONE
+
+**Shipped.** `src/tour.ts` — geometry and sequencing, **no react-native import**, so vitest can
+collect it (the constraint `motion.ts` and `layout.ts` already carry) · `src/components/
+TourOverlay.tsx` — the thin measuring/drawing half · `shouldAnimateTourStep` in `motion.ts`.
+**25 new unit tests; the suite goes 414 → 439.** Typecheck clean, lint 0.
+
+**The spotlight is four plain `View`s tiling the window around a hole.** No SVG mask, because
+`react-native-svg` is not installed and adding it — or reanimated, or gesture-handler — is a **new
+native module and a new build**, which the one reserved TestFlight build cannot absorb.
+
+⚡ **The tiling is asserted by AREA, not by eye.** Four dim rects plus the hole must account for
+every pixel exactly once: a gap is a bright seam across the dim and an overlap is a double-dimmed
+stripe, and at 0.55 alpha both are easy to miss on a laptop and obvious on a phone. **Planted a
+one-pixel seam** (`bottom + 1`) and both tiling tests went red while *"leaves the hole uncovered"*
+stayed green — the plants discriminate rather than all firing at once.
+
+**Three claims planted, one at a time, each seen to red the right tests and only those:**
+
+| claim | plant | red |
+|---|---|---|
+| the mask tiles exactly | bottom band shifted 1px | 2 tiling tests |
+| the card stays in the safe band | horizontal `clamp` removed | 2 edge-clamp tests |
+| an off-screen anchor is rejected | bottom-edge check dropped | below-the-fold + partly-visible |
+
+⚠️ **Restored by `Edit` and verified by `md5sum`/`diff` against a backup, not by `git checkout`** —
+the file was uncommitted, so a checkout would have thrown the work away with the plant
+(`verify-the-restore-not-just-the-plant`). Byte-identical, suite green after.
+
+**🔴 The finding: `a11yLabelShadowing.test.ts` is blind to ternary-rendered text, and it
+demonstrated this on brand-new code.** The two tour buttons were written one line apart with the
+same defect — a wrapper label swallowing the visible word:
+
+- `accessibilityLabel="Skip tour"` over `<Text>Skip</Text>` → **caught on the first run.**
+- `accessibilityLabel={last ? "Finish tour" : "Next tour step"}` over `{last ? "Done" : "Next"}` →
+  **passed.**
+
+**Mechanism, read rather than guessed:** `renderedText` accepts a string literal only when
+`ts.isJsxExpression(child.parent)`. In `{last ? "Done" : "Next"}` the literal's parent is the
+**ConditionalExpression**, so the subtree reports rendering no text at all and the wrapper is never
+a candidate. ⚡ **This is the same class as the unparseable-file hole the gate's own header
+records** — an AST check that answers "nothing to see" for precisely the shape it cannot read.
+⚠️ **Not fixed here, and the reason is false positives:** relaxing the parent test sweeps in `key=`,
+`style={{…}}` and every other attribute literal, so the fix is a JSX-children-only walk plus a
+re-review of whatever it surfaces. Filed to the backlog as its own item.
+
+**Both buttons were fixed the other direction anyway** — the labels are gone, so the accessible name
+**is** the visible text. That is what the Maestro lesson wants (full-match selectors cannot find the
+word a human reads when a wrapper label has replaced it) and it needed no allowlist entry.
+
+**⚙️ Carried to 1.2.8.3:** when an anchor cannot be brought on screen the tour shows the card with
+**no cut-out** rather than cutting a hole in empty space. Deliberate — a spotlight on the wrong
+region teaches something false — but it means a stop whose `onStepChange` fails to scroll
+**degrades silently to a plain card**. Three of the four stops start below the fold, so 1.2.8.3 must
+assert the **cut-out**, not merely that the copy appeared.
+
+**⚙️ `shouldAnimateTourStep` duplicates `shouldAnimateScreenEntrance` on purpose** rather than
+calling it: they agree by argument, not by coincidence, and sharing an implementation would quietly
+prevent the tour's rule from being argued separately if the entrance rule is ever revisited.
+
 ### 🔎 1.2.8 Guided onboarding tour — TASK before-scan · 2026-09-24 · 1.2.8.1 closed → [D29]
 
 **The pre-authored item was treated as a hypothesis and four of its premises did not hold.** Two of

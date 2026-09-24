@@ -42,3 +42,17 @@ export function shouldAnimateScreenEntrance(reduceMotion: boolean, isWeb: boolea
   if (isWeb) return false;
   return !reduceMotion;
 }
+
+/**
+ * Whether the guided tour's spotlight *slides* from one anchor to the next (1.2.8.2).
+ *
+ * ⚠️ **Same rule as the screen entrance, and deliberately its own function rather than a call to
+ * it.** They agree today by argument, not by coincidence: a cut-out travelling across the screen is
+ * pure movement with no informational content — under Reduce Motion it should simply appear at the
+ * next anchor. If the screen-entrance rule is ever revisited, this one must be argued separately
+ * rather than dragged along, which sharing an implementation would quietly prevent.
+ */
+export function shouldAnimateTourStep(reduceMotion: boolean, isWeb: boolean): boolean {
+  if (isWeb) return false;
+  return !reduceMotion;
+}

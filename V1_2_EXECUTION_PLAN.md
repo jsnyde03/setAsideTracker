@@ -34,8 +34,9 @@
 >
 > ✅ **1.2.1–1.2.7, 1.2.9–1.2.11, 1.2.14–1.2.17 CLOSED.** ▶ **ACTIVE: 1.2.8 — the guided onboarding
 > tour.** ✅ **1.2.8.1 closed 2026-09-24 → [D29]:** the tour **rides sample data** (fires on first
-> demo entry, replays from Settings) and is **dashboard-only, four stops**. ▶ **Next is 1.2.8.2, the
-> overlay primitive.** ⛔ **Its before-scan killed two pre-authored premises:** there is **no
+> demo entry, replays from Settings) and is **dashboard-only, four stops**. ✅ **1.2.8.2 done** —
+> `tour.ts` (pure geometry, 25 tests, 3 planted claims) + `TourOverlay.tsx`, **no new native dep**.
+> ▶ **Next is 1.2.8.3, the four stops.** ⛔ **Its before-scan killed two pre-authored premises:** there is **no
 > `GestureDetector` anywhere in this app** (the row repeating that lesson is now a rule against
 > *introducing* one), and **the contrast gate sweeps routes only**, so "the tour passes it" was
 > unsatisfiable — 1.2.8.5 widens the gate rather than inheriting its silence. **1.2.12** still needs
@@ -50,7 +51,9 @@
 > answer ([D23], which is also how the export question gets answered) · 1.2.5's mileage stack ·
 > **every iPad layout** · 1.2.7's hardware-keyboard and screenshot rows. Agenda →
 > [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
-> Health: **400** mobile unit · **102** engine · **106/106** Playwright _(66 chromium + 20 + 20 iPad)_ ·
+> Health: **439** mobile unit _(measured 2026-09-24; the line said 400, the closed 1.2.17 row said
+> 411 and CLAUDE.md said 414 — three stale counts, so **re-measure rather than copy this**)_ ·
+> **102** engine · **106/106** Playwright _(66 chromium + 20 + 20 iPad)_ ·
 > typecheck clean · both tax-config gates green · lint 15 _(ledger says 14 — drift, pre-existing,
 > re-count at 1.2.11)_.
 >
@@ -152,7 +155,7 @@ by not being looked at, which is the thing this project keeps catching.
 | # | sub-step | scan |
 |---|---|---|
 | **1.2.8.1** | ✅ **[DECISION] DONE 2026-09-24 → [D29].** Shape, trigger and reach settled; four premises corrected. | ✅ |
-| **1.2.8.2** | **The overlay primitive** — reusable, built to move to the other two finance apps. **Four-`View` dimming mask + `measureInWindow`; NO new native dep** (`react-native-svg` is absent; reanimated/gesture-handler are undeclared optional peers of expo-router, and reanimated 4's `react-native-worklets` is missing). Mounts at `src/components/Screen.tsx`. ⛔ **Do not introduce `react-native-gesture-handler` for this** — a `GestureDetector` swallows taps on device, which is why the sibling app's tour tooltips went dead. | ⬜ |
+| **1.2.8.2** | ✅ **DONE 2026-09-24.** `src/tour.ts` (pure geometry, **25 new unit tests**, 3 planted claims each seen to red) + `src/components/TourOverlay.tsx` + `shouldAnimateTourStep`. Four-`View` mask, **no new native dep**. ⚡ **The a11y shadowing gate caught the new code on its first run** — and the fix exposed that the gate is **blind to ternary-rendered text** (→ backlog). 439 unit · typecheck · lint 0. | ✅ |
 | **1.2.8.3** | **The four stops, over demo data:** set-aside hero → weekly row → Log Earnings → Settings gear. ⚠️ **Three of the four are below the fold** (`Log Earnings` is `DashboardScreen.tsx:558`), so the primitive must scroll-then-measure, not measure-then-hope. | ⬜ |
 | **1.2.8.4** | **Trigger + flag:** fires on **first demo entry** (offered at onboarding's last step, replayed from Settings' Sample-data row). ⚠️ **The flag cannot live in `AppSettings`** — the demo store is a fresh `Map`, so entering demo resets it and the tour replays every time. Needs a real-store one-shot; `gigTaxTracker:reviewRequested` (`src/appReview.ts:15`) is the precedent. Skip must stay skipped. | ⬜ |
 | **1.2.8.5** | **Accessibility — and the gate has to be WIDENED first, or this row means nothing.** Honour Reduce Motion (`useReduceMotion`, and ⚠️ it *starts* `false` and self-corrects — `Screen.tsx:56-64` has the workaround) · reachable by VoiceOver, `accessibilityViewIsModal` like the four sheets · ⚠️ no focus trap. **Teach `a11y-contrast.spec.ts` to open the tour** (one opener, via the replay entry point) so it is measured rather than assumed. | ⬜ |
@@ -404,6 +407,24 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 5. **Tax-filing affiliate applications** — must be in by ~November or v1.4's affiliate half misses its window.
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
+
+### From 1.2.8.2's after-scan _(2026-09-24)_
+
+- 🔴 **`a11yLabelShadowing.test.ts` IS BLIND TO TERNARY-RENDERED TEXT, and it proved it on new code.**
+  `renderedText` counts a string literal only when `ts.isJsxExpression(child.parent)` — so in
+  `{last ? "Done" : "Next"}` the literal's parent is the **ConditionalExpression** and the whole
+  subtree reads as rendering no text. The tour's two buttons were written one line apart with the
+  same defect; **the static one was caught on the first run and the ternary one was not.** ⚡ **Same
+  class as the unparseable-file hole the gate's own header records** — an AST check that reports
+  "nothing to see" for the shape it cannot read. ⚠️ **The fix is not a one-liner:** relaxing the
+  parent check sweeps in `key=`, `style={{…}}` and every other attribute literal, so it needs a
+  JSX-children-only walk plus a re-review of whatever new sites it surfaces. **Its own item.**
+  _(Both tour buttons were fixed the other way — the label was dropped so the accessible name IS the
+  visible text, which is what the Maestro full-match lesson wants anyway.)_
+- ⚙️ **The tour centres its card rather than cutting a hole when an anchor cannot be brought on
+  screen.** Deliberate — a spotlight on the wrong region teaches something false — but it means
+  **1.2.8.3's `onStepChange` must genuinely scroll**, or three of the four stops silently degrade to
+  plain cards and nothing fails. **Assert the cut-out, not just the copy.**
 
 ### From 1.2.8.1's before-scan _(2026-09-24)_
 
