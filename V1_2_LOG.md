@@ -11,6 +11,51 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.18.1 Widening the a11y sweeps — after-scan · 2026-09-24 · ✅ DONE
+
+**Shipped.** The contrast gate now measures **onboarding** and **three of the four bottom sheets**
+(`WeeklySetAsideSheet`, `BreakdownDetailSheet`, `ShareEarningsModal`) on top of every route and the
+tour. Onboarding is measured **first**, because it stops existing once you leave it — and its theme
+has to come from `emulateMedia`, since Settings is on the other side of it.
+
+**🔴 It found a LIVE defect on its first working run.** `DemoBanner` rendered `colors.primary`
+(#3B82F6) on `primarySoft` (#1E2A44) at **3.88:1** in dark mode — below AA, on **all thirteen
+screens** of any demo session. ⚡ **The reason it survived 1.2.9.3's sweep is the finding, not the
+ratio: the route sweep runs as a NON-demo user, so the one component guaranteed to appear on every
+screen appeared in none of the samples.** The fix reuses `primaryDark`, which 1.2.9.3 had already
+solved for exactly this pairing — lighter than `primary` in dark, darker in light.
+
+**🔴 And a defect in the gate itself, found by refusing to accept a confusing result.** After the
+banner fix, nine failures remained, all `rgb(59,130,246)` at 18px with **apparently empty text**.
+⛔ **Dumped the nodes rather than theorising**: `fontFamily: "ionicons"`, content a **private-use
+codepoint**. They were **icons**, being held to the **4.5:1 TEXT threshold**. WCAG governs non-text
+content at **3:1** (SC 1.4.11), which they pass at 3.88. ⚠️ **Measured at 3:1 rather than excluded**
+— skipping them would have silently dropped every icon in the app out of coverage, which is the
+same mistake one level down. The `gradient` exclusion above it is the precedent for arguing such a
+carve-out rather than just taking it.
+
+**⚙️ Two instrument problems fixed along the way, both self-inflicted and both legible only from the
+call log:**
+- The tour sweep **left the tour open**, so its dim bands intercepted the next click and the test
+  **timed out** rather than failing with anything readable.
+- Sheets were dismissed by clicking their backdrop's **centre** — which is underneath the sheet.
+  Playwright retried until timeout. Now dismissed at `(5, 5)`, a corner outside any bottom sheet.
+
+**⚠️ Attribution was wrong before it was right.** `MEASURE` walks the whole document, so the banner
+failures were first reported *against* two sheets they had nothing to do with. Labels now read
+**"with X open"** — the finding was real, but the label would have sent the next reader to the
+wrong file.
+
+**⛔ Three surfaces remain, each with a stated reason in the spec file:** `ExpenseLineSheet` (simply
+not done — the cheapest), `LockScreen` and `RecoveryScreen` (both need contrived state and neither
+is reachable by clicking; **they may be honest device rows**, since a lock screen without a
+biometric prompt is half a screen).
+
+**Planted:** a broken opener — one that clicks something harmless and never opens the sheet — reds
+with *"the surface never opened — anything measured now is the screen behind it"*. That is the whole
+point of asserting `opened` before measuring: a surface that fails to open measures the screen
+behind it and reports a pass.
+
 ### 🔎 1.2.8.6 Verify — after-scan · 2026-09-24 · ✅ DONE
 
 **⚡ The tour ran on real hardware for the first time, and it worked.** `demo-mode.yaml` **PASSED**

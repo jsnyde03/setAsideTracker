@@ -79,7 +79,20 @@ function createStyles(colors: Colors) {
     },
     // Deliberately not `danger`: nothing is wrong, and a red bar on every screen would read as an
     // error state for what is a perfectly healthy way to use the app.
-    text: { flex: 1, fontSize: 13, fontWeight: "600", color: colors.primary },
-    action: { fontSize: 13, fontWeight: "700", color: colors.primary, textDecorationLine: "underline" },
+    //
+    // ⚠️ **`primaryDark`, not `primary` — this failed AA in dark mode on every screen of a demo.**
+    // `primary` (#3B82F6) on `primarySoft` (#1E2A44) is **3.88:1**, and 1.2.9.3 already solved that
+    // exact pairing: `primaryDark` is the token for text sitting on `primarySoft`, which is why it
+    // is *lighter* than `primary` in the dark theme and darker in the light one.
+    // ⛔ **It went unmeasured for so long because the contrast sweep runs as a NON-DEMO user**, so
+    // the one component that renders on all thirteen screens was on none of them. Found at 1.2.18.1,
+    // the moment the gate was pointed at a demo session.
+    text: { flex: 1, fontSize: 13, fontWeight: "600", color: colors.primaryDark },
+    action: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: colors.primaryDark,
+      textDecorationLine: "underline",
+    },
   });
 }
