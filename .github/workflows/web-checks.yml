@@ -1,0 +1,110 @@
+# SetAsideTracker — the cheap gates, ported from codemagic.yaml's `web-e2e` at 1.2.17.
+#
+# ⚡ **Why it moved.** Every gate this repo owns except the native suite lived in a Codemagic
+# workflow that has **never once reported to GitHub** — measured at 1.2.11, not assumed:
+# `gh api .../commits/<sha>/status` returns 0 statuses and 0 check-runs on every commit sampled
+# across four months. Whether it builds is unknown from here; what is certain is that nobody could
+# ever see its verdict. ⛔ **A gate whose result is invisible is in the same position as a
+# remembered green** — and this repo has already paid for that once, with three sessions recording
+# a gate green while CI failed every push.
+#
+# This is [D27]'s argument a second time: GitHub Actions is free on Linux for a public repo, far
+# cheaper than the macOS runners already in use here, and its output is readable from the commit.
+#
+# ⛔ **The comments below were bought with failures. Do not "tidy" one away without reading why.**
+name: Web checks (typecheck · lint · unit · e2e)
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    # Playwright's 122 tests across three projects take ~9 minutes locally; this is headroom, not
+    # an expectation.
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: What commit is this
+        # ⛔ Same rule as the Maestro workflow, and it cost two Codemagic cycles there: a run of old
+        # code brings its own old gates, so "the fix didn't work" is indistinguishable from "the fix
+        # was never in the tree".
+        run: echo "=== Checking commit $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s) ==="
+
+      - uses: actions/setup-node@v4
+        with:
+          # Pinned to match the Maestro workflow and codemagic.yaml.
+          node-version: 22
+          cache: npm
+
+      - name: Install root workspace dependencies
+        # ⚠️ This is an npm WORKSPACE — everything hoists to the repo root and apps/mobile/node_modules
+        # is empty. Install from the root or nothing resolves.
+        #
+        # ⚠️ `npm install`, not `npm ci`: npm/cli#4828 can leave a platform-specific optional
+        # dependency (here @rollup/rollup-*, a transitive dep of vitest) listed in the lockfile but
+        # not installed for the running architecture. Re-resolving avoids it.
+        run: npm install --prefer-offline --no-audit --no-fund
+
+      - name: Build the tax-engine package
+        # apps/mobile consumes @gig-tax-tracker/tax-engine via its compiled dist/, so this must run
+        # before anything that imports it.
+        run: npm run build --workspace services/tax-engine
+
+      - name: Typecheck, lint and unit tests
+        # Cheap checks first: a type error should not cost a chromium boot.
+        #
+        # ⚡ LINT IS A GATE as of 1.2.11. It was held back for months while a pre-existing ledger sat
+        # at 15 — adding it then would have landed this pipeline red on every push, which is exactly
+        # how a gate gets disabled and never re-enabled. The ledger is zero, so it is in.
+        # ⚠️ `lint:ci` rather than `lint`, and that is measured: with a warning planted,
+        # `npm run lint` EXITS 0 while `lint:ci` (--max-warnings=0) exits 1. Wiring the default
+        # script in would have built a gate that tolerates a ledger regrowing in warnings forever.
+        run: |
+          npm run typecheck --workspace apps/mobile
+          npm run lint:ci --workspace apps/mobile
+          npm test --workspace apps/mobile
+
+      - name: Tax-config audits
+        # ⛔ Both EXIT NON-ZERO, which is the only difference between a gate and a report nobody
+        # reads. Each exists because a real defect got through:
+        #
+        #   audit:dependents — GA/SC/MN modelled dependent EXEMPTIONS as dollar-for-dollar tax
+        #     CREDITS, telling a $40k Georgia filer with two dependents they owed $0 state tax
+        #     instead of ~$891. Fails on any per-dependent credit >= $1,000; no real one is close.
+        #
+        #   audit:staleness — Georgia raised that exemption $4,000 -> $5,000 effective TY2026 and
+        #     nothing noticed; a web search found it during an unrelated audit. Fails when a live
+        #     year's figures have not been re-checked in 6 months, or when the current calendar year
+        #     has no config and the engine would silently fall back to another year's brackets.
+        run: |
+          npm test --workspace services/tax-engine
+          npm run audit --workspace services/tax-engine
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/mobile
+
+      - name: Web E2E (Playwright boots Expo web itself)
+        # playwright.config.ts's webServer block starts `npm run web` and waits for :8081, so no
+        # separate server step is needed. CI=true makes Expo non-interactive and turns on retries.
+        #
+        # ⚠️ Three projects run here — chromium plus two iPad viewports — and the a11y gates added
+        # at 1.2.9 are chromium-only by design (the iPad projects match `ipad-*.spec.ts`).
+        run: CI=true npm run e2e
+        working-directory: apps/mobile
+
+      - name: Upload the Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/mobile/playwright-report/
+            apps/mobile/e2e/.results/
+          retention-days: 7
