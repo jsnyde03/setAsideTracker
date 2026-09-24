@@ -25,11 +25,15 @@ import { completeOnboarding, resetAppStorage, visible } from "./helpers";
  * ⚠️ **WHAT THIS DOES NOT COVER, said out loud so its silence is not mistaken for evidence.**
  *
  * It sweeps ROUTES, **plus the guided tour** (1.2.8.5 — see the sweep at the end of each test).
- * **Six** user-visible surfaces remain unmeasured: the four bottom sheets (`BreakdownDetailSheet`,
- * `ExpenseLineSheet`, `WeeklySetAsideSheet`, `ShareEarningsModal`) and the three screens `AppGate`
- * renders directly (`LockScreen`, `RecoveryScreen`, onboarding) — minus onboarding, which
- * `completeOnboarding` now walks through anyway but is not *measured*. Each needs a path to open it
- * rather than a URL to visit.
+ * **SEVEN user-visible surfaces remain unmeasured**: the four bottom sheets
+ * (`BreakdownDetailSheet`, `ExpenseLineSheet`, `WeeklySetAsideSheet`, `ShareEarningsModal`) and the
+ * three screens `AppGate` renders directly (`LockScreen`, `RecoveryScreen`, onboarding). Each needs
+ * a path to open it rather than a URL to visit.
+ *
+ * ⚠️ **The tour did not reduce that seven — it was an EIGHTH surface, and it is the one now
+ * covered.** An earlier version of this comment said "six... minus onboarding, which
+ * `completeOnboarding` walks through anyway", which is confused: walking a screen is not measuring
+ * it. **Closing the remaining seven is 1.2.18.1.**
  *
  * ⛔ A green run means "every route and the tour pass", not "the app passes". The rest stay filed at
  * 1.2.9.6 rather than quietly widened, because opening each sheet is real work and half-doing it
@@ -37,8 +41,8 @@ import { completeOnboarding, resetAppStorage, visible } from "./helpers";
  *
  * ⚡ **The tour was added here because the alternative was a row that could not fail.** 1.2.8.5
  * required the tour to "pass the contrast gate in both themes" — and an overlay is not a route, so
- * it would have passed by never being looked at. The opener below is the pattern the remaining six
- * need, and it cost four lines.
+ * it would have passed by never being looked at. The opener below is the pattern the remaining
+ * seven need, and it cost four lines.
  */
 
 const ROUTES = readdirSync(join(__dirname, "..", "app"))

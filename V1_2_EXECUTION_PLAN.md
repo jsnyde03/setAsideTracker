@@ -150,7 +150,7 @@ read.** 1.2.8.5 already built the opener pattern the first one needs.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.18.1** | **Widen the a11y sweeps to the 5 remaining non-route surfaces** — the four sheets plus `LockScreen`/`RecoveryScreen`. Each needs a path to open it, which is what 1.2.8.5's tour opener demonstrated in four lines. ⛔ **Plant each opener**: a surface that fails to open measures nothing and passes. | ⬜ |
+| **1.2.18.1** | **Widen the a11y sweeps to the 7 remaining non-route surfaces** — the four sheets, `LockScreen`, `RecoveryScreen` and onboarding. ⚠️ **Seven, not five: the tour was an EIGHTH surface, not one of the seven**, so covering it reduced nothing. The last two need contrived state (app lock on; unreadable data) and may be honest device rows instead — decide per surface, and say which in the file. Each needs a path to open it, which is what 1.2.8.5's tour opener demonstrated in four lines. ⛔ **Plant each opener**: a surface that fails to open measures nothing and passes. | ⬜ |
 | **1.2.18.2** | **`TextField`'s label/hint → `aria-hidden`.** `accessibilityElementsHidden` + `importantForAccessibility` are **dropped by react-native-web**, so the intent is unverifiable here. ⚠️ **It sits behind most of the suite's `getByLabel` selectors** — full Playwright run required, not a spot check. | ⬜ |
 | **1.2.18.3** | **`a11yLabelShadowing.test.ts` cannot see ternary-rendered text** — `renderedText` requires the literal's DIRECT parent to be the `JsxExpression`. ⚠️ **The fix is not a one-liner**: relaxing it sweeps in `key=`, `style={{…}}` and every attribute literal, so it needs a JSX-children-only walk **plus a re-review of whatever new sites it surfaces**. | ⬜ |
 | **1.2.18.4** | **Sweep the Maestro "did this screen open" probes.** Three flows still name mid-screen markers that any new row can push below the fold — the defect 1.2.8.6 hit. One selector each. | ⬜ |
@@ -458,10 +458,11 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
   as a drive-by:** `TextField` is behind most of the suite's `getByLabel` selectors, and changing
   what is exposed to the accessibility tree could move them. **Its own item, with the suite run
   against it.**
-- ⚙️ **Five of the seven non-route surfaces remain unmeasured** by the contrast gate — the four
-  sheets plus `LockScreen`/`RecoveryScreen`. The tour's opener is now the worked pattern and cost
-  four lines; the remaining ones are mechanical. _(Was six; onboarding is walked by
-  `completeOnboarding` but still not measured.)_ **Pick up right after 1.2.8.**
+- ⚙️ **All SEVEN non-route surfaces remain unmeasured** by the contrast gate — four sheets,
+  `LockScreen`, `RecoveryScreen`, onboarding. ⚠️ **The tour was an eighth surface, not one of the
+  seven**, so covering it reduced the backlog by zero; two earlier drafts of this line said "five"
+  and "six" and both were wrong. The tour's opener is the worked pattern and cost four lines.
+  **This is 1.2.18.1.**
 
 ### From 1.2.8.4's after-scan _(2026-09-24)_
 
