@@ -32,10 +32,10 @@
 > would have gone green over a "Clear all data" that cleared nothing, and one guarded Apple
 > **Guideline 3.1.2**. Full arc + every mechanism → [V1_2_LOG.md](V1_2_LOG.md).
 >
-> ✅ **1.2.1–1.2.7, 1.2.9–1.2.11, 1.2.14–1.2.16 CLOSED.** ▶ **ACTIVE: 1.2.17 — make the cheap gates
-> visible**, decomposed below. 🔴 **Measured at 1.2.11: the commit API returns 0 statuses and 0
-> check-runs** — every gate but Maestro reports nowhere anyone can see. **1.2.8 still waits on a
-> design pass**, which is Jason's to shape.
+> ✅ **1.2.1–1.2.7, 1.2.9–1.2.11, 1.2.14–1.2.17 CLOSED.** ⏸ **NO ITEM IS IN ACTIVE BUILD, and that
+> is accurate rather than idle:** everything buildable without a decision is done. **1.2.8 needs a
+> design pass** and **1.2.12 needs the reserved TestFlight build authorized** — both Jason's.
+> **1.2.13**'s remaining work happens at release, not now.
 > ⚡ **A Maestro run is now ~13 min, not ~40** (1.2.15) · **1.2.16 closed negative** — the keypad was
 > never an app bug · **the suite has been 12/12 four runs running.**
 > 🔴 **1.2.13 is a SHIP BLOCKER and is not finished:** Pages now serves this repo's `docs/`, but it
@@ -132,28 +132,19 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### 👁 **1.2.17 — Make the cheap gates visible** · **ACTIVE** _(2026-09-23)_
+### ⏸ **No item is in active BUILD — and both candidates need Jason** _(2026-09-23)_
 
-**Why it is next:** 1.2.11's after-scan measured it — `gh api .../commits/<sha>/status` returns
-**0 statuses and 0 check-runs**, so the only CI anyone can observe is the GitHub Actions `maestro`
-job. **Typecheck, 411 unit tests, both tax-config audits, 122 Playwright tests and the brand-new
-lint gate** all live in a Codemagic workflow whose result is invisible from the repo. ⛔ **That is
-not proof it never runs — it is proof nobody can tell**, which leaves every gate built this version
-in the same position as a remembered green.
+⛔ **This is the honest state, not an idle queue.** Everything buildable without a decision is done.
+The two remaining workstreams are each blocked on something only Jason can give:
 
-⚡ **It is [D27]'s argument a second time:** GitHub Actions is free on Linux for a public repo,
-far cheaper than the macOS runners already in use there, and its output is readable.
+| blocked item | what it needs |
+|---|---|
+| **1.2.8 — guided onboarding tour** | **A design pass.** It is feature/UX work Jason shapes, and the standing rule is to reach design agreement *before* code. |
+| **1.2.12 — device QA** | **Authorization to spend the one reserved TestFlight build**, and a device in hand. 27 checklist rows, native-only, every one unreachable from here. |
 
-| # | sub-step | scan |
-|---|---|---|
-| **1.2.17.1** | **Confirm the premise before acting on it** — check whether Codemagic is building at all and simply not reporting, or not building. The fix differs: one is a missing status hook, the other a dead pipeline. | ⬜ |
-| **1.2.17.2** | **Port `web-e2e` to `.github/workflows/`** — typecheck · lint:ci · tax-engine tests · both audits · unit · Playwright. Carry the comments, which are the asset. | ⬜ |
-| **1.2.17.3** | **Prove each gate can FAIL from CI**, not just pass: plant one violation per gate and watch the run red. ⛔ A pipeline that has only ever been green is indistinguishable from one that cannot fail. | ⬜ |
-| **1.2.17.4** | **Retire the Codemagic copy** once green, so there is one home — exactly as 1.2.14.2 did for Maestro. | ⬜ |
-| **1.2.17.5** | **Verify + whole-item after-scan.** | ⬜ |
-
-**Exit line:** every gate this version added runs on every push, its result is visible on the commit,
-and each one has been seen to fail at least once.
+**1.2.13** is a ship blocker whose remaining work happens **at release**: Pages serves `master`, so
+merging v1.2 publishes the location disclosure, and `check-published-policy.mjs` fails the
+submission if it is forgotten. Nothing to build now.
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
 
@@ -190,6 +181,14 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.17 — Make the cheap gates visible ✅ DONE 2026-09-23, 5/5.** Typecheck, lint, 411 mobile
+  unit, 102 engine, both tax-config audits and 122 Playwright tests now run on every push in
+  `.github/workflows/web-checks.yml` and **report to the commit** — where before, Codemagic had
+  **never** reported at all (0 statuses / 0 check-runs across four months). ⛔ **Every gate was
+  planted and seen to FAIL from CI**, one at a time; the run also printed "122 passed", ruling out
+  the vacuous case by evidence. Codemagic's copy retired after a lesson-by-lesson carry-check caught
+  one omission (the Playwright browser cache). _Detail → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.11 — Lint ledger → CI gate ✅ DONE 2026-09-23, 4/4. 15 → 0, and the gate can fail.**
   Nine of thirteen errors were **one idiom in one component** (`useRef(new Animated.Value()).current`);

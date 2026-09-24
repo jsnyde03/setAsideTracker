@@ -11,6 +11,39 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.17 The gates become visible, and every one is seen to fail · 2026-09-23 · ✅ DONE 5/5
+
+**The premise was confirmed before it was acted on.** Codemagic has **never** reported to GitHub on
+this repo — 0 statuses and 0 check-runs on every commit sampled across four months, and no repo
+webhook. Whether it builds is still unknown from here; what is certain is that its verdict has never
+been visible, which left every gate this version added where a remembered green sits.
+
+**All five gates planted individually and watched red from CI**, on a throwaway branch so `v1.2`
+never carried a plant:
+
+| gate | plant | CI result |
+|---|---|---|
+| typecheck | `boolean` → `number` | TS2345 |
+| `lint:ci` | one unused import | "too many warnings (maximum: 0)" |
+| unit | motion rule ignores Reduce Motion | 1 failed \| 410 passed |
+| audits | per-dependent credit $1500 | FAILED AT: Tax-config audits |
+| e2e | light `inkFaint` reverted | contrast — **Light only; Dark stayed green** |
+
+⛔ **The vacuous case is ruled out by evidence:** the run printed **"122 passed"**, so the e2e gate
+demonstrably runs the real suite rather than zero tests.
+
+⚠️ **The second plant taught its own lesson.** I "restored" the first with `git checkout <file>` and
+the next run failed with the **same** typecheck errors — because `checkout` restores from HEAD, and
+HEAD was the commit containing the plant. **Reading the log rather than the conclusion is what
+caught it**; a restore has to come from the branch point.
+
+⚡ **And the carry-check earned itself again:** of every lesson in the Codemagic comments, exactly
+one was missing from the port — the `~/.cache/ms-playwright` browser cache, whose loss would have
+had every run re-download chromium. Carried across, with the note that `--with-deps` must still run
+on a cache hit because the binary is restored and the OS deps are not.
+
+`ios-testflight` is now the only Codemagic workflow, which is what [D27] intended.
+
 ### 🔎 1.2.11 Lint ledger 15 → 0, and a gate that can fail · 2026-09-23
 
 **The re-count was step one, and it mattered:** the ledger said 14, the plan's health line said 15,
