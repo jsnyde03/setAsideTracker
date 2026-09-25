@@ -455,6 +455,19 @@ Freedom v1's widget template (Expo 56 + Codemagic + widget target, Team `CVCY985
 
 ## 🗄 Deferred backlog — surfaced during v1.2, filed immediately
 
+### From 1.2.20's after-scan _(2026-09-25)_
+
+- ⚙️ **Two vocabularies for one concept: the weekly sheet says "estimated" in words, the entry row
+  uses `~`.** Both are honest and neither is wrong, but they describe the same [D14] condition
+  differently on two surfaces a user sees minutes apart. **Harmless today; worth one decision before
+  a third surface invents a third spelling.**
+- 🔴 **The reviewed-label allowlist was systematically generous about rows whose content is
+  NUMBERS.** Two lossy entries found in two days — the tax-profile row (1.2.18.3) and the entry row
+  (1.2.20.3) — and both hid figures while keeping the words. ⚡ **The reviewer's eye goes to text**,
+  so a row whose information is money reads as "fine, the label says what it is". **Worth one sweep
+  of the remaining reviewed entries against that specific question**, rather than waiting for the
+  next feature to land on one.
+
 ### From 1.2.8.6's after-scan _(2026-09-24)_
 
 - 🔴 **ADDING A SETTINGS ROW IS A TWO-SUITE CHANGE — and the suite that broke is the one I did not

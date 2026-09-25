@@ -122,3 +122,38 @@ describe("decodeStoredValue", () => {
     }
   });
 });
+
+/**
+ * A scalar is legal JSON and is never something this app wrote.
+ *
+ * ⛔ **These are the DETERMINISTIC half of the wrong-key story.** The 100-key loop above is
+ * probabilistic by nature — it depends on `encryptText`'s random salt producing garbage that
+ * happens to parse — and it was **measured failing 1 run in 20** before this rule existed. A
+ * once-in-twenty guard is not a guard for a rule that should hold every time, so the rule is also
+ * asserted head-on, with the right key and no luck involved.
+ */
+describe("a decoded scalar is not this app's data", () => {
+  for (const scalar of ["5", "-1", "0", '"text"', "true", "null"]) {
+    it(`rejects ${scalar}, which a wrong key can produce by chance`, () => {
+      // Encrypted with the CORRECT key: this isolates the shape rule from any decryption failure,
+      // so a pass cannot be coming from the empty-string or invalid-UTF-8 branches above.
+      const stored = encryptText(scalar, KEY);
+      expect(decryptText(stored, KEY)).toBe(scalar); // the decrypt genuinely succeeded
+      let thrown: unknown;
+      try {
+        decodeStoredValue(STORAGE_KEY, stored, KEY);
+      } catch (error) {
+        thrown = error;
+      }
+      expect(isUnreadableDataError(thrown), `${scalar} was accepted as stored data`).toBe(true);
+      expect((thrown as UnreadableDataError).storageKey).toBe(STORAGE_KEY);
+    });
+  }
+
+  it("still accepts the shapes this app actually writes", () => {
+    for (const value of [{}, [], { appLockEnabled: true }, [{ id: "a" }]]) {
+      const stored = encryptText(JSON.stringify(value), KEY);
+      expect(decodeStoredValue(STORAGE_KEY, stored, KEY)).toEqual(value);
+    }
+  });
+});

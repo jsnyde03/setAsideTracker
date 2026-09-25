@@ -11,6 +11,49 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.20 Set-aside on each recent-entry row — after-scan · 2026-09-25 · ✅ DONE
+
+**⚡ The before-scan turned a feature request into a display change.** The number already existed:
+`entrySetAside()` applies the entry's **frozen rate** captured at log time ([D14]), the weekly sheet
+already sums exactly it, and the series telescopes to the year total. ⛔ **The temptation worth
+naming is deriving a fresh figure here** — a per-entry share of the year's tax, say. It would have
+looked right and disagreed with the weekly sheet, and **a user who adds the rows up and compares
+them to the week is doing the obvious thing.** Reuse was the whole design.
+
+**🔴 The feature surfaced a pre-existing accessibility loss it would have widened.** The row's
+wrapper label replaces every word inside it, so a VoiceOver user heard *"Edit DoorDash entry from
+2026-09-20"* and **no money at all** — not the gross, not the expenses. It sat in the reviewed
+allowlist, and **that review was wrong**, exactly like the tax-profile row at 1.2.18.3. ⚡ **Two
+lossy reviews found in two days says the allowlist's first pass was systematically generous about
+rows whose content is numbers** — the reviewer's eye goes to the words.
+
+**⚙️ The shadowing gate fired BOTH halves for the first time.** Changing the label made the new one
+unreviewed *and* the old entry stale, and its second test — *"no entry for a site that no longer
+exists"* — caught the orphan. That half had never actually caught anything before; it does now, and
+it means the fixture cannot silently accumulate entries for code that is gone.
+
+**⚠️ A performance trap avoided by noticing, not by measuring.** `fallbackSetAsideRate` runs a full
+`computeTaxEstimate` over the year. Called from `renderItem` it would be **one tax estimate per
+visible entry, per render**. It is computed once in the component body.
+
+**Planted four ways, and each reds only what it should:** a disagreeing amount (`× 1.1`) reds the
+three agreement tests and leaves the estimate/omission ones green · a hard-coded `estimated: false`
+reds only the [D14] test · hiding the line reds only the presence spec · reverting the label reds
+only the accessible-name spec.
+
+⛔ **Agreement is proven in the UNIT test, not the browser.** The e2e deliberately does not re-assert
+arithmetic: a browser version would be a weaker restatement of a stronger test, and **the weak one
+is what quietly starts passing over a wrong figure.** The e2e proves presence, the omission rule,
+and the one thing no unit test can see — that the accessible name carries the money it replaces.
+
+**✅ Why no selector broke, recorded because the 1.2.9.1 lesson says a label change needs both
+suites:** every Maestro entry-row selector ends in `.*`, so a *longer* label still full-matches, and
+**no flow matches on a currency string at all**. Playwright's `getByLabel` is a substring. Checked
+by inspection and confirmed by 140/140.
+
+**⚙️ Filed:** the weekly sheet spells out *"estimated"* while the row uses `~`. Two vocabularies for
+one concept — harmless today, worth one decision before another surface invents a third.
+
 ### 🎉 1.2.12.1 — THE RESERVED BUILD SUCCEEDED · 2026-09-25
 
 **v1.2 has a signed iOS binary, and the single biggest unknown in the version is retired.**
