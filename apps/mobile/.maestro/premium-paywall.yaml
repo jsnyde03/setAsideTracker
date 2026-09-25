@@ -70,6 +70,15 @@ name: Premium Paywall (smoke)
     direction: UP
 - waitForAnimationToEnd
 - tapOn: "Settings"
+# ⚠️ Scrolled to rather than asserted where it happens to sit. This one fails LOUDLY if the row is
+# pushed below the fold — it is tapped on the next line — so it was never the dangerous kind. But
+# it is one added Settings row away from breaking for a reason that has nothing to do with the
+# paywall, which is what happened to `clear-all-data.yaml` at 1.2.8.6.
+- scrollUntilVisible:
+    element:
+      text: "Upgrade to Premium"
+    direction: DOWN
+- waitForAnimationToEnd
 - assertVisible: "Upgrade to Premium"
 - tapOn: "Upgrade to Premium"
 - assertVisible: "SetAside Premium"

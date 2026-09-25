@@ -130,6 +130,19 @@ name: Demo mode (enter, preview premium, exit)
     direction: UP
 - waitForAnimationToEnd
 - tapOn: "Settings"
+# ⛔ **PIN THE SCREEN BEFORE ASSERTING AN ABSENCE.** This line carries [D5] — a demo previews
+# premium without claiming the entitlement — and on its own it proved nothing of the sort: an
+# `assertNotVisible` passes for free whenever the row it looks for is merely **off screen**, and one
+# Settings row added above it is all that takes. 1.2.8.4 added one. ⚡ So assert the honest state
+# BY NAME first: "Upgrade to Premium" is what an un-entitled account shows in that exact slot, so
+# its presence puts us demonstrably in front of the Premium section — and only then does the
+# absence of "Premium active" mean anything at all.
+- scrollUntilVisible:
+    element:
+      text: "Upgrade to Premium"
+    direction: DOWN
+- waitForAnimationToEnd
+- assertVisible: "Upgrade to Premium"
 - assertNotVisible: "Premium active"
 - scrollUntilVisible:
     element:
