@@ -125,7 +125,13 @@ export default function SettingsRoute() {
       // Straight to the dashboard. Staying on Settings would leave the visitor looking at a screen
       // whose profile name has quietly changed to someone else's, which reads as a bug rather than
       // as "you are now in a demo" — the populated dashboard is the thing worth showing.
-      router.replace("/");
+      //
+      // ⛔ **`dismissTo`, not `replace` (1.2.19).** `replace("/")` while a dashboard is already below
+      // in the stack mounts a SECOND one and never unmounts the first — measured cumulatively at
+      // 1 → 2 → 3 → 4 across three of these navigations. `dismissTo` pops back to the existing route
+      // when there is one and falls back to replacing when there is not, which is exactly the two
+      // cases here: Settings sits above a dashboard, onboarding does not.
+      router.dismissTo("/");
     } catch (error) {
       reportError(error, { where: "handleEnterDemo" });
       Alert.alert("Couldn't start the demo", error instanceof Error ? error.message : SAVE_FAILED);
@@ -139,7 +145,8 @@ export default function SettingsRoute() {
       // this closure are the DEMO's, so they can't answer "does the real account have a profile?" —
       // and the dashboard route already derives that redirect from freshly-loaded data. Deciding it
       // here would mean deciding it from stale state.
-      router.replace("/");
+      // `dismissTo` for the same reason as entering — see the note there.
+      router.dismissTo("/");
     } catch (error) {
       reportError(error, { where: "handleExitDemo" });
       Alert.alert("Couldn't exit the demo", error instanceof Error ? error.message : SAVE_FAILED);
@@ -159,7 +166,7 @@ export default function SettingsRoute() {
     try {
       await resetDashboardTour();
       if (!isDemo) await enterDemo();
-      router.replace("/?tour=1");
+      router.dismissTo({ pathname: "/", params: { tour: "1" } });
     } catch (error) {
       reportError(error, { where: "handleReplayTour" });
       Alert.alert("Couldn't start the tour", error instanceof Error ? error.message : SAVE_FAILED);

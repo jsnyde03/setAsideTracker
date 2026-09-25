@@ -43,7 +43,9 @@ export function DemoBanner() {
       // Same reasoning as the Settings control: the route this banner is on may not exist for the
       // real account (a premium screen it can't reach, an entry that isn't theirs), so go somewhere
       // that always resolves and let the dashboard's guard route onward from fresh data.
-      router.replace("/");
+      // `dismissTo`, not `replace` — see app/settings.tsx (1.2.19): replacing onto a route that is
+      // already below mounts a second copy of it and leaves the first mounted.
+      router.dismissTo("/");
     } catch (error) {
       reportError(error, { where: "DemoBanner.exit" });
       Alert.alert("Couldn't exit the demo", error instanceof Error ? error.message : "Please try again.");
