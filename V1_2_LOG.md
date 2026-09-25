@@ -11,6 +11,31 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🎉 1.2.12.1 — THE RESERVED BUILD SUCCEEDED · 2026-09-25
+
+**v1.2 has a signed iOS binary, and the single biggest unknown in the version is retired.**
+
+⚡ **What it proves: 1.2.5's native stack prebuilds, compiles and archives.** Mileage was the only
+prebuild-affecting change in v1.2 — `expo-location` and `expo-task-manager`, a config plugin, and a
+background location task — and **iOS CI has broken on exactly that class before**, which is why each
+dependency landed in its own commit to keep the suspect list short. The checklist's own words were
+*"if this build fails, it is almost certainly 1.2.5"*. It did not.
+
+⛔ **What it does NOT prove, and the distinction is the whole point of the thirteen rows:** that the
+mileage feature *works*. A trip that starts, survives backgrounding, and lands its miles on an entry
+is **row 2–5**, and is unprovable anywhere else — the simulator only does canned routes. **A green
+archive is the compile, not the behaviour.**
+
+⚠️ **ITMS-91053 is not answered by a green build.** Apple evaluates required-reason APIs during
+**processing**, after the upload — it surfaces as an email or a rejected build in App Store Connect,
+never as a Codemagic failure. **The build reaching "Ready to Submit" is the actual signal**; until
+then row 0(a) is passed only in the sense that the transporter accepted the archive.
+
+✅ **The commit-identity guard added hours earlier got its first real use**, which is the only reason
+"successful" can be trusted to mean *this* code: no app source changed between the Maestro 12/12 run
+(`9376157`) and the built commit (`41d7190`) — the four files in between were docs and
+`codemagic.yaml`. **The binary is exactly what passed on device.**
+
 ### 🔎 1.2.19 Two dashboards and an escaping portal — 2026-09-24
 
 **🔴 It was not a duplicate. It was a cumulative leak.** Measured from the DOM across the three

@@ -19,9 +19,15 @@ lint · Maestro on CI · the `.app` cache · the keypad question · CI visibilit
 **Per-item detail is in `V1_2_LOG.md` and belongs there.**
 
 ✅ **EVERYTHING BUILDABLE IN v1.2 IS DONE — 1.2.1–1.2.11 and 1.2.14–1.2.19 are closed.**
-🔴 **ACTIVE: 1.2.12 — device QA, BLOCKED on authorizing the one reserved TestFlight build.** There is
-no unblocked work behind it. The build owes **thirteen** rows; agenda at the head of
-`V1_2_TESTFLIGHT_CHECKLIST.md`. After it, only **1.2.13**'s `master` cutover remains.
+🎉 **THE RESERVED BUILD SUCCEEDED, 2026-09-25 — v1.2 has a signed iOS binary.**
+⚡ **1.2.5's native stack prebuilds, compiles and archives** — the only prebuild-affecting change in
+the version, and the thing the checklist named as the most likely cause of failure. ⛔ **It proves
+the COMPILE, not the behaviour**: whether a trip survives backgrounding is rows 2–5 and is
+unprovable off-device. ⚠️ **ITMS-91053 is decided during Apple's PROCESSING, not by a green build** —
+watch for the build reaching *"Ready to Submit"*.
+🔴 **ACTIVE: 1.2.12 — device QA. The live blocker is the export-compliance questionnaire in App Store
+Connect; testers cannot install until it is answered** ([D23] working as intended). The checklist's
+**thirteen** rows are the agenda; after them, only **1.2.13**'s `master` cutover remains.
 
 ⚡ **Three live defects were found by BUILDING, none from a backlog.** *(1)* **Every demo exit showed
 "Restored — Your data has been restored from the backup file."** — stranded from
