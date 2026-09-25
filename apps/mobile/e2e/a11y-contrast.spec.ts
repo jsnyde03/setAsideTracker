@@ -24,16 +24,15 @@ import { completeOnboarding, dismissTourIfShowing, resetAppStorage, visible } fr
 /**
  * ⚠️ **WHAT THIS DOES NOT COVER, said out loud so its silence is not mistaken for evidence.**
  *
- * It sweeps **every route**, the **guided tour**, **onboarding**, and **three of the four bottom
- * sheets** (`WeeklySetAsideSheet`, `BreakdownDetailSheet`, `ShareEarningsModal`).
+ * It sweeps **every route**, the **guided tour**, **onboarding**, and **all four bottom sheets**
+ * (`WeeklySetAsideSheet`, `BreakdownDetailSheet`, `ShareEarningsModal`, `ExpenseLineSheet`).
  *
- * ⛔ **THREE surfaces are still unmeasured, and each for a stated reason:**
- * - **`ExpenseLineSheet`** — lives on the premium expense-breakdown screen; reachable in a demo,
- *   and simply not done yet. The cheapest of the three.
- * - **`LockScreen`** and **`RecoveryScreen`** — both need contrived state (app lock on; data the
- *   app cannot decrypt) and neither is reachable by clicking. ⚠️ **These may be honest DEVICE rows
- *   rather than browser ones** — a lock screen whose biometric prompt does not exist on web is
- *   half a screen. **Decide per surface, and say which here.**
+ * ⛔ **TWO surfaces are still unmeasured, and both for the same stated reason:** `LockScreen` and
+ * `RecoveryScreen` need contrived state — app lock on; data the app cannot decrypt — and neither is
+ * reachable by clicking. ⚠️ **They are likely honest DEVICE rows rather than browser ones**: a lock
+ * screen whose biometric prompt does not exist on web is half a screen, and measuring the half that
+ * renders would report a pass over a surface nobody has seen whole. **Decide per surface, and say
+ * which here.**
  *
  * ⚠️ **The sheets are measured over a DEMO session**, because this test's user has no entries and
  * three of the four sheets would otherwise open empty. That also means a failure reported "with X
@@ -284,6 +283,38 @@ for (const scheme of ["Light", "Dark"] as const) {
       // finding was real; the attribution would have sent the next reader to the wrong file.
       for (const f of m.failures) all.push(`with ${name} open  ${f}`);
     }
+
+    /**
+     * `ExpenseLineSheet` — the fourth sheet, and the only one NOT on the dashboard (1.2.18.4). It
+     * lives on the premium expense-breakdown screen, which a demo can preview ([D5]).
+     *
+     * ⛔ Measured AFTER the three above, because opening them requires still being on the dashboard.
+     * An earlier draft navigated here first and would have made all three unopenable.
+     * ⚠️ **Its backdrop reuses "Dismiss details" — the same label `BreakdownDetailSheet` uses.** Safe
+     * only because the two cannot be mounted at once; worth knowing before either is reused.
+     */
+    // ⛔ Navigated IN-APP, not with `page.goto`. The demo store is **in memory**, so a real page load
+    // drops the demo entirely — the premium preview goes with it and this screen renders its locked
+    // state instead, where "By Schedule C line" does not exist. That is the standing caveat in this
+    // repo and it cost this sweep one run.
+    await visible(page.getByText(/Expense breakdown/)).first().click();
+    await expect(visible(page.getByText("By Schedule C line")).first()).toBeVisible();
+    const lineBackdrop = visible(page.getByLabel("Dismiss details")).first();
+    const lineSheet = await measureSurface(
+      page,
+      lineBackdrop,
+      async () =>
+        void (await visible(page.getByLabel(/^Line \d+ .*Tap to see which entries/))
+          .first()
+          .click()),
+      async () => {
+        await lineBackdrop.click({ position: { x: 5, y: 5 } });
+        await expect(lineBackdrop).toBeHidden();
+      },
+    );
+    sheetChecked += lineSheet.checked;
+    for (const f of lineSheet.failures) all.push(`with ExpenseLineSheet open  ${f}`);
+
     checkedTotal += sheetChecked;
 
     // ⛔ The instrument first. If the walk ever stops finding text — a selector change, a render
