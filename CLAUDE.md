@@ -8,7 +8,7 @@ Native, iOS first. **LIVE on the App Store as "SetAside" at v1.1.1**; bundle id
 `V1_2_LOG.md` is the detail store — every scan record and the reasoning behind every decision.
 Read the plan's `RESUME HERE` block first; it is kept current.
 
-## Status (2026-09-24)
+## Status (2026-09-25)
 
 **v1.2 in development on branch `v1.2`.** No ship date — [D9]: work the queue and ship when done.
 **Do not reintroduce a target date.**
@@ -50,13 +50,18 @@ would have broken the build. Both would have been ticked.** The switch-in before
 them, and 1.2.18 exists to close the same class elsewhere.
 
 ⚠️ **`accessibilityElementsHidden` and `importantForAccessibility` are DROPPED by
-react-native-web** — use `aria-hidden`, which RN maps natively and RN-web emits. `TextField` still
-relies on the dropped pair (1.2.18.2).
+react-native-web** — use `aria-hidden`, which RN maps natively and RN-web emits. ✅ Both users
+(`TextField`, the tour's dim bands) were converted at 1.2.18.2, so a claim about hiding something
+from assistive tech is now checkable here rather than device-only.
 
-⛔ **Two shell faults cost real time in one session, both already written down here:** `| head`
-truncated a failure list at 6 of 9 **and swallowed the exit code**, and a `gh` busy-wait tripped
-GitHub's **secondary** rate limit — where `gh api rate_limit` reports `remaining=5000` throughout,
-because the abuse limiter is a different bucket.
+⛔ **FOUR self-inflicted tooling faults in one session, every one already written down here.**
+`| head` truncated a failure list at 6 of 9 **and swallowed the exit code** · a `gh` busy-wait
+tripped GitHub's **secondary** rate limit, where `gh api rate_limit` reports `remaining=5000`
+throughout because the abuse limiter is a different bucket · a hand enumeration undercounted the
+affected specs · and a python helper **died on its own `print`** (cp1252 cannot encode an emoji)
+*before* writing, so a commit reported success having changed nothing. ⚡ **None was a knowledge
+gap. They are habits at the moment of typing — let a script produce the list, and read the exit
+code from the thing that produced it.**
 
 ⛔ **"Render coach-marks outside any `GestureDetector`" WAS FALSE HERE, and it sat in this file.**
 There is no `GestureDetector`, `PanGestureHandler` or `GestureHandlerRootView` anywhere in this app —
@@ -72,8 +77,11 @@ text. That, not aesthetics, decided [D29]. ⚠️ **But "riding demo entry touch
 it touches one Maestro flow and FIFTEEN Playwright tests.** The estimate counted Maestro and never
 enumerated the browser specs. **The decision still holds; the number quoted for it did not.**
 
-⚠️ **The contrast gate sweeps ROUTES, plus the tour.** 1.2.8.5 widened it with an opener rather
-than inheriting its silence; **5 non-route surfaces are still unmeasured** and are 1.2.18.1.
+⚠️ **The contrast gate sweeps every route, the tour, onboarding and all four sheets.** ⛔ **Exactly
+TWO surfaces remain unmeasured — `LockScreen` and `RecoveryScreen` — and that is a decision, not a
+gap:** both need contrived state, neither is reachable by clicking, and a lock screen whose
+biometric prompt does not exist on web is **half a screen**. They are **row 12** of the device
+checklist.
 ⛔ **The repo has exactly TWO `testID`s**, both on the tour's mask and card, because a decorative
 overlay has no text and no accessible name. **Everything else in both suites still selects on
 visible text or `accessibilityLabel`** — a repo-wide convention is filed for v1.3.
@@ -84,9 +92,9 @@ visible text or `accessibilityLabel`** — a repo-wide convention is filed for v
   tax-config audits · 137 Playwright. Each has been **seen to fail** from CI. Codemagic's copy is
   retired; `ios-testflight` is all that is left there.
 - **Lint is a gate at zero, with `--max-warnings=0`.** New code cannot land a warning.
-- **Contrast is gated in both themes** on every route **and on the guided tour**, so new UI must
-  pass it. ⚠️ The sweeps still miss the four sheets and the `AppGate` screens — a green run is not
-  whole-app coverage, and closing that is 1.2.18.1.
+- **Contrast is gated in both themes** on every route, the guided tour, onboarding and all four
+  sheets, so new UI must pass it. ⚠️ It still misses `LockScreen`/`RecoveryScreen` by decision — a
+  green run is not whole-app coverage, and the file says which half it cannot see.
 - **Reduce Motion is honoured** (`useReduceMotion` + `motion.ts`); anything the tour animates must
   ask it.
 - **The native suite is green at 12/12** and a run is ~13 min on a cache hit:
@@ -105,8 +113,9 @@ reached no existing install while their queue silently drained · and "Clear All
 app lock on, so the next launch demanded Face ID for an app with nothing in it. **None reach anyone
 until v1.2 ships** — [D10]'s accepted cost, and the reason to keep moving.
 
-⛔ **THE ONE RESERVED BUILD NOW OWES THIRTEEN ROWS.** The agenda is at the head of
-`V1_2_TESTFLIGHT_CHECKLIST.md`, ordered most-likely-broken first. **Do not spend a build on less.**
+⛔ **THE RESERVED BUILD HAS BEEN SPENT — successfully, 2026-09-25 — AND IT OWES THIRTEEN ROWS OF
+DEVICE QA.** The agenda is at the head of `V1_2_TESTFLIGHT_CHECKLIST.md`, most-likely-broken first.
+⚠️ **Codemagic's remainder is now very thin: treat a second build as something to earn, not assume.**
 ⚡ **Rows 10–12 were added 2026-09-24:** the guided tour on a phone · VoiceOver through it ·
 `LockScreen`/`RecoveryScreen` contrast, which the gate deliberately does not measure.
 1. **Does it upload?** ITMS-91053 names any required-reason API still undeclared — unknowable here.
