@@ -32,17 +32,17 @@
 > would have gone green over a "Clear all data" that cleared nothing, and one guarded Apple
 > **Guideline 3.1.2**. Full arc + every mechanism → [V1_2_LOG.md](V1_2_LOG.md).
 >
-> ✅ **1.2.1–1.2.11 and 1.2.14–1.2.17 CLOSED — 1.2.8 closed 2026-09-24, verified 12/12 on device.**
-> ▶ **ACTIVE: 1.2.18 — the gates that cannot see what they claim to**, decomposed below.
-> ⚡ **1.2.8 is worth reading before starting anything:** building it found **two LIVE defects**
-> *(a stranded "Restored…" alert on every demo exit since 2026-08-08, which twelve green Maestro
-> runs walked straight through; two dashboards mounting on demo entry)*, **one vacuous test caught
-> by a plant that PASSED**, and **three self-inflicted tooling faults**. ⛔ **Four of its
-> pre-authored premises were stale, and the two that mattered would each have produced work that
-> COULD NOT FAIL** — a rule defending against something absent from this app, and a gate row an
-> overlay passes by never being looked at. **That is why 1.2.18 exists.**
-> **1.2.12** still needs the reserved TestFlight build authorized; **1.2.13**'s remaining work
-> happens at release.
+> ✅ **1.2.1–1.2.11, 1.2.14–1.2.18 CLOSED.** ▶ **ACTIVE: 1.2.19 — two dashboards and a portal that
+> escapes its route**, decomposed below. ⚠️ **It is the LAST UNBLOCKED item in v1.2.**
+> 🔴 **What is left needs Jason: 1.2.12 is device QA and wants the one reserved TestFlight build
+> authorized; 1.2.13's remaining work happens at release.** The build's agenda is at the head of
+> [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) and now owes **twelve** rows, three of
+> them added 2026-09-24 *(the tour on a phone · VoiceOver through it · `LockScreen`/`RecoveryScreen`
+> contrast, which the gate deliberately does not measure)*.
+> ⚡ **1.2.8 and 1.2.18 are worth reading before starting anything.** Between them: **two live
+> defects**, **two lossy accessible names**, **a plant that PASSED**, and **five distinct mechanisms
+> by which a gate was green over something it could not see.** ⛔ **Four of 1.2.8's pre-authored
+> premises were stale, and the two that mattered would each have produced work that COULD NOT FAIL.**
 > ⚡ **A Maestro run is now ~13 min, not ~40** (1.2.15) · **1.2.16 closed negative** — the keypad was
 > never an app bug · **the suite has been 12/12 four runs running.**
 > 🔴 **1.2.13 is a SHIP BLOCKER and is not finished:** Pages now serves this repo's `docs/`, but it
@@ -141,23 +141,29 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### 🧪 **1.2.18 — The gates that cannot see what they claim to** · **ACTIVE** _(2026-09-24)_
+### 🧭 **1.2.19 — Two dashboards, and a portal that escapes its route** · **ACTIVE** _(2026-09-24)_
 
-⚠️ **Promoted because both remaining queue items are externally blocked** — 1.2.12 needs Jason to
-authorize the one reserved build, 1.2.13 happens at release. These three are filed findings, all
-warm right now, and all one class: **a gate reporting green over something it structurally cannot
-read.** 1.2.8.5 already built the opener pattern the first one needs.
+⚠️ **This is the last unblocked item in v1.2, and it is promoted honestly rather than to fill the
+slot.** The real next gate is **1.2.12 (device QA)**, which is blocked on Jason authorizing the one
+reserved build. 1.2.13's remaining work happens at release. This is the one substantive thing that
+needs nobody.
+
+🔴 **Measured at 1.2.8.4, not theorised:** entering the sample account from Settings leaves **two
+`DashboardScreen`s mounted** — `router.replace("/")` while a dashboard is already below it in the
+stack — and a covered route is only `display:none`, which a `Modal`'s **portal escapes entirely**.
+The DOM held two visible tour cards with one spotlight between them. **The tour is already fixed
+narrowly with `useIsFocused`; the underlying quirk is not.**
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.18.1** | ✅ **DONE 2026-09-24. Onboarding + three of the four sheets now measured**, over demo data, with a per-surface `checked` guard so a sheet that fails to open cannot pass *(planted: a broken opener reds with "the surface never opened")*. 🔴 **Found a LIVE defect on its first working run — `DemoBanner` was 3.88:1 in dark mode on ALL THIRTEEN screens of a demo**, unmeasured because the route sweep runs as a non-demo user. ⚡ **Also fixed the gate itself: icon-font glyphs were being held to the 4.5:1 TEXT threshold** and are now measured at WCAG's 3:1 non-text bar. ⛔ **Remaining: `ExpenseLineSheet`, `LockScreen`, `RecoveryScreen`** — the last two need contrived state and may be honest device rows; named in the spec. | ✅ |
-| **1.2.18.2** | ✅ **DONE 2026-09-24.** `TextField`'s label and hint now use `aria-hidden`, which RN maps to both native props and RN-web actually emits — so the component's own claim *("left exposed they'd be announced twice")* is true on iOS **and checkable here**, where it was previously unverifiable. ⚠️ **New spec asserts the NEW fact positively** (`a11y-field-labels.spec.ts`) rather than the absence of the old props — the 1.2.9.1 lesson. **Planted: the old props red it.** **136/136 Playwright**, which was the real risk: `TextField` sits behind most `getByLabel` selectors. | ✅ |
-| **1.2.18.3** | ✅ **DONE 2026-09-24.** The walk now follows **child** expressions and switches off again inside any attribute list — the naive relaxation would have swept in `key=` and `style={{…}}`. **Planted with 1.2.8.2's own escaped defect; it reds.** 🔴 **Surfaced 6 sites the old walk could not see, and TWO were real losses** — the Share button gave no progress while working, and the tax-profile row replaced filing status, state, county and W2 status with the words *"Edit tax profile"*. ⛔ **Both fixed, not added to the reviewed list** — entering a lossy site would make that fixture assert something false. | ✅ |
-| **1.2.18.4** | ✅ **DONE 2026-09-24 — Maestro 12/12.** 🔴 **The dangerous probe was an `assertNotVisible` carrying [D5]** — *a demo previews premium without claiming the entitlement* — which **passes for free whenever that row is merely off screen**, and one added Settings row does that. It now asserts the honest state **by name** first, so the absence means something. `premium-paywall.yaml` got the same scroll *(never the dangerous kind — it taps the row next line)*. ⚡ **Also folded in: `ExpenseLineSheet`, so all FOUR sheets are now measured.** ⛔ `page.goto` to reach it **dropped the demo** — the store is in memory — so it navigates in-app. | ✅ |
-| **1.2.18.5** | **Verify + whole-item after-scan.** | ⬜ |
+| **1.2.19.1** | **Characterise it.** Which navigations duplicate a route, and how many instances end up mounted? ⛔ **From the DOM, not from reading the router** — that is how it was found. Check `handleEnterDemo`, `handleExitDemo`, `handleReplayTour`, `handleClearAllData` and `handleRestoreBackup`, all of which `replace("/")`. | ⬜ |
+| **1.2.19.2** | **Decide the fix and its blast radius.** Candidates: `dismissTo`/`back` where the target is already below, vs. leaving navigation alone and gating overlays on focus. ⚠️ **Navigation changes are Maestro-verified only** — the browser has no real stack — so the cheaper fix may be the correct one. | ⬜ |
+| **1.2.19.3** | **Do the four sheets have the same exposure?** They are opened from the visible screen, so nothing reaches them today — but the portal behaviour is theirs too. **Answer it; do not assume it.** | ⬜ |
+| **1.2.19.4** | **Fix + verify**, incl. a Maestro run, since this is navigation. | ⬜ |
+| **1.2.19.5** | **Verify + whole-item after-scan.** | ⬜ |
 
-**Exit line:** every a11y gate either measures the surface it names, or says in the file which half
-it cannot see — and no gate in this set can pass over a class it never reads.
+**Exit line:** the number of mounted dashboards is known and intentional, and any future `Modal` on
+a coverable route is either safe by construction or has a written reason it is not.
 
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
@@ -194,6 +200,19 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.18 — The gates that cannot see what they claim to ✅ DONE 2026-09-24, 5/5.** The contrast
+  sweep now measures every route, the tour, onboarding and **all four sheets**; `TextField` and the
+  tour use `aria-hidden` *(RN-web drops the old props)*; the shadowing gate reads expressions; the
+  Maestro probes no longer assert an absence without pinning the screen.
+  ⚡ **Every sub-step's gate turned out to be green over a live defect, and NO TWO were blind for the
+  same reason** — wrong user state, wrong WCAG category, an unrepresentable platform, an unreadable
+  construct, and an absence true for the wrong reason. **Five mechanisms, one afternoon.** Found:
+  `DemoBanner` at 3.88:1 on all 13 demo screens · icons judged as text · two lossy accessible names
+  *(the tax-profile row replaced filing status, state, county and W2 status with the words "Edit tax
+  profile")*. ⛔ **`LockScreen`/`RecoveryScreen` deliberately left to the device checklist** — half a
+  screen renders on web, so measuring it would pass over something nobody has seen whole.
+  453 unit · 136/136 Playwright · Maestro 12/12 · lint 0. _Detail → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.8 — Guided onboarding tour ✅ DONE 2026-09-24, 6/6.** [D29]: rides sample data,
   dashboard-only, four stops; fires on first demo entry, replays from Settings. Pure geometry in

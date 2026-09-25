@@ -11,6 +11,50 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.18 The gates that cannot see what they claim to — WHOLE-ITEM after-scan · 2026-09-24
+
+**The item's thesis held, and harder than expected: every sub-step's gate was green over a live
+defect — and no two were blind for the same reason.** Five distinct mechanisms, from four days of
+work in one afternoon:
+
+| the gate was green because… | found at | the defect |
+|---|---|---|
+| it sampled the wrong **user state** | 1.2.18.1 | `DemoBanner` at 3.88:1 in dark, on all 13 screens of a demo — the sweep runs as a non-demo user |
+| it applied the wrong **category** | 1.2.18.1 | icon glyphs held to the 4.5:1 **text** bar instead of 3:1 non-text |
+| the **platform** could not represent the claim | 1.2.18.2 | `TextField`'s a11y props dropped entirely by react-native-web |
+| the **parser** could not read the construct | 1.2.18.3 | ternary-rendered text invisible to the shadowing walk — and it hid **two real losses** |
+| the **absence was true for the wrong reason** | 1.2.18.4 | `assertNotVisible` carrying [D5], which passes free whenever the row is off screen |
+
+⚡ **That is the item's real output, not the five fixes.** "A gate that cannot fail" is not one bug
+shape — it is a family, and reading a gate's code tells you almost nothing about which member it
+has. Four of these five were found by **pointing the gate somewhere new and watching what it said**,
+not by inspection.
+
+**⚙️ Two of the fixes were unused capability, not missing capability.** `primaryDark` already existed
+precisely for text on `primarySoft`, solved at 1.2.9.3; `aria-hidden` already worked on both
+platforms. ⛔ **Neither defect needed anything invented** — which is the `tested-helper-is-not-a-used-helper`
+shape: the right thing existed, was correct, and was not called.
+
+**⚡ Refusing to accept a confusing result paid twice, and both times the answer came from the DOM.**
+Nine failures with "empty text" were icon glyphs; *"resolved to 2 elements"* was two mounted
+dashboards. Both looked like noise, both were real, and **neither would have yielded to reasoning
+about the framework** — a throwaway spec that dumped attributes cracked each on its first run.
+
+**🔴 Four self-inflicted process faults in this session, and not one was a knowledge gap:**
+a hand enumeration that undercounted the affected specs · `| head` truncating a failure list at 6 of
+9 **and** swallowing the exit code · a `gh` busy-wait tripping GitHub's **secondary** limit (where
+`gh api rate_limit` reports 5000 remaining throughout) · and my own "5 / 6 / 7" muddle over the
+unmeasured-surface count. ⛔ **Each one already had a written rule in this repo.** The pattern is
+that they are *habits at the moment of typing*, and the counter-habit is the same in all four:
+**let a script produce the list, and read the exit code from the thing that produced it.**
+
+**⛔ Two surfaces were deliberately NOT automated, and that is now a decision rather than a gap.**
+`LockScreen` and `RecoveryScreen` need contrived state and are unreachable by clicking — and a lock
+screen whose biometric prompt does not exist on web is **half a screen**, so measuring the half that
+renders would report a pass over something nobody has seen whole. **They are rows 12 in
+`V1_2_TESTFLIGHT_CHECKLIST.md`**, alongside two new rows the tour owes (the tour on a phone, and
+VoiceOver through it).
+
 ### 🔎 1.2.18.3 The shadowing gate learns to read expressions — after-scan · 2026-09-24 · ✅ DONE
 
 **The blind spot is closed, and the fix is deliberately not the obvious one.** `renderedText` used
