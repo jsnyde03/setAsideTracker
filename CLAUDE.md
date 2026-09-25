@@ -225,7 +225,13 @@ inside an artifact cannot tell you the artifact is stale.
   neutral point instead. It works fine for the text keyboard, which is why onboarding passes and
   entry-form flows did not.
 - ⛔ **COMMITTING IS NOT SHIPPING.** Check `git rev-list --count origin/v1.2..HEAD` before asking for
-  or believing a build. Eight commits once sat local while the plan asserted the tree was pushed.
+  or believing a build — **`git fetch` first**, since the local `origin/*` ref is only as fresh as
+  the last one. Eight commits once sat local while the plan asserted the tree was pushed.
+  ⚠️ **Codemagic releases are built MANUALLY from its UI, so the branch is whatever a human picked
+  from a dropdown** — and `master` is **161 commits behind `v1.2`**. ✅ **`ios-testflight` now prints
+  its BRANCH, COMMIT, SUBJECT and DATE as its first step** (2026-09-25); it was the only workflow
+  that did not, and it is the expensive one. **Read those four lines before believing anything else
+  in the log.**
 - 🔌 **Never leave Expo ports open.** After any Playwright run, verify **8081 / 8082 / 19000 / 19001
   / 19006** are free. ⚠️ Identify a PID before killing it — Adobe Creative Cloud also runs `node.exe`.
 - ⚙️ npm and Playwright here need `NODE_OPTIONS=--use-system-ca`, or installs fail with
@@ -238,8 +244,9 @@ inside an artifact cannot tell you the artifact is stale.
 ```bash
 cd services/tax-engine && npm test          # 102 engine tests
 cd services/tax-engine && npm run audit     # ⚠️ TAX CONFIG GATES — both exit non-zero
-cd apps/mobile && npm run typecheck && npm test   # 378 unit
-cd apps/mobile && NODE_OPTIONS=--use-system-ca npx playwright test --config e2e/playwright.config.ts   # 66 e2e
+cd apps/mobile && npm run typecheck && npm test   # 453 unit
+cd apps/mobile && npm run lint:ci                 # zero-warning gate; new code cannot land one
+cd apps/mobile && NODE_OPTIONS=--use-system-ca npx playwright test --config e2e/playwright.config.ts   # 137 e2e
 node tools/sweep-hygiene.mjs                 # reports test/gating hygiene; triage, not a gate
 ```
 

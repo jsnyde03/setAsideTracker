@@ -92,6 +92,31 @@ workflows:
           include: false
 
     scripts:
+      # ⛔ FIRST, ALWAYS: say which commit this build actually is.
+      #
+      # This is the one workflow that did NOT print it, and it is the expensive one. On 2026-09-07
+      # Codemagic cloned a month-old `origin/master` while 64 commits sat unpushed — two build
+      # cycles and a full written diagnosis of a "save failure" were spent on code that was not in
+      # the binary. ⚠️ **The by-name self-check gate could not have caught it**: that gate only knows
+      # the names in this file, and this file came from the same stale checkout. A build of old code
+      # brings its own old gate. The only defence is the binary naming its own source, out loud.
+      #
+      # ⚠️ Releases are built MANUALLY from the Codemagic UI (auto-trigger is disabled below), so the
+      # branch is whatever a human picked from a dropdown — which is precisely how the wrong one gets
+      # chosen. At the time of writing, `master` is 161 commits behind `v1.2`.
+      - name: Say which commit this is
+        script: |
+          echo "═══════════════════════════════════════════════════════════"
+          echo "BRANCH : ${CM_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
+          echo "COMMIT : $(git rev-parse HEAD)"
+          echo "SUBJECT: $(git log -1 --pretty=%s)"
+          echo "DATE   : $(git log -1 --pretty=%cI)"
+          echo "═══════════════════════════════════════════════════════════"
+          # Not a gate — a build from master may be exactly right at release time. It is a line
+          # nobody can miss in a log they are already reading when something looks wrong.
+          if [ "${CM_BRANCH:-}" = "master" ]; then
+            echo "NOTE: building master. Correct at release; wrong while v1.2 is the live branch."
+          fi
       - name: Install root workspace dependencies
         # Plain `npm ci` can hit a known npm bug (npm/cli#4828) where a platform-specific
         # optional dependency (here, @rollup/rollup-darwin-arm64 — a transitive dep of

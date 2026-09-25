@@ -15,7 +15,19 @@ real navigation stack. Green means "nothing else broke", not "this works on a ph
 
 ---
 
-## 🎯 THE ONE BUILD — read this before dispatching _(assembled 2026-09-21 at 1.2.5.6)_
+## 🎯 THE ONE BUILD — read this before dispatching _(assembled 2026-09-21 at 1.2.5.6; rows 10–12 added 2026-09-24)_
+
+> ### ⚡ Dispatch card — 2026-09-25
+>
+> | | |
+> |---|---|
+> | **Branch** | 🔴 **`v1.2`** — **NOT `master`, which is 161 commits behind.** The UI's branch dropdown is how the wrong one gets picked. |
+> | **Workflow** | **`ios-testflight`** — ⛔ **`ios-adhoc` HAS NEVER WORKED** (no device UDID in an ad-hoc profile; established 2026-08-07 and recommended wrongly three times since). |
+> | **First** | ⚠️ **Run `ios-simulator` on GitHub Actions first** *(`gh workflow run maestro-ios.yml --ref v1.2`)* — it is this project's only compile check, and it is **free**. A syntax error found on a signed build has spent the expensive cycle. |
+> | **Verify at the top of the log** | The first step now prints **BRANCH / COMMIT / SUBJECT / DATE**. **Read those four lines before believing anything else.** Expect `v1.2` and today's HEAD. |
+> | **Expect** | ⚠️ **"Missing Compliance"** in App Store Connect — that is **[D23] working**, not a broken build. Answering it is row 0(b) and is how 1.2.10.2 gets its answer from Apple. |
+> | **State at dispatch** | 453 unit · 137/137 Playwright · Maestro **12/12** on device · lint 0 · typecheck clean · CI green · tree pushed *(verified after `git fetch`)*. |
+
 
 ⚠️ **Codemagic is ~80% consumed and the remainder is reserved for TestFlight** (Jason 2026-09-21).
 **Never spend a build on a single item.** This section is the agenda for one build carrying
