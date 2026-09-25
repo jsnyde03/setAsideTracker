@@ -32,17 +32,18 @@
 > would have gone green over a "Clear all data" that cleared nothing, and one guarded Apple
 > **Guideline 3.1.2**. Full arc + every mechanism → [V1_2_LOG.md](V1_2_LOG.md).
 >
-> ✅ **1.2.1–1.2.11, 1.2.14–1.2.18 CLOSED.** ▶ **ACTIVE: 1.2.19 — two dashboards and a portal that
-> escapes its route**, decomposed below. ⚠️ **It is the LAST UNBLOCKED item in v1.2.**
-> 🔴 **What is left needs Jason: 1.2.12 is device QA and wants the one reserved TestFlight build
-> authorized; 1.2.13's remaining work happens at release.** The build's agenda is at the head of
-> [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) and now owes **twelve** rows, three of
-> them added 2026-09-24 *(the tour on a phone · VoiceOver through it · `LockScreen`/`RecoveryScreen`
-> contrast, which the gate deliberately does not measure)*.
-> ⚡ **1.2.8 and 1.2.18 are worth reading before starting anything.** Between them: **two live
-> defects**, **two lossy accessible names**, **a plant that PASSED**, and **five distinct mechanisms
-> by which a gate was green over something it could not see.** ⛔ **Four of 1.2.8's pre-authored
-> premises were stale, and the two that mattered would each have produced work that COULD NOT FAIL.**
+> ✅ **1.2.1–1.2.11 and 1.2.14–1.2.19 CLOSED. Everything buildable in v1.2 is DONE.**
+> 🔴 **ACTIVE: 1.2.12 — device QA, and it is BLOCKED ON JASON authorizing the one reserved TestFlight
+> build.** There is no unblocked work behind it. ⛔ **The build owes THIRTEEN rows** — agenda at the
+> head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md), most-likely-broken first.
+> **Run `ios-simulator` first regardless** (the only compile check here); **`ios-adhoc` has never
+> worked.** After 1.2.12, the only thing left is **1.2.13**'s `master` cutover at release.
+> ⚡ **1.2.8, 1.2.18 and 1.2.19 are worth reading before touching anything.** Between them: **three
+> live defects** *(a stranded alert on every demo exit; a cumulative route leak; a banner failing AA
+> on all 13 demo screens)*, **two lossy accessible names**, **a plant that PASSED**, and **five
+> distinct mechanisms by which a gate was green over something it could not see.** ⛔ **Four of
+> 1.2.8's pre-authored premises were stale, and the two that mattered would each have produced work
+> that COULD NOT FAIL.**
 > ⚡ **A Maestro run is now ~13 min, not ~40** (1.2.15) · **1.2.16 closed negative** — the keypad was
 > never an app bug · **the suite has been 12/12 four runs running.**
 > 🔴 **1.2.13 is a SHIP BLOCKER and is not finished:** Pages now serves this repo's `docs/`, but it
@@ -141,29 +142,27 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### 🧭 **1.2.19 — Two dashboards, and a portal that escapes its route** · **ACTIVE** _(2026-09-24)_
+### 📱 **1.2.12 — Verify · device QA · phase after-scan** · **ACTIVE** _(2026-09-24)_
 
-⚠️ **This is the last unblocked item in v1.2, and it is promoted honestly rather than to fill the
-slot.** The real next gate is **1.2.12 (device QA)**, which is blocked on Jason authorizing the one
-reserved build. 1.2.13's remaining work happens at release. This is the one substantive thing that
-needs nobody.
+🔴 **BLOCKED, and the blocker is Jason: the one reserved TestFlight build needs authorizing.**
+Everything buildable in v1.2 is done. This is not an interim placeholder — it is the real next gate,
+and there is no unblocked work left behind it.
 
-🔴 **Measured at 1.2.8.4, not theorised:** entering the sample account from Settings leaves **two
-`DashboardScreen`s mounted** — `router.replace("/")` while a dashboard is already below it in the
-stack — and a covered route is only `display:none`, which a `Modal`'s **portal escapes entirely**.
-The DOM held two visible tour cards with one spotlight between them. **The tour is already fixed
-narrowly with `useIsFocused`; the underlying quirk is not.**
+⛔ **The build's agenda is at the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md)
+and now owes THIRTEEN rows, ordered most-likely-broken first. Do not spend the build on less.**
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.19.1** | **Characterise it.** Which navigations duplicate a route, and how many instances end up mounted? ⛔ **From the DOM, not from reading the router** — that is how it was found. Check `handleEnterDemo`, `handleExitDemo`, `handleReplayTour`, `handleClearAllData` and `handleRestoreBackup`, all of which `replace("/")`. | ⬜ |
-| **1.2.19.2** | **Decide the fix and its blast radius.** Candidates: `dismissTo`/`back` where the target is already below, vs. leaving navigation alone and gating overlays on focus. ⚠️ **Navigation changes are Maestro-verified only** — the browser has no real stack — so the cheaper fix may be the correct one. | ⬜ |
-| **1.2.19.3** | **Do the four sheets have the same exposure?** They are opened from the visible screen, so nothing reaches them today — but the portal behaviour is theirs too. **Answer it; do not assume it.** | ⬜ |
-| **1.2.19.4** | **Fix + verify**, incl. a Maestro run, since this is navigation. | ⬜ |
-| **1.2.19.5** | **Verify + whole-item after-scan.** | ⬜ |
+| **1.2.12.1** | **[DECISION — Jason] Authorize the build.** Codemagic is ~80% consumed and the remainder is reserved for exactly this. ⚠️ **Run `ios-simulator` first regardless** — it is this project's only compile check, and a syntax error found on a signed build has spent the expensive cycle. ⛔ **`ios-adhoc` HAS NEVER WORKED**; the route is `ios-testflight`. | ⬜ |
+| **1.2.12.2** | **Rows 0–1: does it upload, and does it install?** ITMS-91053, then the **"Missing Compliance"** answer — which is [D23] working, and is how 1.2.10.2 gets its answer from Apple rather than from our reading of the EAR. | ⬜ |
+| **1.2.12.3** | **Rows 2–5: the mileage stack.** 1.2.5 has **zero** device verification and cannot get any other way — two native modules, a config plugin, a background task. **If the build fails, it is almost certainly this.** | ⬜ |
+| **1.2.12.4** | **Rows 6–9: the `Alert` layer, the weekly sheet at phone width, demo mode end-to-end, reminders across a relaunch.** None of it is visible to a browser. | ⬜ |
+| **1.2.12.5** | **Rows 10–12: the guided tour on a phone, VoiceOver through it, and `LockScreen`/`RecoveryScreen` contrast** — the two surfaces the gate deliberately does not measure. | ⬜ |
+| **1.2.12.6** | **Every iPad layout**, owed since 1.2.7's .1–.4 landed. RN-web at 1024px is not UIKit at 1024pt. | ⬜ |
+| **1.2.12.7** | **Guideline pass + the whole-PHASE after-scan** across all of v1.2, not just this item. | ⬜ |
 
-**Exit line:** the number of mounted dashboards is known and intentional, and any future `Modal` on
-a coverable route is either safe by construction or has a written reason it is not.
+**Exit line:** a real-device pass against the full checklist, with every ❌ filed — and after it,
+the only thing between v1.2 and the store is 1.2.13's cutover.
 
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
@@ -184,7 +183,6 @@ out-of-order number is worth less than one more round of that.
 | # | item | notes |
 |---|---|---|
 | **1.2.13** | ⚙️ **Publish the privacy policy — SHIP BLOCKER, mostly done 2026-09-22** | ✅ Pages now serves **this** repo's `docs/` ([D26]); audits moved out so `docs/` is the website exactly; all 9 URLs repointed; **`tools/check-published-policy.mjs`** added — it fetches the live page and fails on drift *(verified both ways: reds on the real defect, and a control proves it can pass)*. ⛔ **Remaining: the cutover.** Pages serves `master`, which still carries the July policy — correct for live v1.1.1, wrong the moment v1.2 ships. **Merging v1.2 to master at release publishes it; the gate fails the submission if it is forgotten.** |
-| 1.2.12 | **Verify · device QA · phase after-scan** | TestFlight pass (hard gate) · guideline pass · whole-phase after-scan. ⛔ **Blocked on Jason authorizing the one reserved build**, which owes five things (+ now the tour). |
 
 ⚠️ **Sequencing, and it is the point of the restructure:** the correctness blocks run **before** the
 feature items, not after. 1.2.4 renders a per-entry set-aside in ~52 rows a year — building it on an
@@ -200,6 +198,20 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.19 — Two dashboards, and a portal that escapes its route ✅ DONE 2026-09-24.**
+  🔴 **Not a duplicate — a cumulative leak, measured 1 → 2 → 3 → 4** across enter-demo, exit-demo
+  and replay-tour: `router.replace("/")` onto a route already below mounts another and never
+  unmounts the first. ⚡ **Invisible for a month because only one is ever visible** — until a
+  `Modal`, whose portal escapes a covered route's `display:none`, drew the tour from every copy at
+  once. Fixed with `router.dismissTo`; re-measured at 1 everywhere. `route-instances.spec.ts` makes
+  it permanent and **counts hidden nodes on purpose**. ⛔ **The destructive paths are not measured
+  and the reason is that they fooled my own diagnostic first** — Clear All Data is gated behind a
+  native `Alert` that react-native-web never renders, so a `visible: 0` reading was Settings
+  covering the dashboard, not a cleared account. ⚙️ Also fixed: `onboarding.yaml` now waits for the
+  dashboard instead of asserting it — it is every flow's precondition, which is why that flakiness
+  landed in a different flow each run. **Maestro 12/12 · 137/137 Playwright · 453 unit.**
+  _Detail → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.18 — The gates that cannot see what they claim to ✅ DONE 2026-09-24, 5/5.** The contrast
   sweep now measures every route, the tour, onboarding and **all four sheets**; `TextField` and the

@@ -18,22 +18,24 @@ set-aside by week · mileage · the premium slice · native iPad · accessibilit
 lint · Maestro on CI · the `.app` cache · the keypad question · CI visibility.
 **Per-item detail is in `V1_2_LOG.md` and belongs there.**
 
-✅ **1.2.8 CLOSED 2026-09-24 — the guided tour ships, verified 12/12 on device.** [D29]: it rides
-sample data, fires on first demo entry, replays from Settings, **dashboard-only, four stops**.
-▶ **ACTIVE: 1.2.18 — the gates that cannot see what they claim to**, decomposed in the plan.
+✅ **EVERYTHING BUILDABLE IN v1.2 IS DONE — 1.2.1–1.2.11 and 1.2.14–1.2.19 are closed.**
+🔴 **ACTIVE: 1.2.12 — device QA, BLOCKED on authorizing the one reserved TestFlight build.** There is
+no unblocked work behind it. The build owes **thirteen** rows; agenda at the head of
+`V1_2_TESTFLIGHT_CHECKLIST.md`. After it, only **1.2.13**'s `master` cutover remains.
 
-⚡ **Building the tour found two LIVE defects that no backlog had.** *(1)* **Every demo exit showed
-"Restored — Your data has been restored from the backup file."** — a call stranded from
-`handleRestoreBackup` by the 2026-08-08 routing port, sitting *outside* the `try`. ⛔
-**`demo-mode.yaml` exited through that dialog twelve green runs running**: an iOS `Alert` does not
-remove the hierarchy behind it, so the assertion kept passing. *(2)* **`router.replace("/")` mounts
-a SECOND dashboard**, and a `Modal`'s portal **escapes the covered route's `display:none`** —
-measured as two visible tour cards with one spotlight between them.
+⚡ **Three live defects were found by BUILDING, none from a backlog.** *(1)* **Every demo exit showed
+"Restored — Your data has been restored from the backup file."** — stranded from
+`handleRestoreBackup` by the 2026-08-08 routing port, and **`demo-mode.yaml` walked through that
+dialog twelve green runs running**, because an iOS `Alert` does not remove the hierarchy behind it.
+*(2)* **`router.replace("/")` onto a route already below leaks instances cumulatively — 1 → 2 → 3 → 4**,
+invisible because only one is ever visible, until a `Modal`'s portal **escaped the covered route's
+`display:none`**. Now `router.dismissTo`. *(3)* **`DemoBanner` failed AA at 3.88:1 in dark on all
+thirteen screens of a demo**, unmeasured because the contrast sweep runs as a non-demo user.
 
 ⛔ **A PLANT THAT PASSED caught a vacuous test, and the test was the smaller half.** `showTour`
 requires `isDemo`; the original "skip stays skipped" spec never entered demo, so it passed for an
-unrelated reason. Chasing it found the real fault: `dismissed`, a session variable, was sticky
-across demo re-entry — so **it, not the persisted flag, was deciding** whether the tour returned.
+unrelated reason. The real fault was that `dismissed`, a session variable, was deciding the tour's
+return instead of the persisted flag.
 
 ⛔ **Four of 1.2.8's pre-authored premises were stale, and the two that mattered would each have
 produced work that COULD NOT FAIL** — a rule defending against a `GestureDetector` **this app does
