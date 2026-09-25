@@ -4,7 +4,7 @@ import { buildBackupSnapshot, parseBackupSnapshot, type BackupSnapshot } from ".
 import { getDemoStore, startDemoStore, stopDemoStore } from "../demo/demoMode";
 import type { KeyValueStore } from "./demoStore";
 import { createEncryptionKey, encryptText, platformEncrypts, readEncryptionKey } from "./encryption";
-import { decodeStoredValue } from "./decode";
+import { decodeStoredValue, type DecodeOptions } from "./decode";
 import { EncryptionKeyUnavailableError } from "./storageErrors";
 
 const KEYS = {
@@ -147,7 +147,11 @@ export function forgetCachedEncryptionKey(): void {
 
 /** `store` defaults to whichever backend is live. The only caller that overrides it is the premium
  *  cache, which is Apple-ID-scoped and must stay on real storage even inside demo mode. */
-async function readJson<T>(key: string, store: KeyValueStore = backend()): Promise<T | null> {
+async function readJson<T>(
+  key: string,
+  store: KeyValueStore = backend(),
+  options: DecodeOptions = {}
+): Promise<T | null> {
   const raw = await store.getItem(key);
   if (raw === null) return null;
 
@@ -155,7 +159,7 @@ async function readJson<T>(key: string, store: KeyValueStore = backend()): Promi
   // Throws `UnreadableDataError` rather than returning null or falling back to parsing ciphertext —
   // "could not be read" and "was never written" are different answers and the caller must be able to
   // tell them apart. See decode.ts for what this replaced.
-  return decodeStoredValue<T>(key, raw, encryptionKey);
+  return decodeStoredValue<T>(key, raw, encryptionKey, options);
 }
 
 async function writeJson<T>(key: string, value: T, store: KeyValueStore = backend()): Promise<void> {
@@ -247,7 +251,10 @@ export async function updateAppSettings(patch: Partial<AppSettings>): Promise<vo
  * `isDemoPreview` ([D5]) and never touches the entitlement, so there is nothing here for it to fake.
  */
 export async function getCachedPremium(): Promise<boolean> {
-  const cached = await readJson<boolean>(KEYS.cachedPremium, AsyncStorage);
+  // ⛔ The ONE key that legitimately stores a scalar: `saveCachedPremium` writes a raw boolean.
+  // Every other key stores an object or an array, and for those a scalar means a wrong key produced
+  // garbage that happened to parse — see decode.ts.
+  const cached = await readJson<boolean>(KEYS.cachedPremium, AsyncStorage, { allowScalar: true });
   return cached ?? false;
 }
 

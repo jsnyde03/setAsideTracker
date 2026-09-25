@@ -20,10 +20,26 @@ import { UnreadableDataError } from "./storageErrors";
  * @param storageKey only for the error message, so a failure says *what* could not be read.
  * @param encryptionKey `null` on web, where nothing is encrypted in the first place.
  */
-export function decodeStoredValue<T>(storageKey: string, raw: string, encryptionKey: string | null): T {
+export interface DecodeOptions {
+  /**
+   * Accept a bare scalar (boolean/number/string/null) as a legitimate stored value.
+   *
+   * ⛔ **Exactly ONE key needs this and it is named at the call site**: `cachedPremium`, which
+   * stores a raw boolean. Everything else stores `JSON.stringify` of an object or an array, and for
+   * those a scalar coming back means the bytes are not ours — see `parseOrThrow`.
+   */
+  allowScalar?: boolean;
+}
+
+export function decodeStoredValue<T>(
+  storageKey: string,
+  raw: string,
+  encryptionKey: string | null,
+  options: DecodeOptions = {}
+): T {
   if (!isCipherText(raw)) {
     // Plaintext. Only web writes this (no key there), and reading it back needs no key either.
-    return parseOrThrow<T>(storageKey, raw);
+    return parseOrThrow<T>(storageKey, raw, options);
   }
 
   if (encryptionKey === null) {
@@ -47,10 +63,10 @@ export function decodeStoredValue<T>(storageKey: string, raw: string, encryption
     throw new UnreadableDataError(storageKey);
   }
 
-  return parseOrThrow<T>(storageKey, decrypted);
+  return parseOrThrow<T>(storageKey, decrypted, options);
 }
 
-function parseOrThrow<T>(storageKey: string, json: string): T {
+function parseOrThrow<T>(storageKey: string, json: string, options: DecodeOptions): T {
   let parsed: unknown;
   try {
     parsed = JSON.parse(json);
@@ -75,7 +91,7 @@ function parseOrThrow<T>(storageKey: string, json: string): T {
    * settings. **This app has never written a scalar to storage**, so one coming back means the
    * bytes are not ours, whatever they parsed as.
    */
-  if (parsed === null || typeof parsed !== "object") {
+  if (!options.allowScalar && (parsed === null || typeof parsed !== "object")) {
     throw new UnreadableDataError(storageKey);
   }
   return parsed as T;
