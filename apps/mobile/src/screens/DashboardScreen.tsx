@@ -24,6 +24,8 @@ import {
   entriesForYear,
   totalEntryExpenses,
   yearsWithEntries,
+  entrySetAsideDisplay,
+  fallbackSetAsideRate,
   summarizeWeeklySetAsides,
   weekStartOf,
 } from "../calculations";
@@ -188,6 +190,13 @@ export function DashboardScreen({
   // current week out of it and opens the sheet.
   const [weeksOpen, setWeeksOpen] = useState(false);
   const weekSummary = summarizeWeeklySetAsides(entries, taxProfile, selectedYear);
+  /**
+   * The rate for entries that predate the frozen field ([D14]), computed ONCE (1.2.20).
+   *
+   * ⛔ Not inside `renderItem`: `fallbackSetAsideRate` runs a full `computeTaxEstimate` over the
+   * year, so calling it per row would run one tax estimate per visible entry on every render.
+   */
+  const fallbackRate = fallbackSetAsideRate(entries, taxProfile, selectedYear);
   const weeks = weekSummary.weeks;
   const currentWeekStart = weekStartOf(new Date().toISOString().slice(0, 10));
   const thisWeek = weeks.find((week) => week.weekStart === currentWeekStart);
@@ -818,12 +827,28 @@ export function DashboardScreen({
         }
         renderItem={({ item }) => {
           const expenses = totalEntryExpenses(item);
+          const setAside = entrySetAsideDisplay(item, fallbackRate);
           return (
             <Pressable
               onPress={() => onEditEntry(item)}
               style={({ pressed }) => [styles.entryRow, pressed && styles.entryRowPressed]}
               accessibilityRole="button"
-              accessibilityLabel={`Edit ${PLATFORM_LABELS[item.platform]} entry from ${item.date}`}
+              /*
+               * ⛔ **The label carries the MONEY, because it replaces it (1.2.20.3).** A wrapper
+               * label hides every word inside it, and this row renders a gross, sometimes an
+               * expenses line, and now a set-aside — all of which a VoiceOver user heard nothing
+               * of. The row was in the reviewed allowlist and **that review was wrong**, exactly
+               * like the tax-profile row at 1.2.18.3. Adding a figure without fixing this would
+               * have widened the gap rather than created it.
+               * ⚠️ Prefix preserved: `Edit {platform} entry from {date}` is what the one Maestro
+               * flow and the Playwright specs match, and Playwright's `getByLabel` is a substring.
+               */
+              accessibilityLabel={
+                `Edit ${PLATFORM_LABELS[item.platform]} entry from ${item.date}. ` +
+                `${formatCurrency(item.grossPay + item.tips)}` +
+                `${expenses > 0 ? `, ${formatCurrency(expenses)} expenses` : ""}` +
+                `${setAside ? `, ${setAside.estimated ? "about " : ""}${formatCurrency(setAside.amount)} set aside` : ""}.`
+              }
             >
               <View style={styles.entryIconWrap}>
                 <Ionicons name={PLATFORM_ICONS[item.platform]} size={18} color={colors.primary} />
@@ -835,7 +860,19 @@ export function DashboardScreen({
                   <Text style={styles.entryExpenses}>−{formatCurrency(expenses)} expenses</Text>
                 )}
               </View>
-              <Text style={styles.entryAmount}>{formatCurrency(item.grossPay + item.tips)}</Text>
+              <View style={styles.entryAmounts}>
+                <Text style={styles.entryAmount}>{formatCurrency(item.grossPay + item.tips)}</Text>
+                {/* ⚠️ The tilde is not decoration: this entry predates the frozen rate ([D14]) and
+                    its figure comes from the year's current rate, which is the same thing the
+                    weekly sheet spells out as "estimated". A row that hid that would present a
+                    derived number with the same confidence as a frozen one. */}
+                {setAside && (
+                  <Text style={styles.entrySetAside}>
+                    {setAside.estimated ? "~" : ""}
+                    {formatCurrency(setAside.amount)} aside
+                  </Text>
+                )}
+              </View>
               <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
             </Pressable>
           );
@@ -1087,7 +1124,12 @@ function createStyles(colors: Colors) {
   entryPlatform: { ...type.subtitle, color: colors.ink },
   entryDate: { ...type.caption, color: colors.inkFaint, marginTop: 1 },
   entryExpenses: { ...type.micro, color: colors.danger, marginTop: 2 },
+  /** Right column: the gross stays the headline, the set-aside sits under it (1.2.20). */
+  entryAmounts: { alignItems: "flex-end" },
   entryAmount: { ...type.subtitle, color: colors.ink },
+  /** ⚠️ `inkFaint`, not `inkSubtle` — 1.2.9.3 solved `inkFaint` against every surface token, and
+   *  this sits on `surface`. It is the same token the date line above it already uses. */
+  entrySetAside: { ...type.micro, color: colors.inkFaint, marginTop: 2 },
   disclaimer: { ...type.micro, color: colors.inkFaint, textAlign: "center", marginTop: spacing.lg },
   });
 }

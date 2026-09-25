@@ -160,10 +160,10 @@ back clean, Jason decides whether this alone justifies one _(Jason 2026-09-25)_.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.20.1** | **The pure half:** a helper returning the entry's amount **and whether it is estimated** — entries predating the frozen field lean on `fallbackSetAsideRate` and the weekly sheet marks those. ⚠️ **Omit rather than render `$0`**: a zero line is not information, matching why empty weeks are not emitted. Unit-tested. | ⬜ |
-| **1.2.20.2** | **The row:** set-aside under the gross, right column; estimated renders `~$31 aside`. Gross stays the headline _(Jason 2026-09-25)_. | ⬜ |
-| **1.2.20.3** | 🔴 **Fix the row's accessible name, which ALREADY hides money.** `Edit {platform} entry from {date}` replaces everything inside it, so VoiceOver users hear **no amounts at all** — not the gross, not the expenses. It is in the reviewed allowlist and **that review was wrong**, same class as 1.2.18.3's tax-profile row. Adding a figure without this makes the loss worse. | ⬜ |
-| **1.2.20.4** | **Tests + plants:** unit for the helper, e2e asserting the figure appears **and** that it matches the weekly sheet for the same entry. ⛔ **Plant the agreement check** — a test that only asserts "a number is shown" passes over a wrong number. | ⬜ |
+| **1.2.20.1** | ✅ **DONE.** `entrySetAsideDisplay()` in `calculations.ts` — amount + `estimated`, reusing `entrySetAside` so a row and the weekly sheet cannot disagree. Omits `$0` and unavailable figures. **6 unit tests; planted a disagreeing figure and a false `estimated` — both red.** | ✅ |
+| **1.2.20.2** | ✅ **DONE.** Set-aside under the gross, right column; `~` marks an estimate. ⚠️ `fallbackSetAsideRate` is computed **once**, not in `renderItem` — it runs a full `computeTaxEstimate`, so per-row would mean one tax estimate per visible entry per render. | ✅ |
+| **1.2.20.3** | ✅ **DONE.** The row's accessible name now carries gross, expenses and set-aside. ⚡ **The shadowing gate fired BOTH halves** — the new label unreviewed *and* the old entry now stale — which is the first time its "no entry for a site that no longer exists" check has caught anything. | ✅ |
+| **1.2.20.4** | ✅ **DONE.** `entry-set-aside.spec.ts`, 3 specs, **both planted** *(hide the line → reds; revert the label → reds)*. ⛔ **Agreement is proven in the UNIT test, not here** — restating arithmetic in a browser is a weaker version of a stronger test, and the weak one is what quietly passes over a wrong figure. | ✅ |
 | **1.2.20.5** | **Verify + after-scan.** Full Playwright; Maestro only if a selector moves. | ⬜ |
 
 **Exit line:** every recent entry shows what it contributes to the year's set-aside, the figure

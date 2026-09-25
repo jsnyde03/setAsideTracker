@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   computeSetAsideRate,
   computeTaxEstimate,
+  entrySetAside,
+  entrySetAsideDisplay,
   fallbackSetAsideRate,
   summarizeWeeklySetAsides,
   weekStartOf,
@@ -221,5 +223,76 @@ describe("summarizeWeeklySetAsides — the drift, and saying so (1.2.4.5)", () =
     // adjustment: 0` passed that assertion while breaking two other tests.
     expect(summary.yearTotal).toBeCloseTo(computeTaxEstimate(all, PROFILE, YEAR).netAmountToSetAside, 6);
     expect(summary.weeksTotal + summary.adjustment).toBeCloseTo(summary.yearTotal, 6);
+  });
+});
+
+/**
+ * What a recent-entry row shows (1.2.20).
+ *
+ * ⛔ **The load-bearing claim is AGREEMENT, not presence.** The rows and the weekly sheet describe
+ * the same money, and a test that only asserts "a number came back" passes over a number that is
+ * wrong — which is the failure that would actually cost trust, because a user who adds the rows up
+ * and compares them to the week is doing the obvious thing.
+ */
+describe("entrySetAsideDisplay", () => {
+  it("reports the frozen figure, and does not call it an estimate", () => {
+    const [saved] = logAll([entry("a", "2026-03-02", 8000)]);
+    const shown = entrySetAsideDisplay(saved);
+    expect(shown).toBeDefined();
+    expect(shown!.estimated).toBe(false);
+    expect(shown!.amount).toBeCloseTo(entrySetAside(saved)!, 6);
+  });
+
+  it("marks an entry that predates the frozen field as an estimate ([D14])", () => {
+    const legacy = entry("old", "2026-02-02", 5000); // never had a rate frozen
+    const rate = fallbackSetAsideRate([legacy], PROFILE, YEAR)!;
+    const shown = entrySetAsideDisplay(legacy, rate);
+    expect(shown).toBeDefined();
+    // ⚠️ The flag is the whole point: the same condition weeklySetAsides uses to mark a week
+    // estimated, so a row and the week containing it can never disagree about exactness.
+    expect(shown!.estimated).toBe(true);
+  });
+
+  it("shows nothing when the figure is unavailable, rather than zero", () => {
+    const legacy = entry("old", "2026-02-02", 5000);
+    expect(entrySetAsideDisplay(legacy)).toBeUndefined();
+  });
+
+  it("shows nothing for an entry that adds no tax", () => {
+    // A shift whose mileage deduction exceeds its pay: computeSetAsideRate clamps this to 0 on
+    // purpose, and "$0.00 aside" is a line that says nothing.
+    const lossMaking = entry("m", "2026-04-06", 50, { mileage: 400, setAsideRate: 0 });
+    expect(entrySetAsideDisplay(lossMaking)).toBeUndefined();
+  });
+
+  /**
+   * ⛔ The one that protects the user's arithmetic. Every row in a week must add up to the figure
+   * that week's sheet shows — including the entries the rows deliberately omit, since omitting a
+   * zero cannot change a sum.
+   */
+  it("sums to exactly what the weekly sheet says for the same week", () => {
+    const saved = logAll([
+      entry("a", "2026-06-15", 4000),
+      entry("b", "2026-06-17", 2500),
+      entry("c", "2026-06-21", 1800),
+    ]);
+    const withZero = [...saved, entry("z", "2026-06-18", 50, { mileage: 400, setAsideRate: 0 })];
+
+    const [week] = weeklySetAsides(withZero, PROFILE, YEAR);
+    const rowTotal = withZero
+      .map((e) => entrySetAsideDisplay(e)?.amount ?? 0)
+      .reduce((sum, n) => sum + n, 0);
+
+    expect(week.entryCount).toBe(4);
+    expect(rowTotal).toBeCloseTo(week.setAside, 6);
+  });
+
+  it("agrees with the weekly sheet for estimated entries too", () => {
+    const legacy = entry("old", "2026-06-16", 5000);
+    const rate = fallbackSetAsideRate([legacy], PROFILE, YEAR)!;
+    const [week] = weeklySetAsides([legacy], PROFILE, YEAR);
+
+    expect(week.estimated).toBe(true);
+    expect(entrySetAsideDisplay(legacy, rate)!.amount).toBeCloseTo(week.setAside, 6);
   });
 });

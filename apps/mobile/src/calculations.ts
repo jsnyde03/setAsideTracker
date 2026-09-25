@@ -279,6 +279,44 @@ export function entrySetAside(entry: Entry, fallbackRate?: number): number | und
   return Math.max(0, entryNetProfit(entry)) * rate;
 }
 
+/** What one entry contributes to the year's set-aside, and how much to trust it (1.2.20). */
+export interface EntrySetAsideDisplay {
+  amount: number;
+  /**
+   * True when the figure came from {@link fallbackSetAsideRate} rather than the entry's own frozen
+   * rate — i.e. the entry predates the field ([D14]). The same condition
+   * {@link weeklySetAsides} uses to mark a week estimated, so a row and its week never disagree
+   * about whether the number is exact.
+   */
+  estimated: boolean;
+}
+
+/**
+ * The per-entry set-aside as a row should present it (1.2.20).
+ *
+ * ⛔ **This exists so the honesty rule lives in ONE place rather than inside a component.** It is
+ * the same `entrySetAside` figure the weekly sheet sums — deriving a second one here would let a
+ * row and the weekly sheet disagree about the same money, which is a trust bug rather than a
+ * rounding difference.
+ *
+ * Returns `undefined` when there is nothing worth showing:
+ * - no frozen rate **and** no fallback — the figure is unavailable, not zero; or
+ * - the amount rounds to nothing, because **a `$0 aside` line is not information**. That is the
+ *   same reason {@link weeklySetAsides} does not emit empty weeks. ⚠️ It is a real case rather
+ *   than a theoretical one: a shift whose expenses exceed its pay reduces the year's tax, and
+ *   `computeSetAsideRate` clamps such an entry's rate to 0 deliberately.
+ */
+export function entrySetAsideDisplay(
+  entry: Entry,
+  fallbackRate?: number
+): EntrySetAsideDisplay | undefined {
+  const amount = entrySetAside(entry, fallbackRate);
+  if (amount === undefined) return undefined;
+  // Half a cent or less renders as "$0.00" — show nothing rather than a line that says nothing.
+  if (amount < 0.005) return undefined;
+  return { amount, estimated: entry.setAsideRate === undefined };
+}
+
 /** One week's worth of logged work, and what it says to set aside. Weeks are Monday–Sunday ([D13]). */
 export interface WeeklySetAside {
   /** `YYYY-MM-DD` of the Monday that opens the week. Also the sort key. */
