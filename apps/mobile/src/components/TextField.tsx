@@ -18,14 +18,22 @@ export function TextField({ label, hint, style, ...inputProps }: TextFieldProps)
         them as its own accessible name and description. Left exposed they'd be announced twice, and
         they'd also put a second element with the same text in the hierarchy — which is what forced
         tests to target these fields by placeholder-and-index rather than by name.
+
+        ⚠️ **`aria-hidden`, not `accessibilityElementsHidden` + `importantForAccessibility`** (1.2.18.2).
+        The old pair is correct on iOS and **dropped entirely by react-native-web** — the DOM showed
+        these nodes carrying no accessibility attribute at all, so the double-announcement this
+        comment describes was **unverifiable in the browser suite** and the claim could rot without
+        anything noticing. React Native maps `aria-hidden` to both native props, and RN-web emits
+        the real attribute, so one line serves the device and the gate. Same fix as `TourOverlay`'s
+        dim bands, found there first.
       */}
       {label && (
-        <Text style={styles.label} accessibilityElementsHidden importantForAccessibility="no">
+        <Text style={styles.label} aria-hidden>
           {label}
         </Text>
       )}
       {hint && (
-        <Text style={styles.hint} accessibilityElementsHidden importantForAccessibility="no">
+        <Text style={styles.hint} aria-hidden>
           {hint}
         </Text>
       )}

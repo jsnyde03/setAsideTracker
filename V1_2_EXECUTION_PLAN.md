@@ -55,7 +55,7 @@
 > [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md).
 > Health: **453** mobile unit _(measured 2026-09-24; the line said 400, the closed 1.2.17 row said
 > 411 and CLAUDE.md said 414 — three stale counts, so **re-measure rather than copy this**)_ ·
-> **102** engine · **134/134** Playwright _(measured 2026-09-24)_ ·
+> **102** engine · **136/136** Playwright _(measured 2026-09-24)_ ·
 > typecheck clean · both tax-config gates green · lint 15 _(ledger says 14 — drift, pre-existing,
 > re-count at 1.2.11)_.
 >
@@ -151,7 +151,7 @@ read.** 1.2.8.5 already built the opener pattern the first one needs.
 | # | sub-step | scan |
 |---|---|---|
 | **1.2.18.1** | ✅ **DONE 2026-09-24. Onboarding + three of the four sheets now measured**, over demo data, with a per-surface `checked` guard so a sheet that fails to open cannot pass *(planted: a broken opener reds with "the surface never opened")*. 🔴 **Found a LIVE defect on its first working run — `DemoBanner` was 3.88:1 in dark mode on ALL THIRTEEN screens of a demo**, unmeasured because the route sweep runs as a non-demo user. ⚡ **Also fixed the gate itself: icon-font glyphs were being held to the 4.5:1 TEXT threshold** and are now measured at WCAG's 3:1 non-text bar. ⛔ **Remaining: `ExpenseLineSheet`, `LockScreen`, `RecoveryScreen`** — the last two need contrived state and may be honest device rows; named in the spec. | ✅ |
-| **1.2.18.2** | **`TextField`'s label/hint → `aria-hidden`.** `accessibilityElementsHidden` + `importantForAccessibility` are **dropped by react-native-web**, so the intent is unverifiable here. ⚠️ **It sits behind most of the suite's `getByLabel` selectors** — full Playwright run required, not a spot check. | ⬜ |
+| **1.2.18.2** | ✅ **DONE 2026-09-24.** `TextField`'s label and hint now use `aria-hidden`, which RN maps to both native props and RN-web actually emits — so the component's own claim *("left exposed they'd be announced twice")* is true on iOS **and checkable here**, where it was previously unverifiable. ⚠️ **New spec asserts the NEW fact positively** (`a11y-field-labels.spec.ts`) rather than the absence of the old props — the 1.2.9.1 lesson. **Planted: the old props red it.** **136/136 Playwright**, which was the real risk: `TextField` sits behind most `getByLabel` selectors. | ✅ |
 | **1.2.18.3** | **`a11yLabelShadowing.test.ts` cannot see ternary-rendered text** — `renderedText` requires the literal's DIRECT parent to be the `JsxExpression`. ⚠️ **The fix is not a one-liner**: relaxing it sweeps in `key=`, `style={{…}}` and every attribute literal, so it needs a JSX-children-only walk **plus a re-review of whatever new sites it surfaces**. | ⬜ |
 | **1.2.18.4** | **Sweep the Maestro "did this screen open" probes.** Three flows still name mid-screen markers that any new row can push below the fold — the defect 1.2.8.6 hit. One selector each. | ⬜ |
 | **1.2.18.5** | **Verify + whole-item after-scan.** | ⬜ |
