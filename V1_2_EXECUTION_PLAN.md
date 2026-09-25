@@ -33,11 +33,15 @@
 > **Guideline 3.1.2**. Full arc + every mechanism → [V1_2_LOG.md](V1_2_LOG.md).
 >
 > ✅ **1.2.1–1.2.11 and 1.2.14–1.2.19 CLOSED. Everything buildable in v1.2 is DONE.**
-> 🔴 **ACTIVE: 1.2.12 — device QA, and it is BLOCKED ON JASON authorizing the one reserved TestFlight
-> build.** There is no unblocked work behind it. ⛔ **The build owes THIRTEEN rows** — agenda at the
-> head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md), most-likely-broken first.
-> **Run `ios-simulator` first regardless** (the only compile check here); **`ios-adhoc` has never
-> worked.** After 1.2.12, the only thing left is **1.2.13**'s `master` cutover at release.
+> 🎉 **THE RESERVED BUILD SUCCEEDED 2026-09-25** — v1.2 has a signed binary on TestFlight, and
+> **1.2.5's native stack prebuilds, compiles and archives.** ⛔ **That is the COMPILE, not the
+> behaviour.** **1.2.12 (device QA) is IN FLIGHT with Jason**, worked from the **thirteen rows** at
+> the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — that file is its
+> working surface. **Live blocker there: the export-compliance questionnaire in ASC**, without which
+> testers cannot install ([D23] working).
+> ▶ **ACTIVE BUILD: 1.2.20 — set-aside on each recent-entry row**, decomposed below. ⚙️ **It is built
+> now but does NOT get its own Codemagic build** — it rides whatever device QA forces, because the
+> remainder is thin _(Jason 2026-09-25)_. After these, only **1.2.13**'s `master` cutover remains.
 > ⚡ **1.2.8, 1.2.18 and 1.2.19 are worth reading before touching anything.** Between them: **three
 > live defects** *(a stranded alert on every demo exit; a cumulative route leak; a banner failing AA
 > on all 13 demo screens)*, **two lossy accessible names**, **a plant that PASSED**, and **five
@@ -142,27 +146,29 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### 📱 **1.2.12 — Verify · device QA · phase after-scan** · **ACTIVE** _(2026-09-24)_
+### 💵 **1.2.20 — Set-aside on each recent-entry row** · **ACTIVE** _(2026-09-25, Jason)_
 
-🔴 **BLOCKED, and the blocker is Jason: the one reserved TestFlight build needs authorizing.**
-Everything buildable in v1.2 is done. This is not an interim placeholder — it is the real next gate,
-and there is no unblocked work left behind it.
+**Quick reference on the dashboard: each recent entry shows what it says to set aside.**
 
-⛔ **The build's agenda is at the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md)
-and now owes THIRTEEN rows, ordered most-likely-broken first. Do not spend the build on less.**
+⚡ **Mostly a DISPLAY change — the number already exists.** `entrySetAside()` applies the entry's
+**frozen rate** captured at log time ([D14]); the weekly sheet already sums exactly this and the
+series telescopes to the year total. ⛔ **Reuse that function — do not derive a second figure**, or
+the row and the weekly sheet would disagree about the same money.
+
+⚙️ **Shipping: built now, NOT its own build.** It rides whatever build device QA forces; if QA comes
+back clean, Jason decides whether this alone justifies one _(Jason 2026-09-25)_.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.12.1** | ✅ **DONE 2026-09-25 — build authorized and SUCCESSFUL.** ⚡ **This retires v1.2's single biggest unknown: 1.2.5's native stack prebuilds, compiles and archives.** It was the only prebuild-affecting change in the version — two native modules, a config plugin, a background task — and iOS CI has broken on exactly that class before. ⚠️ **It proves the BUILD, not the behaviour**: every runtime row below is still owed. | ✅ |
-| **1.2.12.2** | ⚙️ **Row 0(a) upload: PASSED** — the archive was accepted. ⚠️ **ITMS-91053 is evaluated by Apple during PROCESSING, after the upload**, and surfaces as an email / a rejected build in ASC rather than a Codemagic failure — **so a green build is not yet a clear privacy manifest. Confirm the build reaches "Ready to Submit".** ⛔ **Row 0(b) is the live blocker: answer the export-compliance questionnaire in App Store Connect**, or testers cannot install it. That is [D23] working, and Apple's answer gets recorded in `exportCompliance.test.ts` — which is how 1.2.10.2 closes. | 🔵 |
-| **1.2.12.3** | **Rows 2–5: the mileage stack.** 1.2.5 has **zero** device verification and cannot get any other way — two native modules, a config plugin, a background task. **If the build fails, it is almost certainly this.** | ⬜ |
-| **1.2.12.4** | **Rows 6–9: the `Alert` layer, the weekly sheet at phone width, demo mode end-to-end, reminders across a relaunch.** None of it is visible to a browser. | ⬜ |
-| **1.2.12.5** | **Rows 10–12: the guided tour on a phone, VoiceOver through it, and `LockScreen`/`RecoveryScreen` contrast** — the two surfaces the gate deliberately does not measure. | ⬜ |
-| **1.2.12.6** | **Every iPad layout**, owed since 1.2.7's .1–.4 landed. RN-web at 1024px is not UIKit at 1024pt. | ⬜ |
-| **1.2.12.7** | **Guideline pass + the whole-PHASE after-scan** across all of v1.2, not just this item. | ⬜ |
+| **1.2.20.1** | **The pure half:** a helper returning the entry's amount **and whether it is estimated** — entries predating the frozen field lean on `fallbackSetAsideRate` and the weekly sheet marks those. ⚠️ **Omit rather than render `$0`**: a zero line is not information, matching why empty weeks are not emitted. Unit-tested. | ⬜ |
+| **1.2.20.2** | **The row:** set-aside under the gross, right column; estimated renders `~$31 aside`. Gross stays the headline _(Jason 2026-09-25)_. | ⬜ |
+| **1.2.20.3** | 🔴 **Fix the row's accessible name, which ALREADY hides money.** `Edit {platform} entry from {date}` replaces everything inside it, so VoiceOver users hear **no amounts at all** — not the gross, not the expenses. It is in the reviewed allowlist and **that review was wrong**, same class as 1.2.18.3's tax-profile row. Adding a figure without this makes the loss worse. | ⬜ |
+| **1.2.20.4** | **Tests + plants:** unit for the helper, e2e asserting the figure appears **and** that it matches the weekly sheet for the same entry. ⛔ **Plant the agreement check** — a test that only asserts "a number is shown" passes over a wrong number. | ⬜ |
+| **1.2.20.5** | **Verify + after-scan.** Full Playwright; Maestro only if a selector moves. | ⬜ |
 
-**Exit line:** a real-device pass against the full checklist, with every ❌ filed — and after it,
-the only thing between v1.2 and the store is 1.2.13's cutover.
+**Exit line:** every recent entry shows what it contributes to the year's set-aside, the figure
+agrees with the weekly sheet by construction, estimates say so, and a screen-reader user hears the
+money a sighted user sees.
 
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
@@ -182,6 +188,7 @@ out-of-order number is worth less than one more round of that.
 
 | # | item | notes |
 |---|---|---|
+| **1.2.12** | 📱 **Verify · device QA · phase after-scan — IN FLIGHT (Jason)** | The reserved build **succeeded 2026-09-25**; the binary is on TestFlight. ⛔ **Its decomposition is the thirteen rows at the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md)** — that file is the working surface, not this queue. **Live blocker: the export-compliance questionnaire in ASC**, without which testers cannot install. |
 | **1.2.13** | ⚙️ **Publish the privacy policy — SHIP BLOCKER, mostly done 2026-09-22** | ✅ Pages now serves **this** repo's `docs/` ([D26]); audits moved out so `docs/` is the website exactly; all 9 URLs repointed; **`tools/check-published-policy.mjs`** added — it fetches the live page and fails on drift *(verified both ways: reds on the real defect, and a control proves it can pass)*. ⛔ **Remaining: the cutover.** Pages serves `master`, which still carries the July policy — correct for live v1.1.1, wrong the moment v1.2 ships. **Merging v1.2 to master at release publishes it; the gate fails the submission if it is forgotten.** |
 
 ⚠️ **Sequencing, and it is the point of the restructure:** the correctness blocks run **before** the
