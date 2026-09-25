@@ -74,7 +74,9 @@ export function ShareEarningsModal({ visible, onClose, data }: ShareEarningsModa
             disabled={!canShare || busy}
             style={({ pressed }) => [styles.shareButton, (!canShare || busy) && styles.shareButtonDisabled, pressed && styles.shareButtonPressed]}
             accessibilityRole="button"
-            accessibilityLabel="Share earnings image"
+            // The button's own text changes to "Preparing…" while it works, and a wrapper label
+            // replaces that — so a VoiceOver user got no progress at all (1.2.18.3).
+            accessibilityLabel={busy ? "Preparing earnings image…" : "Share earnings image"}
           >
             <Ionicons name="share-outline" size={18} color="#fff" />
             <Text style={styles.shareButtonText}>{busy ? "Preparing…" : "Share image"}</Text>

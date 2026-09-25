@@ -342,7 +342,22 @@ export function SettingsScreen({
           onPress={onEditTaxProfile}
           style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
           accessibilityRole="button"
-          accessibilityLabel="Edit tax profile"
+          /*
+           * ⛔ The label carries the VALUES, because it replaces them (1.2.18.3). A wrapper label
+           * hides every word inside it, so "Edit tax profile" alone left a VoiceOver user knowing
+           * only that a button existed — while a sighted reader saw their filing status, state,
+           * county and W2 status at a glance. That is the same loss the restore-backup row had.
+           * ⚡ Found by the shadowing gate the moment it learned to see text rendered through
+           * expressions; the old walk could not read this row's children at all.
+           * ⚠️ Prefix preserved: `getByLabel("Edit tax profile")` is a SUBSTRING match, so the one
+           * spec selecting this row still finds it.
+           */
+          accessibilityLabel={
+            `Edit tax profile. ${FILING_STATUS_LABELS[taxProfile.filingStatus]}, ` +
+            `${taxProfile.state}` +
+            `${taxProfile.county ? `, ${taxProfile.county}` : ""}` +
+            `${taxProfile.hasW2Job ? ", has W2 job" : ""}.`
+          }
         >
           <View style={styles.rowText}>
             <Text style={styles.rowLabel}>{FILING_STATUS_LABELS[taxProfile.filingStatus]}</Text>

@@ -38,21 +38,43 @@ function tsxFiles(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-/** Literal strings this subtree actually renders, in source order. */
-function renderedText(node: ts.Node, acc: string[] = []): string[] {
+/**
+ * Literal strings this subtree actually renders, in source order.
+ *
+ * ⛔ **`inChildExpr` is why this is not four lines, and the reason is a defect this gate had.**
+ * The first version accepted a string literal only when its **direct** parent was the
+ * `JsxExpression` — so `{last ? "Done" : "Next"}` was invisible, because the literal's parent is
+ * the `ConditionalExpression`. ⚡ **Found the only way it could be: two buttons were written one
+ * line apart with the same shadowing defect, the static one was caught on the first run and the
+ * ternary one passed** (1.2.8.2).
+ *
+ * ⚠️ **The naive fix — "any literal under a JsxExpression" — is worse than the bug.** It sweeps in
+ * `key="row"`, `style={{color: "red"}}` and every other attribute value, which render nothing.
+ * So the flag is carried down through **child** expressions only, and is **switched off again on
+ * entering any attribute list**, including a nested element's inside a child expression.
+ */
+function renderedText(node: ts.Node, acc: string[] = [], inChildExpr = false): string[] {
   node.forEachChild((child) => {
     if (ts.isJsxText(child)) {
       const t = child.text.trim();
       if (t) acc.push(t);
-    } else if (
-      (ts.isStringLiteral(child) || ts.isNoSubstitutionTemplateLiteral(child)) &&
-      child.parent &&
-      ts.isJsxExpression(child.parent)
-    ) {
+      return;
+    }
+    // An attribute list renders nothing, whatever it is nested inside.
+    if (ts.isJsxAttributes(child)) {
+      renderedText(child, acc, false);
+      return;
+    }
+    const isChildExpression =
+      ts.isJsxExpression(child) &&
+      child.parent !== undefined &&
+      (ts.isJsxElement(child.parent) || ts.isJsxFragment(child.parent));
+    const within = inChildExpr || isChildExpression;
+    if ((ts.isStringLiteral(child) || ts.isNoSubstitutionTemplateLiteral(child)) && within) {
       const t = child.text.trim();
       if (t) acc.push(t);
     }
-    renderedText(child, acc);
+    renderedText(child, acc, within);
   });
   return acc;
 }

@@ -11,6 +11,41 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.18.3 The shadowing gate learns to read expressions — after-scan · 2026-09-24 · ✅ DONE
+
+**The blind spot is closed, and the fix is deliberately not the obvious one.** `renderedText` used
+to accept a string literal only when its **direct** parent was the `JsxExpression`, so
+`{cond ? "A" : "B"}` was invisible — the literal's parent is the `ConditionalExpression`.
+⛔ **The naive relaxation ("any literal under a JsxExpression") is worse than the bug**: it sweeps
+in `key="row"`, `style={{color:"red"}}` and every other attribute value, none of which render.
+The flag is therefore carried down through **child** expressions only and **switched off again on
+entering any attribute list**, including a nested element's inside a child expression.
+
+**⚡ Planted with the exact defect that escaped it**: re-adding 1.2.8.2's
+`accessibilityLabel={last ? "Finish tour" : "Next tour step"}` now reds the gate. The loop that
+started when one of two adjacent buttons was caught and the other was not is closed.
+
+**🔴 It immediately surfaced SIX sites the old walk could not see — and two were real losses.**
+
+| site | verdict |
+|---|---|
+| `TripTrackerButton` | ✅ label is a strict superset of the visible text |
+| `AddEntryScreen` ×2 (premium rows) | ✅ label adds "(Premium)"; `undefined` when unlocked |
+| `SettingsScreen` demo row | ✅ label matches the row label, and its `accessibilityHint` carries the rest |
+| `ShareEarningsModal` | 🔴 **lossy** — the button reads *"Preparing…"* while it works and the label said *"Share earnings image"* regardless, so a VoiceOver user got **no progress at all** |
+| `SettingsScreen` tax-profile row | 🔴 **lossy, and the worst of the set** — the row shows filing status, state, county and W2 status; the label said only *"Edit tax profile"*, so all four were **replaced by the name of a button** |
+
+⛔ **Both were FIXED rather than added to the reviewed list.** That fixture's line says *"a screen
+reader user gets at least what a sighted user gets from the same control"* — entering a lossy site
+would have made the file assert something false, which is worse than the gap it records. ⚠️ The
+tax-profile fix keeps its `"Edit tax profile"` **prefix**, because `getByLabel` is a substring match
+and one spec selects that row.
+
+⚡ **This is the same loss the gate's own header cites for the restore-backup row** — which means
+the class it was built to catch had two more live instances sitting inside its blind spot the whole
+time. **A gate that cannot read a construct cannot police it, and the two facts look identical from
+the outside: a green run.**
+
 ### 🔎 1.2.18.1 Widening the a11y sweeps — after-scan · 2026-09-24 · ✅ DONE
 
 **Shipped.** The contrast gate now measures **onboarding** and **three of the four bottom sheets**
