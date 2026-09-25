@@ -13,7 +13,7 @@ Read the plan's `RESUME HERE` block first; it is kept current.
 **v1.2 in development on branch `v1.2`.** No ship date — [D9]: work the queue and ship when done.
 **Do not reintroduce a target date.**
 
-✅ **CLOSED: 1.2.1–1.2.11, 1.2.14–1.2.17.** Demo mode · tax correctness · data safety ·
+✅ **CLOSED: 1.2.1–1.2.11, 1.2.14–1.2.19.** Demo mode · tax correctness · data safety ·
 set-aside by week · mileage · the premium slice · native iPad · accessibility · filed correctness ·
 lint · Maestro on CI · the `.app` cache · the keypad question · CI visibility.
 **Per-item detail is in `V1_2_LOG.md` and belongs there.**
@@ -75,7 +75,7 @@ visible text or `accessibilityLabel`** — a repo-wide convention is filed for v
 ⚙️ **What changed under your feet, if you are a new session:**
 - **Every cheap gate now runs on every push and REPORTS to the commit** —
   `.github/workflows/web-checks.yml`: typecheck · `lint:ci` · 453 mobile unit · 102 engine · both
-  tax-config audits · 134 Playwright. Each has been **seen to fail** from CI. Codemagic's copy is
+  tax-config audits · 137 Playwright. Each has been **seen to fail** from CI. Codemagic's copy is
   retired; `ios-testflight` is all that is left there.
 - **Lint is a gate at zero, with `--max-warnings=0`.** New code cannot land a warning.
 - **Contrast is gated in both themes** on every route **and on the guided tour**, so new UI must
@@ -99,8 +99,10 @@ reached no existing install while their queue silently drained · and "Clear All
 app lock on, so the next launch demanded Face ID for an app with nothing in it. **None reach anyone
 until v1.2 ships** — [D10]'s accepted cost, and the reason to keep moving.
 
-⛔ **THE ONE RESERVED BUILD NOW OWES FIVE THINGS.** The agenda is at the head of
+⛔ **THE ONE RESERVED BUILD NOW OWES THIRTEEN ROWS.** The agenda is at the head of
 `V1_2_TESTFLIGHT_CHECKLIST.md`, ordered most-likely-broken first. **Do not spend a build on less.**
+⚡ **Rows 10–12 were added 2026-09-24:** the guided tour on a phone · VoiceOver through it ·
+`LockScreen`/`RecoveryScreen` contrast, which the gate deliberately does not measure.
 1. **Does it upload?** ITMS-91053 names any required-reason API still undeclared — unknowable here.
 2. **Does it install?** ⚠️ **It will land as "Missing Compliance"** until the export questionnaire is
    answered in ASC. **That is [D23] working, not a broken build** — and it is how 1.2.10.2 gets its
