@@ -11,6 +11,46 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.19 Two dashboards and an escaping portal — 2026-09-24
+
+**🔴 It was not a duplicate. It was a cumulative leak.** Measured from the DOM across the three
+repeatable navigations: **1 → 2 → 3 → 4**. `router.replace("/")` while a dashboard is already below
+in the stack mounts another and never unmounts the first, so every enter-demo / exit-demo /
+replay-tour adds one. Entering a demo from **onboarding** stays at 1 — nothing is below it, which
+localises the cause precisely.
+
+⚡ **Only ever one is visible, which is why a month passed.** A covered route is `display:none`.
+**What made it visible was a `Modal`, whose portal escapes that wrapper**: the tour rendered from
+every mounted copy at once, and the stale ones cannot measure their anchors, so a degraded centred
+card drew on top of the working one. ⛔ **The next auto-opening overlay would have found it again.**
+
+**The fix is `router.dismissTo(href)`** — *"dismisses screens until the href is reached; if it is not
+found, replaces the current screen with it"*. That is exactly the two cases: Settings sits above a
+dashboard, onboarding does not. Applied to `handleEnterDemo`, `handleExitDemo`, `DemoBanner`'s exit,
+and replay (which carries a route param, so it exercises the object-href form). **Re-measured: 1 on
+every path.**
+
+**⚙️ 1.2.19.3 — do the four sheets share the exposure? No, and the reason is worth stating.** The
+property is theirs too, but a sheet only opens from the **visible** screen and its backdrop absorbs
+every tap while open, so there is no way to navigate away and leave one behind. ⚠️ **The tour was
+different because it opened by itself on a route that was already covered.** `useIsFocused` stays on
+the tour even though the root cause is fixed: it is the pattern any future auto-opening overlay
+needs, and it costs one boolean.
+
+**⛔ The destructive paths are deliberately NOT measured, because they first fooled my own
+diagnostic.** "Clear All Data" is gated behind a native `Alert`, which **react-native-web does not
+render**, so the tap does nothing at all. A first pass counted dashboards afterwards and read
+`visible: 0` — which looked like *"the data was cleared and the dashboard is gone"* and was actually
+**Settings still covering the dashboard, with nothing cleared.** ⚡ **The instrument reported the
+state it had failed to reach**, which is the same shape as every other finding in 1.2.18. Their stack
+shape is unknown and unchanged; `dismissTo` would behave identically there anyway, since
+`/onboarding` is not in the stack.
+
+**Planted:** restoring `replace("/")` in `handleEnterDemo` reds `route-instances.spec.ts` with
+*"entering a demo stacked another dashboard — expected 1, received 2"*. ⚠️ **That spec counts hidden
+nodes on purpose:** a visible-only count reads `1` the whole way through a fourfold leak, and is
+exactly the assertion someone would write who had not measured first.
+
 ### 🔎 1.2.18 The gates that cannot see what they claim to — WHOLE-ITEM after-scan · 2026-09-24
 
 **The item's thesis held, and harder than expected: every sub-step's gate was green over a live

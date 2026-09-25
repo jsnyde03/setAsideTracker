@@ -90,7 +90,18 @@ name: Onboarding → Dashboard
 # If the dashboard threw, ErrorBoundary is on screen and renders error.message right below
 # this title — so this failing both names the cause AND puts the real message in the shot.
 - assertNotVisible: "Something went wrong"
-- assertVisible: "Your earnings"
+# ⛔ `extendedWaitUntil`, not `assertVisible`. Run 36085067554 failed here on a hierarchy that
+# SHOWS "Your earnings" on screen at [20,85][227,123] — element present + assertion failed means the
+# app had not finished its first render inside the default timeout, on a runner whose speed varies
+# about 4.5× between dispatches. ⚡ **This is the same fix already applied twice in this suite** for
+# the identical symptom (`clear-all-data.yaml` and `demo-mode.yaml`, both citing run 35902276697),
+# and it belongs here most of all: **every other flow runs this one as its precondition**, so one
+# slow render fails whichever flow happens to draw it — which is what made the flakiness look random
+# and produced the "1 in 6" figure. ⚠️ The two `assertNotVisible` lines above stay as they are: they
+# are diagnostics that must fail FAST to say which hypothesis held.
+- extendedWaitUntil:
+    visible: "Your earnings"
+    timeout: 20000
 - scrollUntilVisible:
     element:
       text: "Set aside for taxes"
