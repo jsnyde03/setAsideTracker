@@ -15,9 +15,9 @@ real navigation stack. Green means "nothing else broke", not "this works on a ph
 
 ---
 
-## 🎯 THE ONE BUILD — read this before dispatching _(assembled 2026-09-21 at 1.2.5.6; rows 10–12 added 2026-09-24)_
+## 🎯 THE ONE BUILD — read this before dispatching _(assembled 2026-09-21 at 1.2.5.6; rows 10–12 added 2026-09-24, rows 13–14 on 2026-09-25)_
 
-> ### ⚡ Dispatch card — 2026-09-25
+> ### ⚡ Dispatch card — ✅ **BUILD SPENT AND SUCCESSFUL 2026-09-25**
 >
 > | | |
 > |---|---|
@@ -27,6 +27,7 @@ real navigation stack. Green means "nothing else broke", not "this works on a ph
 > | **Verify at the top of the log** | The first step now prints **BRANCH / COMMIT / SUBJECT / DATE**. **Read those four lines before believing anything else.** Expect `v1.2` and today's HEAD. |
 > | **Expect** | ⚠️ **"Missing Compliance"** in App Store Connect — that is **[D23] working**, not a broken build. Answering it is row 0(b) and is how 1.2.10.2 gets its answer from Apple. |
 > | **State at dispatch** | 453 unit · 137/137 Playwright · Maestro **12/12** on device · lint 0 · typecheck clean · CI green · tree pushed *(verified after `git fetch`)*. |
+> | 🔴 **Since that build** | **1.2.20** *(set-aside per entry)* and **1.2.21** *(trip tracking on the dashboard)* landed, so **the installed binary does NOT contain rows 13–14** — or the per-entry set-aside. Everything else on this list is testable on what is already installed. ⚠️ **Codemagic's remainder is thin: work every other row off the current binary first**, then decide whether these two justify the next one. |
 
 
 ⚠️ **Codemagic is ~80% consumed and the remainder is reserved for TestFlight** (Jason 2026-09-21).
@@ -53,6 +54,8 @@ prebuild-affecting change in v1.2: two native modules, a config plugin, a backgr
 | **10** | ⭐ **The guided tour, on a phone.** Enter the sample account from onboarding: the tour appears, the spotlight sits **on** the thing each stop names, the card is fully on screen at all four stops, Skip stays skipped, and Settings → **Replay the tour** brings it back. Then turn on **Reduce Motion** and confirm the spotlight **cuts** rather than slides. | 1.2.8 is new in this version and **everything known about it except one Maestro flow was learned in a browser** — which has no real `Modal` presentation, no native `Animated`, and no VoiceOver. ⚠️ The geometry is unit-tested and the cut-out is asserted in both suites; what no gate here can judge is whether it *reads* as calm. |
 | **11** | **VoiceOver through the tour.** Swipe through one stop: the progress line, title and body are read, the four dim bands are **not**, and focus cannot escape the card onto the dashboard behind it. | 1.2.8.5 covered the accessibility **tree** — `aria-hidden` on the bands, `accessibilityViewIsModal` on the card — and **the browser has no VoiceOver**, so reading ORDER and focus containment are owed here and nowhere else. ⚠️ A coach-mark that traps focus is worse than no tour. |
 | **12** | **`LockScreen` and `RecoveryScreen`, looked at in both themes.** App lock on, cold start; then the recovery path. Read the text against its background. | ⛔ **These are the two surfaces the contrast gate deliberately does NOT measure** (1.2.18.1). Both need contrived state and neither is reachable by clicking — and a lock screen whose biometric prompt does not exist on web is half a screen, so measuring the half that renders would report a pass over something nobody has seen whole. **This row is that decision, made explicit rather than left as a gap.** |
+| **13** | ⭐ **Trip tracking from the DASHBOARD (1.2.21).** Start a trip from the card above Log Earnings. **Leave the dashboard** — Settings, a premium screen, the what-if — and confirm the **running strip follows you**, with miles rising. Confirm it is **absent on Add Entry**, which has its own control. Drive, stop from the strip, and confirm **Add Entry opens with the mileage already filled in** and nothing else touched. | ⛔ **Almost none of 1.2.21 is visible to any browser gate**: `TripTrackerButton` and `TripRunningBanner` both return `null` on web, so Playwright, the contrast sweep and the Dynamic Type sweep all render nothing and would report a pass. **Only the `?miles=` hand-off is web-tested.** ⚡ This row is also the point of the feature: a trip left running over-counts miles into an over-claimed deduction, and the strip exists so that state is unmissable. |
+| **14** | **The running strip's contrast and Dynamic Type, by eye, in both themes.** It uses `primarySoft`/`primaryDark` — the pairing that failed AA at 3.88:1 on `DemoBanner` — and turn the text size up to confirm *"Trip running · 4.2 mi"* and **Stop** both survive. | ⛔ **The gates cannot reach it**: it only renders while a trip is running, which cannot happen on web. The token choice was made deliberately from 1.2.18.1's finding, and **a deliberate choice is still not a measurement.** |
 
 ⚠️ **Check first, before dispatching:** `git rev-list --count origin/v1.2..HEAD` is 0, and the
 workflow prints the commit it built. Two build cycles were once spent on a month-old tree.

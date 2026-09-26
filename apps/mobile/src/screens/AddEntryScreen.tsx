@@ -32,6 +32,15 @@ interface AddEntryScreenProps {
   entry?: Entry;
   /** Only relevant in edit mode — deletes the entry being edited. */
   onDelete?: (entryId: string) => void;
+  /**
+   * Miles captured by a trip that was stopped OUTSIDE this screen (1.2.21) — the dashboard card or
+   * the running strip. Pre-fills the mileage field so a tracked drive lands where a tracked drive
+   * has always landed.
+   *
+   * ⚠️ **Ignored when editing.** An existing entry already has its own mileage, and a stray param
+   * must never silently overwrite a number the user typed.
+   */
+  initialMileage?: string;
 }
 
 /** Trims free-text and collapses an all-blank field to `undefined` so empty inputs aren't stored. */
@@ -49,7 +58,14 @@ const PLATFORM_OPTIONS: { label: string; value: GigPlatform }[] = [
   { label: "Other", value: "other" },
 ];
 
-export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelete }: AddEntryScreenProps) {
+export function AddEntryScreen({
+  onSave,
+  onCancel,
+  onOpenPaywall,
+  entry,
+  onDelete,
+  initialMileage,
+}: AddEntryScreenProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const { canUsePremium } = usePremiumAccess();
@@ -59,7 +75,13 @@ export function AddEntryScreen({ onSave, onCancel, onOpenPaywall, entry, onDelet
   const [date, setDate] = useState(entry?.date ?? todayIsoDate());
   const [grossPay, setGrossPay] = useState(entry ? String(entry.grossPay) : "");
   const [tips, setTips] = useState(entry ? String(entry.tips) : "");
-  const [mileage, setMileage] = useState(entry ? String(entry.mileage) : "");
+  /**
+   * ⛔ **The entry wins over the param, and this is the ONLY place that rule lives (1.2.21).** The
+   * route used to guard it too, and the two masked each other — planting either alone left the suite
+   * green. An existing entry already has its mileage; a stray `?miles=` must never overwrite a
+   * number the user typed.
+   */
+  const [mileage, setMileage] = useState(entry ? String(entry.mileage) : (initialMileage ?? ""));
   const [hoursWorked, setHoursWorked] = useState(entry?.hoursWorked ? String(entry.hoursWorked) : "");
   const [showExpenses, setShowExpenses] = useState(
     entry ? Object.values(entry.expenses).some((amount) => amount > 0) : false

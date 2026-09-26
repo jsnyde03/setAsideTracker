@@ -143,6 +143,9 @@ export default function DashboardRoute() {
           onOpenBestDays={() => router.push("/best-days")}
           onOpenPaywall={() => router.push("/paywall")}
           onUpdateAmountSetAside={handleUpdateAmountSetAside}
+          onTrackedTripFinished={(miles) =>
+            router.push({ pathname: "/entry", params: { miles: String(miles) } })
+          }
           showTour={showTour}
           onTourFinish={handleTourFinish}
         />

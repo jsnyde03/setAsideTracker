@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Animated, Platform, StyleSheet, useWindowDimensions, ViewStyle } from "react-native";
 import { SafeAreaView, Edge } from "react-native-safe-area-context";
 import { DemoBanner } from "../demo/DemoBanner";
+import { TripRunningBanner } from "../mileage/TripRunningBanner";
 import { resolveContentMaxWidth, type ContentWidth } from "../layout";
 import type { Colors } from "../theme";
 import { useTheme } from "../ThemeContext";
@@ -74,6 +75,10 @@ export function Screen({
           without opting in, and a VoiceOver user reaches it before any figure it qualifies.
           Renders nothing at all outside a demo. */}
       <DemoBanner />
+      {/* A running trip, on every screen (1.2.21). AFTER the demo marker deliberately: that marker
+          qualifies everything below it, including these miles. Renders nothing when no trip is
+          running, and nothing at all on web. */}
+      <TripRunningBanner />
       {/* The content column. `alignSelf` centres it in the leftover space on a wide window, while
           the screen's background stays edge-to-edge behind it — so a tablet reads as a designed
           layout rather than a phone screen pinned to the left. On compact widths `maxWidth` is

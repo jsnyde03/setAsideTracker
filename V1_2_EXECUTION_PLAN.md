@@ -165,11 +165,11 @@ device rows, not more specs.**
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.21.1** | **The hand-off target first, so stopping has somewhere to go:** `initialMileage` on `AddEntryScreen`, a `miles` param on the entry route. ⚠️ Applies only when **not** editing — an edit already has its own mileage and a param must not silently overwrite it. **This is the one web-testable part.** | ⬜ |
-| **1.2.21.2** | **The dashboard card** — reuse `TripTrackerButton` directly above **Log Earnings**, pairing the two core actions. Stopping navigates to the pre-filled form _(Jason 2026-09-25)_. | ⬜ |
-| **1.2.21.3** | **The running strip**, in `Screen.tsx` beside `DemoBanner` — live miles + Stop on every screen while a trip runs. ⚠️ **Hidden on `/entry`**, which has its own control and is where the miles are going anyway; a second stop button on one screen is not redundancy, it is ambiguity. | ⬜ |
-| **1.2.21.4** | **Tests:** unit for the pre-fill rule and anything pure; e2e for the param path. ⛔ **Do not write specs that pass by rendering nothing** — on web the strip and the card are `null`, so an unscoped assertion is vacuous by construction. | ⬜ |
-| **1.2.21.5** | **Device rows + verify + after-scan.** Add to `V1_2_TESTFLIGHT_CHECKLIST.md`: start from the dashboard, drive, confirm the strip follows across screens, stop, confirm the form opens pre-filled. | ⬜ |
+| **1.2.21.1** | ✅ **DONE.** `initialMileage` on `AddEntryScreen`, `?miles=` on the entry route. ⛔ **The edit-mode rule lives in ONE place now** — the route guarded it too and the two **masked each other**, so planting either alone left the suite green. 3 e2e; **planted, and the single guard reds it.** | ✅ |
+| **1.2.21.2** | ✅ **DONE.** The dashboard card sits directly above Log Earnings and reuses **the same `TripTrackerButton`** the entry form uses — not a second implementation; the tracker's state is module-level, so both stay in step by construction. | ✅ |
+| **1.2.21.3** | ✅ **DONE.** `TripRunningBanner` in `Screen.tsx` beside `DemoBanner` — live miles + Stop on every screen, hidden on `/entry`, `null` on web. ⚠️ Uses `primaryDark` on `primarySoft` deliberately: that pairing is the **3.88:1 DemoBanner defect** from 1.2.18.1, and the two share a background token. | ✅ |
+| **1.2.21.4** | ✅ **DONE.** `trip-handoff.spec.ts` covers the one web-visible seam. ⛔ **No specs written for the card or the strip** — both render `null` on web, so any assertion would pass by rendering nothing. 466 unit · **143/143** Playwright. | ✅ |
+| **1.2.21.5** | ✅ **DONE.** Device **rows 13–14** added *(start from the dashboard · the strip follows across screens · absent on Add Entry · stop opens the form pre-filled · the strip's contrast and Dynamic Type by eye)*. ⚠️ **Rows 13–14 are NOT in the installed binary.** | ✅ |
 
 **Exit line:** a trip can be started and stopped without opening the entry form, a running trip is
 visible from wherever the user is, and the miles land where they already landed.

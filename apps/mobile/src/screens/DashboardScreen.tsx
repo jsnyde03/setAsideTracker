@@ -32,6 +32,7 @@ import {
 import { getUpcomingQuarterlyDueDates } from "../notifications/quarterlyDueDates";
 import { summarizeWeekdayEarnings } from "../weekdayEarnings";
 import { PrimaryButton } from "../components/PrimaryButton";
+import { TripTrackerButton } from "../components/TripTrackerButton";
 import { Screen } from "../components/Screen";
 import { useSizeClass } from "../useSizeClass";
 import { BreakdownDetailSheet } from "../components/BreakdownDetailSheet";
@@ -68,6 +69,11 @@ interface DashboardScreenProps {
   /** Opens the paywall — invoked when a free user taps a locked Premium card (W-4, safe harbor). */
   onOpenPaywall: () => void;
   onUpdateAmountSetAside: (year: number, amount: number) => void;
+  /**
+   * A trip started from this screen was stopped, with `miles` captured (1.2.21). The route opens the
+   * entry form pre-filled — the same place a trip tracked from inside that form has always landed.
+   */
+  onTrackedTripFinished: (miles: number) => void;
   /**
    * Whether the guided tour is running (1.2.8). Off unless the route says otherwise — what turns it
    * on is 1.2.8.4's business, not this screen's.
@@ -128,6 +134,7 @@ export function DashboardScreen({
   onOpenBestDays,
   onOpenPaywall,
   onUpdateAmountSetAside,
+  onTrackedTripFinished,
   showTour = false,
   onTourFinish,
 }: DashboardScreenProps) {
@@ -642,6 +649,21 @@ export function DashboardScreen({
                 )}
               </View>
 
+              {/*
+                * Trip tracking, directly above Log Earnings (1.2.21) — the two core actions paired:
+                * measure a drive, log a shift. It was inside the entry form until now, which meant
+                * starting a drive required opening a form for a shift that had not happened.
+                * ⛔ **The SAME component the entry form uses**, not a second implementation: the
+                * tracker's state is module-level, so both stay in step by construction and there is
+                * one place where starting a trip can go wrong.
+                * ⚠️ Renders nothing on web, so no browser gate can see this.
+                */}
+              <View style={styles.trackTripWrap}>
+                <TripTrackerButton
+                  onTripFinished={(miles) => onTrackedTripFinished(miles)}
+                />
+              </View>
+
               <View style={styles.addButtonWrap}>
                 {/* Wrapped so the spotlight is the button alone — `addButtonWrap` also holds the
                     what-if link, and a cut-out around both would point at two different things. */}
@@ -1061,6 +1083,7 @@ function createStyles(colors: Colors) {
   },
   stateWarning: { flex: 1, ...type.micro, color: "#FECACA", lineHeight: 15 },
   addButtonWrap: { marginVertical: spacing.sm },
+  trackTripWrap: { marginTop: spacing.sm },
   whatIfButton: {
     flexDirection: "row",
     alignItems: "center",

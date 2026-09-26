@@ -3,6 +3,7 @@
   "components/ShareEarningsModal.tsx :: {busy ? \"Preparing earnings image…\" : \"Share earnings image\"}",
   "components/TripTrackerButton.tsx :: { running ? `Stop trip. ${miles.toFixed(1)} miles so far.` : \"Track this trip with GPS\" }",
   "demo/DemoBanner.tsx :: Sample data. This is an example account, not your own. Exit sample data.",
+  "mileage/TripRunningBanner.tsx :: Stop trip",
   "screens/AddEntryScreen.tsx :: Add another category",
   "screens/AddEntryScreen.tsx :: {`Remove category ${index + 1}`}",
   "screens/AddEntryScreen.tsx :: {canUsePremium ? undefined : \"Custom expense categories (Premium)\"}",

@@ -18,7 +18,7 @@ import { reportError } from "../src/errorReporting";
 export default function EntryRoute() {
   const router = useRouter();
   const goBack = useGoBack();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, miles } = useLocalSearchParams<{ id?: string; miles?: string }>();
   const { entries, saveEntry, removeEntry } = useAppData();
 
   const editingEntry = id ? entries.find((entry) => entry.id === id) : undefined;
@@ -66,6 +66,18 @@ export default function EntryRoute() {
       <ScreenFrame>
       <AddEntryScreen
         entry={editingEntry}
+        /*
+         * Miles from a trip stopped outside this screen (1.2.21): the dashboard card or the running
+         * strip.
+         *
+         * ⛔ **Passed unconditionally on purpose — `AddEntryScreen` owns the edit-mode rule.** This
+         * line used to read `isEditing ? undefined : miles`, and the two guards MASKED EACH OTHER:
+         * planting either one alone left the suite green, because the survivor covered it. A pair of
+         * redundant guards is a trap — someone removes one, nothing reds, and the other becomes
+         * load-bearing without anybody knowing. **One guard, at the component, where no other caller
+         * can route around it.**
+         */
+        initialMileage={miles}
         onSave={handleSave}
         onCancel={goBack}
         onDelete={handleDelete}
