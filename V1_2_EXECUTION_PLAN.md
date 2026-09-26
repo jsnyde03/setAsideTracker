@@ -39,9 +39,12 @@
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — that file is its
 > working surface. **Live blocker there: the export-compliance questionnaire in ASC**, without which
 > testers cannot install ([D23] working).
-> ▶ **ACTIVE BUILD: 1.2.20 — set-aside on each recent-entry row**, decomposed below. ⚙️ **It is built
-> now but does NOT get its own Codemagic build** — it rides whatever device QA forces, because the
-> remainder is thin _(Jason 2026-09-25)_. After these, only **1.2.13**'s `master` cutover remains.
+> ✅ **1.2.20 done** — each recent entry shows its set-aside. ▶ **ACTIVE BUILD: 1.2.21 — trip
+> tracking out of the entry form**, decomposed below. ⚙️ **Neither gets its own Codemagic build** —
+> they ride whatever device QA forces, because the remainder is thin _(Jason 2026-09-25)_.
+> ⛔ **1.2.21 is almost entirely DEVICE-OWED: `TripTrackerButton` returns `null` on web**, so the
+> Playwright and contrast sweeps cannot see the card or the strip at all. After these, only
+> **1.2.13**'s `master` cutover remains.
 > ⚡ **1.2.8, 1.2.18 and 1.2.19 are worth reading before touching anything.** Between them: **three
 > live defects** *(a stranded alert on every demo exit; a cumulative route leak; a banner failing AA
 > on all 13 demo screens)*, **two lossy accessible names**, **a plant that PASSED**, and **five
@@ -146,29 +149,30 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### 💵 **1.2.20 — Set-aside on each recent-entry row** · **ACTIVE** _(2026-09-25, Jason)_
+### 🚗 **1.2.21 — Trip tracking out of the entry form** · **ACTIVE** _(2026-09-25, Jason)_
 
-**Quick reference on the dashboard: each recent entry shows what it says to set aside.**
+**Jason: _"Tracking mileage also shouldn't be hidden in the log. This is a main feature."_** It lives
+inside Add Entry today, so starting a drive means opening the form for a shift that has not happened.
 
-⚡ **Mostly a DISPLAY change — the number already exists.** `entrySetAside()` applies the entry's
-**frozen rate** captured at log time ([D14]); the weekly sheet already sums exactly this and the
-series telescopes to the year total. ⛔ **Reuse that function — do not derive a second figure**, or
-the row and the weekly sheet would disagree about the same money.
+⚡ **The tracker is already well placed for this.** `isTripActive` / `currentTripMiles` /
+`watchTripMiles` are **module-level**, so two mount points stay in sync by construction — the module
+is the single source of truth. Its only app coupling is `onTripFinished(miles)`.
 
-⚙️ **Shipping: built now, NOT its own build.** It rides whatever build device QA forces; if QA comes
-back clean, Jason decides whether this alone justifies one _(Jason 2026-09-25)_.
+⛔ **THE WHOLE FEATURE IS INVISIBLE ON WEB** — `TripTrackerButton` returns `null` there, so the
+Playwright suite, the contrast sweep and the Dynamic Type sweep **cannot see any of it**. Only the
+pre-fill hand-off is browser-testable. **That is why it was never noticed as buried, and it means
+device rows, not more specs.**
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.20.1** | ✅ **DONE.** `entrySetAsideDisplay()` in `calculations.ts` — amount + `estimated`, reusing `entrySetAside` so a row and the weekly sheet cannot disagree. Omits `$0` and unavailable figures. **6 unit tests; planted a disagreeing figure and a false `estimated` — both red.** | ✅ |
-| **1.2.20.2** | ✅ **DONE.** Set-aside under the gross, right column; `~` marks an estimate. ⚠️ `fallbackSetAsideRate` is computed **once**, not in `renderItem` — it runs a full `computeTaxEstimate`, so per-row would mean one tax estimate per visible entry per render. | ✅ |
-| **1.2.20.3** | ✅ **DONE.** The row's accessible name now carries gross, expenses and set-aside. ⚡ **The shadowing gate fired BOTH halves** — the new label unreviewed *and* the old entry now stale — which is the first time its "no entry for a site that no longer exists" check has caught anything. | ✅ |
-| **1.2.20.4** | ✅ **DONE.** `entry-set-aside.spec.ts`, 3 specs, **both planted** *(hide the line → reds; revert the label → reds)*. ⛔ **Agreement is proven in the UNIT test, not here** — restating arithmetic in a browser is a weaker version of a stronger test, and the weak one is what quietly passes over a wrong figure. | ✅ |
-| **1.2.20.5** | **Verify + after-scan.** Full Playwright; Maestro only if a selector moves. | ⬜ |
+| **1.2.21.1** | **The hand-off target first, so stopping has somewhere to go:** `initialMileage` on `AddEntryScreen`, a `miles` param on the entry route. ⚠️ Applies only when **not** editing — an edit already has its own mileage and a param must not silently overwrite it. **This is the one web-testable part.** | ⬜ |
+| **1.2.21.2** | **The dashboard card** — reuse `TripTrackerButton` directly above **Log Earnings**, pairing the two core actions. Stopping navigates to the pre-filled form _(Jason 2026-09-25)_. | ⬜ |
+| **1.2.21.3** | **The running strip**, in `Screen.tsx` beside `DemoBanner` — live miles + Stop on every screen while a trip runs. ⚠️ **Hidden on `/entry`**, which has its own control and is where the miles are going anyway; a second stop button on one screen is not redundancy, it is ambiguity. | ⬜ |
+| **1.2.21.4** | **Tests:** unit for the pre-fill rule and anything pure; e2e for the param path. ⛔ **Do not write specs that pass by rendering nothing** — on web the strip and the card are `null`, so an unscoped assertion is vacuous by construction. | ⬜ |
+| **1.2.21.5** | **Device rows + verify + after-scan.** Add to `V1_2_TESTFLIGHT_CHECKLIST.md`: start from the dashboard, drive, confirm the strip follows across screens, stop, confirm the form opens pre-filled. | ⬜ |
 
-**Exit line:** every recent entry shows what it contributes to the year's set-aside, the figure
-agrees with the weekly sheet by construction, estimates say so, and a screen-reader user hears the
-money a sighted user sees.
+**Exit line:** a trip can be started and stopped without opening the entry form, a running trip is
+visible from wherever the user is, and the miles land where they already landed.
 
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
@@ -205,6 +209,13 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.20 — Set-aside on each recent-entry row ✅ DONE 2026-09-25.** Each entry shows what it says
+  to set aside, reusing `entrySetAside`'s frozen rate ([D14]) so a row and the weekly sheet cannot
+  disagree; estimates render `~`, zeros are omitted. ⚡ **Found and fixed a pre-existing a11y loss it
+  would have widened** — the row's label hid *every* figure from VoiceOver, and its allowlist review
+  was wrong, the second such case in two days. **Planted four ways.** 466 unit · 140/140 Playwright.
+  _Detail → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.19 — Two dashboards, and a portal that escapes its route ✅ DONE 2026-09-24.**
   🔴 **Not a duplicate — a cumulative leak, measured 1 → 2 → 3 → 4** across enter-demo, exit-demo
