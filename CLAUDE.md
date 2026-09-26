@@ -25,9 +25,13 @@ the version, and the thing the checklist named as the most likely cause of failu
 the COMPILE, not the behaviour**: whether a trip survives backgrounding is rows 2–5 and is
 unprovable off-device. ⚠️ **ITMS-91053 is decided during Apple's PROCESSING, not by a green build** —
 watch for the build reaching *"Ready to Submit"*.
-🔴 **ACTIVE: 1.2.12 — device QA. The live blocker is the export-compliance questionnaire in App Store
-Connect; testers cannot install until it is answered** ([D23] working as intended). The checklist's
-**thirteen** rows are the agenda; after them, only **1.2.13**'s `master` cutover remains.
+🔴 **ACTIVE: 1.2.12 — device QA**, worked from the checklist's rows. ✅ **Export compliance no longer
+blocks anything ([D30], 2026-09-26):** `ITSAppUsesNonExemptEncryption: false` is in `app.json`, so a
+build is installable the moment it uploads. ⚠️ **If a build lands as "Missing Compliance" now, the key
+did not reach Info.plist — that is a regression, not a form to click through.** ⛔ **It is still a
+legal declaration** resting on Note 4's primary-function test, and the reasoning lives in
+`exportCompliance.test.ts` so a bare-boolean tidy-up fails the gate. After 1.2.12, only **1.2.13**'s
+`master` cutover remains.
 
 ⚡ **Three live defects were found by BUILDING, none from a backlog.** *(1)* **Every demo exit showed
 "Restored — Your data has been restored from the backup file."** — stranded from

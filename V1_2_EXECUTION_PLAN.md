@@ -39,8 +39,10 @@
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — that file is its
 > working surface. **Live blocker there: the export-compliance questionnaire in ASC**, without which
 > testers cannot install ([D23] working).
-> ✅ **1.2.20 and 1.2.21 done** — set-aside per entry; trip tracking off the entry form.
-> ▶ **ACTIVE BUILD: 1.2.22 — make the label gate catch the class**, decomposed below.
+> ✅ **1.2.20–1.2.23 done** — set-aside per entry · trip tracking off the entry form · a label that
+> hides money now fails the build · **export compliance pre-answered ([D30]), so a build is installable
+> the moment it uploads.** ▶ **ACTIVE BUILD: 1.2.24 — one vocabulary for an estimated figure**,
+> decomposed below; small, and the only filed unblocked item left.
 > ⚙️ **None of these get their own Codemagic build** — they ride whatever device QA forces, because
 > the remainder is thin _(Jason 2026-09-25)_. ⛔ **The installed binary contains NEITHER 1.2.20 nor
 > 1.2.21**; device rows 13–14 are owed to a later build, everything else is testable on what is
@@ -149,30 +151,25 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### 🔬 **1.2.22 — Make the label gate catch the class, not just the site** · **ACTIVE** _(2026-09-26)_
+### 🗣 **1.2.24 — One vocabulary for an estimated figure** · **ACTIVE** _(2026-09-26)_
 
-🔴 **TWO lossy accessible names in two days, and both were REVIEWED.** The tax-profile row (1.2.18.3)
-hid filing status, state, county and W2 status; the entry row (1.2.20.3) hid the gross, the expenses
-and the set-aside. ⚡ **Both kept the words and lost the numbers** — which says the first pass through
-the allowlist was systematically generous about rows whose information is money, because **the
-reviewer's eye goes to text.**
+⚠️ **The same [D14] condition is spelled three different ways on three surfaces a user sees minutes
+apart.** The weekly sheet says **"estimated"** in words; the entry row says **`~`**; the accessible
+name says **"about"**. Each is honest on its own, and none of them agrees with the others.
 
-⛔ **So the fix is not another careful read.** `a11yLabelShadowing` asks *"has a human signed off on
-this site?"*, which is a question about paperwork. The class is answerable mechanically: **rendered
-text containing digits, under a label containing none.** 31 reviewed entries is a list a script
-should be checking, not a person — this portfolio's own rule is that every complete enumeration came
-from a script and every short one came from a person.
+⛔ **Small, and admitted as such** — filed from 1.2.20's after-scan. It takes the active slot because
+**1.2.12 (device QA) is the real gate and is blocked on Jason**, and this is the only filed,
+unblocked item left that is not a v1.3 deferral. Not invented to fill the slot.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.22.1** | ✅ **DONE 2026-09-26. 33 shadowing sites · 7 render currency · 1 lossy.** ⛔ **The broad signal was NOT gateable:** "contains a digit" flagged 5 and **4 were false positives** — the digit inside *"W-4 optimizer"*, the words *"amount"* and *"miles"*. ⚠️ An even earlier version scanned raw child source and reported **22 of 33**, counting `size={18}` on an icon as a figure. **An implausible answer is the instrument.** | ✅ |
-| **1.2.22.2** | ✅ **DONE.** One genuine loss, and it was new: **`Compare your platforms`** renders *"DoorDash leads with $1,240 · $18.50/hr"* and spoke none of it. ⚡ **The THIRD instance of this class**, found by a script after two careful human reads missed it. | ✅ |
-| **1.2.22.3** | ✅ **DONE.** The gate fails on **currency rendered, none spoken** — no allowlist, deliberately, because the allowlist is what let all three through. ⚠️ **Scope stated in the file:** it cannot catch the tax-profile row, which hid a filing status rather than a figure. **Money is the subset that mechanises.** Plus an instrument check: ≥5 sites must still render currency, or the gate's silence means nothing. | ✅ |
-| **1.2.22.4** | ✅ **DONE.** Planted against **both** rows that started this — reverting the platform card or the entry row reds the new gate with *"a VoiceOver user hears the name of an amount they never get told"*. | ✅ |
-| **1.2.22.5** | ✅ **DONE.** 468 unit · **143/143** Playwright · lint 0 · typecheck clean. No Maestro: no label a flow matches changed *(the card's prefix is preserved)*. | ✅ |
+| **1.2.24.1** | **Find every surface that renders the estimated/derived distinction** — grep, not memory. ⚠️ Three are known; this portfolio's rule is that every hand-built list came up short. | ⬜ |
+| **1.2.24.2** | **Pick one spelling and apply it**, visible text and accessible name agreeing. ⚠️ **`~` is not readable aloud** — whatever the visible mark, the spoken form needs a word, so the two cannot simply be made identical here. | ⬜ |
+| **1.2.24.3** | **Gate it** if the class is mechanisable *(one helper owning the wording, asserted)* — and **say so plainly if it is not**, rather than adding a check that cannot fail. | ⬜ |
+| **1.2.24.4** | **Verify + after-scan.** Full Playwright; Maestro only if a matched label changes. | ⬜ |
 
-**Exit line:** a label that swallows a figure fails the build on its own, and the two rows that
-started this can each be reverted to prove it.
+**Exit line:** an estimated figure reads the same way wherever it appears, and the spoken form says a
+word rather than a symbol.
 
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
@@ -209,6 +206,23 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.23 — Export compliance pre-answered ✅ DONE 2026-09-26 → [D30].**
+  `ITSAppUsesNonExemptEncryption: false` in `app.json`, so a build is **installable the moment it
+  uploads** — the manual ASC questionnaire is gone. ⚡ **[D23] ending rather than reversing:** it
+  removed the key so Apple's flow would classify the app, always meaning to record the answer once it
+  existed. ⛔ **Still a legal declaration** on Note 4's primary-function test; `exportCompliance.test.ts`
+  is inverted to gate the VALUE, names `true`-without-a-code as the dangerous neighbour, and **fails if
+  its own reasoning is deleted**. ⚠️ **OPEN: what ASC actually concluded on the 2026-09-25 build is not
+  recorded yet.** Planted both ways. _Detail → [V1_2_LOG.md](V1_2_LOG.md)._
+
+- **1.2.22 — The label gate catches the class ✅ DONE 2026-09-26.** A label that renders currency and
+  speaks none now **fails the build**, with no allowlist — because the allowlist is what said yes to all
+  three money-hiding labels, twice by me. ⚡ **Measured first, and the measurement changed the plan
+  twice**: raw child source reported 22 of 33 *(counting `size={18}` as a figure)*, "any digit"
+  flagged 5 with **4 false positives**, currency flagged 7 and got all 7 right. **Found a third live
+  instance** — `Compare your platforms` spoke none of *"DoorDash leads with $1,240 · $18.50/hr"*.
+  468 unit · 143/143 Playwright. _Detail → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.21 — Trip tracking out of the entry form ✅ DONE 2026-09-26.** A card above Log Earnings and
   a running strip on every screen, both reusing the existing `TripTrackerButton`/`tripTracker`;
@@ -449,6 +463,7 @@ map is at the head of the log's item-spec section._
 | **[D25]** | **The iPad dashboard is a two-column band — money left, insights right — with the entry list full-width beneath it, in ONE scroll region.** Rejected the truer tablet split (cards in a left rail, shifts scrolling independently on the right): it gives permanent real estate to the *secondary* content, when the screen's job is "what do I owe", and it costs two scroll regions plus lifting the header out of the `FlatList`. Also rejected 2-up-ing only the insight cards — lowest risk, but it leaves most of a 13" screen unused and does not read as an iPad layout. ⚠️ **One scroll also keeps VoiceOver reading order intact**, which matters for 1.2.9. | Jason 2026-09-22 |
 | **[D24]** | **The iPad size-class seam is built on `useWindowDimensions`, and iPad viewports join the Playwright suite.** ⛔ **1.2.7 was promoted as "almost entirely device-owed" and that was a property of the intended implementation, not of the item.** The e2e suite already runs at **1280×720 — wider than iPad portrait** — so the app is proven to *survive* regular width; the item's real content is appearance. On `useWindowDimensions` the breakpoint re-renders on resize, so **Split View live-resize (1.2.7.5) falls out by construction** and is assertable by resizing the viewport mid-test; on a `Platform.isPad`-style constant both the behaviour and the check are lost. ⚠️ **Does not make the reserved build optional** — RN-web at 1024px is not UIKit at 1024pt, and 1.2.7.6 (hardware keyboard) stays device-owed. It moves the build from *discovering* layout breaks to *confirming* their absence. | Jason 2026-09-22 |
 | **[D29]** | **The tour RIDES SAMPLE DATA, and it is dashboard-only — four stops.** It fires the first time a user enters demo mode (offered at onboarding's last step, replayed from Settings' existing Sample-data row), so it is **populated by construction** — which is what demo mode was built first for. ⛔ **Rejected firing at first run on the user's own dashboard:** a brand-new user has zero entries, so every figure the tour points at reads **$0** — and it would auto-fire into exactly the virgin state that **12 Maestro flows and ~31 Playwright specs** launch into and assert text on, needing a suppress hook in all 43. Riding demo entry touches **one** flow. ⛔ **Rejected a value-prop card stack** — cheapest by far, and a route the contrast gate already sweeps, but it never shows the user *where* anything is, and it drops the overlay primitive the other two finance apps inherit. It also contradicts the standing 2026-06-30 call below. **Reach stops at the dashboard:** no step state survives navigation, the overlay mounts at `Screen.tsx` (the seam `DemoBanner` already rides), and the last stop *points at* Log Earnings rather than driving the user into it. ⚠️ **No new native dependency** — `react-native-svg` is absent and reanimated/gesture-handler are undeclared optional peers, so a four-`View` dimming mask + `measureInWindow` is the spotlight. | Jason 2026-09-24 |
+| **[D30]** | **Pre-answer export compliance in `app.json` (`ITSAppUsesNonExemptEncryption: false`), so an uploaded build is installable immediately.** ⚡ **This is [D23] ENDING, not reversing.** [D23] removed the key so **Apple's own flow** would classify the app rather than us guessing — *"we stopped answering the question and started asking it"* — and always intended the answer to be recorded once it existed. [D30] records it and stops re-asking on every build. ⛔ **It remains a legal declaration, not a config convenience:** the app encrypts local data with **crypto-js AES-256**, so the exemption rests on **Note 4 to Category 5 Part 2**'s primary-function test — tax *calculation*, with encryption incidental — not on "we only use Apple's crypto". ⚠️ **OPEN HOLE: what ASC's questionnaire actually concluded on the 2026-09-25 build is not yet recorded.** If Apple's flow said anything other than exempt, `app.json` and `exportCompliance.test.ts` are both wrong and change together. ⛔ **`true` is the dangerous neighbour** — it requires an `ITSEncryptionExportComplianceCode` from a granted CCATS/ERN, which this project does not have, and the gate now names that specifically. **Cost of [D30] being wrong: an App Store rejection**, which is exactly the risk [D23] was written to avoid — so the reasoning lives in the test file and a bare-boolean tidy-up fails it. | Jason 2026-09-26 |
 | — | Guided onboarding = the **full coachmark tour**, not a lightweight intro. | Jason 2026-06-30 |
 | — | Demo mode is **isolated and fully reversible**. | Jason 2026-06-30 |
 | — | Free half stays free; premium half is **additive**, on the tax-time/complexity axis. | standing |

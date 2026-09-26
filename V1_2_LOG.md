@@ -11,6 +11,49 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.23 Export compliance pre-answered — 2026-09-26 · ✅ DONE → [D30]
+
+**Jason: _"We need to automatically set the compliance warning so that builds are testable
+immediately."_** `ITSAppUsesNonExemptEncryption: false` now sits in `app.json`'s `ios.infoPlist`, so
+an uploaded build skips App Store Connect's questionnaire and is installable at once.
+
+**⚡ This is [D23] ENDING, not being overruled, and the distinction is the whole record.** [D23]
+removed the key so **Apple's own flow** would classify the app rather than us guessing — its words
+were *"we stopped answering the question and started asking it"* — and it always intended the answer
+to be written down once it existed. What it did not anticipate is that the questionnaire is asked
+**per build**, so "ask Apple once" became a manual step on every upload. [D30] records the answer and
+stops re-asking.
+
+**⛔ It is still a legal declaration.** The app encrypts local data with **crypto-js AES-256**, so the
+exemption does not rest on the easy ground of "we only use Apple's crypto". It rests on **Note 4 to
+Category 5 Part 2** — the primary-function test: this app's primary function is tax *calculation*,
+with encryption incidental to protecting local data, and BIS lists inventory-management software as a
+Note 4 example. ⚠️ **The cost of being wrong is an App Store rejection**, which is precisely the risk
+[D23] was written to avoid, so the reasoning lives in the test file rather than in a commit message.
+
+**🔴 OPEN HOLE, recorded rather than smoothed over: what ASC's questionnaire actually concluded on the
+2026-09-25 build is not written down.** I asked and do not have the answer yet. **If Apple's flow said
+anything other than exempt, `app.json` and `exportCompliance.test.ts` are both wrong and change
+together.** Marked as unconfirmed in both places instead of being written as though settled.
+
+**The gate was inverted rather than deleted**, which matters because it used to assert the key's
+**absence**:
+- It now asserts the **value** — `toBe(false)`, not `toBeFalsy()`, because an absent key is falsy and
+  absent is exactly the old behaviour this replaced.
+- ⛔ **It names `true` as the dangerous neighbour.** Flipping the boolean is a one-character edit that
+  looks like a correction and would put every build behind a questionnaire it cannot answer — `true`
+  needs an `ITSEncryptionExportComplianceCode` from a granted CCATS/ERN, which this project has not
+  got. Planted: `true` reds two tests, one naming the rejection.
+- ⚡ **It fails if its own reasoning is removed.** A bare boolean in `app.json` is what invited the
+  tidy-up [D23] existed to prevent, so the test asserts its own docstring still contains *"Note 4 to
+  Category 5 Part 2"*. **A value with no recorded basis is how a deliberate absence becomes an
+  accident.**
+
+**⚠️ Row 0(b) of the device checklist changed meaning, not just status.** It used to be a step someone
+owed on every build; it is now a **regression detector** — if a build lands as *"Missing Compliance"*,
+the key failed to reach `Info.plist` during prebuild, and the correct response is to investigate the
+prebuild rather than click through the form and carry on.
+
 ### 🔎 1.2.21 Trip tracking out of the entry form — WHOLE-ITEM after-scan · 2026-09-26 · ✅ DONE
 
 **Shipped.** A card above Log Earnings and `TripRunningBanner` on every screen, both reusing the
