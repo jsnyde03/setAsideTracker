@@ -692,7 +692,25 @@ export function DashboardScreen({
                   onPress={onOpenPlatforms}
                   style={({ pressed }) => [styles.insightCard, pressed && styles.insightCardPressed]}
                   accessibilityRole="button"
-                  accessibilityLabel="Compare your platforms"
+                  /*
+                   * ⛔ **Carries the figures, because it replaces them (1.2.22.2).** The subtitle
+                   * reads e.g. *"DoorDash leads with $1,240 · $18.50/hr"* and a wrapper label hides
+                   * every word of it — so a VoiceOver user heard only the card's title and none of
+                   * the comparison the card exists to make. **The THIRD instance of this class**,
+                   * after the tax-profile row (1.2.18.3) and the entry row (1.2.20.3), and the one a
+                   * currency-specific sweep found that two careful reads had not.
+                   * ⚠️ Prefix preserved: "Compare your platforms" is what the Maestro flow and the
+                   * Playwright specs match.
+                   */
+                  accessibilityLabel={
+                    `Compare your platforms. ${PLATFORM_LABELS[topPlatform.platform]} leads with ` +
+                    `${formatCurrency(topPlatform.totalEarnings)}` +
+                    `${
+                      topPlatform.hourlyRate !== undefined
+                        ? `, ${formatCurrency(topPlatform.hourlyRate)} per hour`
+                        : ""
+                    }.`
+                  }
                 >
                   <View style={styles.insightIconWrap}>
                     <Ionicons name="podium-outline" size={18} color={colors.primary} />

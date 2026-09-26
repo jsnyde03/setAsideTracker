@@ -79,6 +79,40 @@ function renderedText(node: ts.Node, acc: string[] = [], inChildExpr = false): s
   return acc;
 }
 
+/**
+ * The SOURCE of JSX child expressions — `{formatCurrency(x)}` and the like — so an interpolated
+ * figure counts as rendered.
+ *
+ * ⛔ **Attribute values are excluded, and that exclusion is the whole reason this is usable.** A
+ * first version scanned raw child source and counted `size={18}` on an icon as a rendered number,
+ * reporting **22 of 33 sites lossy**. An implausible answer is the instrument, not the app.
+ */
+function childExpressionSources(node: ts.Node, acc: string[] = []): string[] {
+  node.forEachChild((child) => {
+    if (ts.isJsxAttributes(child)) return;
+    if (
+      ts.isJsxExpression(child) &&
+      child.parent !== undefined &&
+      (ts.isJsxElement(child.parent) || ts.isJsxFragment(child.parent))
+    ) {
+      acc.push(child.getText());
+    }
+    childExpressionSources(child, acc);
+  });
+  return acc;
+}
+
+/**
+ * Does this render MONEY? — `formatCurrency(...)`, a literal `$12`, or a `toFixed()` figure.
+ *
+ * ⚠️ **Currency only, and that was MEASURED rather than chosen.** A broad "contains a digit" signal
+ * flagged 5 sites of which **4 were false positives**: the digit inside *"W-4 optimizer"*, and the
+ * words *"amount"* and *"miles"*. A gate at that precision needs an exemption per benign case, and a
+ * gate full of exemptions teaches everyone to add exemptions. **Currency flagged 7 sites and got all
+ * 7 right.**
+ */
+const RENDERS_MONEY = /formatCurrency|\$\d|toFixed\(/;
+
 function labelSource(opening: ts.JsxOpeningLikeElement): string | null {
   for (const attr of opening.attributes.properties) {
     if (!ts.isJsxAttribute(attr) || attr.name.getText() !== "accessibilityLabel") continue;
@@ -101,9 +135,25 @@ function labelSource(opening: ts.JsxOpeningLikeElement): string | null {
  */
 const unparseable: string[] = [];
 
+/**
+ * Wrappers whose label hides a currency figure their own children render (1.2.22.3).
+ *
+ * ⛔ **A GATE, not a reviewed list, and the difference is the whole point.** The fixture below asks
+ * *"has a human signed off on this site?"* — a question about paperwork. It answered **yes** to
+ * three labels that hid money: the tax-profile row (1.2.18.3), the entry row (1.2.20.3) and the
+ * platform-compare card (1.2.22.2). ⚡ **Two of those three were signed off by me, days apart, while
+ * actively looking for this exact class.** The reviewer's eye goes to words; a regex has no eye.
+ *
+ * ⚠️ **It does not replace the reviewed list.** The tax-profile row hid a filing status and a state,
+ * not a figure — this gate would never have caught it. **Money is the subset that can be checked
+ * mechanically**; the general case still needs a human, and the fixture is where that is recorded.
+ */
+const moneyLosers: string[] = [];
+
 /** Every wrapper whose label swallows rendered text, keyed stably by file + label source. */
 function shadowingSites(): string[] {
   const sites: string[] = [];
+  moneyLosers.length = 0;
   unparseable.length = 0;
   for (const file of tsxFiles(SRC)) {
     const src = ts.createSourceFile(
@@ -123,7 +173,11 @@ function shadowingSites(): string[] {
       if (ts.isJsxElement(node)) {
         const label = labelSource(node.openingElement);
         if (label !== null && renderedText(node).length > 0) {
-          sites.push(`${relative(SRC, file).replace(/\\/g, "/")} :: ${label}`);
+          const key = `${relative(SRC, file).replace(/\\/g, "/")} :: ${label}`;
+          sites.push(key);
+          // 1.2.22.3: and separately, a label that hides MONEY its own children render.
+          const rendered = [...renderedText(node), ...childExpressionSources(node)].join(" ");
+          if (RENDERS_MONEY.test(rendered) && !RENDERS_MONEY.test(label)) moneyLosers.push(key);
         }
       }
       node.forEachChild(visit);
@@ -187,5 +241,52 @@ describe("accessibility labels that swallow their own children", () => {
   it("keeps the reviewed list honest — no entry for a site that no longer exists", () => {
     const live = new Set(shadowingSites());
     expect([...REVIEWED].filter((s) => !live.has(s))).toEqual([]);
+  });
+
+  /**
+   * ⛔ **No allowlist, on purpose.** A reviewed entry is how the other three checks let a human say
+   * "this one is fine", and **that mechanism is exactly what let three money-hiding labels through**.
+   * A label that renders a currency figure and does not speak one is not a judgement call in a tax
+   * app: it is a screen-reader user being told the name of a number they cannot hear.
+   *
+   * ⚠️ If a genuine exception ever appears, it needs a **sentence** here explaining why the figure is
+   * not information — not a line appended to a JSON file.
+   */
+  it("never lets a label hide money its own children render", () => {
+    shadowingSites(); // populates `moneyLosers` from the same single walk
+    expect(
+      moneyLosers.sort(),
+      "these labels speak no figure while their children render one — a VoiceOver user hears the " +
+        "name of an amount they never get told",
+    ).toEqual([]);
+  });
+
+  /**
+   * ⛔ The instrument, again. If `RENDERS_MONEY` ever stops matching anything — a rename of
+   * `formatCurrency`, a refactor to a hook — the check above passes over every site in the app and
+   * reports nothing forever. **It passes today because 7 sites render money; asserting that is what
+   * makes its silence mean something.**
+   */
+  it("still recognises money somewhere — otherwise the check above is vacuous", () => {
+    let rendersMoney = 0;
+    for (const file of tsxFiles(SRC)) {
+      const src = ts.createSourceFile(
+        file,
+        readFileSync(file, "utf8"),
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TSX,
+      );
+      const visit = (node: ts.Node) => {
+        if (ts.isJsxElement(node) && labelSource(node.openingElement) !== null) {
+          const rendered = [...renderedText(node), ...childExpressionSources(node)].join(" ");
+          if (RENDERS_MONEY.test(rendered)) rendersMoney += 1;
+        }
+        node.forEachChild(visit);
+      };
+      visit(src);
+    }
+    expect(rendersMoney, "no labelled wrapper renders currency — the signal has stopped working")
+      .toBeGreaterThanOrEqual(5);
   });
 });

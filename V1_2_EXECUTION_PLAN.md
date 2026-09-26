@@ -165,11 +165,11 @@ from a script and every short one came from a person.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.22.1** | **Measure first: how many of the 31 reviewed entries lose a number?** A throwaway script over the existing AST walk, reporting rendered-text-has-digits + label-has-none. ⛔ **Report before fixing** — the count is the finding, and it decides whether this is three sites or fifteen. | ⬜ |
-| **1.2.22.2** | **Fix what it finds**, each judged on its own: carry the figure in the label, or justify why the number is not information there. ⚠️ **Do not batch-rewrite labels** — 1.2.9.1 renamed eight and broke a flow, and every label is a selector somewhere. | ⬜ |
-| **1.2.22.3** | **Turn it into a gate.** A shadowing site whose rendered text has digits and whose label has none **fails**, rather than passing once someone adds a line to a JSON file. ⚠️ Needs an explicit exemption list for the honest cases *(a locked premium card's price, say)* — and an exemption is a sentence, not a bare entry. | ⬜ |
-| **1.2.22.4** | **Plant it**, including the two already-fixed rows: reverting either must red the new gate, or it is not catching the class it was built for. | ⬜ |
-| **1.2.22.5** | **Verify + after-scan.** Full Playwright; Maestro only if a label a flow matches changes. | ⬜ |
+| **1.2.22.1** | ✅ **DONE 2026-09-26. 33 shadowing sites · 7 render currency · 1 lossy.** ⛔ **The broad signal was NOT gateable:** "contains a digit" flagged 5 and **4 were false positives** — the digit inside *"W-4 optimizer"*, the words *"amount"* and *"miles"*. ⚠️ An even earlier version scanned raw child source and reported **22 of 33**, counting `size={18}` on an icon as a figure. **An implausible answer is the instrument.** | ✅ |
+| **1.2.22.2** | ✅ **DONE.** One genuine loss, and it was new: **`Compare your platforms`** renders *"DoorDash leads with $1,240 · $18.50/hr"* and spoke none of it. ⚡ **The THIRD instance of this class**, found by a script after two careful human reads missed it. | ✅ |
+| **1.2.22.3** | ✅ **DONE.** The gate fails on **currency rendered, none spoken** — no allowlist, deliberately, because the allowlist is what let all three through. ⚠️ **Scope stated in the file:** it cannot catch the tax-profile row, which hid a filing status rather than a figure. **Money is the subset that mechanises.** Plus an instrument check: ≥5 sites must still render currency, or the gate's silence means nothing. | ✅ |
+| **1.2.22.4** | ✅ **DONE.** Planted against **both** rows that started this — reverting the platform card or the entry row reds the new gate with *"a VoiceOver user hears the name of an amount they never get told"*. | ✅ |
+| **1.2.22.5** | ✅ **DONE.** 468 unit · **143/143** Playwright · lint 0 · typecheck clean. No Maestro: no label a flow matches changed *(the card's prefix is preserved)*. | ✅ |
 
 **Exit line:** a label that swallows a figure fails the build on its own, and the two rows that
 started this can each be reverted to prove it.
