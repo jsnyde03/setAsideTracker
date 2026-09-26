@@ -11,6 +11,44 @@ item only, so a queued item's spec waits here and is retrieved at its switch-in.
 
 ## Scan records
 
+### 🔎 1.2.21 Trip tracking out of the entry form — WHOLE-ITEM after-scan · 2026-09-26 · ✅ DONE
+
+**Shipped.** A card above Log Earnings and `TripRunningBanner` on every screen, both reusing the
+existing `TripTrackerButton` / `tripTracker` rather than reimplementing anything. Stopping opens the
+entry form pre-filled. 466 unit · 143/143 Playwright · lint 0.
+
+**⚡ The item was easy because the module was already right.** `isTripActive`, `currentTripMiles` and
+`watchTripMiles` are module-level, so two mount points stay in step **by construction** — no shared
+React state, no prop drilling, no sync bug available to write. The only app coupling was
+`onTripFinished(miles)`. ⛔ **Worth naming as a design win rather than luck:** a tracker that had kept
+its state in the screen that hosted it could not have been surfaced anywhere without a refactor.
+
+**🔴 A plant that PASSED changed the design, for the second item running.** The edit-mode rule was
+guarded in **two** places and the two **masked each other** — planting either alone left the suite
+green; only removing both reddened anything. ⚡ **Redundant guards are not defence in depth, they are
+a trap**: someone deletes one, nothing fails, and the survivor becomes load-bearing with no test
+naming it. Collapsed to one guard at the component, where no other caller can route around it.
+
+**⚙️ A timer on every screen, removed by reading the publish sites rather than the function name.**
+The first version polled `isTripActive()` every second, because `watchTripMiles` is *named* for
+miles. Both `startTripTracking` and `stopTripTracking` call `publish()`, so the subscription was
+already broadcasting start and stop — the event was there all along. ⚠️ **A `setInterval` in a
+component mounted by `Screen` runs on every screen in the app, forever**; that is the kind of cost
+that never shows up in a test.
+
+**⛔ The verification story is the honest part.** `TripTrackerButton` and `TripRunningBanner` both
+return `null` on web, so **Playwright, the contrast sweep and the Dynamic Type sweep all render
+nothing and would report a pass.** No specs were written for the card or the strip for exactly that
+reason — a spec that passes by rendering nothing claims coverage of the thing that was buried. Only
+the `?miles=` hand-off is web-tested; device rows 13–14 own the rest.
+
+**⚠️ Two notes carried forward rather than fixed:**
+- The strip hides on `/entry` via `pathname === "/entry"` — a **string compare against a route path**.
+  Rename the route and the strip silently reappears alongside the form's own control. No test would
+  catch it.
+- `DemoBanner` and `TripRunningBanner` can be on screen together, two stacked strips above every
+  screen's content. Correct, and worth a look on the device pass.
+
 ### 🔎 1.2.20 Set-aside on each recent-entry row — after-scan · 2026-09-25 · ✅ DONE
 
 **⚡ The before-scan turned a feature request into a display change.** The number already existed:

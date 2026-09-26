@@ -47,13 +47,24 @@ export function TripRunningBanner() {
   const [miles, setMiles] = useState(currentTripMiles);
   const [busy, setBusy] = useState(false);
 
-  // The module is the single source of truth, so this stays in step with the entry form's control
-  // without either knowing about the other.
-  useEffect(() => watchTripMiles(setMiles), []);
-  useEffect(() => {
-    const timer = setInterval(() => setRunning(isTripActive()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  /**
+   * The module is the single source of truth, so this stays in step with the entry form's control
+   * without either knowing about the other.
+   *
+   * ⚠️ **One subscription, no polling — and that is only correct because `startTripTracking` and
+   * `stopTripTracking` both call `publish()`.** `watchTripMiles` is named for miles, so the first
+   * version of this component ran a 1-second `setInterval` re-reading `isTripActive()` — a timer on
+   * **every screen in the app**, forever, to observe something already being broadcast. Checking the
+   * publish call sites replaced it with the event that was there all along.
+   */
+  useEffect(
+    () =>
+      watchTripMiles((next) => {
+        setMiles(next);
+        setRunning(isTripActive());
+      }),
+    [],
+  );
 
   if (Platform.OS === "web") return null;
   if (!running) return null;

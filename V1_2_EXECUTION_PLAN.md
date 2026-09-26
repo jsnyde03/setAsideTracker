@@ -39,12 +39,12 @@
 > the head of [V1_2_TESTFLIGHT_CHECKLIST.md](V1_2_TESTFLIGHT_CHECKLIST.md) — that file is its
 > working surface. **Live blocker there: the export-compliance questionnaire in ASC**, without which
 > testers cannot install ([D23] working).
-> ✅ **1.2.20 done** — each recent entry shows its set-aside. ▶ **ACTIVE BUILD: 1.2.21 — trip
-> tracking out of the entry form**, decomposed below. ⚙️ **Neither gets its own Codemagic build** —
-> they ride whatever device QA forces, because the remainder is thin _(Jason 2026-09-25)_.
-> ⛔ **1.2.21 is almost entirely DEVICE-OWED: `TripTrackerButton` returns `null` on web**, so the
-> Playwright and contrast sweeps cannot see the card or the strip at all. After these, only
-> **1.2.13**'s `master` cutover remains.
+> ✅ **1.2.20 and 1.2.21 done** — set-aside per entry; trip tracking off the entry form.
+> ▶ **ACTIVE BUILD: 1.2.22 — make the label gate catch the class**, decomposed below.
+> ⚙️ **None of these get their own Codemagic build** — they ride whatever device QA forces, because
+> the remainder is thin _(Jason 2026-09-25)_. ⛔ **The installed binary contains NEITHER 1.2.20 nor
+> 1.2.21**; device rows 13–14 are owed to a later build, everything else is testable on what is
+> installed. After these, only **1.2.13**'s `master` cutover remains.
 > ⚡ **1.2.8, 1.2.18 and 1.2.19 are worth reading before touching anything.** Between them: **three
 > live defects** *(a stranded alert on every demo exit; a cumulative route leak; a banner failing AA
 > on all 13 demo screens)*, **two lossy accessible names**, **a plant that PASSED**, and **five
@@ -149,30 +149,30 @@ dependency — **1.2.5** (location) is the next one. _(Said "1.2.3"; corrected 2
 
 ## ▶️ ACTIVE QUEUE — exactly one item
 
-### 🚗 **1.2.21 — Trip tracking out of the entry form** · **ACTIVE** _(2026-09-25, Jason)_
+### 🔬 **1.2.22 — Make the label gate catch the class, not just the site** · **ACTIVE** _(2026-09-26)_
 
-**Jason: _"Tracking mileage also shouldn't be hidden in the log. This is a main feature."_** It lives
-inside Add Entry today, so starting a drive means opening the form for a shift that has not happened.
+🔴 **TWO lossy accessible names in two days, and both were REVIEWED.** The tax-profile row (1.2.18.3)
+hid filing status, state, county and W2 status; the entry row (1.2.20.3) hid the gross, the expenses
+and the set-aside. ⚡ **Both kept the words and lost the numbers** — which says the first pass through
+the allowlist was systematically generous about rows whose information is money, because **the
+reviewer's eye goes to text.**
 
-⚡ **The tracker is already well placed for this.** `isTripActive` / `currentTripMiles` /
-`watchTripMiles` are **module-level**, so two mount points stay in sync by construction — the module
-is the single source of truth. Its only app coupling is `onTripFinished(miles)`.
-
-⛔ **THE WHOLE FEATURE IS INVISIBLE ON WEB** — `TripTrackerButton` returns `null` there, so the
-Playwright suite, the contrast sweep and the Dynamic Type sweep **cannot see any of it**. Only the
-pre-fill hand-off is browser-testable. **That is why it was never noticed as buried, and it means
-device rows, not more specs.**
+⛔ **So the fix is not another careful read.** `a11yLabelShadowing` asks *"has a human signed off on
+this site?"*, which is a question about paperwork. The class is answerable mechanically: **rendered
+text containing digits, under a label containing none.** 31 reviewed entries is a list a script
+should be checking, not a person — this portfolio's own rule is that every complete enumeration came
+from a script and every short one came from a person.
 
 | # | sub-step | scan |
 |---|---|---|
-| **1.2.21.1** | ✅ **DONE.** `initialMileage` on `AddEntryScreen`, `?miles=` on the entry route. ⛔ **The edit-mode rule lives in ONE place now** — the route guarded it too and the two **masked each other**, so planting either alone left the suite green. 3 e2e; **planted, and the single guard reds it.** | ✅ |
-| **1.2.21.2** | ✅ **DONE.** The dashboard card sits directly above Log Earnings and reuses **the same `TripTrackerButton`** the entry form uses — not a second implementation; the tracker's state is module-level, so both stay in step by construction. | ✅ |
-| **1.2.21.3** | ✅ **DONE.** `TripRunningBanner` in `Screen.tsx` beside `DemoBanner` — live miles + Stop on every screen, hidden on `/entry`, `null` on web. ⚠️ Uses `primaryDark` on `primarySoft` deliberately: that pairing is the **3.88:1 DemoBanner defect** from 1.2.18.1, and the two share a background token. | ✅ |
-| **1.2.21.4** | ✅ **DONE.** `trip-handoff.spec.ts` covers the one web-visible seam. ⛔ **No specs written for the card or the strip** — both render `null` on web, so any assertion would pass by rendering nothing. 466 unit · **143/143** Playwright. | ✅ |
-| **1.2.21.5** | ✅ **DONE.** Device **rows 13–14** added *(start from the dashboard · the strip follows across screens · absent on Add Entry · stop opens the form pre-filled · the strip's contrast and Dynamic Type by eye)*. ⚠️ **Rows 13–14 are NOT in the installed binary.** | ✅ |
+| **1.2.22.1** | **Measure first: how many of the 31 reviewed entries lose a number?** A throwaway script over the existing AST walk, reporting rendered-text-has-digits + label-has-none. ⛔ **Report before fixing** — the count is the finding, and it decides whether this is three sites or fifteen. | ⬜ |
+| **1.2.22.2** | **Fix what it finds**, each judged on its own: carry the figure in the label, or justify why the number is not information there. ⚠️ **Do not batch-rewrite labels** — 1.2.9.1 renamed eight and broke a flow, and every label is a selector somewhere. | ⬜ |
+| **1.2.22.3** | **Turn it into a gate.** A shadowing site whose rendered text has digits and whose label has none **fails**, rather than passing once someone adds a line to a JSON file. ⚠️ Needs an explicit exemption list for the honest cases *(a locked premium card's price, say)* — and an exemption is a sentence, not a bare entry. | ⬜ |
+| **1.2.22.4** | **Plant it**, including the two already-fixed rows: reverting either must red the new gate, or it is not catching the class it was built for. | ⬜ |
+| **1.2.22.5** | **Verify + after-scan.** Full Playwright; Maestro only if a label a flow matches changes. | ⬜ |
 
-**Exit line:** a trip can be started and stopped without opening the entry form, a running trip is
-visible from wherever the user is, and the miles land where they already landed.
+**Exit line:** a label that swallows a figure fails the build on its own, and the two rows that
+started this can each be reverted to prove it.
 
 
 ## 📋 Queue — everything else _(terse rows; decomposed only on promotion)_
@@ -209,6 +209,16 @@ _Item specs live in [V1_2_LOG.md](V1_2_LOG.md) and are retrieved at switch-in �
 map is at the head of the log's item-spec section._
 
 ## ✅ Closed
+
+- **1.2.21 — Trip tracking out of the entry form ✅ DONE 2026-09-26.** A card above Log Earnings and
+  a running strip on every screen, both reusing the existing `TripTrackerButton`/`tripTracker`;
+  stopping opens the entry form pre-filled. ⚡ **A plant that PASSED changed the design** — the
+  edit-mode rule was guarded twice and the two masked each other, so it collapsed to one guard at the
+  component. ⚙️ Also removed a 1-second timer that `Screen` would have run on every screen: start and
+  stop already `publish()`, so the event was there all along. ⛔ **Almost none of it is visible to any
+  browser gate** — both components return `null` on web — so no specs were written for the card or
+  the strip, and device rows 13–14 own them. 466 unit · 143/143 Playwright.
+  _Detail → [V1_2_LOG.md](V1_2_LOG.md)._
 
 - **1.2.20 — Set-aside on each recent-entry row ✅ DONE 2026-09-25.** Each entry shows what it says
   to set aside, reusing `entrySetAside`'s frozen rate ([D14]) so a row and the weekly sheet cannot
